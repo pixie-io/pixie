@@ -40,33 +40,31 @@ func VizierWorkload() *pb.WorkloadSpec {
 					Px: &pb.PxCLIDeploy{
 						Args: []string{
 							"deploy",
+							"--deploy_olm=false",
 						},
 						SetClusterID: true,
 						Namespaces: []string{
 							"pl",
 							"px-operator",
-							"olm",
 						},
 					},
 				},
 			},
-			{
-				DeployType: &pb.DeployStep_Px{
-					Px: &pb.PxCLIDeploy{
-						Args: []string{
-							"delete",
-							"--clobber=false",
-						},
-					},
-				},
-			},
+			// {
+			// 	DeployType: &pb.DeployStep_Px{
+			// 		Px: &pb.PxCLIDeploy{
+			// 			Args: []string{
+			// 				"delete",
+			// 				"--clobber=false",
+			// 			},
+			// 		},
+			// 	},
+			// },
 			{
 				DeployType: &pb.DeployStep_Skaffold{
 					Skaffold: &pb.SkaffoldDeploy{
-						SkaffoldPath: "skaffold/skaffold_vizier.yaml",
-						SkaffoldArgs: []string{
-							"-p", "opt",
-						},
+						SkaffoldPath: "skaffold/skaffold_operator.yaml",
+						SkaffoldArgs: []string{},
 					},
 				},
 			},
