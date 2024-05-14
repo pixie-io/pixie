@@ -30,7 +30,7 @@ apt_pkg_list = [
   # Not the newest docker CE from official docker repository, but should suffice.
   'docker.io',
   'git',
-  'libncurses5',
+  'libncurses6',
   'lcov',
   'podman',
   'sudo',
@@ -52,7 +52,6 @@ apt_pkg_list = [
   'libltdl-dev',
   'libunwind-dev',
 
-  'qemu',
   'qemu-system-arm',
   'qemu-system-x86',
   'qemu-user-static',

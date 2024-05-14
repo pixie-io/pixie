@@ -40,6 +40,14 @@ clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
 CLANG_BUILD_DIR := "$(BUILD_DIR)/clang-$(CLANG_TAG)"
 
+## libtinfo5 parameters
+# This is the latest libtinfo5 deb from bionic upstream. Since Ubuntu 24.04 and later
+# use newer versions, this is needed to make the pixie built clang binary happy by providing
+# its dynamically linked dependencies (libtinfo5).
+LIBTINFO5_DEB_IMAGE_VERSION := 6.3-2ubuntu0.1
+LIBTINFO5_DEB_DOWNLOAD := http://us.archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_$(LIBTINFO5_DEB_IMAGE_VERSION)_amd64.deb
+libtinfo5_deb_fname := libtinfo5-$(LIBTINFO5_DEB_IMAGE_VERSION).deb
+
 ## gperftools parameters
 GPERFTOOLS_DEB_IMAGE_VERSION := 2.10-pl1
 gperftools_deb_fname := gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb
@@ -151,6 +159,14 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 
 	cat $(CLANG_BUILD_DIR)/sha256sums
 
+##############################################
+# libtinfo5 upload
+##############################################
+.PHONY: upload_libtinfo5_deb
+upload_libtinfo5_deb:
+	mkdir -p $(BUILD_DIR)
+	wget $(LIBTINFO5_DEB_DOWNLOAD) -O $(PWD)/$(BUILD_DIR)/$(libtinfo5_deb_fname)
+	$(GH_RELEASE_UPLOAD) libtinfo5 $(LIBTINFO5_DEB_IMAGE_VERSION) $(PWD)/$(BUILD_DIR)/$(libtinfo5_deb_fname)
 
 ##############################################
 # GPerftools build

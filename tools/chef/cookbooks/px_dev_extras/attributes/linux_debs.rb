@@ -18,11 +18,20 @@ if ! platform_family?('debian')
   return
 end
 
-default['clang']['version']    = '15.0-pl9'
+default['clang']['version']    = '15.0-pl12'
 default['clang']['deb']        =
-  "https://storage.googleapis.com/pixie-dev-public/clang/#{default['clang']['version']}/clang-#{default['clang']['version']}.deb"
+  "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F#{default['clang']['version']}/clang-#{default['clang']['version']}.deb"
 default['clang']['deb_sha256'] =
-  'a7c6aa046cb3a75fae2f61e1ed43abbcce6514dd91f933bdc20f6633113994ed'
+  '3aef15345f70d00feaf0fada0eb76ac169e190a08576d3c375bef1b04400e552'
+
+# The pixie built clang deb originates from bionic to keep glibc compatibility on older systems (see tools/docker/clang_deb_image/Dockerfile).
+# This causes the clang binary installed above to dynamically linking libtinfo5. Starting with Ubuntu 24.04, libtinfo6 is provided upstream
+# so we need to install this to have a functional /opt/px_dev clang binary.
+default['libtinfo5']['version']    = '6.3-2ubuntu0.1'
+default['libtinfo5']['deb']        =
+  "https://github.com/pixie-io/dev-artifacts/releases/download/libtinfo5%2F#{default['libtinfo5']['version']}/libtinfo5-#{default['libtinfo5']['version']}.deb"
+default['libtinfo5']['deb_sha256'] =
+  'ab89265d8dd18bda6a29d7c796367d6d9f22a39a8fa83589577321e7caf3857b'
 
 default['gperftools']['version']    = '2.10-pl1'
 default['gperftools']['deb']        =
