@@ -130,7 +130,7 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "d34f9484588a9c25be936c910c86f8b25b04e5b0c802d0630e77cc9a8a272aed",
         strip_prefix = "bcc-e0698be7b797129cb113912e96ad741a551e2291",
         urls = [
-            "https://github.com/ddelnano/bcc/archive/e0698be7b797129cb113912e96ad741a551e2291.tar.gz",
+            "https://github.com/pixie-io/bcc/archive/e0698be7b797129cb113912e96ad741a551e2291.tar.gz",
         ],
     ),
     com_github_iovisor_bpftrace = dict(
