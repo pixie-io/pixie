@@ -68,7 +68,8 @@ TEST(BCCSymbolizer, ModuleName) {
   for (const auto& entry : smaps) {
     if (entry.pathname == "[vdso]") {
       const std::string_view symbol = symbolizer.SymbolOrAddrIfUnknown(pid, entry.vmem_start);
-      EXPECT_EQ(symbol, "[m] [vdso] + 0x00000000");
+      const std::string expected = absl::StrCat("[m] [vdso] + 0x", absl::Hex(entry.vmem_start));
+      EXPECT_EQ(symbol, expected);
     }
   }
 }
