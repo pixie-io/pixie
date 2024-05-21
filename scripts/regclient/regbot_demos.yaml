@@ -9,7 +9,7 @@ defaults:
   interval: 60m
   timeout: 10m
 scripts:
-- name: sync container_images.bzl
+- name: sync demo images
   script: |
     local deps = require 'deps'
-    deps.mirrorImgs(deps.depImages)
+    deps.mirrorImgs(deps.demoImages)
