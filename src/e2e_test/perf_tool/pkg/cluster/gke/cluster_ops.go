@@ -151,7 +151,6 @@ func (p *ClusterProvider) nodePoolForSpec(spec *experimentpb.ClusterSpec) *conta
 		Name: nodePoolNameFromSpec(spec),
 		Config: &containerpb.NodeConfig{
 			MachineType: spec.Node.MachineType,
-			ImageType:   "ubuntu_containerd",
 			DiskSizeGb:  p.clusterOpts.DiskSizeGB,
 			DiskType:    p.clusterOpts.DiskType,
 			OauthScopes: []string{
