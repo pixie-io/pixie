@@ -92,8 +92,10 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
+      {{- $selectorDefaults := dict "kubernetes.io/os" "linux" }}
+      {{- $nodeSelectors := merge $selectorDefaults .Values.olmNodeSelector }}
       nodeSelector:
-        kubernetes.io/os: linux
+      {{- $nodeSelectors | toYaml | nindent 8 }}
       tolerations:
       - key: "kubernetes.io/arch"
         operator: "Equal"
@@ -165,8 +167,10 @@ spec:
             requests:
               cpu: 10m
               memory: 80Mi
+      {{- $selectorDefaults := dict "kubernetes.io/os" "linux" }}
+      {{- $nodeSelectors := merge $selectorDefaults .Values.olmNodeSelector }}
       nodeSelector:
-        kubernetes.io/os: linux
+      {{- $nodeSelectors | toYaml | nindent 8 }}
       tolerations:
       - key: "kubernetes.io/arch"
         operator: "Equal"
