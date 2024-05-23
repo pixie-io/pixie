@@ -12,4 +12,6 @@ scripts:
 - name: sync demo images
   script: |
     local deps = require 'deps'
-    deps.mirrorImgs(deps.demoImages)
+    for ns, images in pairs(deps.demoImages) do
+      deps.mirrorImgs(images, ns)
+    end
