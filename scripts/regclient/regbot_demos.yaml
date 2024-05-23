@@ -10,8 +10,10 @@ defaults:
   timeout: 10m
 scripts:
 - name: sync demo images
+  # yamllint disable rule:indentation
   script: |
     local deps = require 'deps'
     for ns, images in pairs(deps.demoImages) do
       deps.mirrorImgs(images, ns)
     end
+  # yamllint enable rule:indentation
