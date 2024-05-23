@@ -43,5 +43,5 @@ jobs:
       # yamllint disable rule:indentation
       run: |
         cd scripts/regclient
-        regbot once --config ${{ github.event.inputs.dry_run && ' --dry-run' }} regbot_demos.yaml
+        regbot once ${{ github.event.inputs.dry_run && ' --dry-run' }} --config regbot_demos.yaml
       # yamllint enable rule:indentation
