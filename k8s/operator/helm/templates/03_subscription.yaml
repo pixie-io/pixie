@@ -9,3 +9,7 @@ spec:
   source: pixie-operator-index
   sourceNamespace: {{ .Values.olmOperatorNamespace }}
   installPlanApproval: Automatic
+  {{- if .Values.olmCatalogSource.nodeSelector }}
+  config:
+    nodeSelector: {{ .Values.olmCatalogSource.nodeSelector | toYaml | nindent 6 }}
+  {{- end }}
