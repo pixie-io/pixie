@@ -127,9 +127,16 @@ function deps.mirrorImgs(images, prefix)
       repo = string.sub(repo, i+1)
     end
 
-    -- if a prefix was provided, prepend it to the repo
+    -- if a prefix was provided, prepend it to the repo (but drop all existing namespacing)
     if string.len(prefix) > 0 then
-      repo = prefix .. "/" .. repo
+      local repoRev = string.reverse(repo)
+      -- find the last slash in the repo
+      local i = string.find(repoRev, "/", 1, true)
+      if i then
+        -- grab the repo parts adter the last slash
+        repo = string.reverse(string.sub(repoRev, 0, i-1))
+      end
+      repo = prefix .. "-" .. repo
     end
 
     -- loop through destinations
