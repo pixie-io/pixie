@@ -133,7 +133,7 @@ function deps.mirrorImgs(images, prefix)
       -- find the last slash in the repo
       local i = string.find(repoRev, "/", 1, true)
       if i then
-        -- grab the repo parts adter the last slash
+        -- grab the repo parts after the last slash
         repo = string.reverse(string.sub(repoRev, 0, i-1))
       end
       repo = prefix .. "-" .. repo
