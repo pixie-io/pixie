@@ -29,13 +29,11 @@ spec:
       initContainers:
       - name: wait-sock-shop
         image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
-        # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           until timeout 2 curl -f "${SOCK_SHOP_HEALTH_ADDR}"; do
             echo "waiting for ${SOCK_SHOP_HEALTH_ADDR}";
             sleep 2;
           done;']
-        # yamllint enable rule:indentation
         env:
         - name: SOCK_SHOP_HEALTH_ADDR
           value: "http://orders.px-sock-shop.svc.cluster.local/health"

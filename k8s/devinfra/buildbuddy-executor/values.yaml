@@ -19,11 +19,11 @@ extraInitContainers:
 - name: download-executor
   # yamllint disable-line rule:line-length
   image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
-  # yamllint disable rule:indentation rule:line-length
+  # yamllint disable rule:line-length
   command: ['sh', '-c', 'set -e;
     curl -fsSL https://github.com/buildbuddy-io/buildbuddy/releases/download/v2.12.42/executor-enterprise-linux-amd64 > /bb-executor/executor;
     chmod +x /bb-executor/executor']
-  # yamllint enable rule:indentation rule:line-length
+  # yamllint enable rule:line-length
   volumeMounts:
   - name: bb-executor
     mountPath: /bb-executor
@@ -81,11 +81,9 @@ extraContainers:
   volumeMounts:
   - name: tmp
     mountPath: /tmp
-  # yamllint disable rule:indentation
   command: ['/bin/bash', '-c', 'set -xe;
     while true; do
       find /tmp -maxdepth 1 \( -type d -mmin +360 -not -path "/tmp" \) -exec rm -rf {} \; ;
       sleep 60;
     done;'
   ]
-  # yamllint enable rule:indentation

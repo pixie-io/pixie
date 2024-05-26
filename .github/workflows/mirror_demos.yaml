@@ -40,8 +40,6 @@ jobs:
       run: go install github.com/regclient/regclient/cmd/regbot@v0.4.8
     - name: sync images
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         cd scripts/regclient
         regbot once ${{ github.event.inputs.dry_run && ' --dry-run' }} --config regbot_demos.yaml
-      # yamllint enable rule:indentation

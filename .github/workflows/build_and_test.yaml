@@ -55,14 +55,12 @@ jobs:
       run: ./ci/save_diff_info.sh
     - name: Run Clang Tidy
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         diff_file="diff_origin_main_cc"
         if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
           diff_file="diff_head_cc"
         fi
         ./ci/run_clang_tidy.sh -f "${diff_file}"
-      # yamllint enable rule:indentation
   code-coverage:
     if: github.event_name == 'push'
     needs: [authorize, env-protect-setup, get-dev-image]
@@ -151,23 +149,19 @@ jobs:
       run: rm -rf "$(bazel info ${{ matrix.args }} bazel-testlogs --noshow_progress 2>/dev/null)"
     - name: Build ${{ matrix.name }}
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         ./scripts/bazel_ignore_codes.sh build \
           ${{ matrix.args }} \
           --target_pattern_file=target_files/${{ matrix.buildables }} \
           2> >(tee bazel_stderr)
-      # yamllint enable rule:indentation
     - name: Test ${{ matrix.name }}
       if: ${{ matrix.tests }}
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
         sysctl -w net.ipv6.conf.lo.disable_ipv6=0
         ./scripts/bazel_ignore_codes.sh test ${{ matrix.args }} --target_pattern_file=target_files/${{ matrix.tests }} \
           2> >(tee bazel_stderr)
-      # yamllint enable rule:indentation
     - name: Parse junit reports
       uses: dorny/test-reporter@afe6793191b75b608954023a46831a3fe10048d4  # v1.7.0
       if: always()
@@ -196,13 +190,11 @@ jobs:
         needs.generate-matrix.result == 'success' && needs.clang-tidy.result == 'success'
         && needs.build-and-test.result == 'skipped'
       run: echo "Build and Test skipped no matrix configs generated ✓"
-    # yamllint disable rule:indentation
     - if: >
         !(needs.build-and-test.result == 'success' && needs.clang-tidy.result == 'success') &&
         !(needs.generate-matrix.result == 'success' &&
           needs.clang-tidy.result == 'success' &&
           needs.build-and-test.result == 'skipped')
-    # yamllint enable rule:indentation
       run: |
         echo "Build and Test failed"
         exit 1

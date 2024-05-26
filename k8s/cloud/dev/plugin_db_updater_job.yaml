@@ -16,13 +16,11 @@ spec:
       initContainers:
       - name: postgres-wait
         image: postgres:14-alpine@sha256:446abaf8831c54f57212c0ae52f5df84e69eeb2767e2376d07bed9c9742b1243
-        # yamllint disable rule:indentation
         command: ['sh', '-c',
-          'until pg_isready -h ${PL_POSTGRES_HOSTNAME} -p ${PL_POSTGRES_PORT}; do
-            echo "waiting for postgres";
-            sleep 2;
-          done;']
-        # yamllint enable rule:indentation
+                  'until pg_isready -h ${PL_POSTGRES_HOSTNAME} -p ${PL_POSTGRES_PORT}; do
+                  echo "waiting for postgres";
+                  sleep 2;
+                  done;']
         envFrom:
         - configMapRef:
             name: pl-db-config

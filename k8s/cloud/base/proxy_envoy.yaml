@@ -4,7 +4,6 @@ kind: ConfigMap
 metadata:
   name: proxy-envoy-config
 data:
-  # yamllint disable rule:indentation
   envoy.yaml: >
     static_resources:
       listeners:
@@ -76,4 +75,3 @@ data:
                   filename: "/service-certs/client.crt"
                 private_key:
                   filename: "/service-certs/client.key"
-  # yamllint enable rule:indentation

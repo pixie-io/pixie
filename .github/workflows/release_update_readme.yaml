@@ -51,7 +51,6 @@ jobs:
         TAG_NAME: ${{ github.event.release.tag_name }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
-      # yamllint disable rule:indentation
       run: |
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
         export BRANCH="${VERSION}-update-readme"
@@ -62,4 +61,3 @@ jobs:
         gh pr create --repo pixie-io/pixie \
           --head "pixie-io-buildbot:${BRANCH}" \
           --body "$(cat pr_body)" --title "$(cat pr_title)"
-      # yamllint enable rule:indentation

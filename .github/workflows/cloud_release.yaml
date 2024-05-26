@@ -79,7 +79,6 @@ jobs:
         OWNER: pixie-io
         REPO: pixie
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         export TAG_NAME="${REF#*/tags/}"
         # actions/checkout doesn't get the tag annotation properly.
@@ -88,4 +87,3 @@ jobs:
         gh release create "${TAG_NAME}" --title "Cloud ${TAG_NAME#release/cloud/}" \
           --notes $'Pixie Cloud Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" cloud-artifacts/*
-      # yamllint enable rule:indentation
