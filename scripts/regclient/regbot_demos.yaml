@@ -9,7 +9,11 @@ defaults:
   interval: 60m
   timeout: 10m
 scripts:
-- name: sync container_images.bzl
+- name: sync demo images
+  # yamllint disable rule:indentation
   script: |
     local deps = require 'deps'
-    deps.mirrorImgs(deps.depImages)
+    for ns, images in pairs(deps.demoImages) do
+      deps.mirrorImgs(images, ns)
+    end
+  # yamllint enable rule:indentation

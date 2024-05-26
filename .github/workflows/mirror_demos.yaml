@@ -1,5 +1,5 @@
 ---
-name: mirror-deps
+name: mirror-demos
 on:
   workflow_dispatch:
     inputs:
@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 jobs:
-  sync_deps:
+  sync_demos:
     permissions:
       contents: read
       packages: write
@@ -43,5 +43,5 @@ jobs:
       # yamllint disable rule:indentation
       run: |
         cd scripts/regclient
-        regbot once ${{ github.event.inputs.dry_run && ' --dry-run' }} --config regbot_deps.yaml
+        regbot once ${{ github.event.inputs.dry_run && ' --dry-run' }} --config regbot_demos.yaml
       # yamllint enable rule:indentation
