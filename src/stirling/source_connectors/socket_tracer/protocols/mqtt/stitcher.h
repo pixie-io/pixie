@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <deque>
 #include <string>
 #include <vector>
@@ -28,21 +29,29 @@
 namespace px {
 namespace stirling {
 namespace protocols {
+namespace mqtt {
 
 /**
- * Parses a single MQTT message from the input string.
+ * StitchFrames is the entry point of the Cassandra Stitcher. It loops through the resp_frames,
+ * matches them with the corresponding req_frames, and optionally produces an entry to emit.
+ *
+ * @param req_frames: deque of all request frames.
+ * @param resp_frames: deque of all response frames.
+ * @return A vector of entries to be appended to table store.
  */
+RecordsWithErrorCount<Record> StitchFrames(
+    absl::flat_hash_map<packet_id_t, std::deque<Message>>* req_frames,
+    absl::flat_hash_map<packet_id_t, std::deque<Message>>* resp_frames);
+
+}  // namespace mqtt
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mqtt::Message* frame,
-                      NoState* state);
-
-template <>
-size_t FindFrameBoundary<mqtt::Message>(message_type_t type, std::string_view buf, size_t start_pos,
-                                        NoState* state);
-
-template <>
-mqtt::packet_id_t GetStreamID(mqtt::Message* message);
+inline RecordsWithErrorCount<mqtt::Record> StitchFrames(
+    absl::flat_hash_map<mqtt::packet_id_t, std::deque<mqtt::Message>>* req_messages,
+    absl::flat_hash_map<mqtt::packet_id_t, std::deque<mqtt::Message>>* res_messages,
+    NoState* /* state */) {
+        return mqtt::StitchFrames(req_messages, res_messages);
+    }
 
 }  // namespace protocols
 }  // namespace stirling

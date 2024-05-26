@@ -35,13 +35,15 @@ using ::px::utils::ToJSONString;
 // The protocol specification : https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.pdf
 // This supports MQTTv5
 
+using packet_id_t = uint16_t;
 struct Message : public FrameBase {
   message_type_t type = message_type_t::kUnknown;
 
   uint8_t control_packet_type = 0xff;
 
-  bool dup;
-  bool retain;
+  bool dup = false;
+  bool retain = false;
+  bool consumed = false;
 
   std::map<std::string, uint32_t> header_fields;
   std::map<std::string, std::string> properties, payload;
@@ -77,9 +79,14 @@ struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Message;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = packet_id_t;
+  static constexpr StreamSupport stream_support = BaseProtocolTraits<Record>::UseStream;
 };
 
 }  // namespace mqtt
+
+template <>
+mqtt::packet_id_t GetStreamID(mqtt::Message* message);
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

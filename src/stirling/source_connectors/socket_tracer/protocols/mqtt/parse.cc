@@ -745,6 +745,11 @@ size_t FindFrameBoundary<mqtt::Message>(message_type_t /*type*/, std::string_vie
   return start_pos + buf.length();
 }
 
+template <>
+mqtt::packet_id_t GetStreamID(mqtt::Message* message) {
+  return message->header_fields["packet_identifier"];
+}
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

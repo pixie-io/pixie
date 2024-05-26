@@ -48,3 +48,11 @@ pl_cc_test(
         ":cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "stitcher_test",
+    srcs = ["stitcher_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
