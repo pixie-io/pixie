@@ -42,4 +42,4 @@ jobs:
       shell: bash
       run: |
         cd scripts/regclient
-        regbot once ${{ github.event.inputs.dry_run && ' --dry-run' }} --config regbot_demos.yaml
+        regbot once ${{ github.event.inputs.dry_run && '--dry-run' || '' }} --config regbot_demos.yaml
