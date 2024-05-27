@@ -2,7 +2,7 @@ workspace(name = "px")
 
 load("//:workspace.bzl", "check_min_bazel_version")
 
-check_min_bazel_version("6.0.0")
+check_min_bazel_version("6.2.0")
 
 load("//bazel:repositories.bzl", "pl_cc_toolchain_deps", "pl_deps")
 
