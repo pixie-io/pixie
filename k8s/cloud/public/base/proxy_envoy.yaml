@@ -4,7 +4,6 @@ kind: ConfigMap
 metadata:
   name: proxy-envoy-config
 data:
-  # yamllint disable rule:indentation
   # This envoy.yaml is almost an exact copy of cloud/base/proxy_envoy.yaml, minus
   # the alpn_protocols in common_tls_context. This is because GCP health check only
   # supports alpn h2, making the alpn field is required in our prod cloud instances.
@@ -82,4 +81,3 @@ data:
                   filename: "/service-certs/client.crt"
                 private_key:
                   filename: "/service-certs/client.key"
-  # yamllint enable rule:indentation

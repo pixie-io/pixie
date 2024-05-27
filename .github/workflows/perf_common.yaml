@@ -93,7 +93,6 @@ jobs:
       env:
         PX_API_KEY: ${{ secrets.PERF_PX_API_KEY }}
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
-      # yamllint disable rule:indentation
       run: |
         echo "$GOOGLE_APPLICATION_CREDENTIALS"
         bazel run //src/e2e_test/perf_tool -- run --commit_sha "${{ steps.get-commit-sha.outputs.commit-sha }}" \
@@ -104,7 +103,6 @@ jobs:
           --tags "${{ inputs.tags }}" \
           --suite "${{ matrix.suite }}" \
           --experiment_name "${{ matrix.experiment_name }}" > run_output
-      # yamllint enable rule:indentation
     - name: deactivate gcloud service account
       run: gcloud auth revoke
     # Github actions doesn't have native support for gathering outputs from matrix runs.

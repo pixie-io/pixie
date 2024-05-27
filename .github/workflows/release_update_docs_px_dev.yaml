@@ -77,7 +77,6 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
-      # yamllint disable rule:indentation
       run: |
         if [[ $(git status --porcelain=v1 | wc -l) -eq 0 ]]; then
           echo "No updates to the documentation detected, exiting."

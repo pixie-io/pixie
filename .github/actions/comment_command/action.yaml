@@ -20,7 +20,6 @@ runs:
     env:
       BODY: ${{ github.event.comment.body }}
       COMMAND_NAME: ${{ inputs.command-name }}
-    # yamllint disable rule:indentation
     run: |
       if [[ "${BODY}" =~ "/${COMMAND_NAME}"* ]]; then
         exit 0
@@ -28,14 +27,12 @@ runs:
         echo "${BODY} is not a /${COMMAND_NAME} command" >&2
         exit 1
       fi
-    # yamllint enable rule:indentation
   - name: Check permissions
     shell: bash
     env:
       PR_AUTHOR_ASSOC: ${{ github.event.issue.author_association }}
       COMMENT_AUTHOR_ASSOC: ${{ github.event.comment.author_association }}
       ADMIN_ONLY: ${{ inputs.admin-only }}
-    # yamllint disable rule:indentation
     run: |
       if [[ -z "${PR_AUTHOR_ASSOC}" ]] || [[ -z "${COMMENT_AUTHOR_ASSOC}" ]]; then
         echo "failed to get permission levels of users involved" >&2
@@ -59,7 +56,6 @@ runs:
       fi
       echo "members can only run this command on other members prs: permission denied" >&2
       exit 2
-    # yamllint enable rule:indentation
   - name: Parse command
     id: parse
     shell: bash

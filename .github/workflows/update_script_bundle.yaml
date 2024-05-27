@@ -15,7 +15,6 @@ jobs:
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: Install Pixie CLI
-      # yamllint disable rule:indentation
       run: |
         jq_script=(
           '.[] | '
@@ -29,7 +28,6 @@ jobs:
         download_link=$(curl -fssL "https://artifacts.px.dev/artifacts/manifest.json" | jq "${jq_script[*]}" -r )
         curl -fssL "${download_link}" -o px
         chmod +x px
-      # yamllint enable rule:indentation
     - name: Build bundle
       shell: bash
       run: |
@@ -72,7 +70,6 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
-      # yamllint disable rule:indentation
       run: |
         mkdir -p pxl_scripts
         cp bundle/bundle-oss.json pxl_scripts/bundle.json
@@ -84,4 +81,3 @@ jobs:
         fi
         git commit -s -m "Update PxL script bundle"
         git push origin "gh-pages"
-      # yamllint enable rule:indentation

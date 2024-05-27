@@ -171,7 +171,6 @@ jobs:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         export TAG_NAME="${REF#*/tags/}"
         # actions/checkout doesn't get the tag annotation properly.
@@ -185,7 +184,6 @@ jobs:
           --title "CLI ${TAG_NAME#release/cli/}" \
           --notes $'Pixie CLI Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" linux-artifacts/* macos-artifacts/*
-      # yamllint enable rule:indentation
   update-gh-artifacts-manifest:
     runs-on: ubuntu-latest-8-cores
     needs: [get-dev-image, create-github-release]

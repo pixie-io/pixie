@@ -5,7 +5,6 @@ rules:
   indentation:
     spaces: 2
     indent-sequences: false
-    check-multi-line-strings: true
   line-length:
     max: 120
   truthy:

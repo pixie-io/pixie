@@ -102,7 +102,6 @@ jobs:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         export TAG_NAME="${REF#*/tags/}"
         # actions/checkout doesn't get the tag annotation properly.
@@ -116,7 +115,6 @@ jobs:
           --title "Vizier ${TAG_NAME#release/vizier/}" \
           --notes $'Pixie Vizier Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" vizier-artifacts/*
-      # yamllint enable rule:indentation
   create-helm-chart:
     if: ${{ !contains(github.event.ref, '-') }}
     name: Create Helm chart on Github
@@ -144,14 +142,12 @@ jobs:
         TAG_NAME: ${{ github.event.release.tag_name }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
-      # yamllint disable rule:indentation
       run: |
         cp index-artifacts/index.yaml helm_charts/vizier/index.yaml
         git add helm_charts/vizier/index.yaml
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
         git commit -s -m "Release Helm chart Vizier ${VERSION}"
         git push origin "gh-pages"
-      # yamllint enable rule:indentation
   update-gh-artifacts-manifest:
     runs-on: ubuntu-latest-8-cores
     needs: [get-dev-image, create-github-release]

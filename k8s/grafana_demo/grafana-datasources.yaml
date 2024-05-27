@@ -4,7 +4,6 @@ kind: ConfigMap
 metadata:
   name: grafana-datasources
 data:
-  # yamllint disable rule:indentation
   pixie.yaml: |-
     apiVersion: 1
     datasources:
@@ -17,4 +16,3 @@ data:
       version: 1
       secureJsonData:
         apiKey: $PIXIE_API_KEY
-  # yamllint enable rule:indentation

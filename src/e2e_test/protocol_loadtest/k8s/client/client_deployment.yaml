@@ -18,14 +18,14 @@ spec:
       - name: server-wait
         # yamllint disable-line rule:line-length
         image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
-        # yamllint disable rule:indentation rule:line-length
+        # yamllint disable rule:line-length
         command: ['sh', '-c', 'set -xe;
           URL="http://${SERVICE_NAME}:${SERVICE_PORT}/";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" --data {} ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}";
             sleep 2;
           done;']
-        # yamllint enable rule:indentation rule:line-length
+        # yamllint enable rule:line-length
         env:
         - name: SERVICE_NAME
           value: "server.px-protocol-loadtest.svc.cluster.local"
