@@ -58,7 +58,7 @@ deps.demoImages = {
     "docker.io/weaveworksdemos/payment:0.4.3@sha256:5ab1c9877480a018d4dda10d6dfa382776e6bca9fc1c60bacbb80903fde8cfe0",
     "docker.io/weaveworksdemos/user:0.4.7@sha256:2ffccc332963c89e035fea52201012208bf62df43a55fe461ad6598a5c757ab7",
     "docker.io/weaveworksdemos/user-db:0.3.0@sha256:695bc22c11396c7ae747118c56e619f3b3295d9d4cbec999d30230b3f399a389",
-    "gcr.io/pixie-oss/demo-apps/px-sock-shop/carts@sha256:0bcf0ac7a03157b3a311e28e9e73ca827fc7b8c6454600b8626a3b129e41886c",
+    "gcr.io/pixie-oss/demo-apps/px-sock-shop/carts@sha256:dee4cc373d22e022db85d12ba8ffaa504a93d801f19d48db6fe37d530f3b8f05",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/orders@sha256:433a589dd7b2b5ecd08005760d1ddca884f31e86870a1d563bd6f696bef078a6",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/queue-master@sha256:d52117018089a83b8e3c631b861ca390fd4ab64f3ab3ee5a3a1247f49e35c0e7",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/shipping@sha256:3b1365606ac36aa8f71fb2fe39e33124dafd37d74b16b8b603ac321e6afb4c8e",
