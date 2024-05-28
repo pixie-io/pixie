@@ -33,7 +33,7 @@ go_library(
         "@com_github_spf13_viper//:viper",
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//rest",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
     ],
 )
 

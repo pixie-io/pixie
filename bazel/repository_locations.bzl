@@ -16,10 +16,10 @@
 
 REPOSITORY_LOCATIONS = dict(
     bazel_gazelle = dict(
-        sha256 = "29218f8e0cebe583643cbf93cae6f971be8a2484cdcfa1e45057658df8d54002",
+        sha256 = "d76bf7a60fd8b050444090dfa2837a4eaf9829e1165618ee35dceca5cbdf58d5",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.32.0/bazel-gazelle-v0.32.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.32.0/bazel-gazelle-v0.32.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.37.0/bazel-gazelle-v0.37.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.37.0/bazel-gazelle-v0.37.0.tar.gz",
         ],
     ),
     bazel_skylib = dict(
@@ -62,9 +62,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/arun11299/cpp-jwt/archive/refs/tags/v1.1.1.tar.gz"],
     ),
     com_github_bazelbuild_buildtools = dict(
-        sha256 = "977a0bd4593c8d4c8f45e056d181c35e48aa01ad4f8090bdb84f78dca42f47dc",
-        strip_prefix = "buildtools-6.1.2",
-        urls = ["https://github.com/bazelbuild/buildtools/archive/refs/tags/v6.1.2.tar.gz"],
+        sha256 = "39c59cb5352892292cbe3174055aac187edcb5324c9b4e2d96cb6e40bd753877",
+        strip_prefix = "buildtools-7.1.2",
+        urls = ["https://github.com/bazelbuild/buildtools/archive/refs/tags/v7.1.2.tar.gz"],
     ),
     com_github_cameron314_concurrentqueue = dict(
         sha256 = "eb37336bf9ae59aca7b954db3350d9b30d1cab24b96c7676f36040aa76e915e8",
