@@ -98,7 +98,7 @@ spec:
           value: mongodb://mongodb:27017
         - name: PORT
           value: "8085"
-        image: gcr.io/pixie-prod/demos/px-mongo/backend:1.0.0
+        image: ghcr.io/pixie-io/px-mongodb-backend:1.0.0@sha256:0e2295edd0faa9718fc5cbda499e0b994538b5930257c12e4ee55fadc3474987
         imagePullPolicy: ""
         name: back
         ports:
@@ -110,7 +110,7 @@ spec:
         - -c
         - set -xe; while ! mongosh mongodb://mongodb:27017 --eval "db.serverStatus()"
           ; do echo "waiting until mongodb is available"; sleep 2; done;
-        image: mongo:7.0
+        image: ghcr.io/pixie-io/px-mongodb-mongo:7.0@sha256:97aac78a80553735b3d9b9b7212803468781b4859645f892a3d04e6b621a7b77
         name: mongodb-wait
       restartPolicy: Always
       serviceAccountName: ""
@@ -144,7 +144,7 @@ spec:
         io.kompose.service: front
     spec:
       containers:
-      - image: gcr.io/pixie-prod/demos/px-mongo/frontend:1.0.0
+      - image: ghcr.io/pixie-io/px-mongodb-frontend:1.0.0@sha256:9018b6c8a7efce6224f0eace7de59818456c5ad46e485c4b4b806f8a807c4eea
         imagePullPolicy: ""
         name: front
         ports:
@@ -182,7 +182,7 @@ spec:
         io.kompose.service: load
     spec:
       containers:
-      - image: gcr.io/pixie-prod/demos/px-mongo/load:1.0.0
+      - image: ghcr.io/pixie-io/px-mongodb-load:1.0.0@sha256:90ded1e54a92951b5331b178f642926316ba59d85fde315bf5668a93d90cc8cf
         imagePullPolicy: ""
         name: load
         resources: {}
@@ -218,7 +218,7 @@ spec:
         io.kompose.service: mongodb
     spec:
       containers:
-      - image: mongo:7.0
+      - image: ghcr.io/pixie-io/px-mongodb-mongo:7.0@sha256:97aac78a80553735b3d9b9b7212803468781b4859645f892a3d04e6b621a7b77
         imagePullPolicy: ""
         name: mongodb
         ports:
