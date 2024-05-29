@@ -55,10 +55,11 @@ deps.demoImages = {
     "docker.io/weaveworksdemos/load-test:0.1.1@sha256:536d46f8c867e4ff4c3ed69848955b487f9bec060539c169f190fe522650e5cd",
     "docker.io/weaveworksdemos/catalogue-db:0.3.0@sha256:7ba74ec9adf88f6625b8d85d3323d1ee5232b39877e1590021ea485cf9457251",
     "docker.io/weaveworksdemos/catalogue:0.3.5@sha256:0147a65b7116569439eefb1a6dbed455fe022464ef70e0c3cab75bc4a226b39b",
+    "docker.io/weaveworksdemos/front-end:0.3.12@sha256:26a2d9b6b291dee2dca32fca3f5bff6c2fa07bb5954359afcbc8001cc70eac71",
     "docker.io/weaveworksdemos/payment:0.4.3@sha256:5ab1c9877480a018d4dda10d6dfa382776e6bca9fc1c60bacbb80903fde8cfe0",
     "docker.io/weaveworksdemos/user:0.4.7@sha256:2ffccc332963c89e035fea52201012208bf62df43a55fe461ad6598a5c757ab7",
     "docker.io/weaveworksdemos/user-db:0.3.0@sha256:695bc22c11396c7ae747118c56e619f3b3295d9d4cbec999d30230b3f399a389",
-    "gcr.io/pixie-oss/demo-apps/px-sock-shop/carts@sha256:0bcf0ac7a03157b3a311e28e9e73ca827fc7b8c6454600b8626a3b129e41886c",
+    "gcr.io/pixie-oss/demo-apps/px-sock-shop/carts@sha256:dee4cc373d22e022db85d12ba8ffaa504a93d801f19d48db6fe37d530f3b8f05",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/orders@sha256:433a589dd7b2b5ecd08005760d1ddca884f31e86870a1d563bd6f696bef078a6",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/queue-master@sha256:d52117018089a83b8e3c631b861ca390fd4ab64f3ab3ee5a3a1247f49e35c0e7",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/shipping@sha256:3b1365606ac36aa8f71fb2fe39e33124dafd37d74b16b8b603ac321e6afb4c8e",
@@ -75,7 +76,8 @@ deps.demoImages = {
     "gcr.io/google-samples/microservices-demo/loadgenerator:v0.3.6@sha256:25548c590b038917536e381dd43d75af168e57b5ff4f5cf3374bb58b3ad4967e",
     "gcr.io/google-samples/microservices-demo/paymentservice:v0.3.6@sha256:476fcb22bf9aa231d771ea6b178014f070d97d233a5204aff29f8b45a01fc442",
     "gcr.io/google-samples/microservices-demo/productcatalogservice:v0.3.6@sha256:a4b68f0a8d85c5a1e2476ac6804f9fdeb9610649aed2d0351416f711a82f3017",
-    "gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.6@sha256:305488566cd703aa2d158b3097ca399f2340446ec0a0ec398d76bf4a4d7df22e",
+     -- v0.3.6 was removed from upstream, use 0.3.7 until other remaining services are upgraded
+    "gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.7@sha256:da4e303662698c3d1c67576cadb81a68df73413cead08f97b4890fc0d43dfd20",
     "gcr.io/google-samples/microservices-demo/shippingservice:v0.3.6@sha256:7e0b09aad2d8eb95979d1467311e74938768d55b875b0c5405317c3ee54e4d6c",
   },
   ["px-finagle"] = {
