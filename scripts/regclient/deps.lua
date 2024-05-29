@@ -55,6 +55,7 @@ deps.demoImages = {
     "docker.io/weaveworksdemos/load-test:0.1.1@sha256:536d46f8c867e4ff4c3ed69848955b487f9bec060539c169f190fe522650e5cd",
     "docker.io/weaveworksdemos/catalogue-db:0.3.0@sha256:7ba74ec9adf88f6625b8d85d3323d1ee5232b39877e1590021ea485cf9457251",
     "docker.io/weaveworksdemos/catalogue:0.3.5@sha256:0147a65b7116569439eefb1a6dbed455fe022464ef70e0c3cab75bc4a226b39b",
+    "docker.io/weaveworksdemos/front-end:0.3.12@sha256:26a2d9b6b291dee2dca32fca3f5bff6c2fa07bb5954359afcbc8001cc70eac71",
     "docker.io/weaveworksdemos/payment:0.4.3@sha256:5ab1c9877480a018d4dda10d6dfa382776e6bca9fc1c60bacbb80903fde8cfe0",
     "docker.io/weaveworksdemos/user:0.4.7@sha256:2ffccc332963c89e035fea52201012208bf62df43a55fe461ad6598a5c757ab7",
     "docker.io/weaveworksdemos/user-db:0.3.0@sha256:695bc22c11396c7ae747118c56e619f3b3295d9d4cbec999d30230b3f399a389",
@@ -75,7 +76,8 @@ deps.demoImages = {
     "gcr.io/google-samples/microservices-demo/loadgenerator:v0.3.6@sha256:25548c590b038917536e381dd43d75af168e57b5ff4f5cf3374bb58b3ad4967e",
     "gcr.io/google-samples/microservices-demo/paymentservice:v0.3.6@sha256:476fcb22bf9aa231d771ea6b178014f070d97d233a5204aff29f8b45a01fc442",
     "gcr.io/google-samples/microservices-demo/productcatalogservice:v0.3.6@sha256:a4b68f0a8d85c5a1e2476ac6804f9fdeb9610649aed2d0351416f711a82f3017",
-    "gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.6@sha256:305488566cd703aa2d158b3097ca399f2340446ec0a0ec398d76bf4a4d7df22e",
+     -- v0.3.6 was removed from upstream, use 0.3.7 until other remaining services are upgraded
+    "gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.7@sha256:da4e303662698c3d1c67576cadb81a68df73413cead08f97b4890fc0d43dfd20",
     "gcr.io/google-samples/microservices-demo/shippingservice:v0.3.6@sha256:7e0b09aad2d8eb95979d1467311e74938768d55b875b0c5405317c3ee54e4d6c",
   },
   ["px-finagle"] = {
