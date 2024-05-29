@@ -159,11 +159,12 @@ def stirling_test_images():
     )
 
     # Curl container, for OpenSSL tracing tests.
-    # curlimages/curl:7.74.0
+    # curlimages/curl:7.87.0
+    # multiarch sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
     _container_image(
         name = "curl_base_image",
-        repository = "curlimages/curl",
-        digest = "sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
+        repository = "pixie-oss-pixie-dev-public-curl",
+        digest = "sha256:4311823d3576c0b7330beccbe09896ff0378c9c1c6f6974ff9064af803fed766",
     )
 
     # Ruby container, for OpenSSL tracing tests.
