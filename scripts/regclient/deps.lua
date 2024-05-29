@@ -12,6 +12,7 @@ for _, destination in ipairs(mirrors.destinationRegistries) do
 end
 
 deps.depImages = {
+  -- build dependency list
   "docker.io/adoptopenjdk@sha256:2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e",
   "docker.io/amazoncorretto@sha256:52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50",
   "docker.io/azul/zulu-openjdk-alpine@sha256:eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878",
@@ -19,7 +20,7 @@ deps.depImages = {
   "docker.io/azul/zulu-openjdk@sha256:01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e",
   "docker.io/confluentinc/cp-kafka@sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
   "docker.io/confluentinc/cp-zookeeper@sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
-  "docker.io/curlimages/curl@sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
+  "docker.io/curlimages/curl@sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82", -- TODO(ddelnano): remove once gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0 is tested
   "docker.io/datastax/dse-server@sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
   "docker.io/ibmjava@sha256:78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc",
   "docker.io/mongo@sha256:19b2e5c91f92c7b18113a1501c5a5fe52b71a6c6d2a5232eeebb4f2abacae04a",
@@ -44,6 +45,9 @@ deps.depImages = {
   "ghcr.io/pixie-io/nats@sha256:55521ffe36911fb4edeaeecb7f9219f9d2a09bc275530212b89e41ab78a7f16d",
   "ghcr.io/pixie-io/python_grpc_1_19_0_helloworld@sha256:e04fc4e9b10508eed74c4154cb1f96d047dc0195b6ef0c9d4a38d6e24238778e",
   "ghcr.io/pixie-io/python_mysql_connector@sha256:ae7fb76afe1ab7c34e2d31c351579ee340c019670559716fd671126e85894452",
+
+  -- non build dependency list
+  "gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd",
 }
 
 deps.demoImages = {
@@ -63,7 +67,6 @@ deps.demoImages = {
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/orders@sha256:433a589dd7b2b5ecd08005760d1ddca884f31e86870a1d563bd6f696bef078a6",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/queue-master@sha256:d52117018089a83b8e3c631b861ca390fd4ab64f3ab3ee5a3a1247f49e35c0e7",
     "gcr.io/pixie-oss/demo-apps/px-sock-shop/shipping@sha256:3b1365606ac36aa8f71fb2fe39e33124dafd37d74b16b8b603ac321e6afb4c8e",
-    "gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd",
   },
   ["px-online-boutique"] = {
     "docker.io/redis:alpine@sha256:da0cc759968a286f9fa8e3a0d8faca70e4dcf8ffc25fd290a041c59a9eb725c7",
