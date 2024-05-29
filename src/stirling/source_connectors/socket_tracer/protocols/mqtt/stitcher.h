@@ -50,8 +50,8 @@ inline RecordsWithErrorCount<mqtt::Record> StitchFrames(
     absl::flat_hash_map<mqtt::packet_id_t, std::deque<mqtt::Message>>* req_messages,
     absl::flat_hash_map<mqtt::packet_id_t, std::deque<mqtt::Message>>* res_messages,
     NoState* /* state */) {
-        return mqtt::StitchFrames(req_messages, res_messages);
-    }
+  return mqtt::StitchFrames(req_messages, res_messages);
+}
 
 }  // namespace protocols
 }  // namespace stirling
