@@ -26,7 +26,7 @@ go_library(
     deps = [
         "//src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_go_proto",
         "@com_github_sirupsen_logrus//:logrus",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//credentials/insecure",
     ],
 )
