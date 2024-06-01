@@ -1,8 +1,6 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-commonLabels:
-  app: pl-cloud
 namespace: plc
 replicas:
 - name: api-server
@@ -28,20 +26,6 @@ resources:
 - ../base
 - ../overlays/exposed_services_gclb
 - ../overlays/plugin_job
-patchesStrategicMerge:
-- support_access_config.yaml
-- analytics_config.yaml
-- bq_config.yaml
-- api_deployment.yaml
-- contact_config.yaml
-- db_config.yaml
-- service_config.yaml
-- domain_config.yaml
-- cloud_ingress_ip.yaml
-- script_bundles_config.yaml
-- scriptmgr_config.yaml
-- proxy_envoy.yaml
-- auth_deployment.yaml
 patches:
 - path: db_sidecar.yaml
   target:
@@ -54,3 +38,20 @@ patches:
   target:
     kind: Job
     labelSelector: jobgroup=plugin-db-updater
+- path: support_access_config.yaml
+- path: analytics_config.yaml
+- path: bq_config.yaml
+- path: api_deployment.yaml
+- path: contact_config.yaml
+- path: db_config.yaml
+- path: service_config.yaml
+- path: domain_config.yaml
+- path: cloud_ingress_ip.yaml
+- path: script_bundles_config.yaml
+- path: scriptmgr_config.yaml
+- path: proxy_envoy.yaml
+- path: auth_deployment.yaml
+labels:
+- includeSelectors: true
+  pairs:
+    app: pl-cloud
