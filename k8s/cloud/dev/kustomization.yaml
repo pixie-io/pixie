@@ -1,35 +1,37 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-commonLabels:
-  app: pl-cloud
 namespace: plc-dev
 replicas:
-- name: api-server
-  count: 1
-- name: auth-server
-  count: 1
-- name: profile-server
-  count: 1
-- name: cloud-proxy
-  count: 1
-- name: project-manager-server
-  count: 1
-- name: vzmgr-server
-  count: 1
-- name: scriptmgr-server
-  count: 1
+- count: 1
+  name: api-server
+- count: 1
+  name: auth-server
+- count: 1
+  name: profile-server
+- count: 1
+  name: cloud-proxy
+- count: 1
+  name: project-manager-server
+- count: 1
+  name: vzmgr-server
+- count: 1
+  name: scriptmgr-server
 resources:
 - ../base
 - ../overlays/exposed_services_ilb
 - plugin_db_updater_job.yaml
-patchesStrategicMerge:
 # bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
 # - bq_config.yaml
-- auth_deployment_patch.yaml
-- db_config.yaml
-- indexer_config.yaml
-- ory_service_config.yaml
-- script_bundles_config.yaml
-- proxy_envoy.yaml
-- service_config.yaml
+labels:
+- includeSelectors: true
+  pairs:
+    app: pl-cloud
+patches:
+- path: auth_deployment_patch.yaml
+- path: db_config.yaml
+- path: indexer_config.yaml
+- path: ory_service_config.yaml
+- path: script_bundles_config.yaml
+- path: proxy_envoy.yaml
+- path: service_config.yaml

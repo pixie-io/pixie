@@ -3,20 +3,20 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: plc-testing
 replicas:
-- name: api-server
-  count: 3
-- name: auth-server
-  count: 3
-- name: profile-server
-  count: 3
-- name: cloud-proxy
-  count: 3
-- name: project-manager-server
-  count: 3
-- name: vzmgr-server
-  count: 1
-- name: scriptmgr-server
-  count: 3
+- count: 3
+  name: api-server
+- count: 3
+  name: auth-server
+- count: 3
+  name: profile-server
+- count: 3
+  name: cloud-proxy
+- count: 3
+  name: project-manager-server
+- count: 1
+  name: vzmgr-server
+- count: 3
+  name: scriptmgr-server
 resources:
 - frontend_config.yaml
 - cloud_ingress_managed_cert.yaml
@@ -26,21 +26,20 @@ resources:
 - ../base
 - ../overlays/exposed_services_gclb
 - ../overlays/plugin_job
-patchesStrategicMerge:
-- bq_config.yaml
-- support_access_config.yaml
-- analytics_config.yaml
-- contact_config.yaml
-- db_config.yaml
-- indexer_config.yaml
-- service_config.yaml
-- domain_config.yaml
-- cloud_ingress_ip.yaml
-- script_bundles_config.yaml
-- proxy_envoy.yaml
-- auth_deployment.yaml
 patches:
 - path: db_sidecar.yaml
   target:
     kind: Deployment
     labelSelector: db=pgsql
+- path: bq_config.yaml
+- path: support_access_config.yaml
+- path: analytics_config.yaml
+- path: contact_config.yaml
+- path: db_config.yaml
+- path: indexer_config.yaml
+- path: service_config.yaml
+- path: domain_config.yaml
+- path: cloud_ingress_ip.yaml
+- path: script_bundles_config.yaml
+- path: proxy_envoy.yaml
+- path: auth_deployment.yaml
