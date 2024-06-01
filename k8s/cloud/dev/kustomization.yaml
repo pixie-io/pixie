@@ -21,8 +21,6 @@ resources:
 - ../base
 - ../overlays/exposed_services_ilb
 - plugin_db_updater_job.yaml
-# bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
-# - bq_config.yaml
 labels:
 - includeSelectors: true
   pairs:
@@ -35,3 +33,5 @@ patches:
 - path: script_bundles_config.yaml
 - path: proxy_envoy.yaml
 - path: service_config.yaml
+# bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
+# - path: bq_config.yaml
