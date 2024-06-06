@@ -153,3 +153,9 @@ profiles:
     path: /manifests/kustomize/paths
     value:
     - k8s/cloud/public/base
+- name: x86_64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=x86_64_sysroot
