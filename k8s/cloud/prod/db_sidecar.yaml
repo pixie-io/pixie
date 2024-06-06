@@ -11,10 +11,10 @@ spec:
         # yamllint disable-line rule:line-length
         image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.3@sha256:698174c37a5d4da797123a20bd5dc2b70fcaeae63c4cd634bdc9a70ce3282cbf
         args:
-          - "--private-ip"
-          - "--auto-iam-authn"
-          - "--credentials-file=/secrets/cloudsql/db_service_account.json"
-          - "pixie-prod:us-west1:pixie-cloud-prod-db-pg13"
+        - "--private-ip"
+        - "--auto-iam-authn"
+        - "--credentials-file=/secrets/cloudsql/db_service_account.json"
+        - "pixie-prod:us-west1:pixie-cloud-prod-db-pg13"
         # [START cloudsql_security_context]
         securityContext:
           runAsUser: 2  # non-root user
