@@ -27,6 +27,7 @@ resources:
 - ../overlays/exposed_services_gclb
 - ../overlays/plugin_job
 patches:
+- path: auth_deployment.yaml
 - path: db_sidecar.yaml
   target:
     kind: Deployment
@@ -50,7 +51,6 @@ patches:
 - path: script_bundles_config.yaml
 - path: scriptmgr_config.yaml
 - path: proxy_envoy.yaml
-- path: auth_deployment.yaml
 labels:
 - includeSelectors: true
   pairs:
