@@ -1,8 +1,6 @@
 ---
 name: perf-eval
 on:
-  issue_comment:
-    types: [created]
   schedule:
   # Run at 23:49 PST (07:49 UTC) every day. Github suggests not running actions on the hour.
   - cron: '49 7 * * *'
