@@ -29,14 +29,15 @@ namespace px {
 namespace stirling {
 namespace protocols {
 namespace amqp {
-ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result, NoState* state);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result, NoState* state,
+                      bool lazy_parsing_enabled);
 
 size_t FindFrameBoundary(std::string_view buf, size_t start);
 }  // namespace amqp
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, amqp::Frame* packet,
-                      NoState* state);
+                      NoState* state, bool lazy_parsing_enabled);
 
 template <>
 size_t FindFrameBoundary<amqp::Frame>(message_type_t type, std::string_view buf, size_t start_pos,

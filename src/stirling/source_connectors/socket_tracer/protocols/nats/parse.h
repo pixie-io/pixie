@@ -33,7 +33,7 @@ size_t FindFrameBoundary<nats::Message>(message_type_t /*type*/, std::string_vie
 
 template <>
 ParseState ParseFrame(message_type_t /*type*/, std::string_view* buf, nats::Message* msg,
-                      NoState* /*state*/);
+                      NoState* /*state*/, bool /*lazy_parsing_enabled*/);
 
 }  // namespace protocols
 }  // namespace stirling
