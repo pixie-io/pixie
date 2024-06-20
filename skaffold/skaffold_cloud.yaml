@@ -1,4 +1,9 @@
 ---
+.common_bazel_args: &common_bazel_args
+- --compilation_mode=opt
+- --config=stamp
+- --action_env=GOOGLE_APPLICATION_CREDENTIALS
+- --config=x86_64_sysroot
 apiVersion: skaffold/v4beta1
 kind: Config
 build:
@@ -112,9 +117,7 @@ profiles:
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
-    - --compilation_mode=opt
-    - --config=stamp
-    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
+      *common_bazel_args
   - op: replace
     path: /manifests/kustomize/paths
     value:
@@ -126,9 +129,7 @@ profiles:
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
-    - --compilation_mode=opt
-    - --config=stamp
-    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
+      *common_bazel_args
   - op: replace
     path: /manifests/kustomize/paths
     value:
@@ -140,9 +141,7 @@ profiles:
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
-    - --compilation_mode=opt
-    - --config=stamp
-    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
+      *common_bazel_args
   - op: replace
     path: /manifests/kustomize/paths
     value:
