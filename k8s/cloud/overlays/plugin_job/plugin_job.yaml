@@ -16,7 +16,7 @@ spec:
       containers:
       - name: updater
         image: cloud-plugin-load_db:latest
-        command: ["/busybox/sh", "-c"]
+        command: ["/bin/busybox", "sh", "-c"]
         args:
         - |
             trap "touch /tmp/pod/terminated" EXIT
