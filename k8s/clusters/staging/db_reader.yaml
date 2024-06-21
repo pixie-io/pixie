@@ -23,6 +23,7 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         tty: true
+      # yamllint disable-line rule:line-length
       - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.3@sha256:698174c37a5d4da797123a20bd5dc2b70fcaeae63c4cd634bdc9a70ce3282cbf
         args:
         - "--private-ip"
