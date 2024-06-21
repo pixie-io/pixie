@@ -56,8 +56,9 @@ spec:
               key: PL_PLUGIN_SERVICE
         - name: PL_PLUGIN_REPO
           value: "pixie-io/pixie-plugin"
+      # The alpine based image contains a shell and is needed for this command to work.
       # yamllint disable-line rule:line-length
-      - image: b.gcr.io/cloudsql-docker/gce-proxy:1.14@sha256:96689ad665bffc521fc9ac3cbcaa90f7d543a3fc6f1c84f81e4148a22ffa66e0
+      - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.3-alpine@sha256:4885fd3e6362ba22abff1804a7f5e75cec5fafbeb4e41be8b0059ecad94a16f1
         name: cloudsql-proxy
         command: ["/bin/sh", "-c"]
         envFrom:
@@ -65,10 +66,11 @@ spec:
             name: pl-db-config
         args:
         - |
-            /cloud_sql_proxy \
-            -instances=${PL_POSTGRES_INSTANCE}=tcp:${PL_POSTGRES_PORT} \
-            -ip_address_types=PRIVATE \
-            -credential_file=/secrets/cloudsql/db_service_account.json & CHILD_PID=$!
+            /cloud-sql-proxy \
+            --private-ip \
+            --auto-iam-authn \
+            --credentials-file=/secrets/cloudsql/db_service_account.json \
+            ${PL_POSTGRES_INSTANCE} & CHILD_PID=$!
             (while true; do if [[ -f "/tmp/pod/terminated" ]]; then kill $CHILD_PID;
             echo "Killed $CHILD_PID because the main container terminated."; fi; sleep 1; done) &
             wait $CHILD_PID
