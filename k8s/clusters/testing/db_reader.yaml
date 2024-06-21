@@ -23,13 +23,12 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         tty: true
-      - command:
-        - /cloud_sql_proxy
-        - -instances=pl-pixies:us-west1:pixie-cloud-testing-db-pg13=tcp:5432
-        - -ip_address_types=PRIVATE
-        - -credential_file=/secrets/cloudsql/db_service_account.json
-        # yamllint disable-line rule:line-length
-        image: gcr.io/cloudsql-docker/gce-proxy:1.14@sha256:96689ad665bffc521fc9ac3cbcaa90f7d543a3fc6f1c84f81e4148a22ffa66e0
+      - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.3@sha256:698174c37a5d4da797123a20bd5dc2b70fcaeae63c4cd634bdc9a70ce3282cbf
+        args:
+        - "--private-ip"
+        - "--auto-iam-authn"
+        - "--credentials-file=/secrets/cloudsql/db_service_account.json"
+        - "pl-pixies:us-west1:pixie-cloud-testing-db-pg13"
         imagePullPolicy: IfNotPresent
         name: cloudsql-proxy
         resources: {}
