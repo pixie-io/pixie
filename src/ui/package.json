@@ -116,7 +116,6 @@
     "prop-types": "^15.5.4",
     "query-string": "^6.14.0",
     "react": "^18.1.0",
-    "react-cookie-banner": "^4.1.0",
     "react-dom": "^18.1.0",
     "react-draggable": "^4.4.5",
     "react-grid-layout": "^0.18.2",
@@ -167,5 +166,8 @@
     "@types/react": "^18.0.9",
     "semver": "^7.5.3"
   },
-  "packageManager": "yarn@3.6.1"
+  "packageManager": "yarn@3.6.1",
+  "optionalDependencies": {
+    "react-cookie-consent": "^9.0.0"
+  }
 }
