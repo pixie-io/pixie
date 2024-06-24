@@ -346,17 +346,22 @@ func (s *Server) GetScripts(ctx context.Context, req *cronscriptpb.GetScriptsReq
 		ids[i] = utils.UUIDFromProtoOrNil(id)
 	}
 
-	strQuery := `SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, '%s'::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id='%s' AND id IN (?)`
-	strQuery = fmt.Sprintf(strQuery, s.dbKey, orgID)
+	strQuery := "SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, ? ::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id=? AND id IN (?)"
+	cronErr := status.Error(codes.Internal, "Failed to get cron scripts")
 
-	query, args, err := sqlx.In(strQuery, ids)
+	query, args, err := sqlx.In(strQuery, s.dbKey, orgID, ids)
+
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Failed to get cron scripts")
+		log.WithError(err).Error("Failed to bind parameters for cron scripts query")
+		return nil, cronErr
 	}
+
 	query = s.db.Rebind(query)
 	rows, err := s.db.Queryx(query, args...)
+
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Failed to get cron scripts")
+		log.WithError(err).Error(fmt.Sprintf("Failed to run cron scripts query: %s", query))
+		return nil, cronErr
 	}
 
 	defer rows.Close()
