@@ -2850,6 +2850,9 @@ __metadata:
     webpack-cli: ^5.1.4
     webpack-dev-server: ^4.15.1
     yaml: ^1.6.0
+  dependenciesMeta:
+    react-cookie-consent:
+      optional: true
   languageName: unknown
   linkType: soft
 
