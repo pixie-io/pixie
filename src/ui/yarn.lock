@@ -2813,7 +2813,7 @@ __metadata:
     prop-types: ^15.5.4
     query-string: ^6.14.0
     react: ^18.1.0
-    react-cookie-banner: ^4.1.0
+    react-cookie-consent: ^9.0.0
     react-dom: ^18.1.0
     react-draggable: ^4.4.5
     react-grid-layout: ^0.18.2
@@ -5355,13 +5355,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"classnames@npm:2.2.5":
-  version: 2.2.5
-  resolution: "classnames@npm:2.2.5"
-  checksum: cf6bc29a8aeb1812d947d7f4a19601675bbec6e959127a85754bb10fbedc50d321dbdc15d8245dba74de34aeab1a6b3d0293fe5763934dc535844a7a89a54bc2
-  languageName: node
-  linkType: hard
-
 "classnames@npm:2.x":
   version: 2.3.1
   resolution: "classnames@npm:2.3.1"
@@ -5789,13 +5782,6 @@ __metadata:
   version: 0.5.0
   resolution: "cookie@npm:0.5.0"
   checksum: 1f4bd2ca5765f8c9689a7e8954183f5332139eb72b6ff783d8947032ec1fdf43109852c178e21a953a30c0dd42257828185be01b49d1eb1a67fd054ca588a180
-  languageName: node
-  linkType: hard
-
-"cookie@npm:^0.3.1":
-  version: 0.3.1
-  resolution: "cookie@npm:0.3.1"
-  checksum: 5309937344947a049283573861c24bed054fac3334ce5a0fa74b9bc6bf39bd387d3a0fca7f3ed6f4a09f112de82c00b541a0e7d6ce7a8de0f5d1301eec799730
   languageName: node
   linkType: hard
 
@@ -8683,13 +8669,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hoist-non-react-statics@npm:^2.3.1":
-  version: 2.5.5
-  resolution: "hoist-non-react-statics@npm:2.5.5"
-  checksum: ee2d05e5c7e1398ad84a15b0327f66bd78f38a8e0015e852f954b36434e32eb7e942d5357505020a3a1147f247b165bf1e69d72393e3accab67cafdafeb86230
-  languageName: node
-  linkType: hard
-
 "hoist-non-react-statics@npm:^3.1.0, hoist-non-react-statics@npm:^3.3.0, hoist-non-react-statics@npm:^3.3.1, hoist-non-react-statics@npm:^3.3.2":
   version: 3.3.2
   resolution: "hoist-non-react-statics@npm:3.3.2"
@@ -10241,6 +10220,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"js-cookie@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "js-cookie@npm:2.2.1"
+  checksum: 9b1fb980a1c5e624fd4b28ea4867bb30c71e04c4484bb3a42766344c533faa684de9498e443425479ec68609e96e27b60614bfe354877c449c631529b6d932f2
+  languageName: node
+  linkType: hard
+
 "js-tokens@npm:^3.0.0 || ^4.0.0, js-tokens@npm:^4.0.0":
   version: 4.0.0
   resolution: "js-tokens@npm:4.0.0"
@@ -10830,13 +10816,6 @@ __metadata:
   version: 4.6.2
   resolution: "lodash.merge@npm:4.6.2"
   checksum: ad580b4bdbb7ca1f7abf7e1bce63a9a0b98e370cf40194b03380a46b4ed799c9573029599caebc1b14e3f24b111aef72b96674a56cfa105e0f5ac70546cdc005
-  languageName: node
-  linkType: hard
-
-"lodash.omit@npm:^4.5.0":
-  version: 4.5.0
-  resolution: "lodash.omit@npm:4.5.0"
-  checksum: 434645e49fe84ab315719bd5a9a3a585a0f624aa4160bc09157dd041a414bcc287c15840365c1379476a3f3eda41fbe838976c3f7bdecbbf4c5478e86c471a30
   languageName: node
   linkType: hard
 
@@ -12664,39 +12643,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-addons-clone-with-props@npm:^0.14.8":
-  version: 0.14.8
-  resolution: "react-addons-clone-with-props@npm:0.14.8"
-  peerDependencies:
-    react: ^0.14.8
-  checksum: 7454f9d841059c3d82b3b80fa60a1407b10370da77dbdf401f2a6f3f8f93867ef5bb50fc7ff6cf5abf34c1c5f7bd8da8ba23eba7ee1b4f9b2dc1128eb5a24206
-  languageName: node
-  linkType: hard
-
-"react-cookie-banner@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "react-cookie-banner@npm:4.1.0"
+"react-cookie-consent@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "react-cookie-consent@npm:9.0.0"
   dependencies:
-    classnames: 2.2.5
-    lodash.omit: ^4.5.0
-    react-addons-clone-with-props: ^0.14.8
-    react-cookie: ^2.1.2
+    js-cookie: ^2.2.1
   peerDependencies:
-    react: ">= 0.12.x"
-  checksum: 40166f8ee03490bf7edbbdd3c892c4212507f7fb4a935b55747ee0302d48f1aaee419d1edfe473c8d78617a1e47cd54a759b892d7f3e8b8b053300724c486f2a
-  languageName: node
-  linkType: hard
-
-"react-cookie@npm:^2.1.2":
-  version: 2.2.0
-  resolution: "react-cookie@npm:2.2.0"
-  dependencies:
-    hoist-non-react-statics: ^2.3.1
-    prop-types: ^15.0.0
-    universal-cookie: ^2.2.0
-  peerDependencies:
-    react: ">= 15"
-  checksum: cd775cb1edc9331803a559825b4dc19312d90f1f79085f49151ac33a2f884a8f6f4fd679ef274cab2adad6356bc7873d46847525a8518ffc3f79bb41d00235e4
+    react: ">=16"
+  checksum: 56a50f03e21c7345dc97159222fd93e920290653da52fc7bf405b757e84dac183753950c42ea1db6cf633fabd0eded8216986798935bbdeda44ddb2db4dc83e0
   languageName: node
   linkType: hard
 
@@ -15131,16 +15085,6 @@ __metadata:
   dependencies:
     imurmurhash: ^0.1.4
   checksum: 5b6876a645da08d505dedb970d1571f6cebdf87044cb6b740c8dbb24f0d6e1dc8bdbf46825fd09f994d7cf50760e6f6e063cfa197d51c5902c00a861702eb75a
-  languageName: node
-  linkType: hard
-
-"universal-cookie@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "universal-cookie@npm:2.2.0"
-  dependencies:
-    cookie: ^0.3.1
-    object-assign: ^4.1.0
-  checksum: 080405aa81a8fe3ab3f9e33525af07e7a89941d75b233d97a48364fa9fbf12394c7a33cbf9630768e9ae497e7b2256398902bbb3ae99e7c123cbf4384058ee00
   languageName: node
   linkType: hard
 
