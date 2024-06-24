@@ -1,1 +1,0 @@
-ALTER TABLE users ALTER COLUMN profile_picture TYPE VARCHAR (1500);
