@@ -32,8 +32,8 @@ namespace protocols {
 namespace mqtt {
 
 /**
- * StitchFrames is the entry point of the Cassandra Stitcher. It loops through the resp_frames,
- * matches them with the corresponding req_frames, and optionally produces an entry to emit.
+ * StitchFrames is the entry point of the MQTT Stitcher. It loops through the req_frames,
+ * matches them with the corresponding resp_frames, and optionally produces an entry to emit.
  *
  * @param req_frames: deque of all request frames.
  * @param resp_frames: deque of all response frames.

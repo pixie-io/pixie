@@ -17,199 +17,18 @@
  */
 
 #include <absl/container/flat_hash_map.h>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/test_utils.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/parse.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/stitcher.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/test_utils.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
 namespace mqtt {
 
-constexpr uint8_t kConnect[] = {  // header flags
-    0x10,
-    // message length
-    0x10,
-    // protocol name length
-    0x00, 0x04,
-    // protocol name
-    0x4d, 0x51, 0x54, 0x54,
-    // protocol version
-    0x05,
-    // connect flags
-    0x02,
-    // keep alive
-    0x00, 0x3c,
-    // properties length
-    0x03,
-    // receive maximum code and value
-    0x21, 0x00, 0x14,
-    // client id length
-    0x00, 0x00};
-
-constexpr uint8_t kConnack[] = {  // header flags
-    0x20,
-    // message length
-    0x35,
-    // acknowledge flags
-    0x00,
-    // reason code
-    0x00,
-    // properties length
-    0x32,
-    // topic alias maximum code and value
-    0x22, 0x00, 0x0a,
-    // assigned client identifier code, length and value
-    0x12, 0x00, 0x29, 0x61, 0x75, 0x74, 0x6f, 0x2d, 0x43, 0x38, 0x30, 0x36, 0x33, 0x38, 0x36, 0x38,
-    0x2d, 0x37, 0x38, 0x30, 0x34, 0x2d, 0x33, 0x46, 0x36, 0x36, 0x2d, 0x30, 0x36, 0x42, 0x38, 0x2d,
-    0x42, 0x41, 0x43, 0x44, 0x39, 0x46, 0x36, 0x37, 0x33, 0x43, 0x42, 0x30,
-    // receive maximum code and value
-    0x21, 0x00, 0x14};
-
-// Publish with QOS 0
-constexpr uint8_t kPublishQosZero[] = {  // header flags
-    0x30,
-    // message length
-    0x18,
-    // topic length
-    0x00, 0x0a,
-    // topic
-    0x74, 0x65, 0x73, 0x74, 0x2f, 0x74, 0x6f, 0x70, 0x69, 0x63,
-    // properties
-    0x00,
-    // message
-    0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64};
-
-// Publish with QOS 1 and PID 1
-constexpr uint8_t kPublishQosOne[] = {  // header flags
-    0x32,
-    // message length
-    0x1a,
-    // topic length
-    0x00, 0x0a,
-    // topic,
-    0x74, 0x65, 0x73, 0x74, 0x2f, 0x74, 0x6f, 0x70, 0x69, 0x63,
-    // packet identifier
-    0x00, 0x01,
-    // properties
-    0x00,
-    // message
-    0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64};
-
-constexpr uint8_t kPublishQosTwo[] = {  // header flags
-    0x34,
-    // message length
-    0x1a,
-    // topic length
-    0x00, 0x0a,
-    // topic
-    0x74, 0x65, 0x73, 0x74, 0x2f, 0x74, 0x6f, 0x70, 0x69, 0x63,
-    // packet identifier
-    0x00, 0x01,
-    // properties
-    0x00,
-    // message
-    0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64};
-
-// Puback with packet ID 1
-constexpr uint8_t kPubackPidOne[] = {  // header flags
-    0x40,
-    // message length
-    0x03,
-    // message identifier
-    0x00, 0x01, 0x10};
-
-// Pubrec with packet ID 1
-constexpr uint8_t kPubrec[] = {  // header flags
-    0x50,
-    // message length
-    0x02,
-    // message identifier
-    0x00, 0x01};
-
-// Pubrel with packet ID 1
-constexpr uint8_t kPubrel[] = {  // header flags
-    0x62,
-    // message length
-    0x02,
-    // message identifier
-    0x00, 0x01};
-
-// Pubcomp with packet ID 1
-constexpr uint8_t kPubcomp[] = {  // header flags
-    0x70,
-    // message length
-    0x02,
-    // message identifier
-    0x00, 0x01};
-
-constexpr uint8_t kSubscribeFrame[] = {  // header fields
-    0x82,
-    // message length
-    0x10,
-    // message identifier
-    0x00, 0x01,
-    // properties length
-    0x00,
-    // topic length
-    0x00, 0x0a,
-    // topic
-    0x74, 0x65, 0x73, 0x74, 0x2f, 0x74, 0x6f, 0x70, 0x69, 0x63,
-    // subscription options
-    0x00};
-constexpr uint8_t kSubackFrame[] = {  // header flags
-    0x90,
-    // message length
-    0x04,
-    // message identifier
-    0x00, 0x01,
-    // properties length
-    0x00,
-    // reason code
-    0x00};
-constexpr uint8_t kUnsubscribeFrame[] = {  // header flags
-    0xa2,
-    // message length
-    0x0f,
-    // message identifier
-    0x00, 0x02,
-    // properties length
-    0x00,
-    // topic length
-    0x00, 0x0a,
-    // topic
-    0x74, 0x65, 0x73, 0x74, 0x2f, 0x74, 0x6f, 0x70, 0x69, 0x63};
-constexpr uint8_t kUnsubackFrame[] = {  // header flags
-    0xb0,
-    // message length
-    0x04,
-    // message identifier
-    0x00, 0x02,
-    // properties length
-    0x00,
-    // reason code
-    0x00};
-constexpr uint8_t kPingreqFrame[] = {  // header flags
-    0xc0,
-    // message length
-    0x00};
-constexpr uint8_t kPingrespFrame[] = {  // header flags
-    0xd0,
-    // message length
-    0x00};
-constexpr uint8_t kDisconnectFrame[] = {  // header flags
-    0xe0,
-    // message length
-    0x01,
-    // reason code
-    0x04};
-constexpr uint8_t kAuthFrame_success[] = {  // header flags
-    0xf0,
-    // message length
-    0x00};
+using testutils::CreateFrame;
 
 TEST(MqttStitcherTest, EmptyInputs) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
@@ -228,18 +47,13 @@ TEST(MqttStitcherTest, OnlyRequests) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message connect_frame, pingreq_frame;
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnect));
-  ParseFrame(message_type_t::kRequest, &frame_view, &connect_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingreqFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pingreq_frame);
+  connect_frame = CreateFrame(kRequest, 1, 0, 0);
+  pingreq_frame = CreateFrame(kRequest, 12, 0, 0);
 
   int t = 0;
-
   connect_frame.timestamp_ns = ++t;
   pingreq_frame.timestamp_ns = ++t;
   req_map[0].push_back(connect_frame);
@@ -255,16 +69,11 @@ TEST(MqttStitcherTest, OnlyResponses) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message connack_frame, pingresp_frame;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnack));
-  ParseFrame(message_type_t::kResponse, &frame_view, &connack_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pingresp_frame);
+  connack_frame = CreateFrame(kResponse, 2, 0, 0);
+  pingresp_frame = CreateFrame(kResponse, 13, 0, 0);
 
   int t = 0;
   connack_frame.timestamp_ns = ++t;
@@ -282,79 +91,32 @@ TEST(MqttStitcherTest, MissingResponse) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message connect_frame, connack_frame, pingreq_frame, pingresp_frame, pub1_frame, pub1_pid3_frame,
       puback_frame, puback_pid3_frame, pub2_frame, pub2_pid2_frame, pubrec_frame, pubrec_pid2_frame,
       pubrel_frame, pubrel_pid2_frame, pubcomp_frame, pubcomp_pid2_frame, sub_frame, suback_frame,
       unsub_frame, unsuback_frame;
-  // The order in terms of timestamps is Connect, Connack, Pingreq and Pingresp
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnect));
-  ParseFrame(message_type_t::kRequest, &frame_view, &connect_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnack));
-  ParseFrame(message_type_t::kResponse, &frame_view, &connack_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingreqFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pingreq_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pingresp_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosOne));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub1_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosOne));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub1_pid3_frame);
-  pub1_pid3_frame.header_fields["message_identifier"] = 3;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosTwo));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub2_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosTwo));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub2_pid2_frame);
-  pub2_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackPidOne));
-  ParseFrame(message_type_t::kResponse, &frame_view, &puback_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackPidOne));
-  ParseFrame(message_type_t::kResponse, &frame_view, &puback_pid3_frame);
-  puback_pid3_frame.header_fields["message_identifier"] = 3;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrec));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubrec_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrec));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubrec_pid2_frame);
-  pubrec_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrel));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pubrel_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrel));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pubrel_pid2_frame);
-  pubrel_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcomp));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubcomp_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcomp));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubcomp_pid2_frame);
-  pubcomp_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubscribeFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &sub_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &suback_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubscribeFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &unsub_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubackFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &unsuback_frame);
+  connect_frame = CreateFrame(kRequest, 1, 0, 0);
+  connack_frame = CreateFrame(kResponse, 2, 0, 0);
+  pingreq_frame = CreateFrame(kRequest, 12, 0, 0);
+  pingresp_frame = CreateFrame(kResponse, 13, 0, 0);
+  pub1_frame = CreateFrame(kRequest, 3, 1, 1);
+  pub1_pid3_frame = CreateFrame(kRequest, 3, 3, 1);
+  pub2_frame = CreateFrame(kRequest, 3, 1, 2);
+  pub2_pid2_frame = CreateFrame(kRequest, 3, 2, 2);
+  puback_frame = CreateFrame(kResponse, 4, 1, 0);
+  puback_pid3_frame = CreateFrame(kResponse, 4, 3, 0);
+  pubrec_frame = CreateFrame(kResponse, 5, 0, 0);
+  pubrec_pid2_frame = CreateFrame(kResponse, 5, 2, 0);
+  pubrel_frame = CreateFrame(kRequest, 6, 0, 0);
+  pubrel_pid2_frame = CreateFrame(kRequest, 6, 2, 0);
+  pubcomp_frame = CreateFrame(kResponse, 7, 0, 0);
+  pubcomp_pid2_frame = CreateFrame(kResponse, 7, 2, 0);
+  sub_frame = CreateFrame(kRequest, 8, 0, 0);
+  suback_frame = CreateFrame(kResponse, 9, 0, 0);
+  unsub_frame = CreateFrame(kRequest, 10, 0, 0);
+  unsuback_frame = CreateFrame(kResponse, 11, 0, 0);
 
   int t = 0;
   connect_frame.timestamp_ns = ++t;
@@ -450,19 +212,12 @@ TEST(MqttStitcherTest, MissingRequest) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message connect_frame, connack_frame, pingresp_frame;
-  // The order in terms of timestamps is Connect, Connack, Pingreq and Pingresp
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnect));
-  ParseFrame(message_type_t::kRequest, &frame_view, &connect_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnack));
-  ParseFrame(message_type_t::kResponse, &frame_view, &connack_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pingresp_frame);
+  connect_frame = CreateFrame(kRequest, 1, 0, 0);
+  connack_frame = CreateFrame(kResponse, 2, 0, 0);
+  pingresp_frame = CreateFrame(kResponse, 13, 0, 0);
 
   int t = 0;
   connect_frame.timestamp_ns = ++t;
@@ -483,79 +238,32 @@ TEST(MqttStitcherTest, InOrderMatching) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message connect_frame, connack_frame, pingreq_frame, pingresp_frame, pub1_frame, pub1_pid3_frame,
       puback_frame, puback_pid3_frame, pub2_frame, pub2_pid2_frame, pubrec_frame, pubrec_pid2_frame,
       pubrel_frame, pubrel_pid2_frame, pubcomp_frame, pubcomp_pid2_frame, sub_frame, suback_frame,
       unsub_frame, unsuback_frame;
-  // The order in terms of timestamps is Connect, Connack, Pingreq and Pingresp
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnect));
-  ParseFrame(message_type_t::kRequest, &frame_view, &connect_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnack));
-  ParseFrame(message_type_t::kResponse, &frame_view, &connack_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingreqFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pingreq_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pingresp_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosOne));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub1_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosOne));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub1_pid3_frame);
-  pub1_pid3_frame.header_fields["message_identifier"] = 3;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosTwo));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub2_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosTwo));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub2_pid2_frame);
-  pub2_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackPidOne));
-  ParseFrame(message_type_t::kResponse, &frame_view, &puback_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackPidOne));
-  ParseFrame(message_type_t::kResponse, &frame_view, &puback_pid3_frame);
-  puback_pid3_frame.header_fields["message_identifier"] = 3;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrec));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubrec_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrec));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubrec_pid2_frame);
-  pubrec_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrel));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pubrel_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrel));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pubrel_pid2_frame);
-  pubrel_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcomp));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubcomp_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcomp));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubcomp_pid2_frame);
-  pubcomp_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubscribeFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &sub_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &suback_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubscribeFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &unsub_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubackFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &unsuback_frame);
+  connect_frame = CreateFrame(kRequest, 1, 0, 0);
+  connack_frame = CreateFrame(kResponse, 2, 0, 0);
+  pingreq_frame = CreateFrame(kRequest, 12, 0, 0);
+  pingresp_frame = CreateFrame(kResponse, 13, 0, 0);
+  pub1_frame = CreateFrame(kRequest, 3, 1, 1);
+  pub1_pid3_frame = CreateFrame(kRequest, 3, 3, 1);
+  pub2_frame = CreateFrame(kRequest, 3, 1, 2);
+  pub2_pid2_frame = CreateFrame(kRequest, 3, 2, 2);
+  puback_frame = CreateFrame(kResponse, 4, 1, 0);
+  puback_pid3_frame = CreateFrame(kResponse, 4, 3, 0);
+  pubrec_frame = CreateFrame(kResponse, 5, 0, 0);
+  pubrec_pid2_frame = CreateFrame(kResponse, 5, 2, 0);
+  pubrel_frame = CreateFrame(kRequest, 6, 0, 0);
+  pubrel_pid2_frame = CreateFrame(kRequest, 6, 2, 0);
+  pubcomp_frame = CreateFrame(kResponse, 7, 0, 0);
+  pubcomp_pid2_frame = CreateFrame(kResponse, 7, 2, 0);
+  sub_frame = CreateFrame(kRequest, 8, 0, 0);
+  suback_frame = CreateFrame(kResponse, 9, 0, 0);
+  unsub_frame = CreateFrame(kRequest, 10, 0, 0);
+  unsuback_frame = CreateFrame(kResponse, 11, 0, 0);
 
   int t = 0;
   connect_frame.timestamp_ns = ++t;
@@ -626,79 +334,33 @@ TEST(MqttStitcherTest, OutOfOrderMatching) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message connect_frame, connack_frame, pingreq_frame, pingresp_frame, pub1_frame, pub1_pid3_frame,
       puback_frame, puback_pid3_frame, pub2_frame, pub2_pid2_frame, pubrec_frame, pubrec_pid2_frame,
       pubrel_frame, pubrel_pid2_frame, pubcomp_frame, pubcomp_pid2_frame, sub_frame, suback_frame,
       unsub_frame, unsuback_frame;
-  // The order in terms of timestamps is Connect, Connack, Pingreq and Pingresp
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnect));
-  ParseFrame(message_type_t::kRequest, &frame_view, &connect_frame);
 
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnack));
-  ParseFrame(message_type_t::kResponse, &frame_view, &connack_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingreqFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pingreq_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pingresp_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosOne));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub1_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosOne));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub1_pid3_frame);
-  pub1_pid3_frame.header_fields["message_identifier"] = 3;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosTwo));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub2_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosTwo));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub2_pid2_frame);
-  pub2_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackPidOne));
-  ParseFrame(message_type_t::kResponse, &frame_view, &puback_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackPidOne));
-  ParseFrame(message_type_t::kResponse, &frame_view, &puback_pid3_frame);
-  puback_pid3_frame.header_fields["message_identifier"] = 3;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrec));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubrec_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrec));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubrec_pid2_frame);
-  pubrec_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrel));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pubrel_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrel));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pubrel_pid2_frame);
-  pubrel_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcomp));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubcomp_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcomp));
-  ParseFrame(message_type_t::kResponse, &frame_view, &pubcomp_pid2_frame);
-  pubcomp_pid2_frame.header_fields["message_identifier"] = 2;
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubscribeFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &sub_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &suback_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubscribeFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &unsub_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubackFrame));
-  ParseFrame(message_type_t::kResponse, &frame_view, &unsuback_frame);
+  connect_frame = CreateFrame(kRequest, 1, 0, 0);
+  connack_frame = CreateFrame(kResponse, 2, 0, 0);
+  pingreq_frame = CreateFrame(kRequest, 12, 0, 0);
+  pingresp_frame = CreateFrame(kResponse, 13, 0, 0);
+  pub1_frame = CreateFrame(kRequest, 3, 1, 1);
+  pub1_pid3_frame = CreateFrame(kRequest, 3, 3, 1);
+  pub2_frame = CreateFrame(kRequest, 3, 1, 2);
+  pub2_pid2_frame = CreateFrame(kRequest, 3, 2, 2);
+  puback_frame = CreateFrame(kResponse, 4, 1, 0);
+  puback_pid3_frame = CreateFrame(kResponse, 4, 3, 0);
+  pubrec_frame = CreateFrame(kResponse, 5, 0, 0);
+  pubrec_pid2_frame = CreateFrame(kResponse, 5, 2, 0);
+  pubrel_frame = CreateFrame(kRequest, 6, 0, 0);
+  pubrel_pid2_frame = CreateFrame(kRequest, 6, 2, 0);
+  pubcomp_frame = CreateFrame(kResponse, 7, 0, 0);
+  pubcomp_pid2_frame = CreateFrame(kResponse, 7, 2, 0);
+  sub_frame = CreateFrame(kRequest, 8, 0, 0);
+  suback_frame = CreateFrame(kResponse, 9, 0, 0);
+  unsub_frame = CreateFrame(kRequest, 10, 0, 0);
+  unsuback_frame = CreateFrame(kResponse, 11, 0, 0);
 
   int t = 0;
   connect_frame.timestamp_ns = ++t;
@@ -773,24 +435,14 @@ TEST(MqttStitcherTest, DummyResponseStitching) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
-  std::string_view frame_view;
   RecordsWithErrorCount<Record> result;
 
   Message pub0_frame, disconnect_frame, auth_frame, connect_frame, connack_frame;
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishQosZero));
-  ParseFrame(message_type_t::kRequest, &frame_view, &pub0_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kDisconnectFrame));
-  ParseFrame(message_type_t::kRequest, &frame_view, &disconnect_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kAuthFrame_success));
-  ParseFrame(message_type_t::kRequest, &frame_view, &auth_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnect));
-  ParseFrame(message_type_t::kRequest, &frame_view, &connect_frame);
-
-  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnack));
-  ParseFrame(message_type_t::kResponse, &frame_view, &connack_frame);
+  pub0_frame = CreateFrame(kRequest, 3, 0, 0);         // PUBLISH with QoS 0
+  disconnect_frame = CreateFrame(kRequest, 14, 0, 0);  // DISCONNECT
+  auth_frame = CreateFrame(kRequest, 15, 0, 0);        // AUTH
+  connect_frame = CreateFrame(kRequest, 1, 0, 0);      // CONNECT
+  connack_frame = CreateFrame(kResponse, 2, 0, 0);     // CONNACK
 
   int t = 0;
   pub0_frame.timestamp_ns = ++t;
@@ -803,6 +455,8 @@ TEST(MqttStitcherTest, DummyResponseStitching) {
   EXPECT_EQ(TotalDequeSize(req_map), 0);
   EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(result.records.size(), 3);
+  req_map.clear();
+  resp_map.clear();
 
   t = 0;
   pub0_frame.timestamp_ns = ++t;
@@ -819,6 +473,148 @@ TEST(MqttStitcherTest, DummyResponseStitching) {
   EXPECT_EQ(TotalDequeSize(req_map), 0);
   EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(result.records.size(), 4);
+}
+
+TEST(MqttStitcherTest, DuplicateRequests) {
+  absl::flat_hash_map<packet_id_t, std::deque<Message>> req_map;
+  absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
+
+  RecordsWithErrorCount<Record> result;
+  Message pub1_frame_1, pub1_frame_2, pub2_frame_1, pub2_frame_2, puback_frame, pubrec_frame,
+      subscribe_frame, suback_frame;
+  pub1_frame_1 = CreateFrame(kRequest, 3, 1, 1);
+  pub1_frame_2 = CreateFrame(kRequest, 3, 1, 1);
+  pub1_frame_2.dup = true;
+  pub2_frame_1 = CreateFrame(kRequest, 3, 1, 2);
+  pub2_frame_2 = CreateFrame(kRequest, 3, 1, 2);
+  pub2_frame_2.dup = true;
+  puback_frame = CreateFrame(kResponse, 4, 1, 0);
+  pubrec_frame = CreateFrame(kResponse, 5, 1, 0);
+  subscribe_frame = CreateFrame(kRequest, 8, 1, 0);
+  suback_frame = CreateFrame(kResponse, 9, 1, 0);
+
+  // Duplicate publish (QOS 1) which has been answered
+  int t = 0;
+  pub1_frame_1.timestamp_ns = ++t;
+  pub1_frame_2.timestamp_ns = ++t;
+  puback_frame.timestamp_ns = ++t;
+  req_map[1].push_back(pub1_frame_1);
+  req_map[1].push_back(pub1_frame_2);
+  resp_map[1].push_back(puback_frame);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 1);
+  req_map.clear();
+  resp_map.clear();
+
+  // Adding a subsequent request and response after duplicate PUBLISH (QOS 1) request
+  t = 0;
+  pub1_frame_1.timestamp_ns = ++t;
+  pub1_frame_2.timestamp_ns = ++t;
+  puback_frame.timestamp_ns = ++t;
+  subscribe_frame.timestamp_ns = ++t;
+  suback_frame.timestamp_ns = ++t;
+  req_map[1].push_back(pub1_frame_1);
+  req_map[1].push_back(pub1_frame_2);
+  req_map[1].push_back(subscribe_frame);
+  resp_map[1].push_back(puback_frame);
+  resp_map[1].push_back(suback_frame);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 2);
+  req_map.clear();
+  resp_map.clear();
+
+  // Unanswered duplicate PUBLISH (QOS 1)
+  t = 0;
+  pub1_frame_1.timestamp_ns = ++t;
+  subscribe_frame.timestamp_ns = ++t;
+  suback_frame.timestamp_ns = ++t;
+  pub1_frame_2.timestamp_ns = ++t;
+  req_map[1].push_back(pub1_frame_1);
+  req_map[1].push_back(subscribe_frame);
+  resp_map[1].push_back(suback_frame);
+  req_map[1].push_back(pub1_frame_2);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 1);
+  EXPECT_EQ(result.error_count, 1);
+  EXPECT_EQ(result.records.size(), 1);
+  req_map.clear();
+  resp_map.clear();
+
+  // Duplicate publish (QOS 2) which has been answered
+  t = 0;
+  pub2_frame_1.timestamp_ns = ++t;
+  pub2_frame_2.timestamp_ns = ++t;
+  pubrec_frame.timestamp_ns = ++t;
+  req_map[1].push_back(pub2_frame_1);
+  req_map[1].push_back(pub2_frame_2);
+  resp_map[1].push_back(pubrec_frame);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 1);
+  req_map.clear();
+  resp_map.clear();
+
+  // Adding a subsequent request and response after duplicate PUBLISH (QOS 2) request
+  t = 0;
+  pub2_frame_1.timestamp_ns = ++t;
+  pub2_frame_2.timestamp_ns = ++t;
+  pubrec_frame.timestamp_ns = ++t;
+  subscribe_frame.timestamp_ns = ++t;
+  suback_frame.timestamp_ns = ++t;
+  req_map[1].push_back(pub2_frame_1);
+  req_map[1].push_back(pub2_frame_2);
+  req_map[1].push_back(subscribe_frame);
+  resp_map[1].push_back(pubrec_frame);
+  resp_map[1].push_back(suback_frame);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 2);
+  req_map.clear();
+  resp_map.clear();
+
+  // Unanswered duplicate PUBLISH (QOS 2)
+  t = 0;
+  pub2_frame_1.timestamp_ns = ++t;
+  subscribe_frame.timestamp_ns = ++t;
+  suback_frame.timestamp_ns = ++t;
+  pub2_frame_2.timestamp_ns = ++t;
+  req_map[1].push_back(pub2_frame_1);
+  req_map[1].push_back(subscribe_frame);
+  resp_map[1].push_back(suback_frame);
+  req_map[1].push_back(pub2_frame_2);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 1);
+  EXPECT_EQ(result.error_count, 1);
+  EXPECT_EQ(result.records.size(), 1);
+  req_map.clear();
+  resp_map.clear();
+
+  // Duplicate publish (QOS 1) and publish (QOS 2) which have been answered
+  t = 0;
+  pub1_frame_1.timestamp_ns = ++t;
+  pub1_frame_2.timestamp_ns = ++t;
+  puback_frame.timestamp_ns = ++t;
+  pub2_frame_1.timestamp_ns = ++t;
+  pub1_frame_2.timestamp_ns = ++t;
+  pubrec_frame.timestamp_ns = ++t;
+  req_map[1].push_back(pub1_frame_1);
+  req_map[1].push_back(pub1_frame_2);
+  resp_map[1].push_back(puback_frame);
+  req_map[1].push_back(pub2_frame_1);
+  req_map[1].push_back(pub2_frame_2);
+  resp_map[1].push_back(pubrec_frame);
+  result = StitchFrames(&req_map, &resp_map);
+  EXPECT_EQ(TotalDequeSize(req_map), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 2);
+  req_map.clear();
+  resp_map.clear();
 }
 
 }  // namespace mqtt

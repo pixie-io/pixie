@@ -39,6 +39,7 @@ using packet_id_t = uint16_t;
 struct Message : public FrameBase {
   message_type_t type = message_type_t::kUnknown;
 
+  // This is modeling a 4 bit field specifying the control packet type
   uint8_t control_packet_type = 0xff;
 
   bool dup = false;

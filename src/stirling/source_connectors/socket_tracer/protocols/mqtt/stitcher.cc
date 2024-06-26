@@ -21,10 +21,11 @@
 #include <algorithm>
 #include <deque>
 #include <map>
+#include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 
-#include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/types.h"
 
@@ -33,14 +34,18 @@ namespace stirling {
 namespace protocols {
 namespace mqtt {
 
-std::map<uint8_t, uint8_t> MapRequestToResponse = {
+typedef uint8_t MatchKey;
+
+constexpr MatchKey UnmatchedResp = 0xff;
+
+std::map<MatchKey, MatchKey> MapRequestToResponse = {
     // CONNECT to CONNACK
     {0x10, 0x20},
     // PUBLISH QOS 0 to Dummy response
-    {0x30, 0xff},
-    {0x31, 0xff},
-    {0x38, 0xff},
-    {0x39, 0xff},
+    {0x30, UnmatchedResp},
+    {0x31, UnmatchedResp},
+    {0x38, UnmatchedResp},
+    {0x39, UnmatchedResp},
     // PUBLISH QOS 1 to PUBACK
     {0x32, 0x40},
     {0x33, 0x40},
@@ -60,9 +65,20 @@ std::map<uint8_t, uint8_t> MapRequestToResponse = {
     // PINGREQ to PINGRESP
     {0xc0, 0xd0},
     // DISCONNECT to Dummy response
-    {0xe0, 0xff},
+    {0xe0, UnmatchedResp},
     // AUTH to Dummy response
-    {0xf0, 0xff}};
+    {0xf0, UnmatchedResp}};
+
+std::set<std::tuple<uint32_t, uint32_t>> UnansweredPublish;
+
+// Possible to have the server sending PUBLISH with same packet identifier as client PUBLISH before
+// it sends PUBACK, causing server PUBLISH to be put into response deque instead of request deque.
+// TODO: Reverse logic to match requests that have erroneously been put into response deque
+
+MatchKey getMatchKey(mqtt::Message& frame) {
+  return (frame.control_packet_type << 4) | static_cast<uint8_t>(frame.dup) << 3 |
+         (frame.header_fields["qos"] & 0x3) << 1 | static_cast<uint8_t>(frame.retain);
+}
 
 RecordsWithErrorCount<Record> StitchFrames(
     absl::flat_hash_map<packet_id_t, std::deque<Message>>* req_frames,
@@ -88,17 +104,33 @@ RecordsWithErrorCount<Record> StitchFrames(
     // finding the closest appropriate response from response deque in terms of timestamp and type
     // for each request in the request deque
     for (mqtt::Message& req_frame : req_deque) {
+      // if the request is a PUBLISH (QOS 1 or QOS 2) with dup false, entry needs to be made in
+      // UnansweredPublish
+      if (req_frame.control_packet_type == 3 && req_frame.header_fields["qos"] != 0 &&
+          !req_frame.dup) {
+        UnansweredPublish.insert(std::tuple<uint32_t, uint32_t>(
+            req_frame.header_fields["packet_identifier"], req_frame.header_fields["qos"]));
+      }
+      // if the request is a duplicate PUBLISH, find out if the original PUBLISH has been matched
+      if (req_frame.control_packet_type == 3 && req_frame.header_fields["qos"] != 0 &&
+          req_frame.dup) {
+        if (UnansweredPublish.find(std::tuple<uint32_t, uint32_t>(
+                req_frame.header_fields["packet_identifier"], req_frame.header_fields["qos"])) ==
+            UnansweredPublish.end()) {
+          req_frame.consumed = true;
+          continue;
+        }
+      }
+
       // getting the appropriate response match value for the request match key
-      uint8_t request_match_key =
-          (req_frame.control_packet_type << 4) | static_cast<uint8_t>(req_frame.dup) << 3 |
-          (req_frame.header_fields["qos"]) << 1 | static_cast<uint8_t>(req_frame.retain);
+      MatchKey request_match_key = getMatchKey(req_frame);
       auto iter = MapRequestToResponse.find(request_match_key);
       if (iter == MapRequestToResponse.end()) {
         VLOG(1) << absl::Substitute("Could not find any responses for frame type = $0",
                                     request_match_key);
         continue;
       }
-      if (iter->second == 0xff) {
+      if (iter->second == UnmatchedResp) {
         // Request without responses found
         req_frame.consumed = true;
         latest_resp_ts = req_frame.timestamp_ns + 1;
@@ -106,7 +138,7 @@ RecordsWithErrorCount<Record> StitchFrames(
         entries.push_back({std::move(req_frame), std::move(dummy_resp)});
         continue;
       }
-      uint8_t response_match_value = iter->second;
+      MatchKey response_match_value = iter->second;
 
       // finding the first response frame with timestamp greater than request frame
       auto first_timestamp_iter =
@@ -123,9 +155,7 @@ RecordsWithErrorCount<Record> StitchFrames(
       // finding the first appropriate response frame with the desired control packet type and flags
       auto response_frame_iter = std::find_if(
           first_timestamp_iter, resp_deque.end(), [response_match_value](mqtt::Message& message) {
-            return ((message.control_packet_type << 4) | (static_cast<uint8_t>(message.dup) << 3) |
-                    (message.header_fields["qos"] << 1) | static_cast<uint8_t>(message.retain)) ==
-                   response_match_value;
+            return (getMatchKey(message) == response_match_value) & !message.consumed;
           });
       if (response_frame_iter == resp_deque.end()) {
         VLOG(1) << absl::Substitute(
@@ -134,6 +164,17 @@ RecordsWithErrorCount<Record> StitchFrames(
         continue;
       }
       mqtt::Message& resp_frame = *response_frame_iter;
+
+      // if the response is PUBACK/PUBREC, then remove the associated (packet_identifier, qos) tuple
+      // from the UnansweredPublish set
+      if (resp_frame.control_packet_type == 4) {
+        UnansweredPublish.erase(
+            std::tuple<uint64_t, uint64_t>(resp_frame.header_fields["packet_identifier"], 1));
+      }
+      if (resp_frame.control_packet_type == 5) {
+        UnansweredPublish.erase(
+            std::tuple<uint64_t, uint64_t>(resp_frame.header_fields["packet_identifier"], 2));
+      }
 
       req_frame.consumed = true;
       resp_frame.consumed = true;
@@ -155,6 +196,11 @@ RecordsWithErrorCount<Record> StitchFrames(
     }
     req_deque.erase(req_deque.begin(), erase_until_iter);
   }
+
+  // Verify which deque server side PUBLISH frames are inserted into. It's suspected that these
+  // PUBLISH requests will end up in the resp deque and will cause the resp deque cleanup logic to
+  // erroneously drop request frames
+  // TODO: Verify that the frames in response deque are not request frames before dropping
 
   // iterate through all response dequeues to find out which ones haven't been consumed
   for (auto& [packet_id, resp_deque] : *resp_frames) {
