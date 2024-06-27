@@ -255,7 +255,7 @@ export const COMMON_THEME = {
       white: '#FFFFFF',
     },
     primary: {
-      main: COLORS.PRIMARY[500].dark,
+      main: COLORS.PRIMARY[500],
       dark: COLORS.PRIMARY[600],
       light: COLORS.PRIMARY[400],
     },
@@ -481,7 +481,7 @@ export const DARK_BASE = {
 export const LIGHT_BASE = {
   palette: {
     primary: {
-      main: COLORS.PRIMARY[500].light,
+      main: COLORS.PRIMARY[550],
     },
     mode: 'light' as const,
     divider: '#dbdde0',

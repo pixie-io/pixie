@@ -23,10 +23,8 @@ export const COLORS = {
     '200': '#A1F7F7',
     '300': '#6DF3F3',
     '400': '#35EEEE',
-    '500': { // Brand primary color!
-      dark: '#12D6D6',
-      light: '#12D6D6',
-    },
+    '500': '#12D6D6', // Brand primary color!
+    '550': '#12D6D6', // Primary for light mode
     '600': '#0DA0A0',
     '700': '#096C6C',
     '800': '#053838',
