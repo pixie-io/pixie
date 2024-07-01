@@ -106,7 +106,7 @@ const IndexMapping = `
         },
         "tokenizer": {
           "ngram_tokenizer": {
-            "type": "nGram",
+            "type": "ngram",
             "min_gram": "1",
             "max_gram": "10",
             "token_chars": [
