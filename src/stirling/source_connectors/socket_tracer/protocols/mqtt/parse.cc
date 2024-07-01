@@ -37,6 +37,7 @@ namespace protocols {
 
 namespace mqtt {
 
+// This is modeling a 4 bit field specifying the control packet type
 enum class MqttControlPacketType : uint8_t {
   CONNECT = 1,
   CONNACK = 2,
@@ -743,6 +744,11 @@ template <>
 size_t FindFrameBoundary<mqtt::Message>(message_type_t /*type*/, std::string_view buf,
                                         size_t start_pos, NoState* /*state*/) {
   return start_pos + buf.length();
+}
+
+template <>
+mqtt::packet_id_t GetStreamID(mqtt::Message* message) {
+  return message->header_fields["packet_identifier"];
 }
 
 }  // namespace protocols
