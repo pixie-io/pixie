@@ -1,0 +1,70 @@
+diff --git a/dh/x25519/BUILD.bazel b/dh/x25519/BUILD.bazel
+index 403c628..f26de71 100644
+--- a/dh/x25519/BUILD.bazel
++++ b/dh/x25519/BUILD.bazel
+@@ -13,7 +13,9 @@ go_library(
+         "doc.go",
+         "key.go",
+         "table.go",
++        "//math/fp25519:fp_amd64.h",
+     ],
++    cgo = True,
+     importpath = "github.com/cloudflare/circl/dh/x25519",
+     visibility = ["//visibility:public"],
+     deps = [
+diff --git a/dh/x448/BUILD.bazel b/dh/x448/BUILD.bazel
+index 6a0e5f4..8ec7a95 100644
+--- a/dh/x448/BUILD.bazel
++++ b/dh/x448/BUILD.bazel
+@@ -13,7 +13,9 @@ go_library(
+         "doc.go",
+         "key.go",
+         "table.go",
++        "//math/fp448:fp_amd64.h",
+     ],
++    cgo = True,
+     importpath = "github.com/cloudflare/circl/dh/x448",
+     visibility = ["//visibility:public"],
+     deps = [
+diff --git a/math/fp25519/BUILD.bazel b/math/fp25519/BUILD.bazel
+index 9129a64..5b0308e 100644
+--- a/math/fp25519/BUILD.bazel
++++ b/math/fp25519/BUILD.bazel
+@@ -1,6 +1,8 @@
+ load("@io_bazel_rules_go//go:def.bzl", "go_library")
+ load("@px//bazel:pl_build_system.bzl", "pl_go_test")
+ 
++exports_files(["fp_amd64.h"], ["//visibility:public"])
++
+ go_library(
+     name = "fp25519",
+     srcs = [
+@@ -11,6 +13,7 @@ go_library(
+         "fp_generic.go",
+         "fp_noasm.go",
+     ],
++    cgo = True,
+     importpath = "github.com/cloudflare/circl/math/fp25519",
+     visibility = ["//visibility:public"],
+     deps = [
+diff --git a/math/fp448/BUILD.bazel b/math/fp448/BUILD.bazel
+index af6ced8..7e4567a 100644
+--- a/math/fp448/BUILD.bazel
++++ b/math/fp448/BUILD.bazel
+@@ -1,6 +1,8 @@
+ load("@io_bazel_rules_go//go:def.bzl", "go_library")
+ load("@px//bazel:pl_build_system.bzl", "pl_go_test")
+ 
++exports_files(["fp_amd64.h"], ["//visibility:public"])
++
+ go_library(
+     name = "fp448",
+     srcs = [
+@@ -11,6 +13,7 @@ go_library(
+         "fp_generic.go",
+         "fp_noasm.go",
+     ],
++    cgo = True,
+     importpath = "github.com/cloudflare/circl/math/fp448",
+     visibility = ["//visibility:public"],
+     deps = [

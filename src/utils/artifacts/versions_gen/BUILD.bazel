@@ -24,13 +24,13 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
+        "@com_github_go_git_go_git_v5//:go-git",
+        "@com_github_go_git_go_git_v5//plumbing",
         "@com_github_gogo_protobuf//jsonpb",
         "@com_github_gogo_protobuf//types",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
-        "@in_gopkg_src_d_go_git_v4//:go-git_v4",
-        "@in_gopkg_src_d_go_git_v4//plumbing",
         "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )

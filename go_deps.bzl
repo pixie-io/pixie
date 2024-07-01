@@ -27,6 +27,13 @@ def pl_go_overrides():
 
 def pl_go_dependencies():
     go_repository(
+        name = "cat_dario_mergo",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "dario.cat/mergo",
+        sum = "h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=",
+        version = "v1.0.0",
+    )
+    go_repository(
         name = "co_honnef_go_tools",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "honnef.co/go/tools",
@@ -53,13 +60,6 @@ def pl_go_dependencies():
         importpath = "github.com/ajstarks/svgo",
         sum = "h1:slYM766cy2nI3BwyRiyQj/Ud48djTMtMebDqepE95rw=",
         version = "v0.0.0-20211024235047-1546f124cd8b",
-    )
-    go_repository(
-        name = "com_github_alcortesm_tgz",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "github.com/alcortesm/tgz",
-        sum = "h1:uSoVVbwJiQipAclBbw+8quDsfcvFjOpI5iCf4p/cqCs=",
-        version = "v0.0.0-20161220082320-9c5fe88206d7",
     )
     go_repository(
         name = "com_github_alecthomas_assert",
@@ -170,8 +170,8 @@ def pl_go_dependencies():
         name = "com_github_anmitsu_go_shlex",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/anmitsu/go-shlex",
-        sum = "h1:kFOfPq6dUM1hTo4JG6LR5AXSUEsOjtdm0kw0FtQtMJA=",
-        version = "v0.0.0-20161002113705-648efa622239",
+        sum = "h1:9AeTilPcZAjCFIImctFaOjnTIavg87rW78vTPkQqLI8=",
+        version = "v0.0.0-20200514113438-38f4b401e2be",
     )
     go_repository(
         name = "com_github_antihax_optional",
@@ -415,6 +415,13 @@ def pl_go_dependencies():
         version = "v0.0.0-20160522181843-27f122750802",
     )
     go_repository(
+        name = "com_github_bwesterb_go_ristretto",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/bwesterb/go-ristretto",
+        sum = "h1:1w53tCkGhCQ5djbat3+MH0BAQ5Kfgbt56UZQ/JMzngw=",
+        version = "v1.2.3",
+    )
+    go_repository(
         name = "com_github_cenkalti_backoff_v4",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/cenkalti/backoff/v4",
@@ -483,6 +490,17 @@ def pl_go_dependencies():
         importpath = "github.com/cilium/ebpf",
         sum = "h1:1k/q3ATgxSXRdrmPfH8d7YK0GfqVsEKZAX9dQZvs56k=",
         version = "v0.7.0",
+    )
+    go_repository(
+        name = "com_github_cloudflare_circl",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/cloudflare/circl",
+        patch_args = ["-p1"],
+        patches = [
+            "//bazel/external:circl.patch",
+        ],
+        sum = "h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=",
+        version = "v1.3.7",
     )
     go_repository(
         name = "com_github_cloudykit_fastprinter",
@@ -671,8 +689,8 @@ def pl_go_dependencies():
         name = "com_github_cyphar_filepath_securejoin",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/cyphar/filepath-securejoin",
-        sum = "h1:YX6ebbZCZP7VkM3scTTokDgBL2TY741X51MTk3ycuNI=",
-        version = "v0.2.3",
+        sum = "h1:Ugdm7cg7i6ZK6x3xDF1oEu1nfkyfH53EtKeQYTC3kyg=",
+        version = "v0.2.4",
     )
     go_repository(
         name = "com_github_danwakefield_fnmatch",
@@ -840,8 +858,8 @@ def pl_go_dependencies():
         name = "com_github_elazarl_goproxy",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/elazarl/goproxy",
-        sum = "h1:yUdfgN0XgIJw7foRItutHYUIhlcKzcSf5vDpdhQAKTc=",
-        version = "v0.0.0-20180725130230-947c36da3153",
+        sum = "h1:mATvB/9r/3gvcejNsXKSkQ6lcIaNec2nyfOdlTBR2lU=",
+        version = "v0.0.0-20230808193330-2592e75ae04a",
     )
     go_repository(
         name = "com_github_elliotchance_orderedmap",
@@ -868,8 +886,8 @@ def pl_go_dependencies():
         name = "com_github_emirpasic_gods",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/emirpasic/gods",
-        sum = "h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=",
-        version = "v1.12.0",
+        sum = "h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=",
+        version = "v1.18.1",
     )
     go_repository(
         name = "com_github_envoyproxy_go_control_plane",
@@ -977,13 +995,6 @@ def pl_go_dependencies():
         version = "v0.1.1",
     )
     go_repository(
-        name = "com_github_flynn_go_shlex",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "github.com/flynn/go-shlex",
-        sum = "h1:BHsljHzVlRcyQhjrss6TZTdY2VfCqZPbv5k3iBFa2ZQ=",
-        version = "v0.0.0-20150515145356-3f9db97f8568",
-    )
-    go_repository(
         name = "com_github_form3tech_oss_jwt_go",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/form3tech-oss/jwt-go",
@@ -1078,8 +1089,8 @@ def pl_go_dependencies():
         name = "com_github_gliderlabs_ssh",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/gliderlabs/ssh",
-        sum = "h1:6zsha5zo/TWhRhwqCD3+EarCAgZ2yN28ipRnGPnwkI0=",
-        version = "v0.2.2",
+        sum = "h1:iV3Bqi942d9huXnzEF2Mt+CY9gLu8DNM4Obd+8bODRE=",
+        version = "v0.3.7",
     )
     go_repository(
         name = "com_github_globalsign_mgo",
@@ -1117,6 +1128,34 @@ def pl_go_dependencies():
         importpath = "github.com/go-fonts/liberation",
         sum = "h1:jAkAWJP4S+OsrPLZM4/eC9iW7CtHy+HBXrEwZXWo5VM=",
         version = "v0.2.0",
+    )
+    go_repository(
+        name = "com_github_go_git_gcfg",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/go-git/gcfg",
+        sum = "h1:+zs/tPmkDkHx3U66DAb0lQFJrpS6731Oaa12ikc+DiI=",
+        version = "v1.5.1-0.20230307220236-3a3c6141e376",
+    )
+    go_repository(
+        name = "com_github_go_git_go_billy_v5",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/go-git/go-billy/v5",
+        sum = "h1:yEY4yhzCDuMGSv83oGxiBotRzhwhNr8VZyphhiu+mTU=",
+        version = "v5.5.0",
+    )
+    go_repository(
+        name = "com_github_go_git_go_git_fixtures_v4",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/go-git/go-git-fixtures/v4",
+        sum = "h1:eMje31YglSBqCdIqdhKBW8lokaMrL3uTkpGYlE2OOT4=",
+        version = "v4.3.2-0.20231010084843-55a94097c399",
+    )
+    go_repository(
+        name = "com_github_go_git_go_git_v5",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/go-git/go-git/v5",
+        sum = "h1:7Md+ndsjrzZxbddRDZjF14qK+NN56sy6wkqaVrjZtys=",
+        version = "v5.12.0",
     )
     go_repository(
         name = "com_github_go_gl_glfw",
@@ -2261,8 +2300,8 @@ def pl_go_dependencies():
         name = "com_github_kevinburke_ssh_config",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/kevinburke/ssh_config",
-        sum = "h1:Coekwdh0v2wtGp9Gmz1Ze3eVRAWJMLokvN3QjdzCHLY=",
-        version = "v0.0.0-20190725054713-01f96b0aa0cd",
+        sum = "h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=",
+        version = "v1.2.0",
     )
     go_repository(
         name = "com_github_kisielk_errcheck",
@@ -2324,15 +2363,15 @@ def pl_go_dependencies():
         name = "com_github_kr_pretty",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/kr/pretty",
-        sum = "h1:Fmg33tUaq4/8ym9TJN1x7sLJnHVwhP33CNkpYV/7rwI=",
-        version = "v0.2.1",
+        sum = "h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=",
+        version = "v0.3.1",
     )
     go_repository(
         name = "com_github_kr_pty",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/kr/pty",
-        sum = "h1:AkaSdXYQOWeaO3neb8EM634ahkXXe3jYbVh/F9lq+GI=",
-        version = "v1.1.8",
+        sum = "h1:hyz3dwM5QLc1Rfoz4FuWJQG5BN7tc6K1MndAUnGpQr4=",
+        version = "v1.1.5",
     )
     go_repository(
         name = "com_github_kr_text",
@@ -2618,8 +2657,8 @@ def pl_go_dependencies():
         name = "com_github_microsoft_go_winio",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/Microsoft/go-winio",
-        sum = "h1:slsWYD/zyx7lCXoZVlvQrj0hPTM1HI4+v1sIda2yDvg=",
-        version = "v0.6.0",
+        sum = "h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=",
+        version = "v0.6.1",
     )
     go_repository(
         name = "com_github_miekg_dns",
@@ -2704,6 +2743,13 @@ def pl_go_dependencies():
         importpath = "github.com/mitchellh/reflectwalk",
         sum = "h1:9D+8oIskB4VJBN5SFlmc27fSlIBZaov1Wpk/IfikLNY=",
         version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_mmcloughlin_avo",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/mmcloughlin/avo",
+        sum = "h1:nAco9/aI9Lg2kiuROBY6BhCI/z0t5jEvJfjWbL8qXLU=",
+        version = "v0.5.0",
     )
     go_repository(
         name = "com_github_moby_spdystream",
@@ -2912,8 +2958,8 @@ def pl_go_dependencies():
         name = "com_github_onsi_gomega",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/onsi/gomega",
-        sum = "h1:KORJXNNTzJXzu4ScJWssJfJMnJ+2QJqhoQSRwNlze9E=",
-        version = "v1.24.1",
+        sum = "h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=",
+        version = "v1.27.10",
     )
     go_repository(
         name = "com_github_opencontainers_go_digest",
@@ -3000,13 +3046,6 @@ def pl_go_dependencies():
         version = "v2.1.0+incompatible",
     )
     go_repository(
-        name = "com_github_pelletier_go_buffruneio",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "github.com/pelletier/go-buffruneio",
-        sum = "h1:U4t4R6YkofJ5xHm3dJzuRpPZ0mr5MMCoAWooScCR7aA=",
-        version = "v0.2.0",
-    )
-    go_repository(
         name = "com_github_pelletier_go_toml",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/pelletier/go-toml",
@@ -3040,6 +3079,13 @@ def pl_go_dependencies():
         importpath = "github.com/pingcap/errors",
         sum = "h1:lFuQV/oaUMGcD2tqt+01ROSmJs75VG1ToEOkZIZ4nE4=",
         version = "v0.11.4",
+    )
+    go_repository(
+        name = "com_github_pjbgf_sha1cd",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/pjbgf/sha1cd",
+        sum = "h1:4D5XXmUUBUl/xQ6IjCkEAbqXskkq/4O7LmGn0AqMDs4=",
+        version = "v0.3.0",
     )
     go_repository(
         name = "com_github_pkg_diff",
@@ -3148,6 +3194,13 @@ def pl_go_dependencies():
         version = "v0.7.1",
     )
     go_repository(
+        name = "com_github_protonmail_go_crypto",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/ProtonMail/go-crypto",
+        sum = "h1:LRuvITjQWX+WIfr930YHG2HNfjR1uOfyf5vE0kC2U78=",
+        version = "v1.0.0",
+    )
+    go_repository(
         name = "com_github_puerkitobio_goquery",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/PuerkitoBio/goquery",
@@ -3193,8 +3246,8 @@ def pl_go_dependencies():
         name = "com_github_rogpeppe_go_internal",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/rogpeppe/go-internal",
-        sum = "h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=",
-        version = "v1.9.0",
+        sum = "h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=",
+        version = "v1.11.0",
     )
     go_repository(
         name = "com_github_russross_blackfriday",
@@ -3295,8 +3348,8 @@ def pl_go_dependencies():
         name = "com_github_sergi_go_diff",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/sergi/go-diff",
-        sum = "h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=",
-        version = "v1.1.0",
+        sum = "h1:n661drycOFuPLCN3Uc8sB6B/s6Z4t2xvBgU1htSHuq8=",
+        version = "v1.3.2-0.20230802210424-5b0b94c5c0d3",
     )
     go_repository(
         name = "com_github_shopify_goreferrer",
@@ -3332,6 +3385,13 @@ def pl_go_dependencies():
         importpath = "github.com/sirupsen/logrus",
         sum = "h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=",
         version = "v1.9.0",
+    )
+    go_repository(
+        name = "com_github_skeema_knownhosts",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/skeema/knownhosts",
+        sum = "h1:Iug2P4fLmDw9f41PB6thxUkNUkJzB5i+1/exaj40L3A=",
+        version = "v1.2.2",
     )
     go_repository(
         name = "com_github_skratchdot_open_golang",
@@ -3425,13 +3485,6 @@ def pl_go_dependencies():
         version = "v1.8.1",
     )
     go_repository(
-        name = "com_github_src_d_gcfg",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "github.com/src-d/gcfg",
-        sum = "h1:xXbNR5AlLSA315x2UO+fTSSAXCDf+Ar38/6oyGbDKQ4=",
-        version = "v1.4.0",
-    )
-    go_repository(
         name = "com_github_stoewer_go_strcase",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/stoewer/go-strcase",
@@ -3442,15 +3495,15 @@ def pl_go_dependencies():
         name = "com_github_stretchr_objx",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/stretchr/objx",
-        sum = "h1:1zr/of2m5FGMsad5YfcqgdqdWrIhu+EBEJRhR1U7z/c=",
-        version = "v0.5.0",
+        sum = "h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=",
+        version = "v0.5.2",
     )
     go_repository(
         name = "com_github_stretchr_testify",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/stretchr/testify",
-        sum = "h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=",
-        version = "v1.8.4",
+        sum = "h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=",
+        version = "v1.9.0",
     )
     go_repository(
         name = "com_github_subosito_gotenv",
@@ -3624,8 +3677,8 @@ def pl_go_dependencies():
         name = "com_github_xanzy_ssh_agent",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/xanzy/ssh-agent",
-        sum = "h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=",
-        version = "v0.2.1",
+        sum = "h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=",
+        version = "v0.3.3",
     )
     go_repository(
         name = "com_github_xdg_go_pbkdf2",
@@ -3970,27 +4023,6 @@ def pl_go_dependencies():
         importpath = "gopkg.in/resty.v1",
         sum = "h1:CuXP0Pjfw9rOuY6EP+UvtNvt5DSqHpIxILZKT/quCZI=",
         version = "v1.12.0",
-    )
-    go_repository(
-        name = "in_gopkg_src_d_go_billy_v4",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "gopkg.in/src-d/go-billy.v4",
-        sum = "h1:0SQA1pRztfTFx2miS8sA97XvooFeNOmvUenF4o0EcVg=",
-        version = "v4.3.2",
-    )
-    go_repository(
-        name = "in_gopkg_src_d_go_git_fixtures_v3",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "gopkg.in/src-d/go-git-fixtures.v3",
-        sum = "h1:ivZFOIltbce2Mo8IjzUHAFoq/IylO9WHhNOAJK+LsJg=",
-        version = "v3.5.0",
-    )
-    go_repository(
-        name = "in_gopkg_src_d_go_git_v4",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "gopkg.in/src-d/go-git.v4",
-        sum = "h1:SRtFyV8Kxc0UP7aCHcijOMQGPxHSmMOPrzulQWolkYE=",
-        version = "v4.13.1",
     )
     go_repository(
         name = "in_gopkg_tomb_v1",
@@ -4427,8 +4459,8 @@ def pl_go_dependencies():
         name = "org_golang_x_crypto",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/crypto",
-        sum = "h1:frVn1TEaCEaZcn3Tmd7Y2b5KKPaZ+I32Q2OA3kYp5TA=",
-        version = "v0.15.0",
+        sum = "h1:X31++rzVUdKhX5sWmSOFZxx8UW/ldWx55cbf08iNAMA=",
+        version = "v0.21.0",
     )
     go_repository(
         name = "org_golang_x_exp",
@@ -4462,15 +4494,15 @@ def pl_go_dependencies():
         name = "org_golang_x_mod",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/mod",
-        sum = "h1:KENHtAZL2y3NLMYZeHY9DW8HW8V+kQyJsY/V9JlKvCs=",
-        version = "v0.9.0",
+        sum = "h1:rmsUpXtvNzj340zd98LZ4KntptpfRHwpFOHG188oHXc=",
+        version = "v0.12.0",
     )
     go_repository(
         name = "org_golang_x_net",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/net",
-        sum = "h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=",
-        version = "v0.17.0",
+        sum = "h1:9sGLhx7iRIHEiX0oAJ3MRZMUCElJgy7Br1nO+AMN3Tc=",
+        version = "v0.22.0",
     )
     go_repository(
         name = "org_golang_x_oauth2",
@@ -4483,8 +4515,8 @@ def pl_go_dependencies():
         name = "org_golang_x_sync",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/sync",
-        sum = "h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=",
-        version = "v0.1.0",
+        sum = "h1:ftCYgMx6zT/asHUrPw8BLLscYtGznsLAnjq5RH9P66E=",
+        version = "v0.3.0",
     )
     go_repository(
         name = "org_golang_x_sys",
@@ -4498,8 +4530,8 @@ def pl_go_dependencies():
         name = "org_golang_x_term",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/term",
-        sum = "h1:LGK9IlZ8T9jvdy6cTdfKUCltatMFOehAQo9SRC46UQ8=",
-        version = "v0.14.0",
+        sum = "h1:FcHjZXDMxI8mM3nwhX9HlKop4C0YQvCVCdwYl2wOtE8=",
+        version = "v0.18.0",
     )
     go_repository(
         name = "org_golang_x_text",
@@ -4520,8 +4552,8 @@ def pl_go_dependencies():
         name = "org_golang_x_tools",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/tools",
-        sum = "h1:W4OVu8VVOaIO0yzWMNdepAulS7YfoS3Zabrm8DOXXU4=",
-        version = "v0.7.0",
+        sum = "h1:Iey4qkscZuv0VvIt8E0neZjtPVQFSc870HQ448QgEmQ=",
+        version = "v0.13.0",
     )
     go_repository(
         name = "org_golang_x_xerrors",
