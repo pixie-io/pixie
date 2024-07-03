@@ -17,6 +17,8 @@
  */
 
 import * as React from 'react';
+export const termsUri = 'https://pixielabs.ai/terms';
+export const privacyUri = 'https://pixielabs.ai/privacy';
 
 export const TermsAndPrivacy = React.memo<{ classes: Record<'text', string> }>(({ classes }) => {
   return (<>
