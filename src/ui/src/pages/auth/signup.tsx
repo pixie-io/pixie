@@ -24,6 +24,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { AuthBox, SignupMarcom } from 'app/components';
 import pixieAnalytics from 'app/utils/analytics';
+import { signupMessage } from 'configurable/signup';
 
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
@@ -64,8 +65,7 @@ export const SignupPage = React.memo(() => {
             toggleURL={`/auth/login${window.location.search}`}
             title='Get Started'
             // Need to encapsulate so that newline is properly escaped.
-            body={`Pixie Community is Free Forever.
-          No Credit Card Needed.`}
+            body={signupMessage}
             buttonCaption='Already have an account?'
             buttonText='Login'
             showTOSDisclaimer
