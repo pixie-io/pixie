@@ -34,6 +34,7 @@ namespace stirling {
 namespace protocols {
 namespace mqtt {
 
+// MatchKey layout, || control_packet_type (4 bits) | dup (1 bit) | qos (2 bits) | retain (1 bit) ||
 typedef uint8_t MatchKey;
 
 constexpr MatchKey UnmatchedResp = 0xff;
@@ -64,12 +65,10 @@ std::map<MatchKey, MatchKey> MapRequestToResponse = {
     {0xa0, 0xb0},
     // PINGREQ to PINGRESP
     {0xc0, 0xd0},
+    // AUTH to AUTH
+    {0xf0, 0xf0},
     // DISCONNECT to Dummy response
-    {0xe0, UnmatchedResp},
-    // AUTH to Dummy response
-    {0xf0, UnmatchedResp}};
-
-std::set<std::tuple<uint32_t, uint32_t>> UnansweredPublish;
+    {0xe0, UnmatchedResp}};
 
 // Possible to have the server sending PUBLISH with same packet identifier as client PUBLISH before
 // it sends PUBACK, causing server PUBLISH to be put into response deque instead of request deque.
@@ -82,7 +81,7 @@ MatchKey getMatchKey(mqtt::Message& frame) {
 
 RecordsWithErrorCount<Record> StitchFrames(
     absl::flat_hash_map<packet_id_t, std::deque<Message>>* req_frames,
-    absl::flat_hash_map<packet_id_t, std::deque<Message>>* resp_frames) {
+    absl::flat_hash_map<packet_id_t, std::deque<Message>>* resp_frames, mqtt::StateWrapper* state) {
   std::vector<Record> entries;
   int error_count = 0;
 
@@ -104,19 +103,24 @@ RecordsWithErrorCount<Record> StitchFrames(
     // finding the closest appropriate response from response deque in terms of timestamp and type
     // for each request in the request deque
     for (mqtt::Message& req_frame : req_deque) {
-      // if the request is a PUBLISH (QOS 1 or QOS 2) with dup false, entry needs to be made in
-      // UnansweredPublish
-      if (req_frame.control_packet_type == 3 && req_frame.header_fields["qos"] != 0 &&
-          !req_frame.dup) {
-        UnansweredPublish.insert(std::tuple<uint32_t, uint32_t>(
-            req_frame.header_fields["packet_identifier"], req_frame.header_fields["qos"]));
-      }
-      // if the request is a duplicate PUBLISH, find out if the original PUBLISH has been matched
-      if (req_frame.control_packet_type == 3 && req_frame.header_fields["qos"] != 0 &&
-          req_frame.dup) {
-        if (UnansweredPublish.find(std::tuple<uint32_t, uint32_t>(
-                req_frame.header_fields["packet_identifier"], req_frame.header_fields["qos"])) ==
-            UnansweredPublish.end()) {
+      const MqttControlPacketType control_packet_type =
+          magic_enum::enum_cast<MqttControlPacketType>(req_frame.control_packet_type).value();
+      // If the frame is PUBLISH, and there are duplicates in the deque, then mark the frame as
+      // consumed and match the latest duplicate with its response (if the response exists in the
+      // response deque)
+      if (control_packet_type == MqttControlPacketType::PUBLISH) {
+        std::tuple<uint32_t, uint32_t> unique_publish_identifier = std::tuple<uint32_t, uint32_t>(
+            req_frame.header_fields["packet_identifier"], req_frame.header_fields["qos"]);
+        if (req_frame.type == message_type_t::kRequest &&
+            state->send[unique_publish_identifier] > 0) {
+          state->send[unique_publish_identifier] -= 1;
+          req_frame.consumed = true;
+          continue;
+        }
+
+        if (req_frame.type == message_type_t::kResponse &&
+            state->recv[unique_publish_identifier] > 0) {
+          state->recv[unique_publish_identifier] -= 1;
           req_frame.consumed = true;
           continue;
         }
@@ -164,17 +168,6 @@ RecordsWithErrorCount<Record> StitchFrames(
         continue;
       }
       mqtt::Message& resp_frame = *response_frame_iter;
-
-      // if the response is PUBACK/PUBREC, then remove the associated (packet_identifier, qos) tuple
-      // from the UnansweredPublish set
-      if (resp_frame.control_packet_type == 4) {
-        UnansweredPublish.erase(
-            std::tuple<uint64_t, uint64_t>(resp_frame.header_fields["packet_identifier"], 1));
-      }
-      if (resp_frame.control_packet_type == 5) {
-        UnansweredPublish.erase(
-            std::tuple<uint64_t, uint64_t>(resp_frame.header_fields["packet_identifier"], 2));
-      }
 
       req_frame.consumed = true;
       resp_frame.consumed = true;

@@ -20,6 +20,7 @@
 
 #include <map>
 #include <string>
+#include <tuple>
 
 #include "src/common/base/utils.h"
 #include "src/common/json/json.h"
@@ -34,6 +35,25 @@ using ::px::utils::ToJSONString;
 
 // The protocol specification : https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.pdf
 // This supports MQTTv5
+
+// This is modeling a 4 bit field specifying the control packet type
+enum class MqttControlPacketType : uint8_t {
+  CONNECT = 1,
+  CONNACK = 2,
+  PUBLISH = 3,
+  PUBACK = 4,
+  PUBREC = 5,
+  PUBREL = 6,
+  PUBCOMP = 7,
+  SUBSCRIBE = 8,
+  SUBACK = 9,
+  UNSUBSCRIBE = 10,
+  UNSUBACK = 11,
+  PINGREQ = 12,
+  PINGRESP = 13,
+  DISCONNECT = 14,
+  AUTH = 15
+};
 
 using packet_id_t = uint16_t;
 struct Message : public FrameBase {
@@ -76,10 +96,16 @@ struct Record {
   }
 };
 
+struct StateWrapper {
+  std::monostate global;
+  std::map<std::tuple<uint32_t, uint32_t>, uint32_t> send;  // Client side PUBLISHes
+  std::map<std::tuple<uint32_t, uint32_t>, uint32_t> recv;  // Server side PUBLISHes
+};
+
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Message;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = StateWrapper;
   using key_type = packet_id_t;
   static constexpr StreamSupport stream_support = BaseProtocolTraits<Record>::UseStream;
 };

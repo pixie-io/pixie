@@ -31,12 +31,12 @@ namespace protocols {
 namespace mqtt {
 namespace testutils {
 
-inline Message CreateFrame(message_type_t type, uint8_t control_packet_type,
+inline Message CreateFrame(message_type_t type, const MqttControlPacketType control_packet_type,
                            uint32_t packet_identifier, uint32_t qos) {
   Message f;
 
   f.type = type;
-  f.control_packet_type = control_packet_type;
+  f.control_packet_type = magic_enum::enum_integer(control_packet_type);
   f.header_fields["packet_identifier"] = packet_identifier;
   f.header_fields["qos"] = qos;
 

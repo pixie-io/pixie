@@ -37,11 +37,13 @@ namespace mqtt {
  *
  * @param req_frames: deque of all request frames.
  * @param resp_frames: deque of all response frames.
+ * @param resp_frames: state holding send and recv maps, which are key-value pairs of (packet id,
+ * qos) and dup counter.
  * @return A vector of entries to be appended to table store.
  */
 RecordsWithErrorCount<Record> StitchFrames(
     absl::flat_hash_map<packet_id_t, std::deque<Message>>* req_frames,
-    absl::flat_hash_map<packet_id_t, std::deque<Message>>* resp_frames);
+    absl::flat_hash_map<packet_id_t, std::deque<Message>>* resp_frames, mqtt::StateWrapper* state);
 
 }  // namespace mqtt
 
@@ -49,8 +51,8 @@ template <>
 inline RecordsWithErrorCount<mqtt::Record> StitchFrames(
     absl::flat_hash_map<mqtt::packet_id_t, std::deque<mqtt::Message>>* req_messages,
     absl::flat_hash_map<mqtt::packet_id_t, std::deque<mqtt::Message>>* res_messages,
-    NoState* /* state */) {
-  return mqtt::StitchFrames(req_messages, res_messages);
+    mqtt::StateWrapper* state) {
+  return mqtt::StitchFrames(req_messages, res_messages, state);
 }
 
 }  // namespace protocols
