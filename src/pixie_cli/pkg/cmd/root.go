@@ -214,7 +214,7 @@ func getCloudAddrIfRequired(cmd *cobra.Command) string {
 	cloudAddr := viper.GetString("cloud_addr")
 	if cloudAddr == "" {
 		if !isatty.IsTerminal(os.Stdin.Fd()) {
-			utils.Errorf("No cloud address provided during run within interactive shell. Please set the cloud address using the `--cloud_addr` flag or `PX_CLOUD_ADDR` environment variable.")
+			utils.Errorf("No cloud address provided during run within non-interactive shell. Please set the cloud address using the `--cloud_addr` flag or `PX_CLOUD_ADDR` environment variable.")
 			os.Exit(1)
 		} else {
 			prompt := promptui.Select{
