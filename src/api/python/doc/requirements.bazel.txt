@@ -55,9 +55,9 @@ markupsafe==2.1.1 \
     #   -r requirements.bazel.txt
     #   jinja2
     #   pdoc
-pdoc==12.3.0 \
-    --hash=sha256:0c520a6af892863b8712abb6abaad2c928366d7dee727715177774623c30405d \
-    --hash=sha256:b245903dd8fb515b99d838bb1ad3efeb706fa0efd925a886c4624bf946afaab5
+pdoc==14.5.1 \
+    --hash=sha256:4ddd9c5123a79f511cedffd7231bf91a6e0bd0968610f768342ec5d00b5eefee \
+    --hash=sha256:fda6365a06e438b43ca72235b58a2e2ecd66445fcc444313f6ebbde4b0abd94b
     # via -r requirements.bazel.txt
 pygments==2.15.0 \
     --hash=sha256:77a3299119af881904cd5ecd1ac6a66214b6e9bed1f2db16993b54adede64094 \
