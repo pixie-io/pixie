@@ -33,6 +33,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -57,8 +58,6 @@ import (
 )
 
 const (
-	// DefaultCloudAddr is the Community Cloud address.
-	DefaultCloudAddr = "withpixie.ai:443"
 	// DeploySuccess is the successful deploy const.
 	DeploySuccess = "successfulDeploy"
 )
@@ -144,7 +143,7 @@ var DeployCmd = &cobra.Command{
 
 		cloudAddr := viper.GetString("cloud_addr")
 		docsAddr := cloudAddr
-		if cloudAddr != DefaultCloudAddr {
+		if !slices.Contains(AvailableCloudAddrs, cloudAddr) {
 			docsAddr = "px.dev"
 		}
 

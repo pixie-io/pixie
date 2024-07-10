@@ -24,10 +24,13 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
+	"github.com/mattn/go-isatty"
 	"github.com/segmentio/analytics-go/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
@@ -36,9 +39,18 @@ import (
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
+var (
+	AvailableCloudAddrs = []string{
+		"withpixie.ai:443",
+	}
+	// cloud addr is a required argument. Use empty string since Viper requires a default value.
+	defaultCloudAddr = ""
+)
+
 func init() {
 	// Flags that are relevant to all sub-commands.
-	RootCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
+
+	RootCmd.PersistentFlags().StringP("cloud_addr", "a", defaultCloudAddr, "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
 
 	RootCmd.PersistentFlags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if using a cluster local cloud.")
@@ -129,7 +141,8 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		printEnvVars()
 
-		cloudAddr := viper.GetString("cloud_addr")
+		cloudAddr := getCloudAddrIfRequired(cmd)
+
 		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
 			viper.Set("cloud_addr", cloudAddr+":443")
 		}
@@ -183,6 +196,42 @@ var RootCmd = &cobra.Command{
 		// Check if any parents of the subcommand requires auth.
 		cmd.VisitParents(checkAuthForCmd)
 	},
+}
+
+// Name a variable to store a slice of commands that don't require cloudAddr
+var cmdsCloudAddrNotReqd = []*cobra.Command{
+	CollectLogsCmd,
+	VersionCmd,
+}
+
+func getCloudAddrIfRequired(cmd *cobra.Command) string {
+	// Commands within allow list should be opted out in addition to Cobra's
+	// default help command
+	if slices.Contains(cmdsCloudAddrNotReqd, cmd) || cmd.Short == "Help about any command" {
+		return defaultCloudAddr
+	}
+
+	cloudAddr := viper.GetString("cloud_addr")
+	if cloudAddr == "" {
+		if !isatty.IsTerminal(os.Stdin.Fd()) {
+			utils.Errorf("No cloud address provided during run within non-interactive shell. Please set the cloud address using the `--cloud_addr` flag or `PX_CLOUD_ADDR` environment variable.")
+			os.Exit(1)
+		} else {
+			prompt := promptui.Select{
+				Label: "Select Pixie cloud",
+				Items: AvailableCloudAddrs,
+			}
+			_, selectedCloud, err := prompt.Run()
+			if err != nil {
+				utils.WithError(err).Fatal("Failed to select cloud address")
+				os.Exit(1)
+			}
+
+			cloudAddr = selectedCloud
+			viper.Set("cloud_addr", cloudAddr)
+		}
+	}
+	return cloudAddr
 }
 
 func checkAuthForCmd(c *cobra.Command) {

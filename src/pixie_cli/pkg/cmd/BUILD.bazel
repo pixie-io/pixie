@@ -71,6 +71,8 @@ go_library(
         "@com_github_fatih_color//:color",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_lestrrat_go_jwx//jwt",
+        "@com_github_manifoldco_promptui//:promptui",
+        "@com_github_mattn_go_isatty//:go-isatty",
         "@com_github_segmentio_analytics_go_v3//:analytics-go",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_cobra//:cobra",
@@ -82,6 +84,7 @@ go_library(
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//rest",
         "@org_golang_google_grpc//:grpc",
+        "@org_golang_x_exp//slices",
         "@org_golang_x_term//:term",
     ],
 )
