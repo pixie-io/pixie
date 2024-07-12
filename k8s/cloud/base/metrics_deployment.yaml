@@ -12,6 +12,9 @@ spec:
       labels:
         name: metrics-server
         monitoring.gke.io/scrape: 'true'
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '50801'
+        prometheus.io/scheme: 'http'
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '50801'
