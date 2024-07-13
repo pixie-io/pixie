@@ -716,14 +716,6 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* resul
         state->recv[std::tuple<uint32_t, uint32_t>(result->header_fields["packet_identifier"],
                                                    result->header_fields["qos"])] += 1;
       }
-    } else {
-      if (type == message_type_t::kRequest) {
-        state->send[std::tuple<uint32_t, uint32_t>(result->header_fields["packet_identifier"],
-                                                   result->header_fields["qos"])] = 0;
-      } else {
-        state->recv[std::tuple<uint32_t, uint32_t>(result->header_fields["packet_identifier"],
-                                                   result->header_fields["qos"])] = 0;
-      }
     }
   }
 

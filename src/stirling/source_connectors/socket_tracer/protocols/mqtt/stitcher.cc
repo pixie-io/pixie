@@ -105,24 +105,36 @@ RecordsWithErrorCount<Record> StitchFrames(
     for (mqtt::Message& req_frame : req_deque) {
       const MqttControlPacketType control_packet_type =
           magic_enum::enum_cast<MqttControlPacketType>(req_frame.control_packet_type).value();
+      // If the frame is AUTH, then do not classify, as request AUTH first comes from the server
+      // side which might be classified as response, so would be present in the response deque and
+      // not the request deque
+      // TODO: Handling of AUTH matching
+      if (control_packet_type == MqttControlPacketType::AUTH) {
+        req_frame.consumed = true;
+        continue;
+      }
       // If the frame is PUBLISH, and there are duplicates in the deque, then mark the frame as
       // consumed and match the latest duplicate with its response (if the response exists in the
       // response deque)
       if (control_packet_type == MqttControlPacketType::PUBLISH) {
         std::tuple<uint32_t, uint32_t> unique_publish_identifier = std::tuple<uint32_t, uint32_t>(
             req_frame.header_fields["packet_identifier"], req_frame.header_fields["qos"]);
-        if (req_frame.type == message_type_t::kRequest &&
-            state->send[unique_publish_identifier] > 0) {
-          state->send[unique_publish_identifier] -= 1;
-          req_frame.consumed = true;
-          continue;
+        if (req_frame.type == message_type_t::kRequest) {
+          auto it = state->send.find(unique_publish_identifier);
+          if (it != state->send.end() && it->second > 0) {
+            it->second -= 1;
+            req_frame.consumed = true;
+            continue;
+          }
         }
 
-        if (req_frame.type == message_type_t::kResponse &&
-            state->recv[unique_publish_identifier] > 0) {
-          state->recv[unique_publish_identifier] -= 1;
-          req_frame.consumed = true;
-          continue;
+        if (req_frame.type == message_type_t::kResponse) {
+          auto it = state->recv.find(unique_publish_identifier);
+          if (it != state->recv.end() && it->second > 0) {
+            it->second -= 1;
+            req_frame.consumed = true;
+            continue;
+          }
         }
       }
 
