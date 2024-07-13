@@ -65,8 +65,6 @@ std::map<MatchKey, MatchKey> MapRequestToResponse = {
     {0xa0, 0xb0},
     // PINGREQ to PINGRESP
     {0xc0, 0xd0},
-    // AUTH to AUTH
-    {0xf0, 0xf0},
     // DISCONNECT to Dummy response
     {0xe0, UnmatchedResp}};
 
