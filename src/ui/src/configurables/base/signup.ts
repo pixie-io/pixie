@@ -16,5 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Need to encapsulate so that newline is properly escaped.
 export const signupMessage = `Pixie Community is Free Forever.
 No Credit Card Needed.`;
