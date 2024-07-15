@@ -64,7 +64,6 @@ export const SignupPage = React.memo(() => {
           <AuthBox
             toggleURL={`/auth/login${window.location.search}`}
             title='Get Started'
-            // Need to encapsulate so that newline is properly escaped.
             body={signupMessage}
             buttonCaption='Already have an account?'
             buttonText='Login'
