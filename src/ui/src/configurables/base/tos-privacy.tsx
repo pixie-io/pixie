@@ -17,15 +17,15 @@
  */
 
 import * as React from 'react';
-export const termsUri = 'https://pixielabs.ai/terms';
-export const privacyUri = 'https://pixielabs.ai/privacy';
+export const termsUri = 'https://www.linuxfoundation.org/terms';
+export const privacyUri = 'https://www.linuxfoundation.org/privacy';
 
 export const TermsAndPrivacy = React.memo<{ classes: Record<'text', string> }>(({ classes }) => {
   return (<>
-    <a href='https://www.linuxfoundation.org/terms' className={classes.text}>
+    <a href={termsUri} className={classes.text}>
       Terms & Conditions
     </a>
-    <a href='https://www.linuxfoundation.org/privacy' className={classes.text}>
+    <a href={privacyUri} className={classes.text}>
       Privacy Policy
     </a>
   </>);
