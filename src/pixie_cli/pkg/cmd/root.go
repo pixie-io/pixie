@@ -72,6 +72,7 @@ func init() {
 	viper.BindPFlag("direct_vizier_key", RootCmd.PersistentFlags().Lookup("direct_vizier_key"))
 
 	RootCmd.AddCommand(VersionCmd)
+	RootCmd.AddCommand(ConfigCmd)
 	RootCmd.AddCommand(AuthCmd)
 	RootCmd.AddCommand(CollectLogsCmd)
 	RootCmd.AddCommand(CreateCloudCertsCmd)
@@ -201,6 +202,8 @@ var RootCmd = &cobra.Command{
 // Name a variable to store a slice of commands that don't require cloudAddr
 var cmdsCloudAddrNotReqd = []*cobra.Command{
 	CollectLogsCmd,
+	ConfigListCmd,
+	ConfigSetCmd,
 	VersionCmd,
 }
 
@@ -212,6 +215,12 @@ func getCloudAddrIfRequired(cmd *cobra.Command) string {
 	}
 
 	cloudAddr := viper.GetString("cloud_addr")
+	cfg := pxconfig.Cfg()
+	defaultCloudAddr = cfg.CloudAddr
+	if cloudAddr == "" && defaultCloudAddr != "" {
+		cloudAddr = defaultCloudAddr
+		viper.Set("cloud_addr", cloudAddr)
+	}
 	if cloudAddr == "" {
 		if !isatty.IsTerminal(os.Stdin.Fd()) {
 			utils.Errorf("No cloud address provided during run within non-interactive shell. Please set the cloud address using the `--cloud_addr` flag or `PX_CLOUD_ADDR` environment variable.")
@@ -229,6 +238,26 @@ func getCloudAddrIfRequired(cmd *cobra.Command) string {
 
 			cloudAddr = selectedCloud
 			viper.Set("cloud_addr", cloudAddr)
+
+			defaultCloudPrompt := promptui.Select{
+				Label: "Set as default cloud address?",
+				Items: []string{"Yes", "No"},
+			}
+			_, storeDefault, err := defaultCloudPrompt.Run()
+			if err != nil {
+				utils.WithError(err).Fatal("Failed to select default cloud address")
+				os.Exit(1)
+			}
+
+			if storeDefault == "Yes" {
+				cfg.CloudAddr = cloudAddr
+				err := pxconfig.UpdateConfig(cfg)
+
+				if err != nil {
+					utils.WithError(err).Fatal("Failed to update config file with default cloud address")
+					os.Exit(1)
+				}
+			}
 		}
 	}
 	return cloudAddr
