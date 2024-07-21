@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <map>
 
@@ -32,6 +31,7 @@ class MQTTParserTest : public ::testing::Test {};
 
 TEST_F(MQTTParserTest, Properties) {
   Message frame;
+  StateWrapper *state = nullptr;
   ParseState result_state;
   std::string_view frame_view;
 
@@ -333,45 +333,45 @@ TEST_F(MQTTParserTest, Properties) {
 
   frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(payload_format_indicator_publish));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["payload_format"], "utf-8");
   frame = Message();
 
   frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(message_expiry_interval_publish));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["message_expiry_interval"], "65536000");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(content_type_publish));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["content_type"], "application/json");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(response_topic_publish));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["response_topic"], "ABCXYZ");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(correlation_data_publish));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["correlation_data"], "ABCXYZ");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(subscription_id_subscribe));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["subscription_id"], "14860801");
   frame = Message();
 
   frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(session_exp_int_recv_max_connect));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["session_expiry_interval"], "1000000");
   EXPECT_EQ(frame.properties["receive_maximum"], "20");
@@ -379,7 +379,7 @@ TEST_F(MQTTParserTest, Properties) {
 
   frame_view = CreateStringView<char>(
       CharArrayStringView<uint8_t>(assigned_cid_topic_alias_max_recv_max_connack));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["assigned_client_identifier"],
             "auto-C8063868-7804-3F66-06B8-BACD9F673CB0");
@@ -388,50 +388,50 @@ TEST_F(MQTTParserTest, Properties) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(subscription_id_subscribe));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["subscription_id"], "14860801");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(auth_method_data_connect));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["auth_method"], "SCRAM-SHA-256");
   EXPECT_EQ(frame.properties["auth_data"], "client-first-message");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(req_prob_info_connect));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["request_problem_information"], "1");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(will_delay_interval_connect));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["will_delay_interval"], "30");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(req_resp_info_connect));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["request_response_information"], "1");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(topic_alias_publish));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["topic_alias"], "100");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(user_prop_subscribe));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["user-properties"], "{examplekey:examplevalue}");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(max_packet_size_connect));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["maximum_packet_size"], "1048576");
   frame = Message();
@@ -439,6 +439,7 @@ TEST_F(MQTTParserTest, Properties) {
 
 TEST_F(MQTTParserTest, Payload) {
   Message frame;
+  StateWrapper* state = nullptr;
   ParseState result_state;
   std::string_view frame_view;
 
@@ -534,7 +535,7 @@ TEST_F(MQTTParserTest, Payload) {
                               0x00};
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnectFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["will_topic"], "will-topic");
   EXPECT_EQ(frame.payload["will_payload"], "goodbye");
@@ -542,13 +543,13 @@ TEST_F(MQTTParserTest, Payload) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["publish_message"], "hello world");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubscribeFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["topic_filter"], "test/topic");
   std::map<std::string, uint8_t> subscription_opts(
@@ -557,19 +558,19 @@ TEST_F(MQTTParserTest, Payload) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["reason_code"], "0");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubscribeFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["topic_filter"], "test/topic");
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubackFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["reason_code"], "0");
   frame = Message();
@@ -577,6 +578,7 @@ TEST_F(MQTTParserTest, Payload) {
 
 TEST_F(MQTTParserTest, Headers) {
   Message frame;
+  StateWrapper* state = nullptr;
   std::string_view frame_view;
   ParseState result_state;
 
@@ -727,7 +729,7 @@ TEST_F(MQTTParserTest, Headers) {
                                     0x18};
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnectFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 1);
   EXPECT_EQ(frame.header_fields["remaining_length"], 16);
@@ -741,7 +743,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnackFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 2);
   EXPECT_EQ(frame.header_fields["remaining_length"], 53);
@@ -750,7 +752,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 3);
   EXPECT_EQ(frame.header_fields["remaining_length"], 26);
@@ -761,7 +763,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 4);
   EXPECT_EQ(frame.header_fields["remaining_length"], 3);
@@ -769,7 +771,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrecFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 5);
   EXPECT_EQ(frame.header_fields["remaining_length"], 2);
@@ -777,7 +779,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrelFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 6);
   EXPECT_EQ(frame.header_fields["remaining_length"], 2);
@@ -785,7 +787,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcompFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 7);
   EXPECT_EQ(frame.header_fields["remaining_length"], 2);
@@ -793,7 +795,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubscribeFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 8);
   EXPECT_EQ(frame.header_fields["remaining_length"], 16);
@@ -801,7 +803,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 9);
   EXPECT_EQ(frame.header_fields["remaining_length"], 4);
@@ -810,7 +812,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubscribeFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 10);
   EXPECT_EQ(frame.header_fields["remaining_length"], 15);
@@ -818,7 +820,7 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubackFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 11);
   EXPECT_EQ(frame.header_fields["remaining_length"], 4);
@@ -826,21 +828,21 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingreqFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 12);
   EXPECT_EQ(frame.header_fields["remaining_length"], 0);
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
-  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 13);
   EXPECT_EQ(frame.header_fields["remaining_length"], 0);
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kDisconnectFrame));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 14);
   EXPECT_EQ(frame.header_fields["remaining_length"], 1);
@@ -848,14 +850,14 @@ TEST_F(MQTTParserTest, Headers) {
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kAuthFrame_success));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 15);
   EXPECT_EQ(frame.header_fields["reason_code"], 0);
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kAuthFrame_cont_auth));
-  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, state);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 15);
   EXPECT_EQ(frame.header_fields["reason_code"], 0x18);

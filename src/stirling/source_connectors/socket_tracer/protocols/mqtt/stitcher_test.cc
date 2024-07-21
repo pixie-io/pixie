@@ -18,6 +18,7 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <gtest/gtest.h>
+#include <tuple>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/stitcher.h"

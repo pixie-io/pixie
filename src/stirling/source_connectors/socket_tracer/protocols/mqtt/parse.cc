@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <map>
 #include <string_view>
+#include <tuple>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/parse.h"

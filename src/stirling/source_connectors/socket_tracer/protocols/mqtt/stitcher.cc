@@ -70,11 +70,12 @@ std::map<MatchKey, MatchKey> MapRequestToResponse = {
 
 // Possible to have the server sending PUBLISH with same packet identifier as client PUBLISH before
 // it sends PUBACK, causing server PUBLISH to be put into response deque instead of request deque.
-// TODO: Reverse logic to match requests that have erroneously been put into response deque
+// TODO(ChinmayaSharma-hue): Reverse logic to match requests that have erroneously been put into
+// response deque
 
-MatchKey getMatchKey(mqtt::Message& frame) {
-  return (frame.control_packet_type << 4) | static_cast<uint8_t>(frame.dup) << 3 |
-         (frame.header_fields["qos"] & 0x3) << 1 | static_cast<uint8_t>(frame.retain);
+MatchKey getMatchKey(mqtt::Message* frame) {
+  return (frame->control_packet_type << 4) | static_cast<uint8_t>(frame->dup) << 3 |
+         (frame->header_fields["qos"] & 0x3) << 1 | static_cast<uint8_t>(frame->retain);
 }
 
 RecordsWithErrorCount<Record> StitchFrames(
@@ -106,7 +107,7 @@ RecordsWithErrorCount<Record> StitchFrames(
       // If the frame is AUTH, then do not classify, as request AUTH first comes from the server
       // side which might be classified as response, so would be present in the response deque and
       // not the request deque
-      // TODO: Handling of AUTH matching
+      // TODO(ChinmayaSharma-hue): Handling of AUTH matching
       if (control_packet_type == MqttControlPacketType::AUTH) {
         req_frame.consumed = true;
         continue;
@@ -137,7 +138,7 @@ RecordsWithErrorCount<Record> StitchFrames(
       }
 
       // getting the appropriate response match value for the request match key
-      MatchKey request_match_key = getMatchKey(req_frame);
+      MatchKey request_match_key = getMatchKey(&req_frame);
       auto iter = MapRequestToResponse.find(request_match_key);
       if (iter == MapRequestToResponse.end()) {
         VLOG(1) << absl::Substitute("Could not find any responses for frame type = $0",
@@ -169,7 +170,7 @@ RecordsWithErrorCount<Record> StitchFrames(
       // finding the first appropriate response frame with the desired control packet type and flags
       auto response_frame_iter = std::find_if(
           first_timestamp_iter, resp_deque.end(), [response_match_value](mqtt::Message& message) {
-            return (getMatchKey(message) == response_match_value) & !message.consumed;
+            return (getMatchKey(&message) == response_match_value) & !message.consumed;
           });
       if (response_frame_iter == resp_deque.end()) {
         VLOG(1) << absl::Substitute(
@@ -203,7 +204,8 @@ RecordsWithErrorCount<Record> StitchFrames(
   // Verify which deque server side PUBLISH frames are inserted into. It's suspected that these
   // PUBLISH requests will end up in the resp deque and will cause the resp deque cleanup logic to
   // erroneously drop request frames
-  // TODO: Verify that the frames in response deque are not request frames before dropping
+  // TODO(ChinmayaSharma-hue): Verify that the frames in response deque are not request frames
+  // before dropping
 
   // iterate through all response dequeues to find out which ones haven't been consumed
   for (auto& [packet_id, resp_deque] : *resp_frames) {
