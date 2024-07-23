@@ -67,6 +67,8 @@ using ::px::system::KernelVersion;
 using ::px::system::KernelVersionOrder;
 using ::px::system::ProcPidRootPath;
 
+constexpr std::string_view kUprobeSkippedMessage = "binary filename '$0' contained in uprobe opt out list, skipping.";
+
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   uprobe_opt_out_ = absl::StrSplit(FLAGS_stirling_uprobe_opt_out, ",", absl::SkipWhitespace());
@@ -484,7 +486,7 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid,
   if (std::find(uprobe_opt_out_.begin(), uprobe_opt_out_.end(), node_application_filepath) !=
       uprobe_opt_out_.end()) {
       VLOG(1) << absl::Substitute(
-          "binary filename '$0' contained in uprobe opt out list, skipping.", node_application_filepath);
+          kUprobeSkippedMessage, node_application_filepath);
     return 0;
   }
   const auto host_proc_exe = ProcPidRootPath(pid, proc_exe);
@@ -582,7 +584,7 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     if (std::find(binary_filter.begin(), binary_filter.end(), host_exe_path.filename()) !=
         binary_filter.end()) {
       VLOG(1) << absl::Substitute(
-          "binary filename '$0' contained in uprobe opt out list, skipping.", host_exe_path.string());
+          kUprobeSkippedMessage, host_exe_path.string());
       continue;
     }
     pids[host_exe_path.string()].push_back(upid.pid());
@@ -633,7 +635,7 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
     if (std::find(uprobe_opt_out_.begin(), uprobe_opt_out_.end(), exe_path.filename()) !=
         uprobe_opt_out_.end()) {
       VLOG(1) << absl::Substitute(
-          "binary filename '$0' contained in uprobe opt out list, skipping.", exe_path.string());
+          kUprobeSkippedMessage, exe_path.string());
       continue;
     }
 
