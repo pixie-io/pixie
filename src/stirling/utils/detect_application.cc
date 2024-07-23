@@ -49,6 +49,17 @@ Application DetectApplication(const std::filesystem::path& exe) {
   return Application::kUnknown;
 }
 
+std::string GetNodeApplicationFilename(std::string_view cmdline) {
+  std::vector<std::string> cmdline_parts = absl::StrSplit(cmdline, ' ');
+  for (const auto& part : cmdline_parts) {
+    if (absl::EndsWith(part, ".js")) {
+      std::filesystem::path path(part);
+      return path.filename();
+    }
+  }
+  return "";
+}
+
 bool operator<(const SemVer& lhs, const SemVer& rhs) {
   std::vector<int> lhs_vec = {lhs.major, lhs.minor, lhs.patch};
   std::vector<int> rhs_vec = {rhs.major, rhs.minor, rhs.patch};

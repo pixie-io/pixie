@@ -538,7 +538,7 @@ class UProbeManager {
    * @return The number of uprobes deployed. It is not an error if the binary
    * does not use OpenSSL; instead the return value will be zero.
    */
-  StatusOr<int> AttachNodeJsOpenSSLUprobes(uint32_t pid);
+  StatusOr<int> AttachNodeJsOpenSSLUprobes(uint32_t pid, const std::filesystem::path& binary_path);
 
   /**
    * Attaches the required probes for TLS tracing to the specified PID if the binary is
@@ -551,7 +551,8 @@ class UProbeManager {
    * @return The number of uprobes deployed. It is not an error if the binary
    *         does not contain the necessary symbols to probe; instead the return value will be zero.
    */
-  StatusOr<int> AttachOpenSSLUProbesOnStaticBinary(uint32_t pid);
+  StatusOr<int> AttachOpenSSLUProbesOnStaticBinary(uint32_t pid,
+                                                   const std::filesystem::path& binary_path);
 
   /**
    * Calls BCCWrapper.AttachUProbe() with a probe template and log any errors to the probe status
@@ -628,6 +629,7 @@ class UProbeManager {
   //               Without clean-up, these could consume more-and-more memory.
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
   absl::flat_hash_set<std::string> scanned_binaries_;
+  std::vector<std::string> uprobe_opt_out_;
   absl::flat_hash_set<std::string> go_probed_binaries_;
   absl::flat_hash_set<std::string> go_http2_probed_binaries_;
   absl::flat_hash_set<std::string> go_tls_probed_binaries_;
