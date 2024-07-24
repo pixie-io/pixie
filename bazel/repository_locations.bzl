@@ -177,9 +177,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip"],
     ),
     com_github_opentelemetry_proto = dict(
-        urls = ["https://github.com/open-telemetry/opentelemetry-proto/archive/refs/tags/v1.3.1.tar.gz"],
-        strip_prefix = "opentelemetry-proto-1.3.1",
-        sha256 = "bed250ceec8e4a83aa5604d7d5595a61945059dc662edd058a9da082283f7a00",
+        urls = ["https://github.com/open-telemetry/opentelemetry-proto/archive/refs/tags/v1.3.2.tar.gz"],
+        strip_prefix = "opentelemetry-proto-1.3.2",
+        sha256 = "c069c0d96137cf005d34411fa67dd3b6f1f8c64af1e7fb2fe0089a41c425acd7",
     ),
     com_github_packetzero_dnsparser = dict(
         sha256 = "bdf6c7f56f33725c1c32e672a4779576fb639dd2df565115778eb6be48296431",
