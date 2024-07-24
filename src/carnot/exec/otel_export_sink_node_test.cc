@@ -200,7 +200,7 @@ metrics {
   tester.ConsumeNext(rb1, 1, 0);
   EXPECT_EQ(non_utf_8_bytes, actual_protos[0]
                                  .resource_metrics(0)
-                                 .instrumentation_library_metrics(0)
+                                 .scope_metrics(0)
                                  .metrics(0)
                                  .gauge()
                                  .data_points(0)
@@ -300,7 +300,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       summary {
@@ -329,7 +329,7 @@ resource_metrics {
 }
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       summary {
@@ -398,7 +398,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -425,7 +425,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -460,7 +460,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -474,7 +474,7 @@ resource_metrics {
 }
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -503,7 +503,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -517,7 +517,7 @@ resource_metrics {
 }
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -547,7 +547,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       description: "tracks the response latency of http requests"
@@ -581,7 +581,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -596,7 +596,7 @@ resource_metrics {
                                R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -632,7 +632,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       summary {
@@ -670,7 +670,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "metric1"
       gauge {
@@ -740,7 +740,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -767,7 +767,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -794,7 +794,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -821,7 +821,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -881,7 +881,7 @@ eos: true)pb"},
                               {R"pb(
 resource_metrics {
   resource {}
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -950,7 +950,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -977,7 +977,7 @@ resource_metrics {
       }
     }
   }
-  instrumentation_library_metrics {
+  scope_metrics {
     metrics {
       name: "http.resp.latency"
       gauge {
@@ -1092,7 +1092,7 @@ resource_spans {
       }
     }
   }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1135,7 +1135,7 @@ eos: true)pb"},
                               {R"pb(
 resource_spans {
   resource { }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1173,7 +1173,7 @@ eos: true)pb"},
                               {R"pb(
 resource_spans {
   resource {}
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span1"
       start_time_unix_nano: 10
@@ -1188,7 +1188,7 @@ resource_spans {
 }
 resource_spans {
   resource {}
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span2"
       start_time_unix_nano: 20
@@ -1257,7 +1257,7 @@ resource_spans {
       }
     }
   }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1284,7 +1284,7 @@ resource_spans {
       }
     }
   }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1311,7 +1311,7 @@ resource_spans {
       }
     }
   }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1338,7 +1338,7 @@ resource_spans {
       }
     }
   }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1365,7 +1365,7 @@ resource_spans {
       }
     }
   }
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 20
@@ -1432,7 +1432,7 @@ eos: true)pb"},
                               {R"pb(
 resource_spans {
   resource {}
-  instrumentation_library_spans {
+  scope_spans {
     spans {
       name: "span"
       start_time_unix_nano: 10
@@ -1530,7 +1530,7 @@ TEST_P(SpanIDTests, generate_ids) {
   tester.ConsumeNext(*rb.get(), 1, 0);
 
   for (const auto& [s_idx, span] : Enumerate(actual_proto.resource_spans())) {
-    for (const auto& ilm : span.instrumentation_library_spans()) {
+    for (const auto& ilm : span.scope_spans()) {
       for (const auto& span : ilm.spans()) {
         SCOPED_TRACE(absl::Substitute("span $0", s_idx));
         {
