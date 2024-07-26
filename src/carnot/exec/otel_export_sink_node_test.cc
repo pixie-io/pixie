@@ -1738,16 +1738,14 @@ TEST_F(OTelExportSinkNodeTest, consume_spans_clears_span_responses) {
   EXPECT_CALL(*trace_mock_, Export(_, _, _))
       .Times(::testing::AtLeast(2))
       .WillOnce(DoAll(SetArgPointee<2>(error_response), Return(grpc::Status::OK)))
-      .WillRepeatedly(Invoke(
-          [&](const auto&, const auto&, auto* response) {
-
-              // It's expected that the response argument provided to Export
-              // has .Clear() called on it. This CALL assertion verifies that the
-              // response object no longer has rejected data points since it should
-              // have been .Clear()'ed at the beginning of the second ConsumeTraces invocation
-            EXPECT_TRUE(response->partial_success().rejected_spans() == 0);
-            return grpc::Status::OK;
-          }));
+      .WillRepeatedly(Invoke([&](const auto&, const auto&, auto* response) {
+        // It's expected that the response argument provided to Export
+        // has .Clear() called on it. This CALL assertion verifies that the
+        // response object no longer has rejected data points since it should
+        // have been .Clear()'ed at the beginning of the second ConsumeTraces invocation
+        EXPECT_EQ(response->partial_success().rejected_spans(), 0);
+        return grpc::Status::OK;
+      }));
 
   planpb::OTelExportSinkOperator otel_sink_op;
 
@@ -1794,16 +1792,14 @@ TEST_F(OTelExportSinkNodeTest, metrics_response_is_cleared) {
   EXPECT_CALL(*metrics_mock_, Export(_, _, _))
       .Times(::testing::AtLeast(2))
       .WillOnce(DoAll(SetArgPointee<2>(error_response), Return(grpc::Status::OK)))
-      .WillRepeatedly(Invoke(
-          [&](const auto&, const auto&, auto* response) {
-
-              // It's expected that the response argument provided to Export
-              // has .Clear() called on it. This CALL assertion verifies that the
-              // response object no longer has rejected data points since it should
-              // have been .Clear()'ed at the beginning of the second ConsumeMetrics invocation
-            EXPECT_TRUE(response->partial_success().rejected_data_points() == 0);
-            return grpc::Status::OK;
-          }));
+      .WillRepeatedly(Invoke([&](const auto&, const auto&, auto* response) {
+        // It's expected that the response argument provided to Export
+        // has .Clear() called on it. This CALL assertion verifies that the
+        // response object no longer has rejected data points since it should
+        // have been .Clear()'ed at the beginning of the second ConsumeMetrics invocation
+        EXPECT_EQ(response->partial_success().rejected_data_points(), 0);
+        return grpc::Status::OK;
+      }));
 
   planpb::OTelExportSinkOperator otel_sink_op;
 
