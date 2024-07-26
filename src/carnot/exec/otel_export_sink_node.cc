@@ -233,9 +233,9 @@ Status OTelExportSinkNode::ConsumeMetrics(ExecState* exec_state, const RowBatch&
     // TODO(philkuz) optimize by pooling metrics by resource within a batch.
     // TODO(philkuz) optimize by pooling data per metric per resource.
 
-    auto library_metrics = resource_metrics.add_instrumentation_library_metrics();
+    auto scope_metrics = resource_metrics.add_scope_metrics();
     for (const auto& metric_pb : plan_node_->metrics()) {
-      auto metric = library_metrics->add_metrics();
+      auto metric = scope_metrics->add_metrics();
       metric->set_name(metric_pb.name());
       metric->set_description(metric_pb.description());
       metric->set_unit(metric_pb.unit());
@@ -349,9 +349,9 @@ Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& r
     auto resource = resource_spans.mutable_resource();
     AddAttributes(resource->mutable_attributes(), plan_node_->resource_attributes_normal_encoding(),
                   rb, row_idx);
-    auto library_spans = resource_spans.add_instrumentation_library_spans();
+    auto scope_spans = resource_spans.add_scope_spans();
     for (const auto& span_pb : plan_node_->spans()) {
-      auto span = library_spans->add_spans();
+      auto span = scope_spans->add_spans();
       if (span_pb.has_name_string()) {
         span->set_name(span_pb.name_string());
       } else {
