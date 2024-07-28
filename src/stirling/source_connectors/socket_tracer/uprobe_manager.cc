@@ -567,8 +567,7 @@ namespace {
 
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
-    const absl::flat_hash_set<md::UPID>& upids,
-    const absl::flat_hash_set<std::string>& opt_out_filter) {
+    const absl::flat_hash_set<md::UPID>& upids) {
   const system::ProcParser proc_parser;
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
@@ -580,11 +579,6 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     const auto host_exe_path = ProcPidRootPath(upid.pid(), exe_path);
 
     if (!fs::Exists(host_exe_path)) {
-      continue;
-    }
-    // Add filter here if the executable should be omitted
-    if (opt_out_filter.contains(host_exe_path.filename().string())) {
-      VLOG(1) << absl::Substitute(kUprobeSkippedMessage, host_exe_path.string());
       continue;
     }
     pids[host_exe_path.string()].push_back(upid.pid());
@@ -845,7 +839,13 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
   static int32_t kPID = getpid();
 
-  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids, uprobe_opt_out_)) {
+  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
+    std::filesystem::path binary_path(binary);
+    auto binary_filepath = binary_path.filename().string();
+    if (uprobe_opt_out_.contains(binary_filepath)) {
+      VLOG(1) << absl::Substitute(kUprobeSkippedMessage, binary_filepath);
+      continue;
+    }
     // Don't bother rescanning binaries that have been scanned before to avoid unnecessary work.
     if (!scanned_binaries_.insert(binary).second) {
       continue;
