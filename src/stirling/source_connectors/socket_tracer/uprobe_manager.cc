@@ -72,7 +72,8 @@ constexpr std::string_view kUprobeSkippedMessage =
 
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>();
-  uprobe_opt_out_ = absl::StrSplit(FLAGS_stirling_uprobe_opt_out, ",", absl::SkipWhitespace());
+  auto opt_out_list = absl::StrSplit(FLAGS_stirling_uprobe_opt_out, ",", absl::SkipWhitespace());
+  uprobe_opt_out_ = absl::flat_hash_set<std::string>(opt_out_list.begin(), opt_out_list.end());
 }
 
 void UProbeManager::Init(bool disable_go_tls_tracing, bool enable_http2_tracing,
@@ -484,8 +485,7 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid,
 
   const std::string exe_cmdline = proc_parser_->GetPIDCmdline(pid);
   const std::string node_application_filepath = GetNodeApplicationFilename(exe_cmdline);
-  if (std::find(uprobe_opt_out_.begin(), uprobe_opt_out_.end(), node_application_filepath) !=
-      uprobe_opt_out_.end()) {
+  if (uprobe_opt_out_.contains(node_application_filepath)) {
     VLOG(1) << absl::Substitute(kUprobeSkippedMessage, node_application_filepath);
     return 0;
   }
@@ -566,7 +566,8 @@ namespace {
 
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
-    const absl::flat_hash_set<md::UPID>& upids, const std::vector<std::string>& binary_filter) {
+    const absl::flat_hash_set<md::UPID>& upids,
+    const absl::flat_hash_set<std::string>& opt_out_filter) {
   const system::ProcParser proc_parser;
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
@@ -581,8 +582,7 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
       continue;
     }
     // Add filter here if the executable should be omitted
-    if (std::find(binary_filter.begin(), binary_filter.end(), host_exe_path.filename()) !=
-        binary_filter.end()) {
+    if (opt_out_filter.contains(host_exe_path.filename().string())) {
       VLOG(1) << absl::Substitute(kUprobeSkippedMessage, host_exe_path.string());
       continue;
     }
@@ -631,8 +631,7 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
 
     PX_ASSIGN_OR(const auto exe_path, proc_parser_->GetExePath(pid.pid()), continue);
 
-    if (std::find(uprobe_opt_out_.begin(), uprobe_opt_out_.end(), exe_path.filename()) !=
-        uprobe_opt_out_.end()) {
+    if (uprobe_opt_out_.contains(exe_path.filename().string())) {
       VLOG(1) << absl::Substitute(kUprobeSkippedMessage, exe_path.string());
       continue;
     }
