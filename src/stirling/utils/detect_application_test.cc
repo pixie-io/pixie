@@ -37,7 +37,7 @@ TEST(DetectApplicationTest, ResultsAreAsExpected) {
 TEST(GetNodeApplicatFilenameTest, ResultsAreAsExpected) {
   EXPECT_EQ(GetNodeApplicationFilename("node /usr/bin/test.js"), "test.js");
   EXPECT_EQ(GetNodeApplicationFilename("node --node-memory-debug /usr/bin/test.js"), "test.js");
-  EXPECT_EQ(GetNodeApplicationFilename("node /usr/bin/test"), "");
+  EXPECT_FALSE(GetNodeApplicationFilename("node /usr/bin/test").has_value());
 }
 
 TEST(GetSemVerTest, AsExpected) {

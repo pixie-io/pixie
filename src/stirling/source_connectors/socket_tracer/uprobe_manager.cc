@@ -484,9 +484,10 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid,
   }
 
   const std::string exe_cmdline = proc_parser_->GetPIDCmdline(pid);
-  const std::string node_application_filepath = GetNodeApplicationFilename(exe_cmdline);
-  if (uprobe_opt_out_.contains(node_application_filepath)) {
-    VLOG(1) << absl::Substitute(kUprobeSkippedMessage, node_application_filepath);
+  const auto node_application_filepath = GetNodeApplicationFilename(exe_cmdline);
+  if (node_application_filepath.has_value() &&
+      uprobe_opt_out_.contains(node_application_filepath.value())) {
+    VLOG(1) << absl::Substitute(kUprobeSkippedMessage, node_application_filepath.value());
     return 0;
   }
   const auto host_proc_exe = ProcPidRootPath(pid, proc_exe);

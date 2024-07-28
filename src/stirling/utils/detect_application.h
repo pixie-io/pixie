@@ -37,7 +37,7 @@ enum class Application {
 Application DetectApplication(const std::filesystem::path& exe);
 
 // Returns the filename of a node application from the command line.
-std::string GetNodeApplicationFilename(std::string_view cmdline);
+std::optional<std::string> GetNodeApplicationFilename(std::string_view cmdline);
 
 // Describes a semantic versioning number.
 struct SemVer {
