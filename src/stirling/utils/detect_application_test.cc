@@ -34,6 +34,12 @@ TEST(DetectApplicationTest, ResultsAreAsExpected) {
   EXPECT_EQ(Application::kNode, DetectApplication("/usr/bin/nodejs"));
 }
 
+TEST(GetNodeApplicatFilenameTest, ResultsAreAsExpected) {
+  EXPECT_EQ(GetNodeApplicationFilename("node /usr/bin/test.js"), "test.js");
+  EXPECT_EQ(GetNodeApplicationFilename("node --node-memory-debug /usr/bin/test.js"), "test.js");
+  EXPECT_FALSE(GetNodeApplicationFilename("node /usr/bin/test").has_value());
+}
+
 TEST(GetSemVerTest, AsExpected) {
   ASSERT_OK_AND_ASSIGN(SemVer sem_ver, GetSemVer("v1.12.13-test", true));
   EXPECT_EQ(sem_ver.major, 1);
