@@ -55,15 +55,14 @@ std::string_view kGoBuildInfoMagic =
 
 // Reads a Go string encoded within a buildinfo header. This function is meant to provide the same
 // functionality as
-// https://github.com/golang/go/blob/master/src/debug/buildinfo/buildinfo.go#L244C37-L244C44
+// https://github.com/golang/go/blob/aa97a012b4be393c1725c16a78b92dea81632378/src/debug/buildinfo/buildinfo.go#L282
 StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uint64_t ptr_addr,
                                    read_ptr_func_t read_ptr) {
   PX_ASSIGN_OR_RETURN(u8string_view data_addr, elf_reader->BinaryByteCode(ptr_addr, ptr_size));
   PX_ASSIGN_OR_RETURN(u8string_view data_len,
                       elf_reader->BinaryByteCode(ptr_addr + ptr_size, ptr_size));
 
-  PX_ASSIGN_OR_RETURN(uint64_t vaddr_offset, elf_reader->GetVirtualAddrAtOffsetZero());
-  ptr_addr = read_ptr(data_addr) - vaddr_offset;
+  PX_ASSIGN_OR_RETURN(ptr_addr, elf_reader->VirtualAddrToBinaryAddr(read_ptr(data_addr)));
   uint64_t str_length = read_ptr(data_len);
 
   PX_ASSIGN_OR_RETURN(std::string_view go_version_bytecode,
@@ -136,10 +135,11 @@ StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
     }
   }
 
-  PX_ASSIGN_OR_RETURN(uint64_t vaddr_offset, elf_reader->GetVirtualAddrAtOffsetZero());
-
-  PX_ASSIGN_OR_RETURN(auto s, binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
-  uint64_t ptr_addr = read_ptr(s) - vaddr_offset;
+  // Reads the virtual address location of the runtime.buildVersion symbol.
+  PX_ASSIGN_OR_RETURN(auto runtime_version_vaddr,
+                      binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
+  PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
+                      elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
 
   return ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr);
 }
