@@ -61,9 +61,11 @@ struct Section {
   int64_t file_offset;
 };
 
-StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path, const std::string& section_name) {
+StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path,
+                                           const std::string& section_name) {
   Section section;
-  std::string objdump_out = px::Exec(absl::StrCat("objdump -h -j ", section_name, " ", path)).ValueOrDie();
+  std::string objdump_out =
+      px::Exec(absl::StrCat("objdump -h -j ", section_name, " ", path)).ValueOrDie();
   std::vector<absl::string_view> objdump_out_lines = absl::StrSplit(objdump_out, '\n');
   for (auto& line : objdump_out_lines) {
     if (line.find(section_name) != std::string::npos) {
@@ -83,8 +85,6 @@ StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path, const std::s
     return error::Internal("Unable to find section with name $0", section_name);
   }
 
-  LOG(INFO) << "Section: " << absl::Substitute("name: $0, size: $1, vma: $2, lma: $3, file_offset: $4",
-                                              section.name, section.size, section.vma, section.lma, section.file_offset);
   return section;
 }
 
@@ -183,8 +183,8 @@ TEST(ElfReaderTest, SymbolAddress) {
 
 TEST(ElfReaderTest, VirtualAddrToBinaryAddr) {
   const std::string path = kTestExeFixture.Path().string();
-  const std::string kBssSection = ".data";
-  ASSERT_OK_AND_ASSIGN(const Section section, ObjdumpSectionNameToAddr(path, kBssSection));
+  const std::string kDataSection = ".data";
+  ASSERT_OK_AND_ASSIGN(const Section section, ObjdumpSectionNameToAddr(path, kDataSection));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
   const int64_t offset = 1;

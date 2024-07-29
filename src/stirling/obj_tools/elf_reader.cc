@@ -611,8 +611,6 @@ StatusOr<uint64_t> ElfReader::VirtualAddrToBinaryAddr(uint64_t virtual_addr) {
     uint64_t virt_addr = segment->get_virtual_address();
     uint64_t offset = segment->get_offset();
     uint64_t size = segment->get_file_size();
-    LOG(INFO) << absl::Substitute("Segment $0: virt_addr=$1, offset=$2, size=$3", i, virt_addr,
-                                  offset, size);
     if (virtual_addr >= virt_addr && virtual_addr < virt_addr + size) {
       return virtual_addr - virt_addr + offset;
     }
