@@ -31,7 +31,7 @@ class MQTTParserTest : public ::testing::Test {};
 
 TEST_F(MQTTParserTest, Properties) {
   Message frame;
-  StateWrapper *state = nullptr;
+  StateWrapper* state = nullptr;
   ParseState result_state;
   std::string_view frame_view;
 

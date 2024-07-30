@@ -36,7 +36,7 @@ TEST(MqttStitcherTest, EmptyInputs) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   result = StitchFrames(&req_map, &resp_map, &state);
 
@@ -51,7 +51,7 @@ TEST(MqttStitcherTest, OnlyRequests) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   Message connect_frame, pingreq_frame;
   connect_frame = CreateFrame(kRequest, MqttControlPacketType::CONNECT, 0, 0);
@@ -77,7 +77,7 @@ TEST(MqttStitcherTest, OnlyResponses) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   Message connack_frame, pingresp_frame;
   connack_frame = CreateFrame(kResponse, MqttControlPacketType::CONNACK, 0, 0);
@@ -102,7 +102,7 @@ TEST(MqttStitcherTest, MissingResponseBeforeNextResponse) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   Message pub1_frame, puback_frame, sub_frame, suback_frame, unsub_frame, unsuback_frame;
   pub1_frame = CreateFrame(kRequest, MqttControlPacketType::PUBLISH, 1, 1);
@@ -141,7 +141,7 @@ TEST(MqttStitcherTest, MissingResponseTailEnd) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   Message pub1_frame, sub_frame, suback_frame, unsub_frame, unsuback_frame;
   pub1_frame = CreateFrame(kRequest, MqttControlPacketType::PUBLISH, 1, 1);
@@ -182,7 +182,7 @@ TEST(MqttStitcherTest, MissingRequest) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   Message connect_frame, connack_frame, pingresp_frame;
   connect_frame = CreateFrame(kRequest, MqttControlPacketType::CONNECT, 0, 0);
@@ -212,7 +212,7 @@ TEST(MqttStitcherTest, InOrderMatching) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   // Establishment of connection, ping requests and responses, and three publish requests (qos 1,
   // qos 2 and qos 1) with increasing packet identifiers (since they are sent before their responses
@@ -296,7 +296,7 @@ TEST(MqttStitcherTest, OutOfOrderMatching) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   // Delayed response for PUBLISH (PID 3, QOS 1) and SUBSCRIBE (PID 4) (Delayed meaning some the
   // response for this request comes after the responses for later requests)
@@ -355,7 +355,7 @@ TEST(MqttStitcherTest, DummyResponseStitching) {
   absl::flat_hash_map<packet_id_t, std::deque<Message>> resp_map;
 
   RecordsWithErrorCount<Record> result;
-  StateWrapper state = {.send = {}, .recv = {}};
+  StateWrapper state = {.global = {}, .send = {}, .recv = {}};
 
   Message pub0_frame, disconnect_frame, connect_frame, connack_frame;
   pub0_frame = CreateFrame(kRequest, MqttControlPacketType::PUBLISH, 0, 0);  // PUBLISH with QoS 0
