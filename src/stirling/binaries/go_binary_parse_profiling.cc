@@ -29,8 +29,8 @@ using px::stirling::obj_tools::ElfReader;
 // This utility is designed to isolate parsing the debug symbols of a Go binary. This
 // verifies that the go version detection code is functioning as well. This is useful
 // for debugging when the Go elf/DWARF parsing is not working correctly and has been the
-// source of a few PEM crashes (gh#1300, gh#1646). This makes it easy for asking end users to run against
-// their binaries when they are sensitive (proprietary) and we can't debug them ourselves.
+// source of a few PEM crashes (gh#1300, gh#1646). This makes it easy for asking end users to run
+// against their binaries when they are sensitive (proprietary) and we can't debug them ourselves.
 //-----------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
