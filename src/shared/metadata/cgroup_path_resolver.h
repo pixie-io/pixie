@@ -28,6 +28,7 @@
 #include "src/shared/metadata/k8s_objects.h"
 
 DECLARE_bool(force_cgroup2_mode);
+DECLARE_bool(force_cgroup1_mode);
 
 namespace px {
 namespace md {

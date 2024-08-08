@@ -32,6 +32,7 @@ constexpr std::string_view kContainerID =
     "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62";
 
 TEST(CGroupPathResolver, GKEFormat) {
+  FLAGS_force_cgroup1_mode = true;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/kubepods/pod8dbc5577-d0e2-4706-8787-57d52c03ddf2/"
       "14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d/cgroup.procs";
@@ -56,6 +57,7 @@ TEST(CGroupPathResolver, GKEFormat) {
 }
 
 TEST(CGroupPathResolver, GKEFormat2) {
+  FLAGS_force_cgroup1_mode = true;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/kubepods/burstable/podc458de04-9784-4f7a-990e-cefe26b511f0/"
       "01aa0bfe91e8a58da5f1f4db469fa999fe9263c702111e611445cde2b9cb0c1a/cgroup.procs";
@@ -80,6 +82,7 @@ TEST(CGroupPathResolver, GKEFormat2) {
 }
 
 TEST(CGroupPathResolver, StandardFormatDocker) {
+  FLAGS_force_cgroup1_mode = true;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/"
@@ -111,6 +114,7 @@ TEST(CGroupPathResolver, StandardFormatDocker) {
 }
 
 TEST(CGroupPathResolver, StandardFormatCRIO) {
+  FLAGS_force_cgroup1_mode = true;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/"
@@ -142,6 +146,7 @@ TEST(CGroupPathResolver, StandardFormatCRIO) {
 }
 
 TEST(CGroupPathResolver, OpenShiftFormat) {
+  FLAGS_force_cgroup1_mode = true;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
       "kubepods-burstable-pod9b7969b2_aad0_47d4_b11c_4acfd1ce018e.slice/"
@@ -181,6 +186,7 @@ TEST(CGroupPathResolver, OpenShiftFormat) {
 }
 
 TEST(CGroupPathResolver, BareMetalK8s_1_21) {
+  FLAGS_force_cgroup1_mode = true;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/"
       "kubepods-besteffort-pod1544eb37_e4f7_49eb_8cc4_3d01c41be77b.slice:cri-containerd:"
@@ -224,6 +230,7 @@ std::string GetSysFsPathFromTestDataFile(const std::string& fname,
 }  // namespace
 
 TEST(LegacyCGroupPathResolverTest, GKEFormat) {
+  FLAGS_force_cgroup1_mode = true;
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
@@ -246,6 +253,7 @@ TEST(LegacyCGroupPathResolverTest, GKEFormat) {
 }
 
 TEST(LegacyCGroupPathResolverTest, StandardFormat) {
+  FLAGS_force_cgroup1_mode = true;
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
@@ -317,6 +325,7 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
 }
 
 TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
+  FLAGS_force_cgroup1_mode = false;
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
@@ -349,6 +358,7 @@ TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
 }
 
 TEST(CGroupPathResolver, Cgroup2Format) {
+  FLAGS_force_cgroup1_mode = false;
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/kubepods.slice/"
       "kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/"

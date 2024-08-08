@@ -28,11 +28,21 @@
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
 DEFINE_bool(force_cgroup2_mode, true, "Flag to force assume cgroup2 fs for testing purposes");
+DEFINE_bool(force_cgroup1_mode, false, "Flag to force use of cgroup v1 fs");
 
 namespace px {
 namespace md {
 
 StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
+  std::string cgv2_base_path = absl::StrCat(sysfs_path, "/cgroup");
+  struct statfs info;
+  auto fs_status = statfs(cgv2_base_path.c_str(), &info);
+  bool cgroupv2 = (fs_status == 0) && (info.f_type == CGROUP2_SUPER_MAGIC);
+
+  if (cgroupv2 && !FLAGS_force_cgroup1_mode) {
+    return cgv2_base_path;
+  }
+
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
   const std::vector<std::string> cgroup_dirs = {"cpu,cpuacct", "cpu", "pids"};
 
@@ -47,15 +57,11 @@ StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
     }
   }
 
-  std::string cgv2_base_path = absl::StrCat(sysfs_path, "/cgroup");
-  struct statfs info;
-  auto fs_status = statfs(cgv2_base_path.c_str(), &info);
-  bool cgroupv2 = (fs_status == 0) && (info.f_type == CGROUP2_SUPER_MAGIC);
-
+  // TODO(ddelnano): this aids in testing the LegacyCGroupPathResolver. Determine what
+  // to do with this.
   if (cgroupv2 || FLAGS_force_cgroup2_mode) {
     return cgv2_base_path;
   }
-  // (TODO): This check for cgroup2FS is eventually to be moved above the cgroupv1 check.
 
   return error::NotFound("Could not find CGroup base path");
 }
