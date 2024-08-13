@@ -53,7 +53,7 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debuglink_target",
         "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_19_nm_output"
+        "//src/stirling/obj_tools/testdata/go:test_go_1_19_nm_output",
     ],
     deps = [
         ":cc_library",

@@ -89,7 +89,8 @@ StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path,
   return section;
 }
 
-StatusOr<int64_t> NmSymbolNameToAddr(const std::string& nm_output_path, const std::string& symbol_name) {
+StatusOr<int64_t> NmSymbolNameToAddr(const std::string& nm_output_path,
+                                     const std::string& symbol_name) {
   // Extract the address from nm as the gold standard.
   int64_t symbol_addr = -1;
   PX_ASSIGN_OR_RETURN(auto nm_out, px::ReadFileToString(nm_output_path));
@@ -310,7 +311,8 @@ TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
 // Coverage build might alter the resultant binary.
 #ifndef PL_COVERAGE
-  ASSERT_OK_AND_ASSIGN(auto expected_addr, NmSymbolNameToAddr(kGoBinNmOutput, "runtime.buildVersion"));
+  ASSERT_OK_AND_ASSIGN(auto expected_addr,
+                       NmSymbolNameToAddr(kGoBinNmOutput, "runtime.buildVersion"));
   EXPECT_EQ(symbol.address, expected_addr);
 #endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";

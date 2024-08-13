@@ -53,8 +53,8 @@ cc_library(
     name = "test_exe_fixture",
     hdrs = ["test_exe_fixture.h"],
     data = [
-      ":test_exe",
-      ":test_exe_nm_output",
+        ":test_exe",
+        ":test_exe_nm_output",
     ],
     deps = ["//src/common/exec:cc_library"],
 )

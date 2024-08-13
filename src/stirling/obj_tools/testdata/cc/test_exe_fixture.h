@@ -31,7 +31,8 @@ namespace obj_tools {
 class TestExeFixture {
  public:
   static constexpr char kTestExePath[] = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
-  static constexpr char kTestExeNmOutputPath[] = "src/stirling/obj_tools/testdata/cc/test_exe_nm_output";
+  static constexpr char kTestExeNmOutputPath[] =
+      "src/stirling/obj_tools/testdata/cc/test_exe_nm_output";
 
   const std::filesystem::path& Path() const { return test_exe_path_; }
   const std::filesystem::path& NmOutputPath() const { return test_exe_nm_output_path_; }
@@ -43,7 +44,8 @@ class TestExeFixture {
 
  private:
   const std::filesystem::path test_exe_path_ = testing::BazelRunfilePath(kTestExePath);
-  const std::filesystem::path test_exe_nm_output_path_ = testing::BazelRunfilePath(kTestExeNmOutputPath);
+  const std::filesystem::path test_exe_nm_output_path_ =
+      testing::BazelRunfilePath(kTestExeNmOutputPath);
 };
 
 }  // namespace obj_tools
