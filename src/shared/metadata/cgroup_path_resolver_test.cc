@@ -317,6 +317,7 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
 }
 
 TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
+  PX_SET_FOR_SCOPE(FLAGS_force_cgroup2_mode, true);
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
@@ -326,7 +327,6 @@ TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
           "cgroup.procs",
           "testdata/sysfs3")));
 
-  FLAGS_force_cgroup2_mode = true;
   EXPECT_EQ(
       GetPathToTestDataFile(
           "testdata/sysfs3/cgroup/kubepods.slice/kubepods-besteffort.slice/"
