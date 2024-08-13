@@ -89,10 +89,10 @@ StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path,
   return section;
 }
 
-StatusOr<int64_t> NmSymbolNameToAddr(const std::string& path, const std::string& symbol_name) {
+StatusOr<int64_t> NmSymbolNameToAddr(const std::string& nm_output_path, const std::string& symbol_name) {
   // Extract the address from nm as the gold standard.
   int64_t symbol_addr = -1;
-  std::string nm_out = px::Exec(absl::StrCat("nm ", path)).ValueOrDie();
+  PX_ASSIGN_OR_RETURN(auto nm_out, px::ReadFileToString(nm_output_path));
   std::vector<absl::string_view> nm_out_lines = absl::StrSplit(nm_out, '\n');
   for (auto& line : nm_out_lines) {
     if (line.find(symbol_name) != std::string::npos) {
@@ -163,8 +163,9 @@ TEST(ElfReaderTest, ListFuncSymbolsSuffixMatch) {
 
 TEST(ElfReaderTest, SymbolAddress) {
   const std::string path = kTestExeFixture.Path().string();
+  const std::string nm_output_path = kTestExeFixture.NmOutputPath().string();
   const std::string kSymbolName = "CanYouFindThis";
-  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(nm_output_path, kSymbolName));
 
   // Actual tests of SymbolAddress begins here.
 
@@ -195,8 +196,9 @@ TEST(ElfReaderTest, VirtualAddrToBinaryAddr) {
 
 TEST(ElfReaderTest, AddrToSymbol) {
   const std::string path = kTestExeFixture.Path().string();
+  const std::string nm_output_path = kTestExeFixture.NmOutputPath().string();
   const std::string kSymbolName = "CanYouFindThis";
-  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(nm_output_path, kSymbolName));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -216,8 +218,9 @@ TEST(ElfReaderTest, AddrToSymbol) {
 
 TEST(ElfReaderTest, InstrAddrToSymbol) {
   const std::string path = kTestExeFixture.Path().string();
+  const std::string nm_output_path = kTestExeFixture.NmOutputPath().string();
   const std::string kSymbolName = "CanYouFindThis";
-  ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(nm_output_path, kSymbolName));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -300,12 +303,14 @@ TEST(ElfReaderTest, FuncByteCode) {
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
   const std::string kPath =
       px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_19_binary");
+  const std::string kGoBinNmOutput =
+      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_19_nm_output");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
 // Coverage build might alter the resultant binary.
 #ifndef PL_COVERAGE
-  ASSERT_OK_AND_ASSIGN(auto expected_addr, NmSymbolNameToAddr(kPath, "runtime.buildVersion"));
+  ASSERT_OK_AND_ASSIGN(auto expected_addr, NmSymbolNameToAddr(kGoBinNmOutput, "runtime.buildVersion"));
   EXPECT_EQ(symbol.address, expected_addr);
 #endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";

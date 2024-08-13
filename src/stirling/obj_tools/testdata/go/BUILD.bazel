@@ -47,6 +47,14 @@ pl_go_binary(
     for sdk_version in pl_supported_go_sdk_versions
 ]
 
+genrule(
+    name = "test_go_1_19_nm_output_target",
+    srcs = [":test_go_1_19_binary"],
+    outs = ["test_go_1_19_nm_output"],
+    cmd = "$(NM) $(location :test_go_1_19_binary) > $(location test_go_1_19_nm_output)",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+)
+
 filegroup(
     name = "test_binaries",
     testonly = True,
