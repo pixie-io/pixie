@@ -40,6 +40,55 @@ using ::testing::UnorderedElementsAre;
 
 using ::px::operator<<;
 
+// Models ELF section output information from objdump -h.
+// ELFIO::section's do not contain virtual memory addresses like ELFIO::segment's do
+// so this struct is used to store the information from objdump.
+// Example objdump output:
+//
+// $ objdump -j .bss -h bazel-bin/src/stirling/obj_tools/testdata/cc/test_exe/test_exe
+//
+// bazel-bin/src/stirling/obj_tools/testdata/cc/test_exe/test_exe:     file format elf64-x86-64
+//
+// Sections:
+// Idx Name          Size      VMA               LMA               File off  Algn
+//  27 .bss          00002068  00000000000bd100  00000000000bd100  000ba100  2**5
+//                    ALLOC
+struct Section {
+  std::string name;
+  int64_t size;
+  int64_t vma;
+  int64_t lma;
+  int64_t file_offset;
+};
+
+// TODO(ddelnano): Make this function hermetic by providing the objdump output via bazel
+StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path,
+                                           const std::string& section_name) {
+  Section section;
+  std::string objdump_out =
+      px::Exec(absl::StrCat("objdump -h -j ", section_name, " ", path)).ValueOrDie();
+  std::vector<absl::string_view> objdump_out_lines = absl::StrSplit(objdump_out, '\n');
+  for (auto& line : objdump_out_lines) {
+    if (line.find(section_name) != std::string::npos) {
+      std::vector<absl::string_view> line_split = absl::StrSplit(line, ' ', absl::SkipWhitespace());
+      CHECK(!line_split.empty());
+
+      section.name = std::string(line_split[1]);
+      section.size = std::stol(std::string(line_split[2]), nullptr, 16);
+      section.vma = std::stol(std::string(line_split[3]), nullptr, 16);
+      section.lma = std::stol(std::string(line_split[4]), nullptr, 16);
+      section.file_offset = std::stol(std::string(line_split[5]), nullptr, 16);
+      break;
+    }
+  }
+
+  if (section.name != section_name) {
+    return error::Internal("Unable to find section with name $0", section_name);
+  }
+
+  return section;
+}
+
 StatusOr<int64_t> NmSymbolNameToAddr(const std::string& path, const std::string& symbol_name) {
   // Extract the address from nm as the gold standard.
   int64_t symbol_addr = -1;
@@ -131,6 +180,17 @@ TEST(ElfReaderTest, SymbolAddress) {
     std::optional<int64_t> addr = elf_reader->SymbolAddress("bogus");
     ASSERT_FALSE(addr.has_value());
   }
+}
+
+TEST(ElfReaderTest, VirtualAddrToBinaryAddr) {
+  const std::string path = kTestExeFixture.Path().string();
+  const std::string kDataSection = ".data";
+  ASSERT_OK_AND_ASSIGN(const Section section, ObjdumpSectionNameToAddr(path, kDataSection));
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+  const int64_t offset = 1;
+  ASSERT_OK_AND_ASSIGN(auto binary_addr, elf_reader->VirtualAddrToBinaryAddr(section.vma + offset));
+  EXPECT_EQ(binary_addr, section.file_offset + offset);
 }
 
 TEST(ElfReaderTest, AddrToSymbol) {

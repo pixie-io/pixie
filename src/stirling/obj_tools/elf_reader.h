@@ -161,6 +161,18 @@ class ElfReader {
   StatusOr<u8string> SymbolByteCode(std::string_view section, const SymbolInfo& symbol);
 
   /**
+   * Returns the binary address that corresponds to the given virtual address.
+   * This virtual address will not be subject to ASLR since the calculation is based entirely on the
+   * ELF file and its section and segment information. Given this, most of the time
+   * ElfAddressConverter::VirtualAddrToBinaryAddr is a more appropriate utility to use.
+   *
+   * Certain use cases may require this function, such as cases where the Go toolchain
+   * embeds virtual addresses within a binary and must be parsed (See ReadGoBuildVersion and
+   * ReadGoString in go_syms.cc).
+   */
+  StatusOr<uint64_t> VirtualAddrToBinaryAddr(uint64_t virtual_addr);
+
+  /**
    * Returns the virtual address in the ELF file of offset 0x0. Calculated by finding the first
    * loadable segment and returning its virtual address minus its file offset.
    */

@@ -605,6 +605,19 @@ StatusOr<ELFIO::section*> ElfReader::SectionWithName(std::string_view section_na
   return error::NotFound("Could not find section=$0 in binary=$1", section_name, binary_path_);
 }
 
+StatusOr<uint64_t> ElfReader::VirtualAddrToBinaryAddr(uint64_t virtual_addr) {
+  for (int i = 0; i < elf_reader_.segments.size(); i++) {
+    ELFIO::segment* segment = elf_reader_.segments[i];
+    uint64_t virt_addr = segment->get_virtual_address();
+    uint64_t offset = segment->get_offset();
+    uint64_t size = segment->get_file_size();
+    if (virtual_addr >= virt_addr && virtual_addr < virt_addr + size) {
+      return virtual_addr - virt_addr + offset;
+    }
+  }
+  return error::Internal("Could not find binary address for virtual address=$0", virtual_addr);
+}
+
 StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
                                                     const SymbolInfo& symbol) {
   PX_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section));

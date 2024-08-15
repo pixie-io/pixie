@@ -464,6 +464,8 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   return Status::OK();
 }
 
+}  // namespace
+
 Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                                  struct go_tls_symaddrs_t* symaddrs) {
   PX_ASSIGN_OR_RETURN(std::string build_version, ReadGoBuildVersion(elf_reader));
@@ -509,8 +511,6 @@ Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reade
 
   return Status::OK();
 }
-
-}  // namespace
 
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,
                                                        DwarfReader* dwarf_reader) {
