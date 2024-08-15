@@ -61,6 +61,7 @@ struct Section {
   int64_t file_offset;
 };
 
+// TODO(ddelnano): Make this function hermetic by providing the objdump output via bazel
 StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path,
                                            const std::string& section_name) {
   Section section;
