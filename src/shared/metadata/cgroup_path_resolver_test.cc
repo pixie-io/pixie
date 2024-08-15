@@ -317,7 +317,7 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
 }
 
 TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
-  PX_SET_FOR_SCOPE(FLAGS_force_cgroup2_mode, true);
+  PX_SET_FOR_SCOPE(FLAGS_test_only_force_cgroup2_mode, true);
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
@@ -357,7 +357,7 @@ TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
 //
 // sysfsv2 and sysfsv3 model cgroupv1 and cgroupv2 respectively.
 TEST(LeagcyCGroupPathResolverTest, Cgroup2With1) {
-  PX_SET_FOR_SCOPE(FLAGS_force_cgroup2_mode, true);
+  PX_SET_FOR_SCOPE(FLAGS_test_only_force_cgroup2_mode, true);
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(

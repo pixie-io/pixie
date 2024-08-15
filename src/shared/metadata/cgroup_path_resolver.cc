@@ -27,7 +27,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
-DEFINE_bool(force_cgroup2_mode, false, "Flag to force assume cgroup2 fs for testing purposes");
+DEFINE_bool(test_only_force_cgroup2_mode, false, "Flag to force assume cgroup2 fs for testing purposes");
 
 namespace px {
 namespace md {
@@ -53,8 +53,8 @@ StatusOr<std::vector<std::string>> CGroupBasePaths(std::string_view sysfs_path) 
   auto fs_status = statfs(cgv2_base_path.c_str(), &info);
   bool cgroupv2 = (fs_status == 0) && (info.f_type == CGROUP2_SUPER_MAGIC);
 
-  if (cgroupv2 || FLAGS_force_cgroup2_mode) {
-    if (FLAGS_force_cgroup2_mode) {
+  if (cgroupv2 || FLAGS_test_only_force_cgroup2_mode) {
+    if (FLAGS_test_only_force_cgroup2_mode) {
       return std::vector{cgv2_base_path};
     }
     base_paths.push_back(cgv2_base_path);
