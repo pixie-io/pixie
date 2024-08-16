@@ -27,7 +27,8 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
-DEFINE_bool(test_only_force_cgroup2_mode, false, "Flag to force assume cgroup2 fs for testing purposes");
+DEFINE_bool(test_only_force_cgroup2_mode, false,
+            "Flag to force assume cgroup2 fs for testing purposes");
 
 namespace px {
 namespace md {
