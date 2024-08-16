@@ -316,7 +316,7 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
                              ContainerType::kContainerd));
 }
 
-TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
+TEST(LegacyCGroupPathResolverTest, Cgroup2Format) {
   PX_SET_FOR_SCOPE(FLAGS_test_only_force_cgroup2_mode, true);
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
