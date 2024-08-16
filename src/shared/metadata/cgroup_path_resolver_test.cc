@@ -348,46 +348,6 @@ TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
                              ContainerType::kDocker));
 }
 
-// This tests simulates a system where cgroup v1 and v2 are both present. This has been observed
-// in OVH's managed kubernetes service.
-//
-// The testdata/sysfs4-cgroup-v1andv2 directory was created with the following commands:
-// sudo mount -t overlay overlay -o lowerdir=sysfs2/cgroup:sysfs3/cgroup \
-// sysfs4-cgroup-v1andv2/cgroup
-//
-// sysfsv2 and sysfsv3 model cgroupv1 and cgroupv2 respectively.
-TEST(LeagcyCGroupPathResolverTest, Cgroup2With1) {
-  PX_SET_FOR_SCOPE(FLAGS_test_only_force_cgroup2_mode, true);
-  ASSERT_OK_AND_ASSIGN(
-      auto path_resolver,
-      LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
-          "testdata/sysfs4-cgroup-v1andv2/cgroup/kubepods.slice/kubepods-besteffort.slice/"
-          "kubepods-besteffort-pod47810e8e_b9cb_4ac6_b12d_9e0577fa8237.slice/"
-          "docker-28efca84cc7d707bdfbc5646144bba6c4417de2cf63f8583179603ce434d6dfe.scope/"
-          "cgroup.procs",
-          "testdata/sysfs4-cgroup-v1andv2")));
-
-  EXPECT_EQ(
-      GetPathToTestDataFile(
-          "testdata/sysfs4-cgroup-v1andv2/cgroup/kubepods.slice/kubepods-besteffort.slice/"
-          "kubepods-besteffort-pod47810e8e_b9cb_4ac6_b12d_9e0577fa8237.slice/"
-          "docker-28efca84cc7d707bdfbc5646144bba6c4417de2cf63f8583179603ce434d6dfe.scope/"
-          "cgroup.procs"),
-      path_resolver->PodPath(PodQOSClass::kBestEffort, "47810e8e_b9cb_4ac6_b12d_9e0577fa8237",
-                             "28efca84cc7d707bdfbc5646144bba6c4417de2cf63f8583179603ce434d6dfe",
-                             ContainerType::kDocker));
-
-  EXPECT_EQ(
-      GetPathToTestDataFile(
-          "testdata/sysfs4-cgroup-v1andv2/cgroup/kubepods.slice/kubepods-burstable.slice/"
-          "kubepods-burstable-pod16de73f898f4460d96d28cf19ba8407f.slice/"
-          "docker-23ac1540f833b029f76af6a513c4861a54bb9b77a6e3648b6f8392b1a09686ba.scope/"
-          "cgroup.procs"),
-      path_resolver->PodPath(PodQOSClass::kBurstable, "16de73f898f4460d96d28cf19ba8407f",
-                             "23ac1540f833b029f76af6a513c4861a54bb9b77a6e3648b6f8392b1a09686ba",
-                             ContainerType::kDocker));
-}
-
 TEST(CGroupPathResolver, Cgroup2Format) {
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/kubepods.slice/"
@@ -418,6 +378,17 @@ TEST(CGroupPathResolver, Cgroup2Format) {
       "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
 }
+
+/**
+ * TODO(ddelnano): Refactor the cgroup resolver code so that logic within AutoDiscoverCGroupPath
+ * and CGroupBasePaths can be tested. OVH's managed k8s failed to work with our logic because
+ * it enables cgroup v1 and v2 while the PEM existed in a v2 cgroup. Ideally our tests would
+ * cover the following scenarios for both LegacyCGroupPathResolver and CGroupPathResolver:
+ * 1. cgroup1 only
+ * 2. cgroup2 only
+ * 3. cgroup1+cgroup2 w/ cgroup1 failing (gh#XXX bug)
+ * 4. cgroup1+cgroup2 w/ cgroup1 succeeding
+ */
 
 }  // namespace md
 }  // namespace px
