@@ -81,6 +81,11 @@ BPF_HASH(active_accept_args_map, uint64_t, struct accept_args_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_connect_args_map, uint64_t, struct connect_args_t);
 
+// Map from thread to its sock* struct. This facilitates capturing
+// the local address of a tcp socket during connect() syscalls.
+// Key is {tgid, pid}.
+BPF_HASH(tcp_connect_args_map, uint64_t, struct sock *);
+
 // Map from thread to its ongoing write() syscall's input argument.
 // Tracks write() call from entry -> exit.
 // Key is {tgid, pid}.
@@ -346,12 +351,8 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  ***********************************************************/
 
 static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
-                                          const struct socket* socket) {
-  // Use BPF_PROBE_READ_KERNEL_VAR since BCC cannot insert them as expected.
-  struct sock* sk = NULL;
-  BPF_PROBE_READ_KERNEL_VAR(sk, &socket->sk);
-
-  struct sock_common* sk_common = &sk->__sk_common;
+                                          const struct sock* sk) {
+  const struct sock_common* sk_common = &sk->__sk_common;
   uint16_t family = -1;
   uint16_t lport = -1;
   uint16_t rport = -1;
@@ -377,12 +378,12 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
 }
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
-                                     const struct sockaddr* addr, const struct socket* socket,
+                                     const struct sockaddr* addr, const struct sock* sock,
                                      enum endpoint_role_t role, enum source_function_t source_fn) {
   struct conn_info_t conn_info = {};
   init_conn_info(tgid, fd, &conn_info);
-  if (socket != NULL) {
-    read_sockaddr_kernel(&conn_info, socket);
+  if (sock != NULL) {
+    read_sockaddr_kernel(&conn_info, sock);
   } else if (addr != NULL) {
     conn_info.raddr = *((union sockaddr_t*)addr);
   }
@@ -585,6 +586,57 @@ int conn_cleanup_uprobe(struct pt_regs* ctx) {
   return 0;
 }
 
+// These probes are used to capture the *sock struct during client side tracing
+// of connect() syscalls. This is necessary to capture the socket's local address,
+// which is not accessible via the connect() and later syscalls.
+//
+// This function requires that the function being probed receives a struct sock* as its
+// first argument and that the active_connect_args_map is populated when this probe fires.
+// This means the function being probed must be part of the connect() syscall path or similar
+// syscall path.
+//
+// Using the struct sock* for capturing a socket's local address only works for TCP sockets.
+// The equivalent UDP functions (udp_v4_connect, udp_v6_connect and upd_sendmsg) always receive a sock
+// struct with a 0.0.0.0 or ::1 local address. This is deemed acceptable since our local address
+// population for server side tracing relies on accept/accept4, which only applies for TCP.
+//
+// TODO(ddelnano): The current implementation works for mid stream TCP connections despite
+// my intuition that tcp_v4_connect and tcp_v6_connect should not be called mid stream.
+// If mid stream connections have a missing local address in the future, we should probe
+// tcp_sendmsg in addition to the current probes. This will require discerning between the
+// UDP and TCP case in process_implicit_conn.
+//
+// int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
+// static int tcp_v6_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
+int probe_entry_populate_active_connect_sock(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args == NULL) {
+    return 0;
+  }
+  struct sock* sk = (struct sock *)PT_REGS_PARM1(ctx);
+  tcp_connect_args_map.update(&id, &sk);
+
+  return 0;
+}
+
+int probe_ret_populate_active_connect_sock(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  struct sock** sk = tcp_connect_args_map.lookup(&id);
+  if (sk == NULL) {
+    return 0;
+  }
+  struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args != NULL) {
+    connect_args->connect_sock = *sk;
+  }
+
+  tcp_connect_args_map.delete(&id);
+  return 0;
+}
+
 /***********************************************************
  * BPF syscall processing functions
  ***********************************************************/
@@ -629,7 +681,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleClient, kSyscallConnect);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, args->connect_sock, kRoleClient, kSyscallConnect);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -645,7 +697,11 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, ret_fd, args->addr, args->sock_alloc_socket, kRoleServer,
+  const struct sock* sk = NULL;
+  if (args->sock_alloc_socket != NULL) {
+    BPF_PROBE_READ_KERNEL_VAR(sk, &args->sock_alloc_socket->sk);
+  }
+  submit_new_conn(ctx, tgid, ret_fd, args->addr, sk, kRoleServer,
                   kSyscallAccept);
 }
 
@@ -690,7 +746,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleUnknown, source_fn);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, /*sock*/ NULL, kRoleUnknown, source_fn);
 }
 
 static __inline bool should_send_data(uint32_t tgid, uint64_t conn_disabled_tsid,

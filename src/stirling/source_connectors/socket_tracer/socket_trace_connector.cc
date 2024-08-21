@@ -342,6 +342,10 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
     {"close", ProbeType::kReturn, "syscall__probe_ret_close"},
     {"mmap", ProbeType::kEntry, "syscall__probe_entry_mmap"},
     {"sock_alloc", ProbeType::kReturn, "probe_ret_sock_alloc", /*is_syscall*/ false},
+    {"tcp_v4_connect", ProbeType::kEntry, "probe_entry_populate_active_connect_sock", /*is_syscall*/ false},
+    {"tcp_v4_connect", ProbeType::kReturn, "probe_ret_populate_active_connect_sock", /*is_syscall*/ false},
+    {"tcp_v6_connect", ProbeType::kEntry, "probe_entry_populate_active_connect_sock", /*is_syscall*/ false},
+    {"tcp_v6_connect", ProbeType::kReturn, "probe_ret_populate_active_connect_sock", /*is_syscall*/ false},
     {"security_socket_sendmsg", ProbeType::kEntry, "probe_entry_socket_sendmsg",
      /*is_syscall*/ false, /* is_optional */ false,
      std::make_shared<bpf_tools::KProbeSpec>(bpf_tools::KProbeSpec{
