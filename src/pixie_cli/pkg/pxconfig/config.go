@@ -21,7 +21,6 @@ package pxconfig
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"sync"
 
 	"github.com/gofrs/uuid"
@@ -32,40 +31,13 @@ import (
 // ConfigInfo store the config about the CLI.
 type ConfigInfo struct {
 	// UniqueClientID is the ID assigned to this user on first startup when auth information is not know. This can be later associated with the UserID.
-	UniqueClientID     string `json:"uniqueClientID"`
-	ConfigInfoSettable `mapstructure:",squash"`
-}
-
-type ConfigInfoSettable struct {
-	CloudAddr string `json:"cloudAddr,omitempty"`
+	UniqueClientID string `json:"uniqueClientID"`
 }
 
 var (
 	config *ConfigInfo
 	once   sync.Once
 )
-
-func GetSettableConfigKeys() []string {
-	val := reflect.ValueOf(ConfigInfoSettable{})
-	keys := []string{}
-	for i := 0; i < val.NumField(); i++ {
-		keys = append(keys, val.Type().Field(i).Name)
-	}
-	return keys
-}
-
-func UpdateConfig(cfg *ConfigInfo) error {
-	configPath, err := utils.EnsureDefaultConfigFilePath()
-	if err != nil {
-		utils.WithError(err).Fatal("Failed to load/create config file path")
-	}
-	f, err := os.OpenFile(configPath, os.O_RDWR|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return json.NewEncoder(f).Encode(cfg)
-}
 
 func writeDefaultConfig(path string) (*ConfigInfo, error) {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
