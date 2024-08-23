@@ -119,6 +119,12 @@ module_path="${pkg_dir}/root/lib/modules/${KERNEL_VERSION}"
 module_build_path="${module_path}/build"
 module_source_path="${module_path}/source"
 
+# linux 6.6 removed the source symlink from the modules_install target.
+# Add in to keep compatibility with older kernels and our build process.
+# https://github.com/torvalds/linux/commit/d8131c2965d5ee59bfa4d548641e52a13cbe17c9
+if [[ ! -L "${module_source_path}" ]]; then
+    ln -s "${kernel_source_dir}" "${module_source_path}"
+fi
 create_unlinked_dir "${module_build_path}"
 create_unlinked_dir "${module_source_path}"
 
