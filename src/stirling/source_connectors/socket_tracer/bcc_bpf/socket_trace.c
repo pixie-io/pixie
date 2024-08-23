@@ -599,14 +599,9 @@ int conn_cleanup_uprobe(struct pt_regs* ctx) {
 // sock struct with a 0.0.0.0 or ::1 local address. This is deemed acceptable since our local
 // address population for server side tracing relies on accept/accept4, which only applies for TCP.
 //
-// TODO(ddelnano): The current implementation works for mid stream TCP connections despite
-// my intuition that tcp_v4_connect and tcp_v6_connect should not be called mid stream.
-// If mid stream connections have a missing local address in the future, we should probe
-// tcp_sendmsg in addition to the current probes. This will require discerning between the
-// UDP and TCP case in process_implicit_conn.
-//
 // int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
 // static int tcp_v6_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
+// int tcp_sendmsg(struct sock *sk, struct msghdr *msg, size_t size);
 int probe_entry_populate_active_connect_sock(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -745,7 +740,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, args->fd, args->addr, /*sock*/ NULL, kRoleUnknown, source_fn);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, args->connect_sock, kRoleUnknown, source_fn);
 }
 
 static __inline bool should_send_data(uint32_t tgid, uint64_t conn_disabled_tsid,

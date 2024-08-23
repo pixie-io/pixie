@@ -350,6 +350,10 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
      /*is_syscall*/ false},
     {"tcp_v6_connect", ProbeType::kReturn, "probe_ret_populate_active_connect_sock",
      /*is_syscall*/ false},
+    {"tcp_sendmsg", ProbeType::kEntry, "probe_entry_populate_active_connect_sock",
+     /*is_syscall*/ false},
+    {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_populate_active_connect_sock",
+     /*is_syscall*/ false},
     {"security_socket_sendmsg", ProbeType::kEntry, "probe_entry_socket_sendmsg",
      /*is_syscall*/ false, /* is_optional */ false,
      std::make_shared<bpf_tools::KProbeSpec>(bpf_tools::KProbeSpec{
