@@ -84,7 +84,7 @@ BPF_HASH(active_connect_args_map, uint64_t, struct connect_args_t);
 // Map from thread to its sock* struct. This facilitates capturing
 // the local address of a tcp socket during connect() syscalls.
 // Key is {tgid, pid}.
-BPF_HASH(tcp_connect_args_map, uint64_t, struct sock *);
+BPF_HASH(tcp_connect_args_map, uint64_t, struct sock*);
 
 // Map from thread to its ongoing write() syscall's input argument.
 // Tracks write() call from entry -> exit.
@@ -350,8 +350,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  * Perf submit functions
  ***********************************************************/
 
-static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
-                                          const struct sock* sk) {
+static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info, const struct sock* sk) {
   const struct sock_common* sk_common = &sk->__sk_common;
   uint16_t family = -1;
   uint16_t lport = -1;
@@ -596,9 +595,9 @@ int conn_cleanup_uprobe(struct pt_regs* ctx) {
 // syscall path.
 //
 // Using the struct sock* for capturing a socket's local address only works for TCP sockets.
-// The equivalent UDP functions (udp_v4_connect, udp_v6_connect and upd_sendmsg) always receive a sock
-// struct with a 0.0.0.0 or ::1 local address. This is deemed acceptable since our local address
-// population for server side tracing relies on accept/accept4, which only applies for TCP.
+// The equivalent UDP functions (udp_v4_connect, udp_v6_connect and upd_sendmsg) always receive a
+// sock struct with a 0.0.0.0 or ::1 local address. This is deemed acceptable since our local
+// address population for server side tracing relies on accept/accept4, which only applies for TCP.
 //
 // TODO(ddelnano): The current implementation works for mid stream TCP connections despite
 // my intuition that tcp_v4_connect and tcp_v6_connect should not be called mid stream.
@@ -615,7 +614,7 @@ int probe_entry_populate_active_connect_sock(struct pt_regs* ctx) {
   if (connect_args == NULL) {
     return 0;
   }
-  struct sock* sk = (struct sock *)PT_REGS_PARM1(ctx);
+  struct sock* sk = (struct sock*)PT_REGS_PARM1(ctx);
   tcp_connect_args_map.update(&id, &sk);
 
   return 0;
@@ -681,7 +680,8 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, args->fd, args->addr, args->connect_sock, kRoleClient, kSyscallConnect);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, args->connect_sock, kRoleClient,
+                  kSyscallConnect);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -701,8 +701,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
   if (args->sock_alloc_socket != NULL) {
     BPF_PROBE_READ_KERNEL_VAR(sk, &args->sock_alloc_socket->sk);
   }
-  submit_new_conn(ctx, tgid, ret_fd, args->addr, sk, kRoleServer,
-                  kSyscallAccept);
+  submit_new_conn(ctx, tgid, ret_fd, args->addr, sk, kRoleServer, kSyscallAccept);
 }
 
 // TODO(oazizi): This is badly broken (but better than before).

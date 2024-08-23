@@ -136,7 +136,8 @@ inline std::vector<bool> GetEncrypted(const types::ColumnWrapperRecordBatch& rb,
 }
 
 inline std::vector<std::string> GetLocalAddrs(const types::ColumnWrapperRecordBatch& rb,
-                                      const int local_addr_idx, const std::vector<size_t>& indices) {
+                                              const int local_addr_idx,
+                                              const std::vector<size_t>& indices) {
   std::vector<std::string> laddrs;
   for (size_t idx : indices) {
     laddrs.push_back(rb[local_addr_idx]->Get<types::StringValue>(idx));
@@ -145,7 +146,8 @@ inline std::vector<std::string> GetLocalAddrs(const types::ColumnWrapperRecordBa
 }
 
 inline std::vector<int64_t> GetLocalPorts(const types::ColumnWrapperRecordBatch& rb,
-                                      const int local_port_idx, const std::vector<size_t>& indices) {
+                                          const int local_port_idx,
+                                          const std::vector<size_t>& indices) {
   std::vector<int64_t> ports;
   for (size_t idx : indices) {
     ports.push_back(rb[local_port_idx]->Get<types::Int64Value>(idx).val);

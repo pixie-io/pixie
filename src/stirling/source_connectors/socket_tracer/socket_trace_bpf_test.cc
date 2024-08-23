@@ -39,17 +39,17 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 
 namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::FindRecordsMatchingPID;
-using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::stirling::testing::GetLocalAddrs;
 using ::px::stirling::testing::GetLocalPorts;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
 using ::px::system::UnixSocket;
@@ -806,7 +806,8 @@ TEST_F(LocalAddrTest, IPv4ConnectPopulatesLocalAddr) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  std::vector<size_t> indices = testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices =
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   ColumnWrapperRecordBatch records = testing::SelectRecordBatchRows(record_batch, indices);
 
   ASSERT_THAT(records, RecordBatchSizeIs(2));
@@ -821,7 +822,8 @@ TEST_F(LocalAddrTest, IPv4ConnectPopulatesLocalAddr) {
   for (auto lport : GetLocalPorts(records, kHTTPLocalPortIdx, indices)) {
     // TODO(ddelnano): Determine why the local_addr column is storing the port
     // in network byte order.
-    LOG(INFO) << "Local port: " << lport << " and pre ntohs " << client_sockaddr.sin_port << " and ntohs " << port;
+    LOG(INFO) << "Local port: " << lport << " and pre ntohs " << client_sockaddr.sin_port
+              << " and ntohs " << port;
     if (lport == client_sockaddr.sin_port) {
       found_port = true;
       break;
@@ -879,7 +881,8 @@ TEST_F(LocalAddrTest, IPv6ConnectPopulatesLocalAddr) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  std::vector<size_t> indices = testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices =
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   ColumnWrapperRecordBatch records = testing::SelectRecordBatchRows(record_batch, indices);
 
   ASSERT_THAT(records, RecordBatchSizeIs(2));
@@ -894,7 +897,8 @@ TEST_F(LocalAddrTest, IPv6ConnectPopulatesLocalAddr) {
   for (auto lport : GetLocalPorts(records, kHTTPLocalPortIdx, indices)) {
     // TODO(ddelnano): Determine why the local_addr column is storing the port
     // in network byte order.
-    LOG(INFO) << "Local port: " << lport << " and pre ntohs " << client_sockaddr.sin6_port << " and ntohs " << port;
+    LOG(INFO) << "Local port: " << lport << " and pre ntohs " << client_sockaddr.sin6_port
+              << " and ntohs " << port;
     if (lport == client_sockaddr.sin6_port) {
       found_port = true;
       break;
