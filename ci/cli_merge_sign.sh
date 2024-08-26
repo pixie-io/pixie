@@ -51,9 +51,9 @@ lipo -create -output cli_darwin_universal cli_darwin_arm64 cli_darwin_amd64
 export APP_IDENTITY="Developer ID Application: Pixie Labs Inc. (${TEAM_ID})"
 codesign -f -v --timestamp --options runtime -s "${APP_IDENTITY}" cli_darwin_universal cli_darwin_arm64 cli_darwin_amd64
 
-xcrun notarytool submit cli_darwin_universal --apple-id "${APPLE_ID}" --password "${AC_PASSWD}" --team-id "${TEAM_ID}" --bundle-id ai.pixielabs.px --progress --verbose --wait
-xcrun notarytool submit cli_darwin_amd64 --apple-id "${APPLE_ID}" --password "${AC_PASSWD}" --team-id "${TEAM_ID}" --bundle-id ai.pixielabs.px --progress --verbose --wait
-xcrun notarytool submit cli_darwin_arm64 --apple-id "${APPLE_ID}" --password "${AC_PASSWD}" --team-id "${TEAM_ID}" --bundle-id ai.pixielabs.px --progress --verbose --wait
+xcrun notarytool submit cli_darwin_universal --apple-id "${APPLE_ID}" --password "${AC_PASSWD}" --team-id "${TEAM_ID}" --progress --verbose --wait
+xcrun notarytool submit cli_darwin_amd64 --apple-id "${APPLE_ID}" --password "${AC_PASSWD}" --team-id "${TEAM_ID}" --progress --verbose --wait
+xcrun notarytool submit cli_darwin_arm64 --apple-id "${APPLE_ID}" --password "${AC_PASSWD}" --team-id "${TEAM_ID}" --progress --verbose --wait
 
 cp cli_darwin_universal "${artifacts_dir}"
 cp cli_darwin_amd64 "${artifacts_dir}"
