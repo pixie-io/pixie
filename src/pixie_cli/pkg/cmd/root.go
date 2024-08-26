@@ -41,10 +41,10 @@ import (
 
 var (
 	AvailableCloudAddrs = []string{
+		"getcosmic.ai:443",
 		"withpixie.ai:443",
 	}
-	// cloud addr is a required argument. Use empty string since Viper requires a default value.
-	defaultCloudAddr = ""
+	defaultCloudAddr = AvailableCloudAddrs[0]
 )
 
 func init() {
@@ -52,6 +52,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringP("cloud_addr", "a", defaultCloudAddr, "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
+
+	RootCmd.PersistentFlags().Bool("interactive_cloud_select", false, "Whether to interactively select the cloud address.")
+	viper.BindPFlag("interactive_cloud_select", RootCmd.PersistentFlags().Lookup("interactive_cloud_select"))
 
 	RootCmd.PersistentFlags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if using a cluster local cloud.")
 	viper.BindPFlag("dev_cloud_namespace", RootCmd.PersistentFlags().Lookup("dev_cloud_namespace"))
@@ -210,9 +213,10 @@ func getCloudAddrIfRequired(cmd *cobra.Command) string {
 	if slices.Contains(cmdsCloudAddrNotReqd, cmd) || cmd.Short == "Help about any command" {
 		return defaultCloudAddr
 	}
+	interactiveCloudSelect := viper.GetBool("interactive_cloud_select")
 
 	cloudAddr := viper.GetString("cloud_addr")
-	if cloudAddr == "" {
+	if interactiveCloudSelect {
 		if !isatty.IsTerminal(os.Stdin.Fd()) {
 			utils.Errorf("No cloud address provided during run within non-interactive shell. Please set the cloud address using the `--cloud_addr` flag or `PX_CLOUD_ADDR` environment variable.")
 			os.Exit(1)
