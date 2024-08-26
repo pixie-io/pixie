@@ -87,8 +87,6 @@ jobs:
         fetch-depth: 0
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
-    - name: Install gon
-      run: brew install mitchellh/gon/gon
     - name: Sign CLI release
       env:
         REF: ${{ github.event.ref }}
