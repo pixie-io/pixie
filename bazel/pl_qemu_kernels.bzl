@@ -37,7 +37,6 @@ def qemu_kernel_deps():
             name = kernel_version_to_name(version),
             urls = [
                 "https://github.com/pixie-io/dev-artifacts/releases/download/kernel-build%2F{}/linux-build-{}.tar.gz".format(kernel_build_date, version),
-                "https://storage.googleapis.com/pixie-dev-public/kernel-build/{}/linux-build-{}.tar.gz".format(kernel_build_date, version),
             ],
             sha256 = sha,
             downloaded_file_path = "linux-build.tar.gz",
