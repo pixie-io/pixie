@@ -31,10 +31,11 @@ nightly_regression_test_iterations="${NIGHTLY_REGRESSION_TEST_ITERATIONS:-5}"
 all_kernel_versions=(
   "4.14.254"
   "4.19.254"
-  "5.10.173"
-  "5.15.101"
-  "5.4.235"
-  "6.1.18"
+  "5.4.254"
+  "5.10.224"
+  "5.15.165"
+  "6.1.106"
+  "6.8.12"
 )
 default_kernel_versions=(
   "4.14.254"
