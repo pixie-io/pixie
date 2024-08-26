@@ -128,10 +128,11 @@ KERNEL_BUILD_DIR := $(BUILD_DIR)/kernel_build
 # 4.19.276, 4.14.304 are the correct versions here, but there is a bug with patch > 255.
 KERNEL_BUILD_VERSIONS := 4.14.254 \
 	4.19.254 \
-	5.4.235 \
-	5.10.173 \
-	5.15.101 \
-	6.1.18
+	5.4.254 \
+	5.10.224 \
+	5.15.165 \
+	6.1.106 \
+	6.8.12
 
 KERNEL_BUILD_TEMPLATE := linux-build-%.tar.gz
 KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_BUILD_TEMPLATE), $(KERNEL_BUILD_VERSIONS)))
