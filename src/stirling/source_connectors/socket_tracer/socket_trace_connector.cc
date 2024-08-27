@@ -176,7 +176,7 @@ DEFINE_bool(
     stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", false),
     "If true, stirling will add additional prometheus metrics regarding the traced tls sources");
 
-DEFINE_uint32(stirling_bpf_loop_limit, 42,
+DEFINE_uint32(stirling_bpf_loop_limit, 41,
               "The maximum number of iovecs to capture for syscalls. "
               "Set conservatively for older kernels by default to keep the instruction count below "
               "BPF's limit for version 4 kernels (4096 per probe).");
