@@ -896,6 +896,11 @@ std::vector<std::string> GenIncludes() {
   return {
       // For struct task_struct.
       "#include <linux/sched.h>",
+      // NSEC_PER_SEC is not defined within linux/sched.h for
+      // 6.x kernels, so we define it here.
+      "#ifndef NSEC_PER_SEC",
+      "#define NSEC_PER_SEC 1000000000ULL",
+      "#endif",
   };
 }
 
