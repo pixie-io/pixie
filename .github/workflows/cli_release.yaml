@@ -88,7 +88,7 @@ jobs:
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: Install gon
-      run: brew install mitchellh/gon/gon
+      run: brew install Bearer/tap/gon
     - name: Sign CLI release
       env:
         REF: ${{ github.event.ref }}
