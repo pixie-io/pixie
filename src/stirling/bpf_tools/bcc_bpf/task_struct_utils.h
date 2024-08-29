@@ -25,6 +25,14 @@
 
 #include <linux/sched.h>
 
+// Between linux v6.1 and v6.8, NSEC_PER_SEC is no longer defined by including
+// linux/sched.h. This ifndef covers newer kernels that won't have it defined.
+// libbpf provides a trace_helpers.h header that provides NSEC_PER_SEC, so it seems
+// tools are moving towards defining their own instead of using a linux header for it.
+#ifndef NSEC_PER_SEC
+#define NSEC_PER_SEC 1000000000ULL
+#endif
+
 #include "src/stirling/bpf_tools/bcc_bpf/utils.h"
 
 // This is how Linux converts nanoseconds to clock ticks.
