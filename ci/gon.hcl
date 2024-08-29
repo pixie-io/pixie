@@ -9,6 +9,8 @@ bundle_id = "ai.pixielabs.px"
 apple_id {
   username = "zasgar@gmail.com"
   password = "@env:AC_PASSWD"
+  # Unfortunately gon's HCL doesn't allow declaring variables so this literal is specified twice
+  provider = "SZCNTABEXY"
 }
 
 sign {
