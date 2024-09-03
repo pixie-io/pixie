@@ -92,7 +92,7 @@ jobs:
     - name: Sign CLI release
       env:
         REF: ${{ github.event.ref }}
-        AC_PASSWD: ${{ secrets.APPLE_ID_PASSWORD }}
+        AC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         CERT_BASE64: ${{ secrets.APPLE_SIGN_CERT_B64 }}
         CERT_PASSWORD: ${{ secrets.APPLE_SIGN_CERT_PASSWORD }}
