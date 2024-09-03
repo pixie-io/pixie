@@ -84,7 +84,7 @@ qemu_with_kernel_test_runner = rule(
     implementation = _test_runner_impl,
     attrs = {
         "kernel_image": attr.label(
-            default = Label("@linux_build_6_1_8_x86_64//file:linux-build.tar.gz"),
+            default = Label("@linux_build_6_1_18_x86_64//file:linux-build.tar.gz"),
             allow_single_file = True,
         ),
         "_busybox": attr.label(
