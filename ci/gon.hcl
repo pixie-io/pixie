@@ -6,7 +6,7 @@ bundle_id = "ai.getcosmic.px"
 
 apple_id {
   username = "apple-dev@getcosmic.ai"
-  password = "@env:AC_PASSWD"
+  # Password is provided via AC_PASSWORD env var
   provider = "769M9XJDG6"
 }
 
