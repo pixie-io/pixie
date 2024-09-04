@@ -39,7 +39,7 @@ all_kernel_versions=(
 )
 default_kernel_versions=(
   "4.14.254"
-  "6.1.18"
+  "6.1.106"
 )
 kernel_versions=( "${default_kernel_versions[@]}" )
 
