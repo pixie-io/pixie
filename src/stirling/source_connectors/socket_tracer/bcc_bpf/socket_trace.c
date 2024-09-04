@@ -358,6 +358,9 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info, const s
 
   BPF_PROBE_READ_KERNEL_VAR(family, &sk_common->skc_family);
   BPF_PROBE_READ_KERNEL_VAR(lport, &sk_common->skc_num);
+  // skc_num is stored in host byte order. The rest of our user space processing
+  // assumes network byte order so convert it here.
+  lport = htons(lport);
   BPF_PROBE_READ_KERNEL_VAR(rport, &sk_common->skc_dport);
 
   conn_info->laddr.sa.sa_family = family;

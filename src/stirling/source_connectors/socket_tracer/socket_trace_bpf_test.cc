@@ -820,11 +820,7 @@ TEST_F(LocalAddrTest, IPv4ConnectPopulatesLocalAddr) {
   bool found_port = false;
   uint16_t port = ntohs(client_sockaddr.sin_port);
   for (auto lport : GetLocalPorts(records, kHTTPLocalPortIdx, indices)) {
-    // TODO(ddelnano): Determine why the local_addr column is storing the port
-    // in network byte order.
-    LOG(INFO) << "Local port: " << lport << " and pre ntohs " << client_sockaddr.sin_port
-              << " and ntohs " << port;
-    if (lport == client_sockaddr.sin_port) {
+    if (lport == port) {
       found_port = true;
       break;
     }
