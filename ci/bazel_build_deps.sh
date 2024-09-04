@@ -52,10 +52,8 @@ commit_range=$(git merge-base origin/main HEAD)
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
 buildables_excludes="except(kind(test, //...)) except(kind(container_image, //...))"
-# gazelle_lib is tagged with manual, but isn't caught by the attr filter
-# https://github.com/bazelbuild/bazel-gazelle/issues/1742
 default_excludes="except attr('tags', 'manual|disabled_flaky_test', //...) \
-  except //third_party/... except @bazel_gazelle//cmd/gazelle:gazelle_lib"
+  except //third_party/..."
 
 sanitizer_only="except attr('tags', 'no_asan', //...) \
   except attr('tags', 'no_msan', //...) \
@@ -135,7 +133,7 @@ function compute_targets() {
     fi
   done
 
-  targets+=("rdeps(//..., set(${changed_files[*]}))")
+  targets+=("rdeps(//..., set(${changed_files[*]}))  intersect //...")
 }
 
 function check_bpf_trigger() {
