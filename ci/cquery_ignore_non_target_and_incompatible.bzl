@@ -15,9 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 def format(target):
-    if target.label.name.endswith("//cmd/gazelle:gazelle_lib"):
-       return None
-
     build_opts = build_options(target)
 
     # We only want to get targets that are in the target configuration. So we ignore exec and host targets.
