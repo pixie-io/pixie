@@ -18,10 +18,10 @@
 
 repo_path=$(bazel info workspace)
 
+set -ex
+
 # shellcheck source=ci/artifact_utils.sh
 . "${repo_path}/ci/artifact_utils.sh"
-
-set -ex
 
 printenv
 

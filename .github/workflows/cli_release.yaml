@@ -135,6 +135,9 @@ jobs:
       uses: ./.github/actions/gcloud_creds
       with:
         SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
+    - name: Add pwd to git safe dir
+      run: |
+        git config --global --add safe.directory `pwd`
     - name: Upload signed CLI
       env:
         REF: ${{ github.event.ref }}
