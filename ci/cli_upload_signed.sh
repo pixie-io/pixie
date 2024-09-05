@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash -ex
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -17,8 +17,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 repo_path=$(bazel info workspace)
-
-set -ex
 
 # shellcheck source=ci/artifact_utils.sh
 . "${repo_path}/ci/artifact_utils.sh"
