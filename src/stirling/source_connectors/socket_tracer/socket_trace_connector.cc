@@ -176,7 +176,7 @@ DEFINE_bool(
     stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", false),
     "If true, stirling will add additional prometheus metrics regarding the traced tls sources");
 
-DEFINE_uint32(stirling_bpf_loop_limit, 42,
+DEFINE_uint32(stirling_bpf_loop_limit, 41,
               "The maximum number of iovecs to capture for syscalls. "
               "Set conservatively for older kernels by default to keep the instruction count below "
               "BPF's limit for version 4 kernels (4096 per probe).");
@@ -342,6 +342,18 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
     {"close", ProbeType::kReturn, "syscall__probe_ret_close"},
     {"mmap", ProbeType::kEntry, "syscall__probe_entry_mmap"},
     {"sock_alloc", ProbeType::kReturn, "probe_ret_sock_alloc", /*is_syscall*/ false},
+    {"tcp_v4_connect", ProbeType::kEntry, "probe_entry_populate_active_connect_sock",
+     /*is_syscall*/ false},
+    {"tcp_v4_connect", ProbeType::kReturn, "probe_ret_populate_active_connect_sock",
+     /*is_syscall*/ false},
+    {"tcp_v6_connect", ProbeType::kEntry, "probe_entry_populate_active_connect_sock",
+     /*is_syscall*/ false},
+    {"tcp_v6_connect", ProbeType::kReturn, "probe_ret_populate_active_connect_sock",
+     /*is_syscall*/ false},
+    {"tcp_sendmsg", ProbeType::kEntry, "probe_entry_populate_active_connect_sock",
+     /*is_syscall*/ false},
+    {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_populate_active_connect_sock",
+     /*is_syscall*/ false},
     {"security_socket_sendmsg", ProbeType::kEntry, "probe_entry_socket_sendmsg",
      /*is_syscall*/ false, /* is_optional */ false,
      std::make_shared<bpf_tools::KProbeSpec>(bpf_tools::KProbeSpec{

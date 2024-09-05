@@ -39,6 +39,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -46,6 +47,8 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::GetLocalAddrs;
+using ::px::stirling::testing::GetLocalPorts;
 using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
@@ -745,6 +748,155 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
 
   uint16_t port = ntohs(client_sockaddr.sin6_port);
   EXPECT_EQ(records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0), port);
+}
+
+using LocalAddrTest = testing::SocketTraceBPFTestFixture</* TClientSideTracing */ true>;
+
+TEST_F(LocalAddrTest, IPv4ConnectPopulatesLocalAddr) {
+  StartTransferDataThread();
+
+  TCPSocket client;
+  TCPSocket server;
+
+  std::atomic<bool> server_ready = true;
+
+  std::thread server_thread([&server, &server_ready]() {
+    server.BindAndListen();
+    server_ready = true;
+    auto conn = server.Accept(/* populate_remote_addr */ true);
+
+    std::string data;
+
+    conn->Read(&data);
+    conn->Write(kHTTPRespMsg1);
+  });
+
+  // Wait for server thread to start listening.
+  while (!server_ready) {
+  }
+  // After server_ready, server.Accept() needs to enter the accepting state, before the client
+  // connection can succeed below. We don't have a simple and robust way to signal that from inside
+  // the server thread, so we just use sleep to avoid the race condition.
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  std::thread client_thread([&client, &server]() {
+    client.Connect(server);
+
+    std::string data;
+
+    client.Write(kHTTPReqMsg1);
+    client.Read(&data);
+  });
+
+  server_thread.join();
+  client_thread.join();
+
+  // Get the remote port seen by server from client's local port.
+  struct sockaddr_in client_sockaddr = {};
+  socklen_t client_sockaddr_len = sizeof(client_sockaddr);
+  struct sockaddr* client_sockaddr_ptr = reinterpret_cast<struct sockaddr*>(&client_sockaddr);
+  ASSERT_EQ(getsockname(client.sockfd(), client_sockaddr_ptr, &client_sockaddr_len), 0);
+
+  // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
+  client.Close();
+  server.Close();
+
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+
+  std::vector<size_t> indices =
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
+  ColumnWrapperRecordBatch records = testing::SelectRecordBatchRows(record_batch, indices);
+
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
+
+  // Make sure that the socket info resolution works.
+  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv4AddrToString(client_sockaddr.sin_addr));
+  EXPECT_THAT(GetLocalAddrs(records, kHTTPLocalAddrIdx, indices), Contains("127.0.0.1").Times(2));
+  EXPECT_EQ(remote_addr, "127.0.0.1");
+
+  bool found_port = false;
+  uint16_t port = ntohs(client_sockaddr.sin_port);
+  for (auto lport : GetLocalPorts(records, kHTTPLocalPortIdx, indices)) {
+    if (lport == port) {
+      found_port = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(found_port);
+}
+
+TEST_F(LocalAddrTest, IPv6ConnectPopulatesLocalAddr) {
+  StartTransferDataThread();
+
+  TCPSocket client(AF_INET6);
+  TCPSocket server(AF_INET6);
+
+  std::atomic<bool> server_ready = false;
+
+  std::thread server_thread([&server, &server_ready]() {
+    server.BindAndListen();
+    server_ready = true;
+    auto conn = server.Accept(/* populate_remote_addr */ false);
+
+    std::string data;
+
+    conn->Read(&data);
+    conn->Write(kHTTPRespMsg1);
+  });
+
+  while (!server_ready) {
+  }
+
+  std::thread client_thread([&client, &server]() {
+    client.Connect(server);
+
+    std::string data;
+
+    client.Write(kHTTPReqMsg1);
+    client.Read(&data);
+  });
+
+  server_thread.join();
+  client_thread.join();
+
+  // Get the remote port seen by server from client's local port.
+  struct sockaddr_in6 client_sockaddr = {};
+  socklen_t client_sockaddr_len = sizeof(client_sockaddr);
+  struct sockaddr* client_sockaddr_ptr = reinterpret_cast<struct sockaddr*>(&client_sockaddr);
+  ASSERT_EQ(getsockname(client.sockfd(), client_sockaddr_ptr, &client_sockaddr_len), 0);
+
+  // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
+  client.Close();
+  server.Close();
+
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+
+  std::vector<size_t> indices =
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
+  ColumnWrapperRecordBatch records = testing::SelectRecordBatchRows(record_batch, indices);
+
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
+
+  // Make sure that the socket info resolution works.
+  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv6AddrToString(client_sockaddr.sin6_addr));
+  EXPECT_THAT(GetLocalAddrs(records, kHTTPLocalAddrIdx, indices), Contains("::1").Times(2));
+  EXPECT_EQ(remote_addr, "::1");
+
+  bool found_port = false;
+  uint16_t port = ntohs(client_sockaddr.sin6_port);
+  for (auto lport : GetLocalPorts(records, kHTTPLocalPortIdx, indices)) {
+    if (lport == port) {
+      found_port = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(found_port);
 }
 
 // Run a UDP-based client-server system.
