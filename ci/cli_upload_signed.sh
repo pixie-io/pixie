@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash -ex
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -20,8 +20,6 @@ repo_path=$(bazel info workspace)
 
 # shellcheck source=ci/artifact_utils.sh
 . "${repo_path}/ci/artifact_utils.sh"
-
-set -ex
 
 printenv
 
