@@ -53,7 +53,11 @@ bazel run -c opt --config=stamp //src/pixie_cli:push_px_image
 
 if [[ ! "$release_tag" == *"-"* ]]; then
   # Create rpm package.
+
+  # podman package depends on golang-github-containers-common, which
+  # provides the following seccomp profile.
   podman run -i --rm \
+    --security-opt seccomp=/usr/share/containers/seccomp.json \
     -v "${binary_dir}:/src/" \
     -v "$(pwd):/image" \
     docker.io/cdrx/fpm-fedora:24 \
@@ -69,6 +73,7 @@ if [[ ! "$release_tag" == *"-"* ]]; then
 
   # Create deb package.
   podman run -i --rm \
+    --security-opt seccomp=/usr/share/containers/seccomp.json \
     -v "${binary_dir}:/src/" \
     -v "$(pwd):/image" \
     docker.io/cdrx/fpm-ubuntu:18.04 \

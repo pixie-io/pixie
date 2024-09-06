@@ -59,7 +59,6 @@ jobs:
         export TAG_NAME="${REF#*/tags/}"
         mkdir -p "artifacts/"
         export ARTIFACTS_DIR="$(realpath artifacts/)"
-        sysctl -w kernel.unprivileged_userns_clone=1
         ./ci/save_version_info.sh
         ./ci/cli_build_release.sh
     - name: Upload Github Artifacts
