@@ -19,6 +19,9 @@ jobs:
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      # --privileged is needed in order for podman to work. Otherwise it fails
+      # to create a new namespace when the clone syscall happens.
+      options: --privileged
     env:
       ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
     steps:
