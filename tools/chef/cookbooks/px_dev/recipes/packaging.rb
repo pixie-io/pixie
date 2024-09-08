@@ -14,21 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-dirs = ['/opt/px_dev', '/opt/px_dev/bin', '/opt/px_dev/gopath', '/opt/px_dev/tools']
+# Packaging utilities only need to run on Linux
+if node.platform_family?('debian')
+  apt_package ['ruby-dev', 'rpm'] do
+    action :upgrade
+  end
 
-dirs.each do |path|
-  directory path do
-    owner node['owner']
-    group node['group']
-    mode '0755'
-    action :create
+  execute 'install_fpm' do
+    command '/usr/bin/gem install fpm'
+    action :run
   end
 end
-
-include_recipe 'px_dev::golang'
-include_recipe 'px_dev::nodejs'
-include_recipe 'px_dev::php'
-include_recipe 'px_dev::python'
-include_recipe 'px_dev::packaging'
-
-include_recipe 'px_dev::arcanist'
