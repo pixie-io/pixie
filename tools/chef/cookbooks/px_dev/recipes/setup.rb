@@ -29,6 +29,5 @@ include_recipe 'px_dev::golang'
 include_recipe 'px_dev::nodejs'
 include_recipe 'px_dev::php'
 include_recipe 'px_dev::python'
-include_recipe 'px_dev::packaging'
 
 include_recipe 'px_dev::arcanist'
