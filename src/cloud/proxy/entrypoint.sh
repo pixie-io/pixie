@@ -23,4 +23,8 @@ else
    exit 1
 fi
 
+if [ -n "$PL_IPV6_DISABLE" ]; then
+    sed -i -e "/IPV6_DISABLE_MARKER/d" /usr/local/openresty/nginx/conf/nginx.conf
+fi
+
 /usr/bin/openresty -g "daemon off;"
