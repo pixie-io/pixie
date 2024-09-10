@@ -4,5 +4,6 @@ kind: ConfigMap
 metadata:
   name: pl-domain-config
 data:
+  PL_KUBE_DNS_SERVICE: kube-dns.kube-system.svc.cluster.local
   PL_DOMAIN_NAME: dev.withpixie.dev
   PASSTHROUGH_PROXY_PORT: "4444"
