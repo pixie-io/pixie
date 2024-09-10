@@ -78,6 +78,36 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/nginx.conf.tmpl
+          subPath: nginx.conf.tmpl
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_vars.conf
+          subPath: pixie_vars.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_api.conf
+          subPath: pixie_api.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_cache.conf
+          subPath: pixie_cache.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_compression.conf
+          subPath: pixie_compression.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_filter.conf
+          subPath: pixie_filter.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_health_check.conf
+          subPath: pixie_health_check.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/pixie_server_defaults.conf
+          subPath: pixie_server_defaults.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/headers_common.conf
+          subPath: headers_common.conf
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/nginx_vars.conf
+          subPath: nginx_vars.conf
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -146,3 +176,6 @@ spec:
       - name: certs
         secret:
           secretName: cloud-proxy-tls-certs
+      - name: nginx-config
+        configMap:
+          name: pl-proxy-nginx-config
