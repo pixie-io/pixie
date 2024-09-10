@@ -48,7 +48,7 @@ data:
 
   pixie_compression.conf: |-
     gzip on;
-    
+
     # Enable compression for common types.
     gzip_types
       application/x-font-opentype
@@ -64,20 +64,20 @@ data:
       text/javascript
       text/plain
       text/xml;
-    
+
     # Try to serve .gz files directly if they exist.
     # TODO(zasgar): Re-enable once we fix env subs.
     gzip_static off;
-    
+
     # Increase the compression level, at the expense of additional CPU
     # cpu cycles are cheap virtually everywhere now, bandwidth not nearly as much.
     gzip_comp_level 9;
-    
+
     gzip_proxied any;
-    
+
     # How many buffers to hold.
     gzip_buffers 16 64k;
-    
+
     # Min size before we compress.
     gzip_min_length 50;
 
@@ -95,19 +95,19 @@ data:
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_pass https://httpapisvc;
     }
-    
-    
+
+
     location ~ ^/pl.* {
          rewrite ^/pl\.(.*)$ /px.$1 last;
     }
-    
+
     location ~ ^/px.cloudapi.* {
          # The nginx parser does not seem to understand that the $api_service
          # variable contains the port. Just referring to it as api-service since this
          # works in a service agnosistic way.
          grpc_pass grpcs://grpcapisvc;
     }
-    
+
     location ~ ^/px.api.* {
          # The nginx parser does not seem to understand that the $api_service
          # variable contains the port. Just referring to it as api-service since this
@@ -145,9 +145,11 @@ data:
 
   # This file will have @PL_DOMAIN_NAME@ replaced with the domain name specified in the
   # pl-domain-config Configmap. See the entrypoint.sh script for how this is done.
+
+  # yamllint disable rule:line-length
   nginx.conf.tmpl: |-
     # File borrowed from openresty config.
-    
+
     # Environment variable need to be specified here (and below).
     env PL_OAUTH_PROVIDER;
     env PL_AUTH_URI;
@@ -173,38 +175,38 @@ data:
     env ANNOUNCE_WIDGET_URL;
     env CONTACT_ENABLED;
     env PASSTHROUGH_PROXY_PORT;
-    
+
     worker_processes  auto;
-    
+
     events {
         worker_connections  1024;
     }
-    
+
     http {
         include       mime.types;
         default_type  application/octet-stream;
         sendfile      on;
         server_tokens off;
-    
+
         log_format upstreamlog '[$time_local] $remote_addr - $remote_user - $server_name to: $upstream_addr: $request upstream_response_time $upstream_response_time msec $msec request_time $request_time';
-    
+
         resolver kube-dns.kube-system.svc.cluster.local valid=5s;
-    
+
         # Tune nginx keepalives to work with the GCP HTTP(S) Load Balancer:
         keepalive_timeout 650;
         keepalive_requests 10000;
-    
+
         # Increase default server names length to 128:
         server_names_hash_bucket_size 128;
-    
+
         proxy_cache_path   /var/cache/nginx levels=1:2 keys_zone=my_cache:10m max_size=100m inactive=1d;
         proxy_temp_path    /var/cache/nginx/tmp;
-    
+
         ssl_buffer_size 4k;
         ssl_session_cache shared:SSL:10m;
         ssl_session_timeout 1h;
         ssl_protocols TLSv1.2 TLSv1.3;
-    
+
         upstream httpapisvc {
              # The nginx parser does not seem to understand that the $api_service
              # variable contains the port. Just referring to it as api-service since this
@@ -212,7 +214,7 @@ data:
              server api-service:51200;
              keepalive 128;
         }
-    
+
         upstream grpcapisvc {
              # The nginx parser does not seem to understand that the $api_service
              # variable contains the port. Just referring to it as api-service since this
@@ -220,59 +222,59 @@ data:
              server api-service:51200;
              keepalive 128;
         }
-    
+
         # This is the default fallback server if none of the subdomains match.
         server {
             listen [::]:56000 default_server;
             listen 56000;
             server_name _;
-    
+
             ssl_certificate /certs/tls.crt;
             ssl_certificate_key /certs/tls.key;
-    
+
             include /usr/local/openresty/nginx/conf/pixie_health_check.conf;
-    
+
             if ($http_x_forwarded_proto = "http") {
                 return 404;
             }
-    
+
             location / {
                 return 404;
             }
         }
-    
+
         # This is the server that we use for all the locations that don't have a subdomain.
         # This just serves the minimal pages necessary to authenticate and get into a subdomain specfic site.
         server {
             listen [::]:56000 ssl http2;
             listen 56000 ssl http2;
             server_name @PL_DOMAIN_NAME@ *.cluster.local;
-    
+
             include /usr/local/openresty/nginx/conf/pixie_compression.conf;
             include /usr/local/openresty/nginx/conf/pixie_vars.conf;
             include /usr/local/openresty/nginx/conf/pixie_server_defaults.conf;
             include /usr/local/openresty/nginx/conf/pixie_api.conf;
-    
+
             if ($http_x_forwarded_proto = "http") {
                 return 307 https://$host$request_uri;
             }
-    
+
             location /install.sh {
               root /installer;
               try_files "/install.sh" =404;
             }
-    
+
             location / {
               return 307 https://work.$domain_name$request_uri;
             }
         }
-    
+
         # This is the server for the work subdomain.
         server {
             listen [::]:56000 ssl http2;
             listen 56000 ssl http2;
             server_name work.@PL_DOMAIN_NAME@;
-    
+
             error_page 404 = @error404;
             include /usr/local/openresty/nginx/conf/pixie_compression.conf;
             include /usr/local/openresty/nginx/conf/pixie_vars.conf;
@@ -281,14 +283,14 @@ data:
             include /usr/local/openresty/nginx/conf/pixie_api.conf;
             include /usr/local/openresty/nginx/conf/headers_common.conf;
             include /usr/local/openresty/nginx/conf/private/*.conf;
-    
+
             # Disable caching by default.
             add_header Cache-Control "no-store";
-    
+
             if ($http_x_forwarded_proto = "http") {
                 return 307 https://$host$request_uri;
             }
-    
+
             location /oauth/hydra {
                 if ($hydra_service = "") {
                     return 404;
@@ -300,7 +302,7 @@ data:
                 # Note - storing the protocol in the env variable causes nginx to reject the proxy_pass dest.
                 proxy_pass https://$hydra_service$uri$is_args$args;
             }
-    
+
             # Disable self-service registration in Kratos is the only way to prevent registration to orgs
             # that a user does not have permission to join. Org Admins should instead invite their users.
             # In the future Kratos will support disabling registration within kratos_config.yaml.
@@ -310,7 +312,7 @@ data:
                 error_page 404 = @error404;
                 return 404;
             }
-    
+
             location /oauth/kratos {
                 error_page 404 = @error404;
                 if ($kratos_service = "") {
@@ -323,18 +325,18 @@ data:
                 # Note - storing the protocol in the env variable causes nginx to reject the proxy_pass dest.
                 proxy_pass https://$kratos_service$uri$is_args$args;
             }
-    
+
             location /install.sh {
               root /installer;
               try_files "/install.sh" =404;
             }
-    
+
             location / {
                 gzip_static off;
                 root   /assets;
                 try_files $uri "/index.html";
             }
-    
+
             # Cache all contents hosted under /static. This is actually the same as the contents hosted under '/'
             # but nginx knows to cache these and webpack puts all the hashed assets in here.
             location ~ ^/static(/.*)$ {
@@ -344,62 +346,62 @@ data:
                 include /usr/local/openresty/nginx/conf/pixie_filter.conf;
                 try_files $1 "/index.html";
             }
-    
+
             location /auth-complete {
                 root   /assets;
                 include /usr/local/openresty/nginx/conf/pixie_filter.conf;
                 try_files $uri "/index.html";
             }
-    
+
             location ~ ^/docs(?:/(.*))?$ {
                 return 307 https://docs.pixielabs.ai/$1;
             }
-    
+
             location @error404 {
               return 307 https://$domain_name?not_found=$uri;
             }
         }
-    
+
         # This is the proxy server for segment.
         server {
             listen [::]:56000 ssl http2;
             listen 56000 ssl http2;
             server_name segment.@PL_DOMAIN_NAME@;
-    
+
             include /usr/local/openresty/nginx/conf/pixie_compression.conf;
             include /usr/local/openresty/nginx/conf/pixie_vars.conf;
-    
+
             set $segment_cdn "cdn.segment.com";
-    
+
             location /v1/projects {
                 proxy_pass https://$segment_cdn$uri$is_args$args;
                 proxy_cache my_cache;
                 proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
             }
-    
+
             location /analytics.js/v1 {
                 proxy_pass https://$segment_cdn$uri$is_args$args;
                 proxy_cache my_cache;
                 proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
             }
-    
+
             location /analytics-next {
                 proxy_pass https://$segment_cdn$uri$is_args$args;
                 proxy_cache my_cache;
                 proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
             }
-    
+
             location /next-integrations {
                 proxy_pass https://$segment_cdn$uri$is_args$args;
                 proxy_cache my_cache;
                 proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
             }
-    
+
             location /cli-write-key {
                 return 200 $segment_cli_write_key;
                 default_type text/plain;
             }
-    
+
             location / {
                 set $segment_api "api.segment.io";
                 proxy_pass https://$segment_api$uri$is_args$args;
@@ -407,13 +409,13 @@ data:
                 proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
             }
         }
-    
+
         # This is the redirect to the netlify hosted site for docs.
         server {
             listen [::]:56000 ssl http2;
             listen 56000 ssl http2;
             server_name docs.@PL_DOMAIN_NAME@;
-    
+
             location / {
               return 307 https://docs.pixielabs.ai$request_uri;
             }
