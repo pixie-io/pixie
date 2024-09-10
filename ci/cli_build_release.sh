@@ -53,11 +53,7 @@ bazel run -c opt --config=stamp //src/pixie_cli:push_px_image
 
 if [[ ! "$release_tag" == *"-"* ]]; then
   # Create rpm package.
-  podman run -i --rm \
-    -v "${binary_dir}:/src/" \
-    -v "$(pwd):/image" \
-    docker.io/cdrx/fpm-fedora:24 \
-    fpm \
+  fpm \
     -f \
     -p "/image/${pkg_prefix}.rpm" \
     -s dir \
@@ -68,11 +64,7 @@ if [[ ! "$release_tag" == *"-"* ]]; then
     px
 
   # Create deb package.
-  podman run -i --rm \
-    -v "${binary_dir}:/src/" \
-    -v "$(pwd):/image" \
-    docker.io/cdrx/fpm-ubuntu:18.04 \
-    fpm \
+  fpm \
     -f \
     -p "/image/${pkg_prefix}.deb" \
     -s dir \
