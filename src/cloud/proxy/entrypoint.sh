@@ -23,4 +23,8 @@ else
    exit 1
 fi
 
+if [ -n "$PL_KUBE_DNS_SERVICE" ]; then
+    sed -i -e "s/[@]PL_KUBE_DNS_SERVICE[@]/$PL_KUBE_DNS_SERVICE/" /usr/local/openresty/nginx/conf/nginx.conf
+fi    
+
 /usr/bin/openresty -g "daemon off;"
