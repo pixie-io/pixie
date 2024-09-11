@@ -55,24 +55,24 @@ if [[ ! "$release_tag" == *"-"* ]]; then
   # Create rpm package.
   fpm \
     -f \
-    -p "/image/${pkg_prefix}.rpm" \
+    -p "${pkg_prefix}.rpm" \
     -s dir \
     -t rpm \
     -n pixie-px \
     -v "${release_tag}" \
     --prefix /usr/local/bin \
-    px
+    "${binary_dir}/px"
 
   # Create deb package.
   fpm \
     -f \
-    -p "/image/${pkg_prefix}.deb" \
+    -p "${pkg_prefix}.deb" \
     -s dir \
     -t deb \
     -n pixie-px \
     -v "${release_tag}" \
     --prefix /usr/local/bin \
-    px
+    "${binary_dir}/px"
 
    # TODO(james): Add push to docker hub/quay.io.
 fi
