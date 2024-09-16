@@ -20,28 +20,6 @@ load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
 package(default_visibility = ["//src/cloud:__subpackages__"])
 
 container_layer(
-    name = "conf",
-    directory = "/usr/local/openresty/nginx/conf",
-    files = [
-        "headers_common.conf",
-        "nginx.conf",
-        "pixie_api.conf",
-        "pixie_cache.conf",
-        "pixie_compression.conf",
-        "pixie_filter.conf",
-        "pixie_health_check.conf",
-        "pixie_server_defaults.conf",
-        "pixie_vars.conf",
-    ],
-)
-
-container_layer(
-    name = "conf_private",
-    directory = "/usr/local/openresty/nginx/conf/private",
-    files = glob(["private/*.conf"]),
-)
-
-container_layer(
     name = "ui_assets",
     directory = "/assets",
     tars = ["//src/ui:ui_bundle"],
@@ -68,8 +46,6 @@ container_image(
     base = "@openresty//image",
     entrypoint = ["/scripts/entrypoint.sh"],
     layers = [
-        ":conf",
-        ":conf_private",
         ":ui_assets",
         ":installer",
         ":entrypoint",

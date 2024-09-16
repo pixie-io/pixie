@@ -44,3 +44,4 @@ resources:
 - cron_script_deployment.yaml
 - cron_script_service.yaml
 - support_access_config.yaml
+- proxy_nginx_config.yaml

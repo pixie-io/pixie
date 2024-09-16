@@ -78,6 +78,8 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -146,3 +148,6 @@ spec:
       - name: certs
         secret:
           secretName: cloud-proxy-tls-certs
+      - name: nginx-config
+        configMap:
+          name: pl-proxy-nginx-config
