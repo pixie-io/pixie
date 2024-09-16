@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "src/carnot/planner/distributed/distributed_rules.h"
+#include "src/carnot/planner/distributed/splitter/executor_utils.h"
 #include "src/carnot/planner/distributed/splitter/presplit_analyzer/presplit_analyzer.h"
 #include "src/carnot/planner/distributed/splitter/presplit_optimizer/presplit_optimizer.h"
 #include "src/carnot/planner/distributed/splitter/scalar_udfs_run_on_executor_rule.h"
@@ -195,42 +196,48 @@ bool SparseFilter(OperatorIR* op) {
   return MatchSparseFilterExpr(static_cast<FilterIR*>(op)->filter_expr());
 }
 
-bool MatchMetadataOrSubExpression(ExpressionIR* expr) {
+bool MatchMetadataOrSubExpression(ExpressionIR* expr, CompilerState* state) {
   if (Match(expr, MetadataExpression())) {
     return true;
   } else if (Match(expr, Func())) {
     auto func = static_cast<FuncIR*>(expr);
     for (const auto& arg : func->args()) {
-      if (MatchMetadataOrSubExpression(arg)) {
+      if (MatchMetadataOrSubExpression(arg, state)) {
         return true;
       }
     }
-  }
-  return false;
-}
-
-bool MustBeOnPemMap(OperatorIR* op) {
-  if (!Match(op, Map())) {
-    return false;
-  }
-  MapIR* map = static_cast<MapIR*>(op);
-  for (const auto& expr : map->col_exprs()) {
-    if (MatchMetadataOrSubExpression(expr.node)) {
+    auto pem_only_exec = IsFuncWithExecutor(state, func, udfspb::UDFSourceExecutor::UDF_PEM);
+    if (pem_only_exec.ok() && pem_only_exec.ValueOrDie()) {
       return true;
     }
   }
   return false;
 }
 
-bool MustBeOnPemFilter(OperatorIR* op) {
+bool MustBeOnPemMap(OperatorIR* op, CompilerState* state) {
+  if (!Match(op, Map())) {
+    return false;
+  }
+  MapIR* map = static_cast<MapIR*>(op);
+  for (const auto& expr : map->col_exprs()) {
+    if (MatchMetadataOrSubExpression(expr.node, state)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MustBeOnPemFilter(OperatorIR* op, CompilerState* state) {
   if (!Match(op, Filter())) {
     return false;
   }
   FilterIR* filter = static_cast<FilterIR*>(op);
-  return MatchMetadataOrSubExpression(filter->filter_expr());
+  return MatchMetadataOrSubExpression(filter->filter_expr(), state);
 }
 
-bool MustBeOnPem(OperatorIR* op) { return MustBeOnPemMap(op) || MustBeOnPemFilter(op); }
+bool MustBeOnPem(OperatorIR* op, CompilerState* state) {
+  return MustBeOnPemMap(op, state) || MustBeOnPemFilter(op, state);
+}
 
 bool Splitter::CanBeGRPCBridgeTree(OperatorIR* op) {
   // We can generalize this beyond sparse filters in the future as needed.
@@ -254,14 +261,14 @@ void Splitter::ConstructGRPCBridgeTree(
   }
   for (OperatorIR* child : op->Children()) {
     if (ignore_children.contains(child)) {
-      if (MustBeOnPem(child)) {
+      if (MustBeOnPem(child, compiler_state_)) {
         LOG(ERROR) << "must be on PEM, but not found: " << child->DebugString();
       }
       continue;
     }
     // Certain operators must be on PEM, ie because of metadatas locality. If an operator
     // is on a PEM then we must make sure we place it there, regardless of GRPCBridges.
-    if (MustBeOnPem(child)) {
+    if (MustBeOnPem(child, compiler_state_)) {
       GRPCBridgeTree child_bridge_node;
       child_bridge_node.must_be_on_pem = true;
       child_bridge_node.starting_op = child;

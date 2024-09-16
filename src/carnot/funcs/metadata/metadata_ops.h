@@ -2977,6 +2977,25 @@ class IPToPodIDUDF : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_KELVIN; }
 };
 
+/**
+ * This UDF is a compiler internal function. It should only be used when the IP address is
+ * guaranteed to be a local address since this function is forced to run on PEMs. In cases
+ * where the IP could be a remote address, then it is more correct to have the function run on
+ * Kelvin (IPToPodIDUDF or IPToPodIDAtTimeUDF).
+ */
+class IPToPodIDAtTimePEMExecUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the pod id of pod with given pod_ip and time
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue pod_ip, Time64NSValue time) {
+    auto md = GetMetadataState(ctx);
+    return md->k8s_metadata_state().PodIDByIPAtTime(pod_ip, time.val);
+  }
+
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
 class IPToPodIDAtTimeUDF : public ScalarUDF {
  public:
   /**

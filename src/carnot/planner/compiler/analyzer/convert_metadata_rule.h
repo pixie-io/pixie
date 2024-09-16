@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/rules/rules.h"
@@ -46,6 +47,31 @@ class ConvertMetadataRule : public Rule {
                                  ExpressionIR* metadata_expr) const;
   StatusOr<std::string> FindKeyColumn(std::shared_ptr<TableType> parent_type,
                                       MetadataProperty* property, IRNode* node_for_error) const;
+
+  /**
+   *
+   * This function aids in applying a fallback to a metadata conversion expression.
+   * It works by adding two conversion maps to the graph. The first map contains a column expression
+   * that contains the metadata expression result. The second map contains a column expression that
+   * contains the fallback expression result. It is intended to be used as a short term workaround
+   * for gh#1638 where pod name lookups fail for short lived processes. This fallback expression
+   * allows for an alternative mechanism if the primary lookup fails. See the example below:
+   *
+   * Before applying the rule:
+   *
+   * MemorySource -> MapIR (containing MetadataIR)
+   *
+   * After applying the rule:
+   *
+   * MemorySource
+   *   -> MapIR (col_names[0]: metadata_expr)
+   *     -> MapIR (col_names[1]: fallback_expr)
+   *       -> MapIR (col_names[1] & existing cols)
+   */
+
+  Status AddPodNameConversionMapsWithFallback(
+      IR* graph, IRNode* container, ExpressionIR* metadata_expr, ExpressionIR* fallback_expr,
+      const std::pair<std::string, std::string>& col_names) const;
 };
 
 }  // namespace compiler
