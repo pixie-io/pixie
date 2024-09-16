@@ -706,6 +706,12 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
   if (pids_to_trace_disable_.contains(tracker->conn_id().upid.pid)) {
     tracker->SetDebugTrace(0);
   }
+  // Debugging Server side tracing is difficult when the server side services requests pre fork
+  // (certain web servers, postgres, etc). This provides a means for enabling CONN_TRACE for
+  // all processes since these situations are impossible to debug via --stirling_conn_trace_pid.
+  if (debug_level_ >= 2) {
+    tracker->SetDebugTrace(2);
+  }
 }
 
 // Verifies that our openssl tracing does not encounter conditions that invalidate our
