@@ -85,7 +85,7 @@ data:
     etag on;
     expires 60m;
     add_header Cache-Control "public";
-    include /usr/local/openresty/nginx/conf/headers_common.conf;
+    include /usr/local/openresty/nginx/conf.d/headers_common.conf;
 
   pixie_api.conf: |-
     location /api/ {
@@ -232,7 +232,7 @@ data:
             ssl_certificate /certs/tls.crt;
             ssl_certificate_key /certs/tls.key;
 
-            include /usr/local/openresty/nginx/conf/pixie_health_check.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_health_check.conf;
 
             if ($http_x_forwarded_proto = "http") {
                 return 404;
@@ -250,10 +250,10 @@ data:
             listen 56000 ssl http2;
             server_name @PL_DOMAIN_NAME@ *.cluster.local;
 
-            include /usr/local/openresty/nginx/conf/pixie_compression.conf;
-            include /usr/local/openresty/nginx/conf/pixie_vars.conf;
-            include /usr/local/openresty/nginx/conf/pixie_server_defaults.conf;
-            include /usr/local/openresty/nginx/conf/pixie_api.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_compression.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_vars.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_server_defaults.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_api.conf;
 
             if ($http_x_forwarded_proto = "http") {
                 return 307 https://$host$request_uri;
@@ -276,13 +276,13 @@ data:
             server_name work.@PL_DOMAIN_NAME@;
 
             error_page 404 = @error404;
-            include /usr/local/openresty/nginx/conf/pixie_compression.conf;
-            include /usr/local/openresty/nginx/conf/pixie_vars.conf;
-            include /usr/local/openresty/nginx/conf/pixie_server_defaults.conf;
-            include /usr/local/openresty/nginx/conf/pixie_health_check.conf;
-            include /usr/local/openresty/nginx/conf/pixie_api.conf;
-            include /usr/local/openresty/nginx/conf/headers_common.conf;
-            include /usr/local/openresty/nginx/conf/private/*.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_compression.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_vars.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_server_defaults.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_health_check.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_api.conf;
+            include /usr/local/openresty/nginx/conf.d/headers_common.conf;
+            include /usr/local/openresty/nginx/conf.d/private/*.conf;
 
             # Disable caching by default.
             add_header Cache-Control "no-store";
@@ -342,14 +342,14 @@ data:
             location ~ ^/static(/.*)$ {
                 gzip_static off;
                 root   /assets;
-                include /usr/local/openresty/nginx/conf/pixie_cache.conf;
-                include /usr/local/openresty/nginx/conf/pixie_filter.conf;
+                include /usr/local/openresty/nginx/conf.d/pixie_cache.conf;
+                include /usr/local/openresty/nginx/conf.d/pixie_filter.conf;
                 try_files $1 "/index.html";
             }
 
             location /auth-complete {
                 root   /assets;
-                include /usr/local/openresty/nginx/conf/pixie_filter.conf;
+                include /usr/local/openresty/nginx/conf.d/pixie_filter.conf;
                 try_files $uri "/index.html";
             }
 
@@ -368,8 +368,8 @@ data:
             listen 56000 ssl http2;
             server_name segment.@PL_DOMAIN_NAME@;
 
-            include /usr/local/openresty/nginx/conf/pixie_compression.conf;
-            include /usr/local/openresty/nginx/conf/pixie_vars.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_compression.conf;
+            include /usr/local/openresty/nginx/conf.d/pixie_vars.conf;
 
             set $segment_cdn "cdn.segment.com";
 
