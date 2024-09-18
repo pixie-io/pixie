@@ -46,6 +46,6 @@ images:
 - name: cloud-vzmgr_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud-vzmgr_server_image
   newTag: latest
-- name: cloud-plugin/load_db
-  newName: gcr.io/pixie-oss/pixie-prod/cloud-plugin/load_db
+- name: cloud-plugin-load_db
+  newName: gcr.io/pixie-oss/pixie-prod/cloud-plugin-load_db
   newTag: latest
