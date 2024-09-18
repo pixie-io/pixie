@@ -79,7 +79,7 @@ spec:
         - name: certs
           mountPath: /certs
         - name: nginx-config
-          mountPath: /usr/local/openresty/nginx/conf
+          mountPath: /usr/local/openresty/nginx/conf.d
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
