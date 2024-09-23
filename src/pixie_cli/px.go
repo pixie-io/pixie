@@ -39,7 +39,7 @@ import (
 	version "px.dev/pixie/src/shared/goversion"
 )
 
-const sentryDSN = "https://ef3a781b5e7b42e282706fc541077f3a@sentry.io/4090453"
+const sentryDSN = "https://48c370af36817aad74449b3adc509d78@o4507357617192960.ingest.us.sentry.io/4508004179771392"
 
 func main() {
 	// Disable Sentry in dev mode.
