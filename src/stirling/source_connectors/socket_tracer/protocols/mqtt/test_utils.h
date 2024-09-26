@@ -18,32 +18,33 @@
 
 #pragma once
 
-#include <deque>
+#include <map>
 #include <string>
 #include <vector>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
+#include "src/common/base/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/types.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
+namespace mqtt {
+namespace testutils {
 
-/**
- * Parses a single MQTT message from the input string.
- */
+inline Message CreateFrame(message_type_t type, const MqttControlPacketType control_packet_type,
+                           uint32_t packet_identifier, uint32_t qos) {
+  Message f;
 
-template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mqtt::Message* frame,
-                      mqtt::StateWrapper* state);
+  f.type = type;
+  f.control_packet_type = magic_enum::enum_integer(control_packet_type);
+  f.header_fields["packet_identifier"] = packet_identifier;
+  f.header_fields["qos"] = qos;
 
-template <>
-size_t FindFrameBoundary<mqtt::Message>(message_type_t type, std::string_view buf, size_t start_pos,
-                                        mqtt::StateWrapper* state);
+  return f;
+}
 
-template <>
-mqtt::packet_id_t GetStreamID(mqtt::Message* message);
-
+}  // namespace testutils
+}  // namespace mqtt
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
