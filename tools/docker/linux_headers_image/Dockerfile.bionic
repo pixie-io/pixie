@@ -54,7 +54,7 @@ WORKDIR /px/src/linux-${KERN_VERSION}
 RUN cp /configs/${ARCH} .config
 RUN make ARCH=${ARCH} olddefconfig
 RUN make ARCH=${ARCH} clean
-RUN make ARCH=${ARCH} -j $(nproc) bindeb-pkg LOCALVERSION=-pl
+RUN make ARCH=${ARCH} -j $(nproc) deb-pkg LOCALVERSION=-pl
 
 # Extract headers into a tarball
 WORKDIR /px
