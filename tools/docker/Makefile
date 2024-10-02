@@ -221,7 +221,7 @@ endif
 	KERN_MAJ=$$(echo $* | cut -d. -f1); \
 	KERN_MIN=$$(echo $* | cut -d. -f2); \
 	HEADERS_DOCKERFILE_SUFFIX=""; \
-	if [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; then \
+	if [ $${KERN_MAJ} -lt 6 ] || { [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; }; then \
 		HEADERS_DOCKERFILE_SUFFIX=".bionic"; \
 	fi; \
 	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
@@ -241,14 +241,14 @@ endif
 	KERN_MAJ=$$(echo $* | cut -d. -f1); \
 	KERN_MIN=$$(echo $* | cut -d. -f2); \
 	HEADERS_DOCKERFILE_SUFFIX=""; \
-	if [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; then \
+	if [ $${KERN_MAJ} -lt 6 ] || { [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; }; then \
 		HEADERS_DOCKERFILE_SUFFIX=".bionic"; \
 	fi; \
 	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
 	$(DOCKER) build --build-arg KERN_VERSION=$* \
 		--build-arg ARCH=arm64 \
 		--build-arg CROSS_COMPILE=aarch64-linux-gnu- \
-                -f linux_headers_image/Dockerfile$(HEADERS_DOCKERFILE_SUFFIX) \
+                -f linux_headers_image/Dockerfile$${HEADERS_DOCKERFILE_SUFFIX} \
 		linux_headers_image -t "$${linux_headers_image_tag}" && \
 	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
 
