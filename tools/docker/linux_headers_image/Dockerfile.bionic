@@ -14,13 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# debhelper-compat (= 12) needed for kernels >= 6.3
-FROM ubuntu:20.04@sha256:6d8d9799fe6ab3221965efac00b4c34a2bcc102c086a58dff9e19a08b913c7ef
+FROM ubuntu:18.04@sha256:8aa9c2798215f99544d1ce7439ea9c3a6dfd82de607da1cec3a8a2fae005931b
 
 # Install required packages
 RUN apt-get update
 RUN apt-get upgrade -y -q
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -q build-essential \
+RUN apt-get install -y -q build-essential \
   bc \
   libelf-dev \
   libssl-dev \
@@ -33,7 +32,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -q build-essential \
   binutils-aarch64-linux-gnu \
   gcc-aarch64-linux-gnu \
   dwarves \
-  debhelper \
   python3
 
 ARG KERN_VERSION
@@ -60,8 +58,7 @@ RUN make ARCH=${ARCH} -j $(nproc) bindeb-pkg LOCALVERSION=-pl
 
 # Extract headers into a tarball
 WORKDIR /px
-# Linux 6.3 and later name the resulting package differently (there is no additional -pl suffix)
-RUN DEB_ARCH=$(echo ${ARCH} | sed 's/x86_64/amd64/g'); dpkg -x src/linux-headers-${KERN_VERSION}-pl_${KERN_VERSION}-1_${DEB_ARCH}.deb .
+RUN DEB_ARCH=$(echo ${ARCH} | sed 's/x86_64/amd64/g'); dpkg -x src/linux-headers-${KERN_VERSION}-pl_${KERN_VERSION}-pl-1_${DEB_ARCH}.deb .
 
 # Remove broken symlinks
 RUN find usr/src/linux-headers-${KERN_VERSION}-pl -xtype l -exec rm {} +

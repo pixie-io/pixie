@@ -101,7 +101,13 @@ LINUX_KERNEL_VERSIONS := 4.14.304 \
 	5.18.19 \
 	5.19.17 \
 	6.0.19 \
-	6.1.8
+	6.1.8 \
+	6.2.16 \
+	6.3.13 \
+	6.6.53 \
+	6.8.12 \
+	6.10.12 \
+	6.11.1
 
 LINUX_HEADER_X86_64_TEMPLATE := linux-headers-x86_64-%.tar.gz
 LINUX_HEADER_ARM64_TEMPLATE := linux-headers-arm64-%.tar.gz
@@ -210,8 +216,19 @@ ifndef LINUX_HEADERS_REV
 	$(error set LINUX_HEADERS_REV to a valid value)
 endif
 	@mkdir -p $(@D)
+	# Linux 6.3 and later has differences in the build process.
+	# We need to use a different Dockerfile for these versions.
+	KERN_MAJ=$$(echo $* | cut -d. -f1); \
+	KERN_MIN=$$(echo $* | cut -d. -f2); \
+	HEADERS_DOCKERFILE_SUFFIX=""; \
+	if [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; then \
+		HEADERS_DOCKERFILE_SUFFIX=".bionic"; \
+	fi; \
 	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
-	$(DOCKER) build --build-arg KERN_VERSION=$* --build-arg ARCH=x86_64 linux_headers_image -t "$${linux_headers_image_tag}" && \
+	$(DOCKER) build --build-arg KERN_VERSION=$* \
+	        --build-arg ARCH=x86_64 linux_headers_image \
+		-t "$${linux_headers_image_tag}" \
+		-f linux_headers_image/Dockerfile$${HEADERS_DOCKERFILE_SUFFIX} && \
 	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
 
 $(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-arm64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/arm64_config
@@ -219,10 +236,19 @@ ifndef LINUX_HEADERS_REV
 	$(error set LINUX_HEADERS_REV to a valid value)
 endif
 	@mkdir -p $(@D)
+	# Linux 6.3 and later has differences in the build process.
+	# We need to use a different Dockerfile for these versions.
+	KERN_MAJ=$$(echo $* | cut -d. -f1); \
+	KERN_MIN=$$(echo $* | cut -d. -f2); \
+	HEADERS_DOCKERFILE_SUFFIX=""; \
+	if [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; then \
+		HEADERS_DOCKERFILE_SUFFIX=".bionic"; \
+	fi; \
 	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
 	$(DOCKER) build --build-arg KERN_VERSION=$* \
 		--build-arg ARCH=arm64 \
 		--build-arg CROSS_COMPILE=aarch64-linux-gnu- \
+                -f linux_headers_image/Dockerfile$(HEADERS_DOCKERFILE_SUFFIX) \
 		linux_headers_image -t "$${linux_headers_image_tag}" && \
 	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
 
