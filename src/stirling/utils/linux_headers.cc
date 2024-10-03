@@ -229,7 +229,23 @@ StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::file
     return error::Internal(ec.message());
   }
 
-  const auto resolved_host_path = system::Config::GetInstance().ToHostPath(resolved);
+  // Relative symlinks can form an invalid path when converted to a host path when there are too
+  // many "../" references, causing the mounted host path to be lost.
+  // This happens for openSUSE's linux-header package. In order to handle
+  // this, we only use the symlink target if it is an absolute path and fall back to using the
+  // symlink name directly when it's relative path (/host/lib/modules/<uname>/build).
+  const std::filesystem::path resolved_host_path = [&resolved, &p]() -> std::filesystem::path {
+    if (resolved.is_absolute()) {
+      const auto host_path_from_abs_symlink = system::Config::GetInstance().ToHostPath(resolved);
+      LOG(INFO) << absl::Substitute(
+          "Symlink is using absolute path. Converting that to host path: $0 -> $1.",
+          resolved.string(), host_path_from_abs_symlink.string());
+      return host_path_from_abs_symlink;
+    }
+    LOG(INFO) << absl::Substitute(
+        "Symlink is using relative path, using link name directly instead: $0", p.string());
+    return p;
+  }();
 
   // Downstream won't be ok unless the resolved host path exists; return an error if needed.
   if (!fs::Exists(resolved_host_path)) {
