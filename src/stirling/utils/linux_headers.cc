@@ -229,23 +229,20 @@ StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::file
     return error::Internal(ec.message());
   }
 
-  // Relative symlinks can form an invalid path when converted to a host path when there are too
-  // many "../" references, causing the mounted host path to be lost.
-  // This happens for openSUSE's linux-header package. In order to handle
-  // this, we only use the symlink target if it is an absolute path and fall back to using the
-  // symlink name directly when it's relative path (/host/lib/modules/<uname>/build).
-  const std::filesystem::path resolved_host_path = [&resolved, &p]() -> std::filesystem::path {
-    if (resolved.is_absolute()) {
-      const auto host_path_from_abs_symlink = system::Config::GetInstance().ToHostPath(resolved);
-      LOG(INFO) << absl::Substitute(
-          "Symlink is using absolute path. Converting that to host path: $0 -> $1.",
-          resolved.string(), host_path_from_abs_symlink.string());
-      return host_path_from_abs_symlink;
-    }
+  // Relative paths containing "../" can result in an invalid host mount path when using
+  // ToHostPath. Therefore, we need to treat the absolute and relative cases differently.
+  std::filesystem::path resolved_host_path = p.parent_path();
+  if (resolved.is_absolute()) {
+    resolved_host_path = system::Config::GetInstance().ToHostPath(resolved);
     LOG(INFO) << absl::Substitute(
-        "Symlink is using relative path, using link name directly instead: $0", p.string());
-    return p;
-  }();
+        "Symlink target is an absolute path. Converting that to host path: $0 -> $1.",
+        resolved.string(), resolved_host_path.string());
+  } else {
+    resolved_host_path /= resolved.string();
+    LOG(INFO) << absl::Substitute(
+        "Symlink target is a relative path. Concatenating it to parent directory: $0",
+        resolved_host_path.string());
+  }
 
   // Downstream won't be ok unless the resolved host path exists; return an error if needed.
   if (!fs::Exists(resolved_host_path)) {
