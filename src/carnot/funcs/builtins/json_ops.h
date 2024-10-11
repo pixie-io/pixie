@@ -235,15 +235,10 @@ class SplitUDF : public udf::ScalarUDF {
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
     writer.StartArray();
 
-    std::vector<absl::string_view> parts = absl::StrSplit(in.data(), delimiter.data());
-
-    // Verify that delimiter was found in the input string before
-    // writing the array entries.
-    if (parts.size() > 1 || parts[0] != in.data()) {
-      for (auto part : parts) {
-        writer.String(part.data(), part.size());
-      }
+    for (absl::string_view part : absl::StrSplit(in.data(), delimiter.data()) {
+      writer.String(part.data(), part.size());
     }
+
     writer.EndArray();
     return sb.GetString();
   }

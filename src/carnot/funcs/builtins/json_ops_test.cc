@@ -118,7 +118,7 @@ TEST(JSONOps, SplitUDF_with_present_delimiter) {
 
 TEST(JSONOps, SplitUDF_with_missing_delimiter) {
   auto udf_tester = udf::UDFTester<SplitUDF>();
-  udf_tester.ForInput("foo,bar,baz", ";").Expect(R"([])");
+  udf_tester.ForInput("foo,bar,baz", ";").Expect(R"(["foo,bar,baz"])");
 }
 
 TEST(JSONOps, ScriptReferenceUDF_no_args) {
