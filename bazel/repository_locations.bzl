@@ -127,10 +127,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/h2o/picohttpparser/archive/1d2b8a184e7ebe6651c30dcede37ba1d89691351.tar.gz"],
     ),
     com_github_iovisor_bcc = dict(
-        sha256 = "d34f9484588a9c25be936c910c86f8b25b04e5b0c802d0630e77cc9a8a272aed",
-        strip_prefix = "bcc-e0698be7b797129cb113912e96ad741a551e2291",
+        sha256 = "416426fbe22d617d8aed088062f4489e69176136e99dc0b933df58e83d9175da",
+        strip_prefix = "bcc-e57be8465b9cf238f1c04b1c7e154fd1db85326d",
         urls = [
-            "https://github.com/pixie-io/bcc/archive/e0698be7b797129cb113912e96ad741a551e2291.tar.gz",
+            "https://github.com/pixie-io/bcc/archive/e57be8465b9cf238f1c04b1c7e154fd1db85326d.tar.gz",
         ],
     ),
     com_github_iovisor_bpftrace = dict(
@@ -146,10 +146,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/jupp0r/prometheus-cpp/archive/81e208c250748657f1d5dab247e82c4429a931af.tar.gz"],
     ),
     com_github_libbpf_libbpf = dict(
-        sha256 = "4d503428c7aead070a59630dd0906318a430b3e279a35f51ec601fbdd7d31eb6",
-        strip_prefix = "libbpf-3b0973892891744d20ae79e99c0d1a26a59c4222",
+        sha256 = "859a31e9101237338d46eb62a62cb8fcb342c9ce0f9b9137e5a3a728c088c338",
+        strip_prefix = "libbpf-42065ea6627ff6e1ab4c65e51042a70fbf30ff7c",
         urls = [
-            "https://github.com/libbpf/libbpf/archive/3b0973892891744d20ae79e99c0d1a26a59c4222.tar.gz",
+            "https://github.com/libbpf/libbpf/archive/42065ea6627ff6e1ab4c65e51042a70fbf30ff7c.tar.gz",
         ],
     ),
     com_github_libuv_libuv = dict(
