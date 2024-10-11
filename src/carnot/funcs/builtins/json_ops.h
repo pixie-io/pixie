@@ -235,7 +235,7 @@ class SplitUDF : public udf::ScalarUDF {
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
     writer.StartArray();
 
-    for (absl::string_view part : absl::StrSplit(in.data(), delimiter.data()) {
+    for (absl::string_view part : absl::StrSplit(in.data(), delimiter.data())) {
       writer.String(part.data(), part.size());
     }
 
