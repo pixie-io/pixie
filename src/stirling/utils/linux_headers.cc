@@ -229,7 +229,21 @@ StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::file
     return error::Internal(ec.message());
   }
 
-  const auto resolved_host_path = system::Config::GetInstance().ToHostPath(resolved);
+  // Relative paths containing "../" can result in an invalid host mount path when using
+  // ToHostPath. Therefore, we need to treat the absolute and relative cases differently.
+  std::filesystem::path resolved_host_path;
+  if (resolved.is_absolute()) {
+    resolved_host_path = system::Config::GetInstance().ToHostPath(resolved);
+    VLOG(1) << absl::Substitute(
+        "Symlink target is an absolute path. Converting that to host path: $0 -> $1.",
+        resolved.string(), resolved_host_path.string());
+  } else {
+    resolved_host_path = p.parent_path();
+    resolved_host_path /= resolved.string();
+    VLOG(1) << absl::Substitute(
+        "Symlink target is a relative path. Concatenating it to parent directory: $0",
+        resolved_host_path.string());
+  }
 
   // Downstream won't be ok unless the resolved host path exists; return an error if needed.
   if (!fs::Exists(resolved_host_path)) {
