@@ -111,6 +111,16 @@ TEST(JSONOps, PluckArrayUDF_index_out_of_bound) {
   udf_tester.ForInput(kTestJSONArray, 3).Expect("");
 }
 
+TEST(JSONOps, SplitUDF_with_present_delimiter) {
+  auto udf_tester = udf::UDFTester<SplitUDF>();
+  udf_tester.ForInput("foo,bar,baz", ",").Expect(R"(["foo","bar","baz"])");
+}
+
+TEST(JSONOps, SplitUDF_with_missing_delimiter) {
+  auto udf_tester = udf::UDFTester<SplitUDF>();
+  udf_tester.ForInput("foo,bar,baz", ";").Expect(R"(["foo,bar,baz"])");
+}
+
 TEST(JSONOps, ScriptReferenceUDF_no_args) {
   auto udf_tester = udf::UDFTester<ScriptReferenceUDF<>>();
   auto res = udf_tester.ForInput("text", "px/script").Result();

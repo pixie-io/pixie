@@ -228,6 +228,42 @@ class PluckArrayUDF : public udf::ScalarUDF {
   }
 };
 
+class SplitUDF : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue in, StringValue delimiter) {
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    writer.StartArray();
+
+    for (absl::string_view part : absl::StrSplit(in.data(), delimiter.data())) {
+      writer.String(part.data(), part.size());
+    }
+
+    writer.EndArray();
+    return sb.GetString();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Splits a string by a delimiter and a returns JSON encoded array of strings.")
+        .Details(
+            "This function splits a string by a delimiter and returns a JSON encoded array of "
+            "strings. The function is useful for splitting strings and then passing the result to "
+            "px.pluck_array in order to access individual values of a delimited string.")
+        .Example(R"doc(
+          | df = px.DataFrame('http_events', start_time='-5m')
+          | # Returns By=http://frontend.px.dev;URI=http://testclient.px.dev
+          | df.xfcc_hdr = px.pluck(df.req_headers, 'X-Forwarded-Client-Cert')
+          | df.xfcc_parts = px.split(df.xfcc_hdr, ';')
+          | df.by = px.pluck_array(df.xfcc_hdr, 0) # Returns "By=http://frontend.px.dev"
+          | df.uri = px.pluck_array(df.xfcc_hdr, 1) # Returns "URI=http://testclient.px.dev"
+      )doc")
+        .Arg("input_str", "The string to split.")
+        .Arg("delimiter", "The string value to split the input string.")
+        .Returns("A JSON encoded array of the split strings.");
+  }
+};
+
 /**
   DocString intentionally omitted, this is a non-public function.
   This function creates a custom deep link by creating a "script reference" from a label,
