@@ -68,7 +68,10 @@ class LazyContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
   explicit LazyContiguousDataStreamBufferImpl(size_t max_capacity)
       : LazyContiguousDataStreamBufferImpl(max_capacity, 0, 0) {}
 
-  void Add(size_t pos, std::string_view data, uint64_t timestamp) override;
+  void Add(size_t pos, std::string_view data, uint64_t timestamp,
+           chunk_t incomplete_chunk = chunk_t::kFullyFormed, size_t gap_size = 0) override;
+
+  ChunkInfo GetChunkInfoForHead() override;
 
   std::string_view Head() override;
 
