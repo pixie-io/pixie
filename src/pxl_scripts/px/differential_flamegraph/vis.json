@@ -1,0 +1,64 @@
+{
+    "variables": [
+        {
+            "name": "start_time",
+            "type": "PX_STRING",
+            "description": "The relative start time of the window. Current time is assumed to be now",
+            "defaultValue": "-5m"
+        },
+        {
+            "name": "namespace",
+            "type": "PX_NAMESPACE",
+            "description": "The namespace to filter on."
+        },
+        {
+            "name": "pod",
+            "type": "PX_POD",
+            "description": "The pod that will have its flamegraph analyzed compared to the baseline_pod"
+        },
+        {
+            "name": "baseline_pod",
+            "type": "PX_POD",
+            "description": "The pod to serve as the baseline. The resulting flamegraph will show the difference from this pod's profile."
+        }
+    ],
+    "globalFuncs": [],
+    "widgets": [
+        {
+            "name": "Flamegraph",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 6
+            },
+            "func": {
+                "name": "export_flame_graph",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    },
+                    {
+                        "name": "namespace",
+                        "variable": "namespace"
+                    },
+                    {
+                        "name": "pod",
+                        "variable": "pod"
+                    },
+                    {
+                        "name": "baseline_pod",
+                        "variable": "baseline_pod"
+                    }
+                ]
+            },
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.StackTraceFlameGraph",
+                "stacktraceColumn": "stack_trace_2",
+                "countColumn": "count_2",
+                "differenceColumn": "delta"
+            }
+        }
+    ]
+}

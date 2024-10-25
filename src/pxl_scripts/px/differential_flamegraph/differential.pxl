@@ -1,0 +1,50 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import px
+
+def export_flame_graph(start_time: str, namespace: str, pod: str, baseline_pod: str):
+  stack_traces = px.DataFrame(table='stack_traces.beta', start_time=start_time)
+  stack_traces.namespace = stack_traces.ctx['namespace']
+  stack_traces = stack_traces[px.contains(stack_traces.namespace, namespace)]
+  stack_traces.node = px.Node(px._exec_hostname())
+  stack_traces.pod = stack_traces.ctx['pod']
+  stack_traces.keep_row = px.select(px.contains(stack_traces.pod, baseline_pod), True, False)
+  stack_traces.keep_row = px.select(stack_traces.keep_row or px.contains(stack_traces.pod, pod), True, False)
+  stack_traces = stack_traces[stack_traces.keep_row]
+
+  stack_traces = stack_traces.groupby(['node', 'namespace', 'pod', 'stack_trace_id']).agg(
+      stack_trace=('stack_trace', px.any),
+      count=('count', px.sum)
+  )
+
+  pod1 = stack_traces[px.contains(stack_traces.pod, baseline_pod)]
+  pod1 = pod1.drop(['node', 'namespace', 'pod', 'stack_trace_id'])
+
+  pod2 = stack_traces[px.contains(stack_traces.pod, pod)]
+  pod2 = pod2.drop(['node', 'namespace', 'pod', 'stack_trace_id'])
+
+  merged = pod1.merge(
+    pod2,
+    how='right',
+    left_on='stack_trace',
+    right_on='stack_trace'
+    suffixes=['_1', '_2'],
+  )
+  # Pixie's stack trace format permits spaces, but Brendan Gregg's scripts do not
+  merged.stack_trace_2 = px.replace(' ', merged.stack_trace_2, '')
+  merged.delta = merged.count_2 - merged.count_1
+  return merged[['stack_trace_2', 'count_1', 'count_2', 'delta']]
