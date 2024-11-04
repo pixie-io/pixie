@@ -33,7 +33,7 @@
                 "h": 6
             },
             "func": {
-                "name": "export_flame_graph",
+                "name": "differential_flamegraph",
                 "args": [
                     {
                         "name": "start_time",
@@ -55,8 +55,9 @@
             },
             "displaySpec": {
                 "@type": "types.px.dev/px.vispb.StackTraceFlameGraph",
-                "stacktraceColumn": "stack_trace_2",
-                "countColumn": "count_2",
+                "stacktraceColumn": "stack_trace",
+                "countColumn": "count",
+                "percentageColumn": "percent",
                 "differenceColumn": "delta"
             }
         }
