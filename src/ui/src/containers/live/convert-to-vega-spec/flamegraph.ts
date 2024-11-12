@@ -17,6 +17,7 @@
  */
 
 import { Theme } from '@mui/material/styles';
+import { Transforms } from 'vega-typings';
 
 import { COMMON_THEME } from 'app/components';
 import { WidgetDisplay } from 'app/containers/live/vis';
@@ -49,6 +50,7 @@ export interface StacktraceFlameGraphDisplay extends WidgetDisplay {
   readonly pidColumn?: string;
   readonly nodeColumn?: string;
   readonly percentageLabel?: string;
+  readonly differenceColumn?: string;
 }
 
 function hexToRgb(hex: string) {
@@ -137,65 +139,73 @@ export function convertToStacktraceFlameGraph(
   });
 
   // Add data and transforms.
+  const transform: Transforms[] = [
+    // Tranform the data into a hierarchical tree structure that can be consumed by Vega.
+    {
+      type: 'stratify',
+      key: 'fullPath',
+      parentKey: 'parent',
+    },
+    // Generates the layout for an adjacency diagram.
+    {
+      type: 'partition',
+      field: 'weight',
+      sort: { field: 'count' },
+      size: [{ signal: 'width' }, { signal: 'height' }],
+    },
+    {
+      type: 'filter',
+      expr: `datum.count > ${MIN_SAMPLE_COUNT}`,
+    },
+    // Sets y values based on a fixed height rectangle.
+    {
+      type: 'formula',
+      expr: `split(datum.fullPath, ";").length * (${RECTANGLE_HEIGHT_PX})`,
+      as: 'y1',
+    },
+    {
+      type: 'formula',
+      expr: `(split(datum.fullPath, ";").length - 1) * (${RECTANGLE_HEIGHT_PX})`,
+      as: 'y0',
+    },
+    // Flips the y-axis, as the partition transform actually creates an icicle chart.
+    {
+      type: 'formula',
+      expr: '-datum.y0 + height',
+      as: 'y0',
+    },
+    {
+      type: 'formula',
+      expr: '-datum.y1 + height',
+      as: 'y1',
+    },
+    // Truncate name based on width and height of rect. These are just estimates on font size widths/heights, since
+    // Vega's "limit" field for text marks is a static number.
+    {
+      type: 'formula',
+      as: 'displayedName',
+      expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX} && (datum.x1 - datum.x0) >
+        ${STACKTRACE_LABEL_PX + 168} ?
+        truncate(datum.name, 1.5 * (datum.x1 - datum.x0)/(${STACKTRACE_LABEL_PX}) - 1) : ""`,
+    },
+    {
+      type: 'extent',
+      field: 'y0',
+      signal: 'y_extent',
+    },
+  ];
+  if (display.differenceColumn) {
+    transform.push({
+      type: 'extent',
+      field: 'delta',
+      signal: 'max_delta',
+    });
+  }
   const baseDataSrc = addDataSource(spec, { name: source });
   addDataSource(spec, {
     name: TRANSFORMED_DATA_SOURCE_NAME,
     source: baseDataSrc.name,
-    transform: [
-      // Tranform the data into a hierarchical tree structure that can be consumed by Vega.
-      {
-        type: 'stratify',
-        key: 'fullPath',
-        parentKey: 'parent',
-      },
-      // Generates the layout for an adjacency diagram.
-      {
-        type: 'partition',
-        field: 'weight',
-        sort: { field: 'count' },
-        size: [{ signal: 'width' }, { signal: 'height' }],
-      },
-      {
-        type: 'filter',
-        expr: `datum.count > ${MIN_SAMPLE_COUNT}`,
-      },
-      // Sets y values based on a fixed height rectangle.
-      {
-        type: 'formula',
-        expr: `split(datum.fullPath, ";").length * (${RECTANGLE_HEIGHT_PX})`,
-        as: 'y1',
-      },
-      {
-        type: 'formula',
-        expr: `(split(datum.fullPath, ";").length - 1) * (${RECTANGLE_HEIGHT_PX})`,
-        as: 'y0',
-      },
-      // Flips the y-axis, as the partition transform actually creates an icicle chart.
-      {
-        type: 'formula',
-        expr: '-datum.y0 + height',
-        as: 'y0',
-      },
-      {
-        type: 'formula',
-        expr: '-datum.y1 + height',
-        as: 'y1',
-      },
-      // Truncate name based on width and height of rect. These are just estimates on font size widths/heights, since
-      // Vega's "limit" field for text marks is a static number.
-      {
-        type: 'formula',
-        as: 'displayedName',
-        expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX} && (datum.x1 - datum.x0) >
-          ${STACKTRACE_LABEL_PX + 168} ?
-          truncate(datum.name, 1.5 * (datum.x1 - datum.x0)/(${STACKTRACE_LABEL_PX}) - 1) : ""`,
-      },
-      {
-        type: 'extent',
-        field: 'y0',
-        signal: 'y_extent',
-      },
-    ],
+    transform: transform,
   });
 
   addSignal(spec, {
@@ -256,17 +266,36 @@ export function convertToStacktraceFlameGraph(
   });
 
   // Add rectangles for each stacktrace.
+  let tooltipSignal = `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count,
+    "${display.percentageLabel || 'Percentage'}": format(datum.percentage, ".2f") + "%"} :
+    {"title": datum.name, "Samples": datum.count})`;
+  if (display.differenceColumn) {
+    tooltipSignal = `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count,
+      "${display.percentageLabel || 'Percentage'}": format(datum.percentage, ".2f") + "%",
+      "Delta": datum.delta ? datum.delta : 0} :
+      {"title": datum.name, "Samples": datum.count, "Delta": datum.delta ? datum.delta : 0})`;
+  }
   addMark(mainGroup, {
     type: 'rect',
     name: 'stacktrace_rect',
     from: { data: TRANSFORMED_DATA_SOURCE_NAME },
     encode: {
       enter: {
-        fill: { scale: { datum: 'color' }, field: 'name' },
+        fill: [
+          {
+            test: 'isValid(datum.delta)',
+            scale: 'differential',
+            field: 'delta',
+          },
+          {
+            scale: {
+              datum: 'color',
+            },
+            field: 'name',
+          },
+        ],
         tooltip: {
-          signal: `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count,
-            "${display.percentageLabel || 'Percentage'}": format(datum.percentage, ".2f") + "%"} :
-            {"title": datum.name, "Samples": datum.count})`,
+          signal: tooltipSignal,
         },
       },
       update: {
@@ -882,6 +911,27 @@ export function convertToStacktraceFlameGraph(
   });
 
   // Color the rectangles based on type, so each stacktrace is a different color.
+  if (display.differenceColumn) {
+    addScale(spec, {
+      name: 'differential',
+      type: 'linear',
+      domain: [
+        { 'signal': '-max_delta[1]' },
+        -1,
+        0,
+        1,
+        { 'signal': 'max_delta[1]' },
+      ],
+      range: [
+        'rgb(0, 0, 255)',     // Blue (for minimum values)
+        'rgb(210, 210, 255)', // Light blue (for values near 0)
+        'white',              // White (for 0)
+        'rgb(255, 210, 210)', // Light red (for values near 0 but greater)
+        'rgb(255, 0, 0)',     // Red (for maximum values)
+      ],
+      nice: true,
+    });
+  }
   addScale(spec, {
     name: 'kernel',
     type: 'ordinal',
@@ -907,6 +957,12 @@ export function convertToStacktraceFlameGraph(
     range: generateColorScale(APP_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
   addScale(spec, {
+    name: 'white',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: generateColorScale('#ffffff', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+  });
+  addScale(spec, {
     name: 'go',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
@@ -927,7 +983,8 @@ export function convertToStacktraceFlameGraph(
         weight: 0,
         count: 0,
         parent: null,
-        color: 'k8s',
+        color: display.differenceColumn ? 'white' : 'k8s',
+        delta: null,
       },
     };
 
@@ -965,20 +1022,25 @@ export function convertToStacktraceFlameGraph(
         const cleanPath = s.split('(k8s)')[0];
         const path = `${currPath};${cleanPath}`;
         if (!nodeMap[path]) {
-          // Set the color based on the language type.
+
           let lType = 'other';
-          if (s.startsWith('[k] ')) {
-            lType = 'kernel';
-          } else if (s.startsWith('[j] ')) {
-            lType = 'java';
-          } else if (s.indexOf('(k8s)') !== -1) {
-            lType = 'k8s';
-          } else if (s.indexOf('.(*') !== -1 || s.indexOf('/') !== -1) {
-            lType = 'go';
-          } else if (s.indexOf('::') !== -1) {
-            lType = 'c';
-          } else if (s.indexOf('_[k]') !== -1) {
-            lType = 'kernel';
+          if (display.differenceColumn) {
+            lType = 'white';
+          } else {
+            // Set the color based on the language type.
+            if (s.startsWith('[k] ')) {
+              lType = 'kernel';
+            } else if (s.startsWith('[j] ')) {
+              lType = 'java';
+            } else if (s.indexOf('(k8s)') !== -1) {
+              lType = 'k8s';
+            } else if (s.indexOf('.(*') !== -1 || s.indexOf('/') !== -1) {
+              lType = 'go';
+            } else if (s.indexOf('::') !== -1) {
+              lType = 'c';
+            } else if (s.indexOf('_[k]') !== -1) {
+              lType = 'kernel';
+            }
           }
 
           nodeMap[path] = {
@@ -989,12 +1051,18 @@ export function convertToStacktraceFlameGraph(
             weight: 0,
             percentage: 0,
             color: lType,
+            delta: null,
           };
         }
+
         nodeMap[path].percentage += n[display.percentageColumn];
 
         if (i === splitStack.length - 1) {
           nodeMap[path].weight += n[display.countColumn];
+
+          if (display.differenceColumn) {
+            nodeMap[path].delta = n[display.differenceColumn];
+          }
         }
         nodeMap[path].count += n[display.countColumn];
         currPath = path;
