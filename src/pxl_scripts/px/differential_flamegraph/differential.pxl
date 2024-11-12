@@ -74,4 +74,4 @@ def differential_flamegraph(start_time: str, namespace: str, pod: str, baseline_
   pod2 = pod2.drop(['node', 'namespace', 'stack_trace_id'])
 
   merged = merge_and_compute_delta(pod1, pod2, negate)
-  return merged[['stack_trace', 'count', 'delta', 'percent']]
+  return merged[['stack_trace', 'count', 'delta', 'percent', 'pod']]

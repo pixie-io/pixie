@@ -58,6 +58,7 @@
                 "stacktraceColumn": "stack_trace",
                 "countColumn": "count",
                 "percentageColumn": "percent",
+                "podColumn": "pod",
                 "differenceColumn": "delta"
             }
         }
