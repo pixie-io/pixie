@@ -460,7 +460,12 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
 Status SocketTraceConnector::InitBPF() {
   // set BPF loop limit and chunk limit based on kernel version
   auto kernel = system::GetCachedKernelVersion();
-  if (kernel.version >= 5 || (kernel.version == 5 && kernel.major_rev >= 1)) {
+  auto loop_limit_is_default = gflags::GetCommandLineFlagInfoOrDie("stirling_bpf_loop_limit").is_default;
+  auto chunk_limit_is_default = gflags::GetCommandLineFlagInfoOrDie("stirling_bpf_chunk_limit").is_default;
+
+  // Do not automatically raise loop and chunk limits for non-default values.
+  if (loop_limit_is_default && chunk_limit_is_default &&
+     (kernel.version > 5 || (kernel.version == 5 && kernel.major_rev >= 1))) {
     // Kernels >= 5.1 have higher BPF instruction limits (1 million for verifier).
     // This enables a 21x increase to our loop and chunk limits
     FLAGS_stirling_bpf_loop_limit = 882;
