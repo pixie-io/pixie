@@ -32,6 +32,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/types.h"
 
 namespace px {
 namespace stirling {
