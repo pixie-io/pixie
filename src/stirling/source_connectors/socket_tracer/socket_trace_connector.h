@@ -94,6 +94,7 @@ enum TraceMode : int32_t {
 class SocketTraceConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "socket_tracer";
+  // PROTOCOL_LIST
   static constexpr auto kTables =
       MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable,
                 kRedisTable, kNATSTable, kKafkaTable, kMuxTable, kAMQPTable, kMongoDBTable);
