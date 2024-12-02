@@ -44,9 +44,11 @@ class KelvinManager : public Manager {
   KelvinManager() = delete;
   KelvinManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
                 std::string_view addr, int grpc_server_port, std::string_view nats_url,
-                std::string_view mds_url, system::KernelVersion kernel_version)
+                std::string_view mds_url, system::KernelVersion kernel_version,
+                bool kernel_headers_installed)
       : Manager(agent_id, pod_name, host_ip, grpc_server_port, KelvinManager::Capabilities(),
-                KelvinManager::Parameters(), nats_url, mds_url, kernel_version) {
+                KelvinManager::Parameters(), nats_url, mds_url, kernel_version,
+                kernel_headers_installed) {
     info()->address = std::string(addr);
   }
 

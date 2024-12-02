@@ -25,6 +25,7 @@
 #include "src/common/base/base.h"
 #include "src/common/signal/signal.h"
 #include "src/common/system/kernel_version.h"
+#include "src/common/system/linux_headers_utils.h"
 #include "src/shared/version/version.h"
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
@@ -40,6 +41,8 @@ DEFINE_string(clock_converter, gflags::StringFromEnv("PL_CLOCK_CONVERTER", "defa
 using ::px::vizier::agent::DefaultDeathHandler;
 using ::px::vizier::agent::PEMManager;
 using ::px::vizier::agent::TerminationHandler;
+
+constexpr std::string_view kLinuxHeadersPath = "/lib/modules";
 
 int main(int argc, char** argv) {
   px::EnvironmentGuard env_guard(&argc, argv);
@@ -68,9 +71,19 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1, kernel version: $2",
                                 px::VersionInfo::VersionString(), agent_id.str(),
                                 kernel_version.ToString());
-  auto manager =
-      PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url, kernel_version)
-          .ConsumeValueOrDie();
+
+  auto kernel_headers_installed = false;
+  auto uname = px::system::GetUname();
+  if (uname.ok()) {
+    const auto host_path = px::system::Config::GetInstance().ToHostPath(absl::Substitute("$0/$1/$2", kLinuxHeadersPath, uname.ConsumeValueOrDie(), "build"));
+
+    const auto resolved_host_path = px::system::ResolvePossibleSymlinkToHostPath(host_path);
+    kernel_headers_installed = resolved_host_path.ok();
+  }
+
+  auto manager = PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url,
+                                    kernel_version, kernel_headers_installed)
+                     .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());
 

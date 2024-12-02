@@ -92,7 +92,8 @@ int main(int argc, char** argv) {
                                 px::VersionInfo::VersionString(), agent_id.str(),
                                 kernel_version.ToString());
   auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr,
-                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr, kernel_version)
+                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr, kernel_version,
+                                       /* kernel_headers_installed */ false)
                      .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());

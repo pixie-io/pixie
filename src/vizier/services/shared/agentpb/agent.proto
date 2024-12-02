@@ -62,6 +62,8 @@ message HostInfo {
   string host_ip = 3 [ (gogoproto.customname) = "HostIP" ];
   // Version of the kernel running on the host.
   KernelVersion kernel = 4;
+  // Whether kernel headers were preinstalled on the host.
+  bool kernel_headers_installed = 5;
 }
 
 // Agent contains information about a specific agent instance.

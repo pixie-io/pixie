@@ -109,7 +109,8 @@ class Manager : public BaseManager {
   Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
           int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
           services::shared::agent::AgentParameters parameters, std::string_view nats_url,
-          std::string_view mds_url, system::KernelVersion kernel_version);
+          std::string_view mds_url, system::KernelVersion kernel_version,
+          bool kernel_headers_installed);
   Status Init();
 
   Status RegisterMessageHandler(MsgCase c, std::shared_ptr<MessageHandler> handler,

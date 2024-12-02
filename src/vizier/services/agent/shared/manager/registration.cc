@@ -92,6 +92,7 @@ Status RegistrationHandler::DispatchRegistration() {
   host_info->set_host_ip(agent_info()->host_ip);
   auto kernel_version_proto = KernelToProto(agent_info()->kernel_version);
   host_info->mutable_kernel()->CopyFrom(kernel_version_proto);
+  host_info->set_kernel_headers_installed(agent_info()->kernel_headers_installed);
   *req_info->mutable_capabilities() = agent_info()->capabilities;
   *req_info->mutable_parameters() = agent_info()->parameters;
 
