@@ -75,7 +75,8 @@ int main(int argc, char** argv) {
   auto kernel_headers_installed = false;
   auto uname = px::system::GetUname();
   if (uname.ok()) {
-    const auto host_path = px::system::Config::GetInstance().ToHostPath(absl::Substitute("$0/$1/$2", kLinuxHeadersPath, uname.ConsumeValueOrDie(), "build"));
+    const auto host_path = px::system::Config::GetInstance().ToHostPath(
+        absl::Substitute("$0/$1/$2", kLinuxHeadersPath, uname.ConsumeValueOrDie(), "build"));
 
     const auto resolved_host_path = px::system::ResolvePossibleSymlinkToHostPath(host_path);
     kernel_headers_installed = resolved_host_path.ok();

@@ -214,7 +214,8 @@ Status LinkHostLinuxHeadersKernel(const std::filesystem::path& lib_modules_dir) 
   const auto host_path = system::Config::GetInstance().ToHostPath(lib_modules_dir);
   LOG(INFO) << absl::Substitute("Looking for host Linux headers at $0.", host_path.string());
 
-  PX_ASSIGN_OR_RETURN(const auto resolved_host_path, system::ResolvePossibleSymlinkToHostPath(host_path));
+  PX_ASSIGN_OR_RETURN(const auto resolved_host_path,
+                      system::ResolvePossibleSymlinkToHostPath(host_path));
   PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(resolved_host_path, lib_modules_dir));
   LOG(INFO) << absl::Substitute("Linked host headers at $0 to symlink in pem namespace at $1.",
                                 resolved_host_path.string(), lib_modules_dir.string());
