@@ -63,6 +63,19 @@ StatusOr<ParseState> ExtractSNIExtension(std::map<std::string, std::string>* ext
   return ParseState::kSuccess;
 }
 
+/*
+ * The TLS wire protocol is best described in each of the RFCs for the protocol
+ * SSL v3.0: https://tools.ietf.org/html/rfc6101
+ * TLS v1.0: https://tools.ietf.org/html/rfc2246
+ * TLS v1.1: https://tools.ietf.org/html/rfc4346
+ * TLS v1.2: https://tools.ietf.org/html/rfc5246
+ * TLS v1.3: https://tools.ietf.org/html/rfc8446
+ *
+ * These specs have c struct style definitions of the wire protocol. The wikipedia
+ * page is also a good resource to see it explained in a more typical ascii binary format
+ * diagram: https://en.wikipedia.org/wiki/Transport_Layer_Security#TLS_record
+ */
+
 ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
   PX_ASSIGN_OR(auto raw_content_type, decoder->ExtractBEInt<uint8_t>(),
                return ParseState::kInvalid);
