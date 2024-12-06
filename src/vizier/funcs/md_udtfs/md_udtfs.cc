@@ -37,6 +37,8 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
   registry->RegisterFactoryOrDie<GetProfilerSamplingPeriodMS,
                                  UDTFWithMDFactory<GetProfilerSamplingPeriodMS>>(
       "GetProfilerSamplingPeriodMS", ctx);
+  registry->RegisterFactoryOrDie<GetLinuxHeadersStatus, UDTFWithMDFactory<GetLinuxHeadersStatus>>(
+      "GetLinuxHeadersStatus", ctx);
 
   registry->RegisterOrDie<GetDebugMDState>("_DebugMDState");
   registry->RegisterFactoryOrDie<GetDebugMDWithPrefix, UDTFWithMDFactory<GetDebugMDWithPrefix>>(
