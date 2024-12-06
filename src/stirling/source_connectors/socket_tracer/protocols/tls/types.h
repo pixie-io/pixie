@@ -26,18 +26,11 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
 #include "src/stirling/utils/utils.h"
 
-namespace px {
-namespace stirling {
-namespace protocols {
-namespace tls {
-
+namespace px::stirling::protocols::tls {
 // Forward declaration so enum_range can be specialized.
 enum class LegacyVersion : uint16_t;
 
-}  // namespace tls
-}  // namespace protocols
-}  // namespace stirling
-}  // namespace px
+}  // namespace px::stirling::protocols::tls
 
 template <>
 struct magic_enum::customize::enum_range<px::stirling::protocols::tls::LegacyVersion> {
