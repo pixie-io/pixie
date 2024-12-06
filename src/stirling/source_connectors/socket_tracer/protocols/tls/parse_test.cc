@@ -350,7 +350,6 @@ TEST_F(TLSParserTest, ServerHelloExtsWithZeroLenExtension) {
   ASSERT_EQ(state, ParseState::kSuccess);
 }
 
-namespace tls {}  // namespace tls
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
