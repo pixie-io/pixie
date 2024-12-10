@@ -229,3 +229,54 @@ spec:
   targetNamespaces:
     - {{ .Values.olmNamespace }}
 {{- end}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: csv-deleter
+  namespace: {{ .Values.olmNamespace }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: olm-operator-serviceaccount
+      containers:
+        - name: trigger-csv-finalizer
+          image: curlimages/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              NAMESPACE="{{ .Values.olmOperatorNamespace }}"
+              API_SERVER="https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+              CA_CERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+
+              DELETE_STATUS=$(curl --cacert $CA_CERT \
+                                    -H "Authorization: Bearer $TOKEN" \
+                                    -X DELETE -s \
+                                    -o /dev/null -w "%{http_code}" \
+                                    $API_SERVER/api/v1/namespaces/$NAMESPACE)
+
+              if [ "$DELETE_STATUS" -ne 200 ] && [ "$DELETE_STATUS" -ne 202 ]; then
+                echo "Failed to initiate deletion for namespace $NAMESPACE. HTTP status code: $DELETE_STATUS"
+                exit 1
+              fi
+
+              echo "Waiting for finalizer in $NAMESPACE to complete..."
+              while true; do
+                STATUS=$(curl --cacert $CA_CERT \
+                              -H "Authorization: Bearer $TOKEN" \
+                              -o /dev/null -w "%{http_code}" -s \
+                              $API_SERVER/api/v1/namespaces/$NAMESPACE)
+                if [ "$STATUS" = "404" ]; then
+                  echo "Namespace $NAMESPACE finalizer completed."
+                  break
+                else
+                  echo "Finalizer still running in $NAMESPACE. Retrying in 5 seconds..."
+                  sleep 5
+                fi
+              done
