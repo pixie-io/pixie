@@ -22,7 +22,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
 
 namespace px {
 namespace stirling {
@@ -130,11 +130,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
       }
     }
   }
@@ -143,8 +149,8 @@ probes {
       name: "arg1"
       type: INT
       memory {
-        base: "sp_"
-        offset: 24
+        base: "parm__"
+        offset: 48
       }
     }
   }
@@ -153,8 +159,8 @@ probes {
       name: "arg2"
       type: INT
       memory {
-        base: "sp_"
-        offset: 32
+        base: "parm__"
+        offset: 56
       }
     }
   }
@@ -163,8 +169,8 @@ probes {
       name: "arg3"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -173,8 +179,8 @@ probes {
       name: "arg4"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 17
+        base: "parm__"
+        offset: 16
       }
     }
   }
@@ -183,8 +189,8 @@ probes {
       name: "arg5"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 20
+        base: "parm__"
+        offset: 19
       }
     }
   }
@@ -274,11 +280,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 48
+        base: "parm__"
       }
     }
   }
@@ -287,8 +299,8 @@ probes {
       name: "retval1"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 57
+        base: "parm__"
+        offset: 9
       }
     }
   }
@@ -311,11 +323,11 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "~r6"
+        expr: "~r0"
       }
       ret_vals {
         id: "retval1"
-        expr: "~r7.B1"
+        expr: "~r1.B1"
       }
     }
   }
@@ -378,11 +390,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 48
+        base: "parm__"
       }
     }
   }
@@ -391,8 +409,8 @@ probes {
       name: "retval1"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 57
+        base: "parm__"
+        offset: 9
       }
     }
   }
@@ -482,11 +500,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 48
+        base: "parm__"
       }
     }
   }
@@ -495,8 +519,8 @@ probes {
       name: "retval1"
       type: STRUCT_BLOB
       memory {
-        base: "sp_"
-        offset: 56
+        base: "parm__"
+        offset: 8
         size: 4
       }
     }
@@ -587,11 +611,18 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0_D_Ptr_X_"
       type: VOID_POINTER
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -619,8 +650,8 @@ probes {
       name: "arg1_D_Ptr_X_"
       type: VOID_POINTER
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -862,11 +893,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
       }
     }
   }
@@ -875,8 +912,8 @@ probes {
       name: "arg1"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -885,8 +922,8 @@ probes {
       name: "arg2"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 17
+        base: "parm__"
+        offset: 16
       }
     }
   }
@@ -972,6 +1009,13 @@ probes {
     }
   }
   vars {
+    scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
     map_var {
       name: "my_stash_ptr"
       type: "my_stash_value_t"
@@ -1003,7 +1047,6 @@ probes {
   }
   output_actions {
     perf_buffer_name: "out_table2"
-    data_buffer_array_name: "out_table2_data_buffer_array"
     output_struct_name: "out_table2_value_t"
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
@@ -1011,6 +1054,7 @@ probes {
     variable_names: "goid_"
     variable_names: "arg0"
     variable_names: "arg1"
+    data_buffer_array_name: "out_table2_data_buffer_array"
   }
   map_delete_actions {
     map_name: "my_stash"
@@ -1197,11 +1241,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0"
       type: STRUCT_BLOB
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
         size: 48
       }
     }
@@ -1324,6 +1374,8 @@ structs {
         path: "/len"
       }
     }
+    blob_decoders {
+    }
   }
 }
 outputs {
@@ -1380,11 +1432,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval_intf_tab"
       type: UINT64
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
       }
     }
   }
@@ -1393,8 +1451,8 @@ probes {
       name: "retval_intf_data"
       type: VOID_POINTER
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -1402,14 +1460,21 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5104328"
+      constant: "4989600"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "5104360"
+      constant: "4989792"
+    }
+  }
+  vars {
+    scalar_var {
+      name: "internal___poll__errNetClosing_sym_addr3"
+      type: UINT64
+      constant: "4989824"
     }
   }
   vars {
@@ -1426,8 +1491,7 @@ probes {
       name: "retval"
       type: STRUCT_BLOB
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
         size: 16
         op: ASSIGN_ONLY
       }
@@ -1435,13 +1499,13 @@ probes {
   }
   output_actions {
     perf_buffer_name: "out_table"
-    data_buffer_array_name: "out_table_data_buffer_array"
     output_struct_name: "out_table_value_t"
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
     variable_names: "time_"
     variable_names: "goid_"
     variable_names: "retval"
+    data_buffer_array_name: "out_table_data_buffer_array"
   }
   cond_blocks {
     cond {
@@ -1476,6 +1540,25 @@ probes {
           base: "retval_intf_data"
           size: 16
           decoder_idx: 2
+          op: ASSIGN_ONLY
+        }
+      }
+    }
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "retval_intf_tab"
+      vars: "internal___poll__errNetClosing_sym_addr3"
+    }
+    vars {
+      scalar_var {
+        name: "retval"
+        type: STRUCT_BLOB
+        memory {
+          base: "retval_intf_data"
+          size: 16
+          decoder_idx: 3
           op: ASSIGN_ONLY
         }
       }

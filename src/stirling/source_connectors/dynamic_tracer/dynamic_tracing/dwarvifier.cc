@@ -97,8 +97,9 @@ class Dwarvifier {
                                                       uint64_t offset, const TypeInfo& type_info);
 
   // Used by ProcessVarExpr() to handle a Struct variable.
-  Status ProcessStructBlob(const std::string& base, uint64_t offset, const TypeInfo& type_info,
-                           const std::string& var_name, ir::physical::Probe* output_probe);
+  Status ProcessStructBlob(const ArgInfo& arg_info, const std::string& base, uint64_t offset,
+                           const TypeInfo& type_info, const std::string& var_name,
+                           ir::physical::Probe* output_probe);
 
   // The input components describes a sequence of field of nesting structures. The first component
   // is the name of an input argument of a function, or an expression to describe the index of an
@@ -569,11 +570,11 @@ void Dwarvifier::AddEntryProbeVariables(ir::physical::Probe* output_probe) {
     auto* parm_ptr_var =
         AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
     parm_ptr_var->set_reg(ir::physical::Register::SYSV_AMD64_ARGS_PTR);
+  } else if (language_ == ir::shared::GOLANG) {
+    auto* parm_ptr_var =
+        AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
+    parm_ptr_var->set_reg(ir::physical::Register::GOLANG_ARGS_PTR);
   }
-  // TODO(oazizi): For Golang 1.17+, will need the following:
-  //  auto* parm_ptr_var =
-  //          AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
-  //  parm_ptr_var->set_reg(ir::physical::Register::GOLANG_ARGS_PTR);
 }
 
 void Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
@@ -585,6 +586,10 @@ void Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
     auto* rc_ptr_var =
         AddVariable<ScalarVariable>(output_probe, kRCPtrVarName, ir::shared::VOID_POINTER);
     rc_ptr_var->set_reg(ir::physical::Register::RC_PTR);
+  } else if (language_ == ir::shared::GOLANG) {
+    auto* parm_ptr_var =
+        AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
+    parm_ptr_var->set_reg(ir::physical::Register::GOLANG_ARGS_PTR);
   }
 }
 
@@ -788,11 +793,17 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessStructBlob(const std::string& base, uint64_t offset,
-                                     const TypeInfo& type_info, const std::string& var_name,
+Status Dwarvifier::ProcessStructBlob(const ArgInfo& arg_info, const std::string& base,
+                                     uint64_t offset, const TypeInfo& type_info,
+                                     const std::string& var_name,
                                      ir::physical::Probe* output_probe) {
   PX_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
                       dwarf_reader_->GetStructSpec(type_info.type_name));
+  VLOG(1) << arg_info.ToString();
+  // TODO(ddelnano): Remove once structs in registers are supported (gh#2106)
+  DCHECK(arg_info.type_info.type != VarType::kStruct ||
+         arg_info.location.loc_type == LocationType::kStack)
+      << "StructBlob should be a stack variable. Structs in registers aren't supported yet.";
   PX_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
                       CreateStructSpecProto(struct_spec_entires, language_));
 
@@ -917,7 +928,8 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
       PX_RETURN_IF_ERROR(
           ProcessGolangInterfaceExpr(base, offset, type_info, var_name, output_probe));
     } else {
-      PX_RETURN_IF_ERROR(ProcessStructBlob(base, offset, type_info, var_name, output_probe));
+      PX_RETURN_IF_ERROR(
+          ProcessStructBlob(arg_info, base, offset, type_info, var_name, output_probe));
     }
   } else {
     return error::Internal("Expected struct or base type, but got type: $0", type_info.ToString());
@@ -936,13 +948,23 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
   PX_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
 
+  std::string base_var;
   switch (language_) {
     case ir::shared::GOLANG:
-      return ProcessVarExpr(arg.id(), arg_info, kSPVarName, components, output_probe);
+      switch (arg_info.location.loc_type) {
+        case LocationType::kStack:
+          base_var = kSPVarName;
+          break;
+        case LocationType::kRegister:
+          base_var = kParmPtrVarName;
+          break;
+        default:
+          return error::Internal("Unsupported argument LocationType $0",
+                                 magic_enum::enum_name(arg_info.location.loc_type));
+      }
+      return ProcessVarExpr(arg.id(), arg_info, base_var, components, output_probe);
     case ir::shared::CPP:
     case ir::shared::C: {
-      std::string base_var;
-
       switch (arg_info.location.loc_type) {
         case LocationType::kStack:
           base_var = kSPVarName;
@@ -999,7 +1021,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
 
   switch (language_) {
     case ir::shared::GOLANG: {
-      // This represents the actualy return value being returned,
+      // This represents the actual return value being returned,
       // without sub-field accesses.
       std::string ret_val_name(components.front());
 
@@ -1029,8 +1051,15 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
 
       // Golang return values are really arguments located on the stack, so get the arg info.
       PX_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, ret_val_name));
-
-      return ProcessVarExpr(ret_val.id(), arg_info, kSPVarName, components, output_probe);
+      switch (arg_info.location.loc_type) {
+        case LocationType::kStack:
+          return ProcessVarExpr(ret_val.id(), arg_info, kSPVarName, components, output_probe);
+        case LocationType::kRegister:
+          return ProcessVarExpr(ret_val.id(), arg_info, kParmPtrVarName, components, output_probe);
+        default:
+          return error::Internal("Unsupported return value LocationType $0",
+                                 magic_enum::enum_name(arg_info.location.loc_type));
+      }
     }
     case ir::shared::CPP:
     case ir::shared::C: {
