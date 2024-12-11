@@ -228,7 +228,6 @@ metadata:
 spec:
   targetNamespaces:
     - {{ .Values.olmNamespace }}
-{{- end}}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -245,7 +244,7 @@ spec:
       serviceAccountName: olm-operator-serviceaccount
       containers:
         - name: trigger-csv-finalizer
-          image: curlimages/curl:latest
+          image: curlimages/curl@sha256:83a505ba2ba62f208ed6e410c268b7b9aa48f0f7b403c8108b9773b44199dbba  # v8.11.0
           command:
             - /bin/sh
             - -c
@@ -280,3 +279,4 @@ spec:
                   sleep 5
                 fi
               done
+{{- end}}
