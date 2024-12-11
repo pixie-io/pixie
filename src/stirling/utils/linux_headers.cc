@@ -31,6 +31,7 @@
 #include "src/common/fs/temp_file.h"
 #include "src/common/minitar/minitar.h"
 #include "src/common/system/config.h"
+#include "src/common/system/linux_headers_utils.h"
 #include "src/common/system/proc_pid_path.h"
 #include "src/common/zlib/zlib_wrapper.h"
 
@@ -83,7 +84,7 @@ StatusOr<std::filesystem::path> FindKernelConfig() {
       // Search for /boot/config-<uname>
       syscfg.ToHostPath(absl::StrCat("/boot/config-", uname)),
       // Search for /lib/modules/<uname>/config
-      syscfg.ToHostPath(absl::StrCat("/lib/modules/", uname, "/config")),
+      syscfg.ToHostPath(absl::StrCat(px::system::kLinuxModulesDir, uname, "/config")),
       // TODO(yzhao): https://github.com/lima-vm/alpine-lima/issues/67 once this issue is resolved,
       // we might consider change these 2 paths into something recommended by rancher-desktop.
       // The path used by `alpine-lima` in "Live CD" boot mechanism.
@@ -209,55 +210,12 @@ Status FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
   return error::NotFound("Could not find 'source' or 'build' under $0.", lib_modules_dir.string());
 }
 
-StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::filesystem::path p) {
-  // Check if "p" is a symlink.
-  std::error_code ec;
-  const bool is_symlink = std::filesystem::is_symlink(p, ec);
-  if (ec) {
-    return error::NotFound(absl::Substitute("Did not find the host headers at path: $0, $1.",
-                                            p.string(), ec.message()));
-  }
-
-  if (!is_symlink) {
-    // Not a symlink, we are good now.
-    return p;
-  }
-
-  // Resolve the symlink, and re-convert to a host path..
-  const std::filesystem::path resolved = std::filesystem::read_symlink(p, ec);
-  if (ec) {
-    return error::Internal(ec.message());
-  }
-
-  // Relative paths containing "../" can result in an invalid host mount path when using
-  // ToHostPath. Therefore, we need to treat the absolute and relative cases differently.
-  std::filesystem::path resolved_host_path;
-  if (resolved.is_absolute()) {
-    resolved_host_path = system::Config::GetInstance().ToHostPath(resolved);
-    VLOG(1) << absl::Substitute(
-        "Symlink target is an absolute path. Converting that to host path: $0 -> $1.",
-        resolved.string(), resolved_host_path.string());
-  } else {
-    resolved_host_path = p.parent_path();
-    resolved_host_path /= resolved.string();
-    VLOG(1) << absl::Substitute(
-        "Symlink target is a relative path. Concatenating it to parent directory: $0",
-        resolved_host_path.string());
-  }
-
-  // Downstream won't be ok unless the resolved host path exists; return an error if needed.
-  if (!fs::Exists(resolved_host_path)) {
-    return error::NotFound(absl::Substitute("Did not find host headers at resolved path: $0.",
-                                            resolved_host_path.string()));
-  }
-  return resolved_host_path;
-}
-
 Status LinkHostLinuxHeadersKernel(const std::filesystem::path& lib_modules_dir) {
   const auto host_path = system::Config::GetInstance().ToHostPath(lib_modules_dir);
   LOG(INFO) << absl::Substitute("Looking for host Linux headers at $0.", host_path.string());
 
-  PX_ASSIGN_OR_RETURN(const auto resolved_host_path, ResolvePossibleSymlinkToHostPath(host_path));
+  PX_ASSIGN_OR_RETURN(const auto resolved_host_path,
+                      system::ResolvePossibleSymlinkToHostPath(host_path));
   PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(resolved_host_path, lib_modules_dir));
   LOG(INFO) << absl::Substitute("Linked host headers at $0 to symlink in pem namespace at $1.",
                                 resolved_host_path.string(), lib_modules_dir.string());
@@ -401,7 +359,8 @@ Status FindOrInstallLinuxHeaders() {
   // However we find Linux headers (below) we link them into the mount namespace of this
   // process using one (or both) of the above paths.
 
-  const std::filesystem::path pem_ns_lib_modules_dir = "/lib/modules/" + uname;
+  const std::filesystem::path pem_ns_lib_modules_dir =
+      std::string(px::system::kLinuxModulesDir) + uname;
 
   // Create (or verify existence); does nothing if the directory already exists.
   PX_RETURN_IF_ERROR(fs::CreateDirectories(pem_ns_lib_modules_dir));

@@ -43,6 +43,10 @@ namespace px {
 namespace vizier {
 namespace funcs {
 namespace md {
+
+constexpr std::string_view kKernelHeadersInstalledDesc =
+    "Whether the agent had linux headers pre-installed";
+
 template <typename TUDTF>
 class UDTFWithMDFactory : public carnot::udf::UDTFFactory {
  public:
@@ -295,7 +299,9 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
         ColInfo("create_time", types::DataType::TIME64NS, types::PatternType::GENERAL,
                 "The creation time of the agent"),
         ColInfo("last_heartbeat_ns", types::DataType::INT64, types::PatternType::GENERAL,
-                "Time (in nanoseconds) since the last heartbeat"));
+                "Time (in nanoseconds) since the last heartbeat"),
+        ColInfo("kernel_headers_installed", types::DataType::BOOLEAN, types::PatternType::GENERAL,
+                kKernelHeadersInstalledDesc));
   }
 
   Status Init(FunctionContext*) {
@@ -330,6 +336,8 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
     rw->Append<IndexOf("agent_state")>(StringValue(magic_enum::enum_name(agent_status.state())));
     rw->Append<IndexOf("create_time")>(agent_info.create_time_ns());
     rw->Append<IndexOf("last_heartbeat_ns")>(agent_status.ns_since_last_heartbeat());
+    rw->Append<IndexOf("kernel_headers_installed")>(
+        agent_info.info().host_info().kernel_headers_installed());
 
     ++idx_;
     return idx_ < resp_->info_size();
@@ -384,6 +392,60 @@ class GetProfilerSamplingPeriodMS final : public carnot::udf::UDTF<GetProfilerSa
     const auto period_ms = agent_info.info().parameters().profiler_stack_trace_sample_period_ms();
     rw->Append<IndexOf("asid")>(asid);
     rw->Append<IndexOf("profiler_sampling_period_ms")>(period_ms);
+
+    ++idx_;
+    return idx_ < resp_->info_size();
+  }
+
+ private:
+  int idx_ = 0;
+  std::unique_ptr<px::vizier::services::metadata::AgentInfoResponse> resp_;
+  std::shared_ptr<MDSStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
+};
+
+/**
+ * This UDTF retrieves the status of the agents' Linux headers installation.
+ */
+class GetLinuxHeadersStatus final : public carnot::udf::UDTF<GetLinuxHeadersStatus> {
+ public:
+  using MDSStub = vizier::services::metadata::MetadataService::Stub;
+  using SchemaResponse = vizier::services::metadata::SchemaResponse;
+  GetLinuxHeadersStatus() = delete;
+  GetLinuxHeadersStatus(std::shared_ptr<MDSStub> stub,
+                        std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL, "The Agent Short ID"),
+        ColInfo("kernel_headers_installed", types::DataType::BOOLEAN, types::PatternType::GENERAL,
+                kKernelHeadersInstalledDesc));
+  }
+
+  Status Init(FunctionContext*) {
+    px::vizier::services::metadata::AgentInfoRequest req;
+    resp_ = std::make_unique<px::vizier::services::metadata::AgentInfoResponse>();
+
+    grpc::ClientContext ctx;
+    add_context_authentication_func_(&ctx);
+    auto s = stub_->GetAgentInfo(&ctx, req, resp_.get());
+    if (!s.ok()) {
+      return error::Internal("Failed to make RPC call to GetAgentInfo");
+    }
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    const auto& agent_metadata = resp_->info(idx_);
+    const auto& agent_info = agent_metadata.agent();
+
+    const auto asid = agent_info.asid();
+    const auto kernel_headers_installed = agent_info.info().host_info().kernel_headers_installed();
+    rw->Append<IndexOf("asid")>(asid);
+    rw->Append<IndexOf("kernel_headers_installed")>(kernel_headers_installed);
 
     ++idx_;
     return idx_ < resp_->info_size();

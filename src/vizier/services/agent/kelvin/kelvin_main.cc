@@ -91,8 +91,12 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Pixie Kelvin. Version: $0, id: $1, kernel: $2",
                                 px::VersionInfo::VersionString(), agent_id.str(),
                                 kernel_version.ToString());
+  auto kernel_info = px::system::KernelInfo{
+      kernel_version,
+      false /* kernel_headers_installed */,
+  };
   auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr,
-                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr, kernel_version)
+                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr, kernel_info)
                      .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());
