@@ -25,6 +25,8 @@
 namespace px {
 namespace system {
 
+constexpr std::string_view kLinuxModulesDir = "/lib/modules/";
+
 /**
  * Resolves a possible symlink path to its corresponding host filesystem path.
  *

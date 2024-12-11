@@ -42,8 +42,6 @@ using ::px::vizier::agent::DefaultDeathHandler;
 using ::px::vizier::agent::PEMManager;
 using ::px::vizier::agent::TerminationHandler;
 
-constexpr std::string_view kLinuxHeadersPath = "/lib/modules";
-
 int main(int argc, char** argv) {
   px::EnvironmentGuard env_guard(&argc, argv);
 
@@ -76,15 +74,19 @@ int main(int argc, char** argv) {
   auto uname = px::system::GetUname();
   if (uname.ok()) {
     const auto host_path = px::system::Config::GetInstance().ToHostPath(
-        absl::Substitute("$0/$1/$2", kLinuxHeadersPath, uname.ConsumeValueOrDie(), "build"));
+        absl::StrCat(px::system::kLinuxModulesDir, uname.ConsumeValueOrDie(), "/build"));
 
     const auto resolved_host_path = px::system::ResolvePossibleSymlinkToHostPath(host_path);
     kernel_headers_installed = resolved_host_path.ok();
   }
 
-  auto manager = PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url,
-                                    kernel_version, kernel_headers_installed)
-                     .ConsumeValueOrDie();
+  auto kernel_info = px::system::KernelInfo{
+      kernel_version,
+      kernel_headers_installed,
+  };
+  auto manager =
+      PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url, kernel_info)
+          .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());
 

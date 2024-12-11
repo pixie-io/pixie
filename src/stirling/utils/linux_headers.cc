@@ -84,7 +84,7 @@ StatusOr<std::filesystem::path> FindKernelConfig() {
       // Search for /boot/config-<uname>
       syscfg.ToHostPath(absl::StrCat("/boot/config-", uname)),
       // Search for /lib/modules/<uname>/config
-      syscfg.ToHostPath(absl::StrCat("/lib/modules/", uname, "/config")),
+      syscfg.ToHostPath(absl::StrCat(px::system::kLinuxModulesDir, uname, "/config")),
       // TODO(yzhao): https://github.com/lima-vm/alpine-lima/issues/67 once this issue is resolved,
       // we might consider change these 2 paths into something recommended by rancher-desktop.
       // The path used by `alpine-lima` in "Live CD" boot mechanism.
@@ -359,7 +359,8 @@ Status FindOrInstallLinuxHeaders() {
   // However we find Linux headers (below) we link them into the mount namespace of this
   // process using one (or both) of the above paths.
 
-  const std::filesystem::path pem_ns_lib_modules_dir = "/lib/modules/" + uname;
+  const std::filesystem::path pem_ns_lib_modules_dir =
+      std::string(px::system::kLinuxModulesDir) + uname;
 
   // Create (or verify existence); does nothing if the directory already exists.
   PX_RETURN_IF_ERROR(fs::CreateDirectories(pem_ns_lib_modules_dir));
