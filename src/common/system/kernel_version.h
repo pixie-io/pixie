@@ -75,6 +75,11 @@ enum class KernelVersionOrder {
   kNewer,
 };
 
+struct KernelInfo {
+  KernelVersion version;
+  bool kernel_headers_installed;
+};
+
 // Compares two kernel versions and detect their relationship.
 KernelVersionOrder CompareKernelVersions(KernelVersion a, KernelVersion b);
 

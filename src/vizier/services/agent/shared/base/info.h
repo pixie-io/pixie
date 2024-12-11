@@ -43,8 +43,7 @@ struct Info {
   std::string address;
   std::string pod_name;
   std::string host_ip;
-  system::KernelVersion kernel_version;
-  bool kernel_headers_installed = false;
+  system::KernelInfo kernel_info;
   services::shared::agent::AgentCapabilities capabilities;
   services::shared::agent::AgentParameters parameters;
 };
