@@ -44,6 +44,7 @@ import (
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/api/ptproxy"
+	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/env"
@@ -65,15 +66,15 @@ type testState struct {
 	conn *grpc.ClientConn
 }
 
-func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
+func createTestState(t *testing.T, disableScriptModification bool) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	env := env.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
-	vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
-	vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
+	vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}, &fakeScriptMgr{}, disableScriptModification))
+	vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}, &fakeScriptMgr{}, disableScriptModification))
 
 	eg := errgroup.Group{}
 	eg.Go(func() error { return s.Serve(lis) })
@@ -112,7 +113,7 @@ func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (
 func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 	viper.Set("jwt_signing_key", "the-key")
 
-	ts, cleanup := createTestState(t)
+	ts, cleanup := createTestState(t, false)
 	defer cleanup(t)
 
 	client := vizierpb.NewVizierServiceClient(ts.conn)
@@ -283,10 +284,141 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 	}
 }
 
+func TestVizierPassThroughProxy_ExecuteScriptWithScriptModificationEnabled(t *testing.T) {
+	viper.Set("jwt_signing_key", "the-key")
+
+	ts, cleanup := createTestState(t, true)
+	defer cleanup(t)
+
+	client := vizierpb.NewVizierServiceClient(ts.conn)
+	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
+
+	testCases := []struct {
+		name string
+
+		clusterID      string
+		authToken      string
+		pxlString      string
+		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
+
+		expGRPCError     error
+		expGRPCResponses []*vizierpb.ExecuteScriptResponse
+	}{
+		{
+			name: "Request with modified pxl script",
+
+			clusterID:        "00000000-1111-2222-2222-333333333333",
+			pxlString:        "import pxl",
+			authToken:        validTestToken,
+			expGRPCError:     status.Error(codes.InvalidArgument, "Script modification has been disabled"),
+			expGRPCResponses: nil,
+		},
+		{
+			name: "Request with not modified pxl script",
+
+			clusterID:    "00000000-1111-2222-2222-333333333333",
+			pxlString:    "liveview1 pxl",
+			authToken:    validTestToken,
+			expGRPCError: nil,
+			expGRPCResponses: []*vizierpb.ExecuteScriptResponse{
+				{
+					QueryID: "abc",
+				},
+				{
+					QueryID: "abc",
+				},
+			},
+			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{ExecResp: &vizierpb.ExecuteScriptResponse{QueryID: "abc"}},
+				},
+				{
+					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{ExecResp: &vizierpb.ExecuteScriptResponse{QueryID: "abc"}},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			if len(tc.authToken) > 0 {
+				ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+					fmt.Sprintf("bearer %s", tc.authToken))
+			}
+
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			resp, err := client.ExecuteScript(ctx,
+				&vizierpb.ExecuteScriptRequest{ClusterID: tc.clusterID, QueryStr: tc.pxlString})
+			require.NoError(t, err)
+			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
+			fv.Run(t, tc.respFromVizier)
+			defer fv.Stop()
+
+			grpcDataCh := make(chan *vizierpb.ExecuteScriptResponse)
+			var gotReadErr error
+			var eg errgroup.Group
+			eg.Go(func() error {
+				defer close(grpcDataCh)
+				for {
+					d, err := resp.Recv()
+					if err != nil && err != io.EOF {
+						gotReadErr = err
+					}
+					if err == io.EOF {
+						return nil
+					}
+					if d == nil {
+						return nil
+					}
+					grpcDataCh <- d
+				}
+			})
+
+			var responses []*vizierpb.ExecuteScriptResponse
+			eg.Go(func() error {
+				timeout := time.NewTimer(defaultTimeout)
+				defer timeout.Stop()
+
+				for {
+					select {
+					case <-resp.Context().Done():
+						return nil
+					case <-timeout.C:
+						return fmt.Errorf("timeout waiting for data on grpc channel")
+					case msg := <-grpcDataCh:
+
+						if msg == nil {
+							return nil
+						}
+						responses = append(responses, msg)
+					}
+				}
+			})
+
+			err = eg.Wait()
+			if tc.expGRPCError != nil {
+				if gotReadErr == nil {
+					t.Fatal("Expected to get GRPC error")
+				}
+				assert.Equal(t, status.Code(tc.expGRPCError), status.Code(gotReadErr))
+			}
+			if tc.expGRPCResponses == nil {
+				if len(responses) != 0 {
+					t.Fatal("Expected to get no responses")
+				}
+			} else {
+				assert.Equal(t, tc.expGRPCResponses, responses)
+			}
+		})
+	}
+}
+
 func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 	viper.Set("jwt_signing_key", "the-key")
 
-	ts, cleanup := createTestState(t)
+	ts, cleanup := createTestState(t, false)
 	defer cleanup(t)
 
 	client := vizierpb.NewVizierServiceClient(ts.conn)
@@ -463,7 +595,7 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 	viper.Set("jwt_signing_key", "the-key")
 
-	ts, cleanup := createTestState(t)
+	ts, cleanup := createTestState(t, false)
 	defer cleanup(t)
 
 	client := vizierpb.NewVizierDebugServiceClient(ts.conn)
@@ -582,7 +714,7 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 	viper.Set("jwt_signing_key", "the-key")
 
-	ts, cleanup := createTestState(t)
+	ts, cleanup := createTestState(t, false)
 	defer cleanup(t)
 
 	client := vizierpb.NewVizierDebugServiceClient(ts.conn)
@@ -717,6 +849,20 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeScriptMgr struct{}
+
+func (s *fakeScriptMgr) GetScriptByHash(ctx context.Context, req *scriptmgrpb.GetScriptByHashReq, opts ...grpc.CallOption) (*scriptmgrpb.GetScriptByHashResp, error) {
+	hash := "488f131003f415a61090901c544e0ace731e8a85b12ce0aea770273d656f08e0" // sha256 of "liveview1 pxl"
+
+	scripts := map[string]bool{
+		hash: true,
+	}
+	_, ok := scripts[req.Sha256Hash]
+	return &scriptmgrpb.GetScriptByHashResp{
+		Exists: ok,
+	}, nil
 }
 
 type fakeVzMgr struct{}
