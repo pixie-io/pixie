@@ -304,9 +304,10 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
                 kKernelHeadersInstalledDesc));
   }
 
-  Status Init(FunctionContext*) {
+  Status Init(FunctionContext*, types::BoolValue include_kelvin) {
     px::vizier::services::metadata::AgentInfoRequest req;
     resp_ = std::make_unique<px::vizier::services::metadata::AgentInfoResponse>();
+    include_kelvin_ = include_kelvin.val;
 
     grpc::ClientContext ctx;
     add_context_authentication_func_(&ctx);
@@ -315,6 +316,11 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
       return error::Internal("Failed to make RPC call to GetAgentInfo");
     }
     return Status::OK();
+  }
+
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg::Make<types::BOOLEAN>(
+        "include_kelvin", "Whether to include Kelvin agents in the output", true));
   }
 
   bool NextRecord(FunctionContext*, RecordWriter* rw) {
@@ -329,15 +335,18 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
     }
     // TODO(zasgar): Figure out abort mechanism;
 
-    rw->Append<IndexOf("agent_id")>(absl::MakeUint128(u.ab, u.cd));
-    rw->Append<IndexOf("asid")>(agent_info.asid());
-    rw->Append<IndexOf("hostname")>(agent_info.info().host_info().hostname());
-    rw->Append<IndexOf("ip_address")>(agent_info.info().ip_address());
-    rw->Append<IndexOf("agent_state")>(StringValue(magic_enum::enum_name(agent_status.state())));
-    rw->Append<IndexOf("create_time")>(agent_info.create_time_ns());
-    rw->Append<IndexOf("last_heartbeat_ns")>(agent_status.ns_since_last_heartbeat());
-    rw->Append<IndexOf("kernel_headers_installed")>(
-        agent_info.info().host_info().kernel_headers_installed());
+    auto host_info = agent_info.info().host_info();
+    auto collects_data = agent_info.info().capabilities().collects_data();
+    if (collects_data || include_kelvin_) {
+      rw->Append<IndexOf("agent_id")>(absl::MakeUint128(u.ab, u.cd));
+      rw->Append<IndexOf("asid")>(agent_info.asid());
+      rw->Append<IndexOf("hostname")>(host_info.hostname());
+      rw->Append<IndexOf("ip_address")>(agent_info.info().ip_address());
+      rw->Append<IndexOf("agent_state")>(StringValue(magic_enum::enum_name(agent_status.state())));
+      rw->Append<IndexOf("create_time")>(agent_info.create_time_ns());
+      rw->Append<IndexOf("last_heartbeat_ns")>(agent_status.ns_since_last_heartbeat());
+      rw->Append<IndexOf("kernel_headers_installed")>(host_info.kernel_headers_installed());
+    }
 
     ++idx_;
     return idx_ < resp_->info_size();
@@ -345,6 +354,7 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
 
  private:
   int idx_ = 0;
+  bool include_kelvin_ = false;
   std::unique_ptr<px::vizier::services::metadata::AgentInfoResponse> resp_;
   std::shared_ptr<MDSStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
@@ -425,9 +435,10 @@ class GetLinuxHeadersStatus final : public carnot::udf::UDTF<GetLinuxHeadersStat
                 kKernelHeadersInstalledDesc));
   }
 
-  Status Init(FunctionContext*) {
+  Status Init(FunctionContext*, BoolValue include_kelvin) {
     px::vizier::services::metadata::AgentInfoRequest req;
     resp_ = std::make_unique<px::vizier::services::metadata::AgentInfoResponse>();
+    include_kelvin_ = include_kelvin.val;
 
     grpc::ClientContext ctx;
     add_context_authentication_func_(&ctx);
@@ -438,14 +449,23 @@ class GetLinuxHeadersStatus final : public carnot::udf::UDTF<GetLinuxHeadersStat
     return Status::OK();
   }
 
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg::Make<types::BOOLEAN>(
+        "include_kelvin", "Whether to include Kelvin agents in the output", true));
+  }
+
   bool NextRecord(FunctionContext*, RecordWriter* rw) {
     const auto& agent_metadata = resp_->info(idx_);
     const auto& agent_info = agent_metadata.agent();
 
     const auto asid = agent_info.asid();
-    const auto kernel_headers_installed = agent_info.info().host_info().kernel_headers_installed();
-    rw->Append<IndexOf("asid")>(asid);
-    rw->Append<IndexOf("kernel_headers_installed")>(kernel_headers_installed);
+    auto collects_data = agent_info.info().capabilities().collects_data();
+    const auto host_info = agent_info.info().host_info();
+    const auto kernel_headers_installed = host_info.kernel_headers_installed();
+    if (collects_data || include_kelvin_) {
+      rw->Append<IndexOf("asid")>(asid);
+      rw->Append<IndexOf("kernel_headers_installed")>(kernel_headers_installed);
+    }
 
     ++idx_;
     return idx_ < resp_->info_size();
@@ -453,6 +473,7 @@ class GetLinuxHeadersStatus final : public carnot::udf::UDTF<GetLinuxHeadersStat
 
  private:
   int idx_ = 0;
+  bool include_kelvin_ = false;
   std::unique_ptr<px::vizier::services::metadata::AgentInfoResponse> resp_;
   std::shared_ptr<MDSStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
