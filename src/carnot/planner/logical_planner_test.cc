@@ -272,6 +272,24 @@ TEST_F(LogicalPlannerTest, AppendSelfTest) {
   EXPECT_OK(plan->ToProto());
 }
 
+constexpr char kAgentStatusQuery[] = R"pxl(
+import px
+
+# GetAgentStatus takes an include_kelvin argument. This defaults to True
+# to preserve backwards compatibility.
+px.display(px.GetAgentStatus())
+)pxl";
+
+TEST_F(LogicalPlannerTest, UDTFDefaultArgumentTest) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan_or_s = planner->Plan(
+      MakeQueryRequest(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                       kAgentStatusQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
+
 constexpr char kPlannerQueryError[] = R"pxl(
 import px
 
