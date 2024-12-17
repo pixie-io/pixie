@@ -76,6 +76,26 @@ func (mr *MockScriptMgrServiceClientMockRecorder) GetLiveViews(ctx, in interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrServiceClient)(nil).GetLiveViews), varargs...)
 }
 
+// GetScriptByHash mocks base method.
+func (m *MockScriptMgrServiceClient) GetScriptByHash(ctx context.Context, in *scriptmgrpb.GetScriptByHashReq, opts ...grpc.CallOption) (*scriptmgrpb.GetScriptByHashResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetScriptByHash", varargs...)
+	ret0, _ := ret[0].(*scriptmgrpb.GetScriptByHashResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScriptByHash indicates an expected call of GetScriptByHash.
+func (mr *MockScriptMgrServiceClientMockRecorder) GetScriptByHash(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptByHash", reflect.TypeOf((*MockScriptMgrServiceClient)(nil).GetScriptByHash), varargs...)
+}
+
 // GetScriptContents mocks base method.
 func (m *MockScriptMgrServiceClient) GetScriptContents(ctx context.Context, in *scriptmgrpb.GetScriptContentsReq, opts ...grpc.CallOption) (*scriptmgrpb.GetScriptContentsResp, error) {
 	m.ctrl.T.Helper()
@@ -167,6 +187,21 @@ func (m *MockScriptMgrServiceServer) GetLiveViews(arg0 context.Context, arg1 *sc
 func (mr *MockScriptMgrServiceServerMockRecorder) GetLiveViews(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrServiceServer)(nil).GetLiveViews), arg0, arg1)
+}
+
+// GetScriptByHash mocks base method.
+func (m *MockScriptMgrServiceServer) GetScriptByHash(arg0 context.Context, arg1 *scriptmgrpb.GetScriptByHashReq) (*scriptmgrpb.GetScriptByHashResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScriptByHash", arg0, arg1)
+	ret0, _ := ret[0].(*scriptmgrpb.GetScriptByHashResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScriptByHash indicates an expected call of GetScriptByHash.
+func (mr *MockScriptMgrServiceServerMockRecorder) GetScriptByHash(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptByHash", reflect.TypeOf((*MockScriptMgrServiceServer)(nil).GetScriptByHash), arg0, arg1)
 }
 
 // GetScriptContents mocks base method.
