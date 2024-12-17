@@ -30,7 +30,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	jwtutils "px.dev/pixie/src/shared/services/utils"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
@@ -38,6 +37,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/shared/services/jwtpb"
+	jwtutils "px.dev/pixie/src/shared/services/utils"
 )
 
 type vzmgrClient interface {
@@ -78,6 +78,10 @@ func (v *VizierPassThroughProxy) isScriptModified(ctx context.Context, script st
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	if err != nil {
+		return false, err
+	}
 
 	resp, err := v.sm.GetScriptByHash(ctx, req)
 

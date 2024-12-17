@@ -398,6 +398,9 @@ func TestVizierPassThroughProxy_ExecuteScriptWithScriptModificationEnabled(t *te
 			})
 
 			err = eg.Wait()
+			if err != nil {
+				t.Fatalf("Got error while streaming grpc: %v", err)
+			}
 			if tc.expGRPCError != nil {
 				if gotReadErr == nil {
 					t.Fatal("Expected to get GRPC error")
