@@ -243,6 +243,25 @@ Status BCCWrapperImpl::AttachSamplingProbe(const SamplingProbeSpec& probe) {
   return AttachPerfEvent(perf_event_spec);
 }
 
+Status BCCWrapperImpl::AttachKFunc(const KFuncSpec& probe) {
+  LOG(INFO) << "Deploying kfunc: " << probe.ToString();
+
+  int prog_fd;
+  auto res = bpf_.load_func(probe.kfunc, BPF_PROG_TYPE_TRACING, prog_fd);
+  LOG_IF(ERROR, !res.ok()) << res.msg();
+
+  int attach_fd = bpf_attach_kfunc(prog_fd);
+  if (attach_fd < 0) {
+    bpf_.unload_func(probe.kfunc);
+    return error::Internal("Unable to attach kfunc");
+  }
+
+  kfuncs_.push_back(probe);
+  ++num_attached_kfuncs_;
+
+  return Status::OK();
+}
+
 Status BCCWrapperImpl::AttachKProbes(const ArrayView<KProbeSpec>& probes) {
   for (const KProbeSpec& p : probes) {
     PX_RETURN_IF_ERROR(AttachKProbe(p));
@@ -267,6 +286,13 @@ Status BCCWrapperImpl::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
 Status BCCWrapperImpl::AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes) {
   for (const SamplingProbeSpec& p : probes) {
     PX_RETURN_IF_ERROR(AttachSamplingProbe(p));
+  }
+  return Status::OK();
+}
+
+Status BCCWrapperImpl::AttachKFuncs(const ArrayView<KFuncSpec>& probes) {
+  for (const KFuncSpec& p : probes) {
+    PX_RETURN_IF_ERROR(AttachKFunc(p));
   }
   return Status::OK();
 }
@@ -322,6 +348,15 @@ Status BCCWrapperImpl::DetachTracepoint(const TracepointSpec& probe) {
   --num_attached_tracepoints_;
   return Status::OK();
 }
+
+// Status BCCWrapperImpl::DetachKFunc(const KFuncSpec& probe) {
+//   LOG(INFO) << "Detaching kfunc " << probe.ToString();
+
+//   PX_RETURN_IF_ERROR(bpf_.detach_kfunc(probe.kfunc));
+
+//   --num_attached_kfuncs_;
+//   return Status::OK();
+// }
 
 void BCCWrapperImpl::DetachKProbes() {
   for (const auto& p : kprobes_) {

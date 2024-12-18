@@ -226,3 +226,18 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
   tcp_events.perf_submit(ctx, &event, sizeof(event));
   return 0;
 }
+
+KFUNC_PROBE(kfunc__tcp_sendmsg, struct sock* sk) {
+  return tcp_send_entry(sk);
+}
+
+KRETFUNC_PROBE(kretfunc__tcp_sendmsg, struct pt_regs* regs) {
+  int size = PT_REGS_RC(regs);
+  if (size > 0) {
+    uint64_t id = bpf_get_current_pid_tgid();
+    uint32_t tgid = id >> 32;
+    return tcp_sendstat(regs, tgid, id, size);
+  } else {
+    return 0;
+  }
+}

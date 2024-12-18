@@ -40,15 +40,17 @@ constexpr uint32_t kPerfBufferPerCPUSizeBytes = 50 * 1024 * 1024;
 using ProbeType = bpf_tools::BPFProbeAttachType;
 
 const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
-    {{"tcp_sendmsg", ProbeType::kEntry, "probe_entry_tcp_sendmsg", /*is_syscall*/ false},
-     {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_tcp_sendmsg", /*is_syscall*/ false},
-     {"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
+    {{"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
      {"tcp_retransmit_skb", ProbeType::kEntry, "probe_entry_tcp_retransmit_skb",
       /*is_syscall*/ false}});
 
 const auto kSendPageProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
     {{"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
      {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false}});
+
+// FIXME: Figure out whether to even create a KFuncSpec
+// const auto kFuncSpecs = MakeArray<bpf_tools::KFuncSpec>({{"kfunc____tcp_enter_loss"}, {"kretfunc__tcp_sendmsg"}});
+const auto kFuncSpecs = MakeArray<bpf_tools::KFuncSpec>({{"kfunc__tcp_sendmsg"}, {"kretfunc__tcp_sendmsg"}});
 
 void HandleTcpEvent(void* cb_cookie, void* data, int /*data_size*/) {
   auto* connector = reinterpret_cast<TCPStatsConnector*>(cb_cookie);
@@ -82,8 +84,14 @@ Status TCPStatsConnector::InitImpl() {
         "was removed in Kernel 6.5.",
         sendpage_attach_status.msg(), kernel_version.ToString());
   }
+
+  // FIXME: Add comment here explaining the probe conflict with socket tracer.
+  PX_RETURN_IF_ERROR(bcc_->AttachKFuncs(kFuncSpecs));
+
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
+
+  // FIXME: Add a log to print the number of deployed kfunc probes.
   return Status::OK();
 }
 
