@@ -19,23 +19,35 @@
 package vizier
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/segmentio/analytics-go/v3"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 
+	log "github.com/sirupsen/logrus"
+
 	apiutils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/utils/script"
+)
+
+const (
+	equalityThreshold          = 0.01
+	headersInstalledPercColumn = "headers_installed_percent" // must match the column in px/agent_status_diagnostics
 )
 
 type taskWrapper struct {
@@ -255,4 +267,128 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 		}
 	}()
 	return mergedResponses, nil
+}
+
+type healthCheckWarning struct {
+	message string
+}
+
+func (h *healthCheckWarning) Error() string {
+	return h.message
+}
+
+func newHealthCheckWarning(message string) error {
+	return &healthCheckWarning{message}
+}
+
+func evaluateHealthCheckResult(output string) error {
+	jsonData := make(map[string]interface{})
+
+	err := json.Unmarshal([]byte(output), &jsonData)
+	if err != nil {
+		return err
+	}
+
+	if v, ok := jsonData[headersInstalledPercColumn]; ok {
+		switch t := v.(type) {
+		case float64:
+			if math.Abs(1.0-t) > equalityThreshold {
+				msg := "Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please install kernel headers on all nodes."
+				return newHealthCheckWarning(msg)
+			}
+		}
+	} else {
+		return newHealthCheckWarning("Unable to detect if the cluster's nodes have the distro kernel headers installed (vizier too old to perform this check). Please ensure that the kernel headers are installed on all nodes.")
+	}
+	return nil
+}
+
+// RunSimpleHealthCheckScript runs a diagnostic pxl script to verify query serving works.
+// For newer viziers, it performs additional checks to ensure that the cluster is healthy
+// and that common issues are detected.
+func RunSimpleHealthCheckScript(br *script.BundleManager, cloudAddr string, clusterID uuid.UUID) (chan string, error) {
+	output := make(chan string, 1)
+	v, err := ConnectionToVizierByID(cloudAddr, clusterID)
+	if err != nil {
+		return output, err
+	}
+	// execScript, err := br.GetScript(script.AgentStatusDiagnosticsScript)
+	// if err != nil {
+	// 	execScript = br.MustGetScript(script.AgentStatusScript)
+	// }
+	execScript := br.MustGetScript(script.AgentStatusScript)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
+
+	resp, err := RunScript(ctx, []*Connector{v}, execScript, encOpts)
+	if err != nil {
+		return output, err
+	}
+
+	reader, writer := io.Pipe()
+	defer reader.Close()
+	factoryFunc := func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
+		return components.CreateStreamWriter("json", writer)
+	}
+	tw := NewStreamOutputAdapterWithFactory(ctx, resp, "json", decOpts, factoryFunc)
+
+	bufReader := bufio.NewReader(reader)
+	errCh := make(chan error, 1)
+	go func() {
+		defer writer.Close()
+		err = tw.WaitForCompletion()
+
+		if err != nil {
+			errCh <- err
+			return
+		}
+	}()
+
+	go func() {
+		defer close(output)
+		var prevLine string
+		for {
+			select {
+			case <-ctx.Done():
+				errCh <- ctx.Err()
+				break
+			default:
+				if ctx.Err() != nil {
+					errCh <- ctx.Err()
+					return
+				}
+				line, err := bufReader.ReadString('\n')
+				if err != nil {
+					if err == io.EOF {
+						output <- prevLine
+						errCh <- nil
+					}
+					errCh <- err
+					break
+				}
+				// Capture the last line of output. This ensures
+				// that the EOF case returns the actual output instead of
+				// an EOF string.
+				prevLine = line
+				err = evaluateHealthCheckResult(line)
+				if err != nil {
+					if _, ok := err.(*healthCheckWarning); ok {
+						log.Errorf(err.Error())
+						output <- prevLine
+						errCh <- nil
+					} else {
+						errCh <- err
+					}
+					return
+				}
+			}
+		}
+	}()
+
+	err = <-errCh
+
+	return output, err
 }

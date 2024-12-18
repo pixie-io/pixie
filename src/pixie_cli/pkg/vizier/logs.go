@@ -124,5 +124,16 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 	if err != nil {
 		log.WithError(err).Warnf("failed to log vizier crd")
 	}
-	return err
+
+	clusterID, err := GetCurrentVizier(c.cloudAddr)
+	if err != nil {
+		log.WithError(err).Warnf("failed to get cluster ID")
+	}
+	outputCh, err := RunSimpleHealthCheckScript(c.br, c.cloudAddr, clusterID)
+
+	if err != nil {
+		log.WithError(err).Warnf("failed to run health check script")
+	}
+
+	return c.LogOutputToZipFile(zf, "px_agent_diagnostics.txt", <-outputCh)
 }
