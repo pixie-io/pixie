@@ -66,6 +66,7 @@ func init() {
 
 	pflag.String("auth_connector_name", "", "If any, the name of the auth connector to be used with Pixie")
 	pflag.String("auth_connector_callback_url", "", "If any, the callback URL for the auth connector")
+	pflag.Bool("disable_script_modification", false, "If script modification should be disallowed to prevent arbitrary script execution")
 }
 
 func main() {
@@ -213,16 +214,17 @@ func main() {
 	authServer := &controllers.AuthServer{AuthClient: ac}
 	cloudpb.RegisterAuthServiceServer(s.GRPCServer(), authServer)
 
-	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
-	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
-	vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
-
 	sm, err := apienv.NewScriptMgrServiceClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init scriptmgr client.")
 	}
 	sms := &controllers.ScriptMgrServer{ScriptMgr: sm}
 	cloudpb.RegisterScriptMgrServer(s.GRPCServer(), sms)
+
+	disableScriptModification := viper.GetBool("disable_script_modification")
+	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc, sm, disableScriptModification)
+	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
+	vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
 
 	mdIndexName := viper.GetString("md_index_name")
 	if mdIndexName == "" {

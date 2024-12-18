@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	pflag.String("scriptmgr_service", "scriptmgr-service.plc.svc.local:52000", "The profile service url (load balancer/list is ok)")
+	pflag.String("scriptmgr_service", "scriptmgr-service.plc.svc.local:52000", "The scriptmgr service url (load balancer/list is ok)")
 }
 
 // NewScriptMgrServiceClient creates a new scriptmgr RPC client stub.
@@ -38,7 +38,7 @@ func NewScriptMgrServiceClient() (scriptmgrpb.ScriptMgrServiceClient, error) {
 		return nil, err
 	}
 
-	authChannel, err := grpc.Dial(viper.GetString("scripts_service"), dialOpts...)
+	authChannel, err := grpc.Dial(viper.GetString("scriptmgr_service"), dialOpts...)
 	if err != nil {
 		return nil, err
 	}
