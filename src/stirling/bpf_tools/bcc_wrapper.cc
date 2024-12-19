@@ -244,7 +244,7 @@ Status BCCWrapperImpl::AttachSamplingProbe(const SamplingProbeSpec& probe) {
 }
 
 Status BCCWrapperImpl::AttachKFunc(const KFuncSpec& probe) {
-  LOG(INFO) << "Deploying kfunc: " << probe.ToString();
+  VLOG(1) << absl::Substitute("Deploying kfunc $0", probe.ToString());
 
   int prog_fd;
   auto res = bpf_.load_func(probe.kfunc, BPF_PROG_TYPE_TRACING, prog_fd);
@@ -349,14 +349,14 @@ Status BCCWrapperImpl::DetachTracepoint(const TracepointSpec& probe) {
   return Status::OK();
 }
 
-// Status BCCWrapperImpl::DetachKFunc(const KFuncSpec& probe) {
-//   LOG(INFO) << "Detaching kfunc " << probe.ToString();
+Status BCCWrapperImpl::UnloadKFunc(const KFuncSpec& probe) {
+  VLOG(1) << absl::Substitute("Unloading kfunc $0", probe.ToString());
 
-//   PX_RETURN_IF_ERROR(bpf_.detach_kfunc(probe.kfunc));
+  PX_RETURN_IF_ERROR(bpf_.unload_func(probe.kfunc));
 
-//   --num_attached_kfuncs_;
-//   return Status::OK();
-// }
+  --num_attached_kfuncs_;
+  return Status::OK();
+}
 
 void BCCWrapperImpl::DetachKProbes() {
   for (const auto& p : kprobes_) {
@@ -380,6 +380,14 @@ void BCCWrapperImpl::DetachTracepoints() {
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }
   tracepoints_.clear();
+}
+
+void BCCWrapperImpl::UnloadKFuncs() {
+  for (const auto& p : kfuncs_) {
+    auto res = UnloadKFunc(p);
+    LOG_IF(ERROR, !res.ok()) << res.msg();
+  }
+  kfuncs_.clear();
 }
 
 int BCCWrapperImpl::CommonPerfBufferSetup(const PerfBufferSpec& perf_buffer_spec) {
@@ -500,6 +508,7 @@ void BCCWrapperImpl::Close() {
   DetachKProbes();
   DetachUProbes();
   DetachTracepoints();
+  UnloadKFuncs();
 }
 
 Status RecordingBCCWrapperImpl::OpenPerfBuffer(const PerfBufferSpec& perf_buffer_spec) {

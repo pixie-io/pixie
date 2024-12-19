@@ -333,14 +333,16 @@ class BCCWrapperImpl : public BCCWrapper {
   Status DetachUProbe(const UProbeSpec& probe);
   Status DetachTracepoint(const TracepointSpec& probe);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
+  Status UnloadKFunc(const KFuncSpec& probe);
 
-  // Detaches all kprobes/uprobes/perf buffers/perf events that were attached by the wrapper.
+  // Detaches all kprobes/uprobes/perf buffers/perf events/kfuncs that were attached by the wrapper.
   // If any fails to detach, an error is logged, and the function continues.
   void DetachKProbes();
   void DetachUProbes();
   void DetachTracepoints();
   void ClosePerfBuffers();
   void DetachPerfEvents();
+  void UnloadKFuncs();
 
   // Returns the name that identifies the target to attach this k-probe.
   std::string GetKProbeTargetName(const KProbeSpec& probe);
