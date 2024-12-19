@@ -1,4 +1,4 @@
-{{if .Values.deployOLM}}
+{{if .Values.deployOLM}}{{- /* HELM_DEPLOY_OLM_PLACEHOLDER */ -}}
 {{ if not (eq .Values.olmNamespace .Release.Namespace) }}
 ---
 apiVersion: v1

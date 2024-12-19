@@ -57,7 +57,7 @@ cp "${repo_path}/k8s/operator/crd/base/px.dev_viziers.yaml" "${helm_path}/crds/v
 
 # Updates templates with Helm-specific template functions.
 helm_tmpl_checks="$(cat "${repo_path}/k8s/operator/helm/olm_template_checks.tmpl")"
-sed -i "1c${helm_tmpl_checks}" "${repo_path}/k8s/operator/helm/templates/00_olm.yaml"
+find "${repo_path}/k8s/operator/helm/templates" -type f -exec sed -i "/HELM_DEPLOY_OLM_PLACEHOLDER/c\\${helm_tmpl_checks}" {} \;
 rm "${repo_path}/k8s/operator/helm/olm_template_checks.tmpl"
 
 # Fetch all of the current charts in GCS, because generating the index needs all pre-existing tar versions present.
