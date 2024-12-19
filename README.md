@@ -180,7 +180,7 @@ We maintain links to the latest releases for all components here:
 - [CLI v0.8.4](https://github.com/pixie-io/pixie/releases/tag/release/cli/v0.8.4)<!--cli-latest-release-->
 - [Cloud v0.1.8](https://github.com/pixie-io/pixie/releases/tag/release/cloud/v0.1.8)<!--cloud-latest-release-->
 - [Vizier v0.14.13](https://github.com/pixie-io/pixie/releases/tag/release/vizier/v0.14.13)<!--vizier-latest-release-->
-- [Operator v0.1.6](https://github.com/pixie-io/pixie/releases/tag/release/operator/v0.1.6)<!--operator-latest-release-->
+- [Operator v0.1.7](https://github.com/pixie-io/pixie/releases/tag/release/operator/v0.1.7)<!--operator-latest-release-->
 
 ## Changelog
 
