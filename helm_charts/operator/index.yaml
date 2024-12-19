@@ -2,6 +2,14 @@ apiVersion: v1
 entries:
   pixie-operator-chart:
   - apiVersion: v2
+    created: "2024-12-19T18:19:00.591081654Z"
+    digest: ccce762b13a883bf63ebc7a084424a362b77a9dad21b2ef20506c3f1f4db0443
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://github.com/pixie-io/pixie/releases/download/release/operator/v0.1.7/pixie-operator-chart-0.1.7.tgz
+    version: 0.1.7
+  - apiVersion: v2
     created: "2024-05-13T23:05:13.785620816Z"
     digest: b5b550d127954698b0d5e771141e8e773924ee1c0e9dc0d12ed85f5f25c14729
     name: pixie-operator-chart
@@ -666,4 +674,4 @@ entries:
     urls:
     - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.4.tgz
     version: 0.0.4
-generated: "2024-05-13T23:05:13.780555605Z"
+generated: "2024-12-19T18:19:00.587589794Z"
