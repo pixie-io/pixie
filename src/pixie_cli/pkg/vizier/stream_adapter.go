@@ -250,10 +250,8 @@ func (v *StreamOutputAdapter) handleStream(ctx context.Context, stream chan *Exe
 			var err error
 			switch res := msg.Resp.Result.(type) {
 			case *vizierpb.ExecuteScriptResponse_MetaData:
-				log.Warn("v.handleMetadata")
 				err = v.handleMetadata(ctx, res)
 			case *vizierpb.ExecuteScriptResponse_Data:
-				log.Warn("v.handleData")
 				err = v.handleData(ctx, res)
 			default:
 				err = fmt.Errorf("unhandled response type" + reflect.TypeOf(msg.Resp.Result).String())
@@ -416,7 +414,6 @@ func (v *StreamOutputAdapter) handleData(ctx context.Context, d *vizierpb.Execut
 		}
 		ti := v.tableNameToInfo[tableName]
 		if err := ti.w.Write(rec); err != nil {
-			log.WithError(err).Error("Failed to write to table info stream")
 			return err
 		}
 	}

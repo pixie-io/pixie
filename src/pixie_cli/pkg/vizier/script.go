@@ -27,7 +27,6 @@ import (
 	"io"
 	"math"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -288,8 +287,6 @@ func evaluateHealthCheckResult(output string) error {
 	if err != nil {
 		return err
 	}
-	log.Warnf("Health check output: %v\n", jsonData)
-
 	if v, ok := jsonData[headersInstalledPercColumn]; ok {
 		switch t := v.(type) {
 		case float64:
@@ -304,8 +301,15 @@ func evaluateHealthCheckResult(output string) error {
 	return nil
 }
 
+type healthCheckData struct {
+	line string
+	err  error
+}
+
+// Runs the health check script on the specified vizier. The script's output is evaluated with
+// the evaluateHealthCheckResult function to determine if the cluster is healthy. Only a single
+// line of output will be parsed from the script.
 func runHealthCheckScript(v *Connector, execScript *script.ExecutableScript) (chan string, error) {
-	output := make(chan string, 1)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -313,10 +317,11 @@ func runHealthCheckScript(v *Connector, execScript *script.ExecutableScript) (ch
 
 	resp, err := RunScript(ctx, []*Connector{v}, execScript, encOpts)
 	if err != nil {
-		return output, err
+		return nil, err
 	}
 
 	reader, writer := io.Pipe()
+	defer writer.Close()
 	defer reader.Close()
 	factoryFunc := func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
 		return components.CreateStreamWriter("json", writer)
@@ -324,70 +329,53 @@ func runHealthCheckScript(v *Connector, execScript *script.ExecutableScript) (ch
 	tw := NewStreamOutputAdapterWithFactory(ctx, resp, "json", decOpts, factoryFunc)
 
 	bufReader := bufio.NewReader(reader)
-	errCh := make(chan error, 2)
-	var wg sync.WaitGroup
-	wg.Add(1)
+	errCh := make(chan error, 1)
+	streamCh := make(chan healthCheckData, 1)
+	outputCh := make(chan string, 1)
 	go func() {
-		defer wg.Done()
-		defer writer.Close()
-		err = tw.WaitForCompletion()
-
-		if err != nil {
-			log.Warnf("Error on tw.WaitForCompletion: %v", err)
-			errCh <- err
-			return
+		defer close(streamCh)
+		for {
+			line, err := bufReader.ReadString('\n')
+			streamCh <- healthCheckData{line, err}
+			if err != nil {
+				return
+			}
 		}
 	}()
-
-	wg.Add(1)
+	// Consumes the first line of output from the stream or the error from the context.
+	// The px/agent_status_diagnostics script only outputs one line, but even in the case
+	// that the fallback (px/agent_status) is used, a single line informs whether the output
+	// can be processed properly.
 	go func() {
-		defer wg.Done()
-		defer close(output)
-		var prevLine string
+		defer close(errCh)
+		defer close(outputCh)
 		for {
 			select {
 			case <-ctx.Done():
 				errCh <- ctx.Err()
 				return
-			default:
-				if ctx.Err() != nil {
-					errCh <- ctx.Err()
-					return
+			case data := <-streamCh:
+				line := data.line
+				err := data.err
+				if err == nil {
+					err = evaluateHealthCheckResult(line)
 				}
-				line, err := bufReader.ReadString('\n')
-				if err != nil {
-					if err == io.EOF {
-						log.Warn("EOF reached while reading health check script output")
-						output <- prevLine
-						errCh <- err
-						return
-					}
-					errCh <- err
-					return
-				}
-				// Capture the last line of output. This ensures
-				// that the EOF case returns the actual output instead of
-				// an EOF string.
-				prevLine = line
-				err = evaluateHealthCheckResult(line)
-				if err != nil {
-					log.Warn("evaluateHealthCheckResult err")
-					output <- prevLine
-					errCh <- err
-					return
-				}
+				outputCh <- line
+				errCh <- err
+				return
+
 			}
 		}
 	}()
 
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
+	err = tw.WaitForCompletion()
 
+	if err != nil {
+		return outputCh, err
+	}
 	err = <-errCh
 
-	return output, err
+	return outputCh, err
 }
 
 // RunSimpleHealthCheckScript runs a diagnostic pxl script to verify query serving works.
