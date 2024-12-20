@@ -233,6 +233,10 @@ func checkForTransientGRPCFailure(s *status.Status) bool {
 	return false
 }
 
+func checkForDeadlineExceeded(s *status.Status) bool {
+	return s.Code() == codes.DeadlineExceeded
+}
+
 func checkForJWTExpired(s *status.Status) bool {
 	return s.Code() == codes.Unauthenticated && strings.Contains(s.Message(), "invalid auth token")
 }
@@ -268,6 +272,8 @@ func (c *Connector) handleStream(ctx context.Context, state *streamState, first 
 							state.firstErr = s.Err()
 						}
 						return retry
+					} else if checkForDeadlineExceeded(s) {
+						return doNotRetry
 					}
 				}
 			}
@@ -350,6 +356,10 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 			}
 			s.resp, err = c.restartConnAndResumeExecute(ctx, s.queryID)
 			if err != nil {
+				if _, ok := status.FromError(err); ok {
+					cliUtils.Errorf("Stream failed with error: %s", err.Error())
+					return
+				}
 				continue
 			}
 			shouldRetry = c.handleStream(ctx, s, false)

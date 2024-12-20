@@ -22,6 +22,9 @@ package main
 // It will be responsible for managing and deploy Pixie on a cluster.
 
 import (
+	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"strings"
@@ -30,6 +33,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/cmd"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
@@ -42,6 +46,9 @@ import (
 const sentryDSN = "https://48c370af36817aad74449b3adc509d78@o4507357617192960.ingest.us.sentry.io/4508004179771392"
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	// Disable Sentry in dev mode.
 	selectedDSN := sentryDSN
 	if version.GetVersion().IsDev() {
@@ -82,7 +89,17 @@ func main() {
 		Event:  "Exec Complete",
 	})
 
-	log.SetOutput(os.Stderr)
+	fmt.Printf("Logging to %s %s\n", viper.GetString("log_file"), viper.GetString("cloud_addr"))
+	if logFile := viper.GetString("log_file"); logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			utils.Fatal(fmt.Sprintf("Failed to open log file: %s", err))
+		}
+		defer f.Close()
+		log.SetOutput(f)
+	} else {
+		log.SetOutput(os.Stderr)
+	}
 	utils.Info("Pixie CLI")
 	cmd.Execute()
 }

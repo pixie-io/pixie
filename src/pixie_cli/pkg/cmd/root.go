@@ -53,6 +53,9 @@ func init() {
 	RootCmd.PersistentFlags().StringP("cloud_addr", "a", defaultCloudAddr, "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
 
+	RootCmd.PersistentFlags().StringP("log_file", "f", "", "The log file to use instead of stdout")
+	viper.BindPFlag("log_file", RootCmd.PersistentFlags().Lookup("log_file"))
+
 	RootCmd.PersistentFlags().Bool("interactive_cloud_select", false, "Whether to interactively select the cloud address.")
 	viper.BindPFlag("interactive_cloud_select", RootCmd.PersistentFlags().Lookup("interactive_cloud_select"))
 
@@ -101,6 +104,7 @@ func init() {
 	// Maintain compatibility with old `PL` prefixed env names.
 	// This will eventually be removed
 	viper.BindEnv("cloud_addr", "PX_CLOUD_ADDR", "PL_CLOUD_ADDR")
+	viper.BindEnv("log_file", "PX_LOG_FILE")
 	viper.BindEnv("testing_env", "PX_TESTING_ENV", "PL_TESTING_ENV")
 	viper.BindEnv("cli_version", "PX_CLI_VERSION", "PL_CLI_VERSION")
 	viper.BindEnv("vizier_version", "PX_VIZIER_VERSION", "PL_VIZIER_VERSION")
@@ -203,7 +207,6 @@ var RootCmd = &cobra.Command{
 
 // Name a variable to store a slice of commands that don't require cloudAddr
 var cmdsCloudAddrNotReqd = []*cobra.Command{
-	CollectLogsCmd,
 	VersionCmd,
 }
 
@@ -245,7 +248,7 @@ func checkAuthForCmd(c *cobra.Command) {
 			os.Exit(1)
 		}
 		switch c {
-		case DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
+		case CollectLogsCmd, DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
 			utils.Errorf("These commands are unsupported in Direct Vizier mode.")
 			os.Exit(1)
 		default:
@@ -254,7 +257,7 @@ func checkAuthForCmd(c *cobra.Command) {
 	}
 
 	switch c {
-	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
+	case CollectLogsCmd, DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
 		authenticated := auth.IsAuthenticated(viper.GetString("cloud_addr"))
 		if !authenticated {
 			utils.Errorf("Failed to authenticate. Please retry `px auth login`.")

@@ -35,7 +35,10 @@ import (
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
-const ossBundleFile = "https://artifacts.px.dev/pxl_scripts/bundle.json"
+
+const ossBundleFile = "https://csmc-io.github.io/pxl-scripts/pxl_scripts/bundle.json"
+
+// const ossBundleFile = "https://artifacts.px.dev/pxl_scripts/bundle.json"
 
 func mustCreateBundleReader() *script.BundleManager {
 	br, err := createBundleReader()

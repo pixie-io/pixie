@@ -33,6 +33,7 @@ go_library(
         "@com_github_getsentry_sentry_go//:sentry-go",
         "@com_github_segmentio_analytics_go_v3//:analytics-go",
         "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 

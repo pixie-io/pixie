@@ -113,8 +113,9 @@ func (v *Version) Semver() semver.Version {
 
 // IsDev returns true if dev build.
 func (v *Version) IsDev() bool {
-	s := v.buildSemver
-	return s.Major == 0 && s.Minor == 0 && s.Patch == 0
+	// s := v.buildSemver
+	return false
+	// return s.Major == 0 && s.Minor == 0 && s.Patch == 0
 }
 
 // GetVersion returns the current version instance.

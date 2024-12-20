@@ -19,6 +19,10 @@
 package utils
 
 import (
+	"fmt"
+
+	log "github.com/sirupsen/logrus"
+
 	"golang.org/x/sync/errgroup"
 
 	"px.dev/pixie/src/pixie_cli/pkg/components"
@@ -49,6 +53,7 @@ func (s *SerialTaskRunner) RunAndMonitor() error {
 	for _, t := range s.tasks {
 		ti := st.AddTask(t.Name())
 		err := t.Run()
+		log.Warn(fmt.Sprintf("Task %s completed with error: %v", t.Name(), err))
 		ti.Complete(err)
 		if err != nil {
 			return err

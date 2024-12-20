@@ -39,6 +39,7 @@ go_library(
         "@com_github_fatih_color//:color",
         "@in_gopkg_yaml_v2//:yaml_v2",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@com_github_sirupsen_logrus//:logrus",
         "@org_golang_google_grpc//:grpc",
         "@org_golang_x_sync//errgroup",
     ],
