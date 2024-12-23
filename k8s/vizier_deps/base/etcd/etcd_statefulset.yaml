@@ -106,6 +106,12 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
+          securityContext:
+            capabilities:
+              add:
+              - NET_RAW
+            seccompProfile:
+              type: RuntimeDefault
         volumeMounts:
         - mountPath: /var/run/etcd
           name: etcd-data
@@ -132,6 +138,9 @@ spec:
           secretName: etcd-client-tls-certs
       - emptyDir: {}
         name: etcd-data
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       tolerations:
       - key: "kubernetes.io/arch"
         operator: "Equal"
