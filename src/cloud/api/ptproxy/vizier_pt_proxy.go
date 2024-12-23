@@ -52,10 +52,10 @@ type scriptmgrClient interface {
 // VizierPassThroughProxy implements the VizierAPI and allows proxying the data to the actual
 // vizier cluster.
 type VizierPassThroughProxy struct {
-	nc                       *nats.Conn
-	vc                       vzmgrClient
-	sm                       scriptmgrClient
-	disableScriptModifiation bool
+	nc                         *nats.Conn
+	vc                         vzmgrClient
+	sm                         scriptmgrClient
+	scriptModificationDisabled bool
 }
 
 // getServiceCredentials returns JWT credentials for inter-service requests.
@@ -65,8 +65,8 @@ func getServiceCredentials(signingKey string) (string, error) {
 }
 
 // NewVizierPassThroughProxy creates a new passthrough proxy.
-func NewVizierPassThroughProxy(nc *nats.Conn, vc vzmgrClient, sm scriptmgrClient, disableScriptModifiation bool) *VizierPassThroughProxy {
-	return &VizierPassThroughProxy{nc: nc, vc: vc, sm: sm, disableScriptModifiation: disableScriptModifiation}
+func NewVizierPassThroughProxy(nc *nats.Conn, vc vzmgrClient, sm scriptmgrClient, scriptModificationDisabled bool) *VizierPassThroughProxy {
+	return &VizierPassThroughProxy{nc: nc, vc: vc, sm: sm, scriptModificationDisabled: scriptModificationDisabled}
 }
 
 func (v *VizierPassThroughProxy) isScriptModified(ctx context.Context, script string) (bool, error) {
@@ -98,7 +98,7 @@ func (v *VizierPassThroughProxy) ExecuteScript(req *vizierpb.ExecuteScriptReques
 		return err
 	}
 	defer rp.Finish()
-	if v.disableScriptModifiation {
+	if v.scriptModificationDisabled {
 		modified, err := v.isScriptModified(srv.Context(), req.QueryStr)
 		if err != nil {
 			return err

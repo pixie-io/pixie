@@ -35,6 +35,7 @@ data:
     sub_filter '__CONFIG_DOMAIN_NAME__' "'${domain_name}'";
     sub_filter '__CONFIG_SCRIPT_BUNDLE_URLS__' "'${script_bundle_urls}'";
     sub_filter '__CONFIG_SCRIPT_BUNDLE_DEV__' "'${script_bundle_dev}'";
+    sub_filter '__CONFIG_SCRIPT_MODIFICATION_DISABLED__' "'${script_modification_disabled}'";
     sub_filter '__SEGMENT_UI_WRITE_KEY__' "'${segment_ui_write_key}'";
     sub_filter '__SEGMENT_ANALYTICS_JS_DOMAIN__' "'segment.${domain_name}'";
     sub_filter '__CONFIG_LD_CLIENT_ID__' "'${ld_client_id}'";
@@ -134,6 +135,7 @@ data:
     set_by_lua_block $segment_cli_write_key  { return os.getenv("PL_SEGMENT_CLI_WRITE_KEY") }
     set_by_lua_block $script_bundle_urls  { return os.getenv("SCRIPT_BUNDLE_URLS") }
     set_by_lua_block $script_bundle_dev  { return os.getenv("SCRIPT_BUNDLE_DEV") }
+    set_by_lua_block $script_modification_disabled  { return os.getenv("SCRIPT_MODIFICATION_DISABLED") }
     set_by_lua_block $analytics_enabled  { return os.getenv("ANALYTICS_ENABLED") }
     set_by_lua_block $announcement_enabled  { return os.getenv("ANNOUNCEMENT_ENABLED") }
     set_by_lua_block $announce_widget_url  { return os.getenv("ANNOUNCE_WIDGET_URL") }
@@ -169,7 +171,8 @@ data:
     env PL_HYDRA_SERVICE;
     env PL_KRATOS_SERVICE;
     env SCRIPT_BUNDLE_URLS;
-    env SCRIPT_BUNDE_DEV;
+    env SCRIPT_BUNDLE_DEV;
+    env SCRIPT_MODIFICATION_DISABLED;
     env ANALYTICS_ENABLED;
     env ANNOUNCEMENT_ENABLED;
     env ANNOUNCE_WIDGET_URL;

@@ -41,6 +41,8 @@ spec:
         - configMapRef:
             name: pl-auth-connector-config
         - configMapRef:
+            name: pl-script-bundles-config
+        - configMapRef:
             name: pl-errors-config
             optional: true
         env:

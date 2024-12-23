@@ -66,15 +66,15 @@ type testState struct {
 	conn *grpc.ClientConn
 }
 
-func createTestState(t *testing.T, disableScriptModification bool) (*testState, func(t *testing.T)) {
+func createTestState(t *testing.T, scriptModificationDisabled bool) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	env := env.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
-	vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}, &fakeScriptMgr{}, disableScriptModification))
-	vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}, &fakeScriptMgr{}, disableScriptModification))
+	vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}, &fakeScriptMgr{}, scriptModificationDisabled))
+	vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}, &fakeScriptMgr{}, scriptModificationDisabled))
 
 	eg := errgroup.Group{}
 	eg.Go(func() error { return s.Serve(lis) })
