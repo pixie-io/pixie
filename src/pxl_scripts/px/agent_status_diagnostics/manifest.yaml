@@ -1,0 +1,4 @@
+---
+short: Agent status diagnostics
+long: >
+  This script performs diagnostics on the agents' (PEMs/Collectors) status
