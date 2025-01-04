@@ -20,6 +20,8 @@ package controllers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -51,8 +53,9 @@ type liveViewModel struct {
 }
 
 type scriptStore struct {
-	Scripts   map[uuid.UUID]*scriptModel
-	LiveViews map[uuid.UUID]*liveViewModel
+	Scripts      map[uuid.UUID]*scriptModel
+	LiveViews    map[uuid.UUID]*liveViewModel
+	ScriptHashes map[string]bool
 }
 
 // Server implements the GRPC Server for the scriptmgr service.
@@ -72,8 +75,9 @@ func NewServer(bundleBucket string, bundlePath string, sc stiface.Client) *Serve
 		bundlePath:   bundlePath,
 		sc:           sc,
 		store: &scriptStore{
-			Scripts:   make(map[uuid.UUID]*scriptModel),
-			LiveViews: make(map[uuid.UUID]*liveViewModel),
+			Scripts:      make(map[uuid.UUID]*scriptModel),
+			LiveViews:    make(map[uuid.UUID]*liveViewModel),
+			ScriptHashes: make(map[string]bool),
 		},
 		storeLastUpdate: time.Unix(0, 0),
 		SeedUUID:        uuid.Must(uuid.NewV4()),
@@ -117,6 +121,13 @@ func (s *Server) addScript(name string, bundleScript *pixieScript, hasLiveView b
 	}
 }
 
+func (s *Server) addScriptHash(pxl string) {
+	scriptHash := sha256.New()
+	scriptHash.Write([]byte(pxl))
+	str := hex.EncodeToString(scriptHash.Sum(nil))
+	s.store.ScriptHashes[str] = true
+}
+
 func (s *Server) updateStore() error {
 	b, err := getBundle(s.sc, s.bundleBucket, s.bundlePath)
 	if err != nil {
@@ -132,6 +143,7 @@ func (s *Server) updateStore() error {
 				errorMsgs = append(errorMsgs, fmt.Sprintf("Error in Live View %s: %s", name, err.Error()))
 			}
 		}
+		s.addScriptHash(bundleScript.Pxl)
 	}
 
 	if len(errorMsgs) > 0 {
@@ -244,5 +256,14 @@ func (s *Server) GetScriptContents(ctx context.Context, req *scriptmgrpb.GetScri
 			HasLiveView: script.hasLiveView,
 		},
 		Contents: script.pxl,
+	}, nil
+}
+
+// GetScriptByHash returns if a script with the given hash exists.
+func (s *Server) GetScriptByHash(ctx context.Context, req *scriptmgrpb.GetScriptByHashReq) (*scriptmgrpb.GetScriptByHashResp, error) {
+	hash := req.Sha256Hash
+	_, ok := s.store.ScriptHashes[hash]
+	return &scriptmgrpb.GetScriptByHashResp{
+		Exists: ok,
 	}, nil
 }

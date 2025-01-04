@@ -36,6 +36,9 @@ service ScriptMgrService {
   rpc GetScripts(GetScriptsReq) returns (GetScriptsResp);
   // GetScriptContents returns the pxl string of the script.
   rpc GetScriptContents(GetScriptContentsReq) returns (GetScriptContentsResp);
+  // Checks to see if script with hash exists. This is used to check if a script
+  // has been modified or not.
+  rpc GetScriptByHash(GetScriptByHashReq) returns (GetScriptByHashResp);
 }
 
 // GetLiveViewsReq is the request message for getting a list of all live views.
@@ -134,4 +137,12 @@ message GetScriptContentsResp {
   ScriptMetadata metadata = 1;
   // string of the pxl for the script.
   string contents = 2;
+}
+
+message GetScriptByHashReq {
+  string sha256_hash = 1 [ (gogoproto.customname) = "Sha256Hash" ];
+}
+
+message GetScriptByHashResp {
+  bool exists = 1;
 }
