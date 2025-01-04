@@ -48,7 +48,6 @@ const auto kSendPageProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
     {{"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
      {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false}});
 
-// FIXME: Figure out whether to even create a KFuncSpec
 const auto kFuncSpecs = MakeArray<bpf_tools::KFuncSpec>({{"kfunc__vmlinux__tcp_sendmsg"}, {"kretfunc__vmlinux__tcp_sendmsg"}});
 
 void HandleTcpEvent(void* cb_cookie, void* data, int /*data_size*/) {
