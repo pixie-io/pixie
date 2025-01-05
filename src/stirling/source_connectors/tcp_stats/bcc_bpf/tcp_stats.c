@@ -212,9 +212,7 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
   return 0;
 }
 
-KFUNC_PROBE(tcp_sendmsg, struct sock* sk) {
-  return tcp_send_entry(sk);
-}
+KFUNC_PROBE(tcp_sendmsg, struct sock* sk) { return tcp_send_entry(sk); }
 
 KRETFUNC_PROBE(tcp_sendmsg, struct sock* sk, struct msghdr* msg, size_t size, int ret) {
   if (ret > 0) {

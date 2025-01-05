@@ -48,7 +48,8 @@ const auto kSendPageProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
     {{"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
      {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false}});
 
-const auto kFuncSpecs = MakeArray<bpf_tools::KFuncSpec>({{"kfunc__vmlinux__tcp_sendmsg"}, {"kretfunc__vmlinux__tcp_sendmsg"}});
+const auto kFuncSpecs = MakeArray<bpf_tools::KFuncSpec>(
+    {{"kfunc__vmlinux__tcp_sendmsg"}, {"kretfunc__vmlinux__tcp_sendmsg"}});
 
 void HandleTcpEvent(void* cb_cookie, void* data, int /*data_size*/) {
   auto* connector = reinterpret_cast<TCPStatsConnector*>(cb_cookie);
@@ -83,8 +84,8 @@ Status TCPStatsConnector::InitImpl() {
         sendpage_attach_status.msg(), kernel_version.ToString());
   }
 
-  // We deploy kfunc probes for the tcp_sendmsg function to side step a probe insertion conflict with
-  // the socket tracer since it already deploys kprobes for the tcp_sendmsg function.
+  // We deploy kfunc probes for the tcp_sendmsg function to side step a probe insertion conflict
+  // with the socket tracer since it already deploys kprobes for the tcp_sendmsg function.
   PX_RETURN_IF_ERROR(bcc_->AttachKFuncs(kFuncSpecs));
 
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));

@@ -144,9 +144,7 @@ struct TracepointSpec {
 struct KFuncSpec {
   std::string kfunc;
 
-  std::string ToString() const {
-    return absl::Substitute("[kfunc=$0]", kfunc);
-  }
+  std::string ToString() const { return absl::Substitute("[kfunc=$0]", kfunc); }
 };
 
 /**
