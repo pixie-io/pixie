@@ -415,11 +415,13 @@ class ReplayingBCCWrapperImpl : public BCCWrapper {
   Status AttachUProbe(const UProbeSpec&) override { return Status::OK(); }
   Status AttachTracepoint(const TracepointSpec&) override { return Status::OK(); }
   Status AttachSamplingProbe(const SamplingProbeSpec&) override { return Status::OK(); }
+  Status AttachKFunc(const KFuncSpec&) override { return Status::OK(); }
   Status AttachPerfEvent(const PerfEventSpec&) override { return Status::OK(); }
   Status AttachKProbes(const ArrayView<KProbeSpec>&) override { return Status::OK(); }
   Status AttachTracepoints(const ArrayView<TracepointSpec>&) override { return Status::OK(); }
   Status AttachUProbes(const ArrayView<UProbeSpec>&) override { return Status::OK(); }
   Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>&) override { return Status::OK(); }
+  Status AttachKFuncs(const ArrayView<KFuncSpec>&) override { return Status::OK(); }
   Status AttachXDP(const std::string&, const std::string&) override { return Status::OK(); }
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>&) override { return Status::OK(); }
   Status PopulateBPFPerfArray(const std::string&, const uint32_t, const uint64_t) override {
