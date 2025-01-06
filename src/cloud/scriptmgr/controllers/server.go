@@ -259,11 +259,11 @@ func (s *Server) GetScriptContents(ctx context.Context, req *scriptmgrpb.GetScri
 	}, nil
 }
 
-// GetScriptByHash returns if a script with the given hash exists.
-func (s *Server) GetScriptByHash(ctx context.Context, req *scriptmgrpb.GetScriptByHashReq) (*scriptmgrpb.GetScriptByHashResp, error) {
+// CheckScriptExists returns if a script with the given hash exists.
+func (s *Server) CheckScriptExists(ctx context.Context, req *scriptmgrpb.CheckScriptExistsReq) (*scriptmgrpb.CheckScriptExistsResp, error) {
 	hash := req.Sha256Hash
 	_, ok := s.store.ScriptHashes[hash]
-	return &scriptmgrpb.GetScriptByHashResp{
+	return &scriptmgrpb.CheckScriptExistsResp{
 		Exists: ok,
 	}, nil
 }

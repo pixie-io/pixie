@@ -324,7 +324,7 @@ func TestScriptMgr_GetScriptContents(t *testing.T) {
 	}
 }
 
-func TestScriptMgr_GetScriptByHash(t *testing.T) {
+func TestScriptMgr_CheckScriptExists(t *testing.T) {
 	testCases := []struct {
 		name       string
 		scriptHash string
@@ -350,13 +350,13 @@ func TestScriptMgr_GetScriptByHash(t *testing.T) {
 			c := mustSetupFakeBucket(t, testBundle)
 			s := controllers.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
-			req := &scriptmgrpb.GetScriptByHashReq{
+			req := &scriptmgrpb.CheckScriptExistsReq{
 				Sha256Hash: tc.scriptHash,
 			}
-			expectedResp := &scriptmgrpb.GetScriptByHashResp{
+			expectedResp := &scriptmgrpb.CheckScriptExistsResp{
 				Exists: tc.exists,
 			}
-			resp, err := s.GetScriptByHash(ctx, req)
+			resp, err := s.CheckScriptExists(ctx, req)
 			if tc.expectErr {
 				require.NotNil(t, err)
 			} else {

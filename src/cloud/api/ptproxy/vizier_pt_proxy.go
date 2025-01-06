@@ -46,7 +46,7 @@ type vzmgrClient interface {
 }
 
 type scriptmgrClient interface {
-	GetScriptByHash(ctx context.Context, req *scriptmgrpb.GetScriptByHashReq, opts ...grpc.CallOption) (*scriptmgrpb.GetScriptByHashResp, error)
+	CheckScriptExists(ctx context.Context, req *scriptmgrpb.CheckScriptExistsReq, opts ...grpc.CallOption) (*scriptmgrpb.CheckScriptExistsResp, error)
 }
 
 // VizierPassThroughProxy implements the VizierAPI and allows proxying the data to the actual
@@ -73,7 +73,7 @@ func (v *VizierPassThroughProxy) isScriptModified(ctx context.Context, script st
 	hash := sha256.New()
 	hash.Write([]byte(script))
 	hashStr := hex.EncodeToString(hash.Sum(nil))
-	req := &scriptmgrpb.GetScriptByHashReq{Sha256Hash: hashStr}
+	req := &scriptmgrpb.CheckScriptExistsReq{Sha256Hash: hashStr}
 
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
@@ -83,7 +83,7 @@ func (v *VizierPassThroughProxy) isScriptModified(ctx context.Context, script st
 		return false, err
 	}
 
-	resp, err := v.sm.GetScriptByHash(ctx, req)
+	resp, err := v.sm.CheckScriptExists(ctx, req)
 
 	if err != nil {
 		return false, err

@@ -38,7 +38,7 @@ service ScriptMgrService {
   rpc GetScriptContents(GetScriptContentsReq) returns (GetScriptContentsResp);
   // Checks to see if script with hash exists. This is used to check if a script
   // has been modified or not.
-  rpc GetScriptByHash(GetScriptByHashReq) returns (GetScriptByHashResp);
+  rpc CheckScriptExists(CheckScriptExistsReq) returns (CheckScriptExistsResp);
 }
 
 // GetLiveViewsReq is the request message for getting a list of all live views.
@@ -139,10 +139,10 @@ message GetScriptContentsResp {
   string contents = 2;
 }
 
-message GetScriptByHashReq {
+message CheckScriptExistsReq {
   string sha256_hash = 1 [ (gogoproto.customname) = "Sha256Hash" ];
 }
 
-message GetScriptByHashResp {
+message CheckScriptExistsResp {
   bool exists = 1;
 }

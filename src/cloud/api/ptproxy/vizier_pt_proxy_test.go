@@ -856,14 +856,14 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 
 type fakeScriptMgr struct{}
 
-func (s *fakeScriptMgr) GetScriptByHash(ctx context.Context, req *scriptmgrpb.GetScriptByHashReq, opts ...grpc.CallOption) (*scriptmgrpb.GetScriptByHashResp, error) {
+func (s *fakeScriptMgr) CheckScriptExists(ctx context.Context, req *scriptmgrpb.CheckScriptExistsReq, opts ...grpc.CallOption) (*scriptmgrpb.CheckScriptExistsResp, error) {
 	hash := "488f131003f415a61090901c544e0ace731e8a85b12ce0aea770273d656f08e0" // sha256 of "liveview1 pxl"
 
 	scripts := map[string]bool{
 		hash: true,
 	}
 	_, ok := scripts[req.Sha256Hash]
-	return &scriptmgrpb.GetScriptByHashResp{
+	return &scriptmgrpb.CheckScriptExistsResp{
 		Exists: ok,
 	}, nil
 }
