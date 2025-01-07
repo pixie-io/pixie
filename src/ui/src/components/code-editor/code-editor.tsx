@@ -24,7 +24,6 @@ import type { MonacoEditorProps } from 'react-monaco-editor';
 
 import { COMMON_THEME } from 'app/components/mui-theme';
 import { Spinner } from 'app/components/spinner/spinner';
-import { SCRIPT_MODIFICATION_DISABLED } from 'app/containers/constants';
 import { buildClass } from 'app/utils/build-class';
 
 interface CodeEditorProps {
@@ -86,7 +85,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorS
         scrollBeyondLastColumn: 3, // Prevents hiding text behind the minimap or the scrollbar. Expands the scroll area.
         scrollBeyondLastLine: false,
         fontFamily: COMMON_THEME.typography.monospace.fontFamily,
-        readOnly: this.props.isReadOnly === true || SCRIPT_MODIFICATION_DISABLED,
+        readOnly: this.props.isReadOnly === true,
       },
     };
     this.onChange = this.onChange.bind(this);

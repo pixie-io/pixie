@@ -42,7 +42,8 @@ import { useHistory, useLocation } from 'react-router';
 
 import { CodeEditor, EDITOR_THEME_MAP, StatusCell, StatusGroup, useSnackbar } from 'app/components';
 import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
-import { GQLClusterStatus, GQLEditableRetentionScript } from 'app/types/schema';
+import { SCRIPT_MODIFICATION_DISABLED } from 'app/containers/constants';
+import { GQLClusterStatus, GQLDetailedRetentionScript, GQLEditableRetentionScript } from 'app/types/schema';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { allowRetentionScriptName } from 'configurable/data-export';
 
@@ -121,9 +122,21 @@ interface RetentionScriptEditorProps {
   initialValue: string;
   onChange: (value: string) => void;
   isReadOnly: boolean;
+  readOnlyReason: string;
 }
+
+const getReadOnlyReason = (script: GQLDetailedRetentionScript | null): string | undefined => {
+  if (script?.isPreset) {
+    return 'PxL for preset scripts cannot be edited';
+  }
+  if (SCRIPT_MODIFICATION_DISABLED) {
+    return 'Editing retention scripts is disabled.';
+  }
+  return undefined;
+};
+
 const RetentionScriptEditorInner = React.memo<RetentionScriptEditorProps>(({
-  initialValue, onChange, isReadOnly = false,
+  initialValue, onChange, isReadOnly = false, readOnlyReason,
 }) => {
   const { width, height } = React.useContext(AutoSizerContext);
   const theme = useTheme();
@@ -152,7 +165,7 @@ const RetentionScriptEditorInner = React.memo<RetentionScriptEditorProps>(({
         language='python'
         theme={EDITOR_THEME_MAP[theme.palette.mode]}
         isReadOnly={isReadOnly}
-        readOnlyReason='PxL for preset scripts cannot be edited'
+        readOnlyReason={readOnlyReason}
       />
     </div>
   );
@@ -497,7 +510,8 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
           <RetentionScriptEditor
             initialValue={pendingValues.contents}
             onChange={(v) => setPendingField('contents', v)}
-            isReadOnly={script?.isPreset}
+            isReadOnly={script?.isPreset || SCRIPT_MODIFICATION_DISABLED}
+            readOnlyReason={getReadOnlyReason(script)}
           />
         </div>
       </Paper>
