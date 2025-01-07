@@ -86,11 +86,19 @@ Status TCPStatsConnector::InitImpl() {
 
   // We deploy kfunc probes for the tcp_sendmsg function to side step a probe insertion conflict
   // with the socket tracer since it already deploys kprobes for the tcp_sendmsg function.
-  PX_RETURN_IF_ERROR(bcc_->AttachKFuncs(kFuncSpecs));
+  const auto kfunc_attach_status = bcc_->AttachKFuncs(kFuncSpecs);
+  if (!kfunc_attach_status.ok()) {
+    const auto kernel_version = system::GetCachedKernelVersion();
+    LOG(INFO) << absl::Substitute(
+        "Could not attach kfunc probes for tcp_sendmsg: $0, detected kernel version: $1. Note: "
+        "kfunc probes are supported on kernel version 5.5 and newer.",
+        kfunc_attach_status.msg(), kernel_version.ToString());
+  } else {
+    LOG(INFO) << absl::Substitute("Successfully deployed $0 kfunc probes.", kFuncSpecs.size());
+  }
 
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
-  LOG(INFO) << absl::Substitute("Successfully deployed $0 kfunc probes.", kFuncSpecs.size());
 
   return Status::OK();
 }
