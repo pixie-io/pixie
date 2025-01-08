@@ -289,8 +289,6 @@ TEST_F(ProcParserTest, read_pid_metadata_null) {
               parser_->GetPIDCmdline(456));
 }
 
-// This test does not work because bazel uses symlinks itself,
-// which then causes ReadProcPIDFDLink to resolve the wrong link.
 TEST_F(ProcParserTest, read_proc_fd_link) {
   PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   {
@@ -299,7 +297,7 @@ TEST_F(ProcParserTest, read_proc_fd_link) {
     ASSERT_OK(
         fs::CreateSymlinkIfNotExists("/dev/null", GetPathToTestDataFile("testdata/proc/123/fd/0")));
     ASSERT_OK(
-        fs::CreateSymlinkIfNotExists("/foobar", GetPathToTestDataFile("testdata/proc/123/fd/1")));
+        fs::CreateSymlinkIfNotExists("./foobar", GetPathToTestDataFile("testdata/proc/123/fd/1")));
     ASSERT_OK(fs::CreateSymlinkIfNotExists("socket:[12345]",
                                            GetPathToTestDataFile("testdata/proc/123/fd/2")));
   }
@@ -313,7 +311,7 @@ TEST_F(ProcParserTest, read_proc_fd_link) {
 
   s = parser_->ReadProcPIDFDLink(123, 1, &out);
   EXPECT_OK(s);
-  EXPECT_EQ("/foobar", out);
+  EXPECT_EQ("./foobar", out);
 
   s = parser_->ReadProcPIDFDLink(123, 2, &out);
   EXPECT_OK(s);
