@@ -31,6 +31,7 @@ import {
 } from 'app/components';
 import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
+import { SCRIPT_MODIFICATION_DISABLED } from 'app/containers/constants';
 import { getKeyMap } from 'app/containers/live/shortcuts';
 import { EditorContext } from 'app/context/editor-context';
 import { LayoutContext } from 'app/context/layout-context';
@@ -77,6 +78,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'Editor' });
 
+const editorReadOnlyReason = 'Your cluster admin has disabled script modification';
+
 const shortcutKeys = Object.values(getKeyMap()).map((keyBinding) => keyBinding.sequence);
 
 const VisEditor = React.memo<{ visible: boolean }>(({ visible }) => {
@@ -110,6 +113,8 @@ const VisEditor = React.memo<{ visible: boolean }>(({ visible }) => {
       shortcutKeys={shortcutKeys}
       language='json'
       theme={EDITOR_THEME_MAP[theme.palette.mode]}
+      readOnlyReason={SCRIPT_MODIFICATION_DISABLED ? editorReadOnlyReason : undefined}
+      isReadOnly={SCRIPT_MODIFICATION_DISABLED}
     />
   );
 });
@@ -147,6 +152,8 @@ const PxLEditor = React.memo<{ visible: boolean }>(({ visible }) => {
       shortcutKeys={shortcutKeys}
       language='python'
       theme={EDITOR_THEME_MAP[theme.palette.mode]}
+      isReadOnly={SCRIPT_MODIFICATION_DISABLED}
+      readOnlyReason={SCRIPT_MODIFICATION_DISABLED ? editorReadOnlyReason : undefined}
     />
   );
 });

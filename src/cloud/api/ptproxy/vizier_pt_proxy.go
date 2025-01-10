@@ -20,15 +20,24 @@ package ptproxy
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 
 	"github.com/nats-io/nats.go"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/shared/services/jwtpb"
+	jwtutils "px.dev/pixie/src/shared/services/utils"
 )
 
 type vzmgrClient interface {
@@ -36,16 +45,50 @@ type vzmgrClient interface {
 	GetVizierConnectionInfo(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error)
 }
 
+type scriptmgrClient interface {
+	CheckScriptExists(ctx context.Context, req *scriptmgrpb.CheckScriptExistsReq, opts ...grpc.CallOption) (*scriptmgrpb.CheckScriptExistsResp, error)
+}
+
 // VizierPassThroughProxy implements the VizierAPI and allows proxying the data to the actual
 // vizier cluster.
 type VizierPassThroughProxy struct {
-	nc *nats.Conn
-	vc vzmgrClient
+	nc                         *nats.Conn
+	vc                         vzmgrClient
+	sm                         scriptmgrClient
+	scriptModificationDisabled bool
+}
+
+// getServiceCredentials returns JWT credentials for inter-service requests.
+func getServiceCredentials(signingKey string) (string, error) {
+	claims := jwtutils.GenerateJWTForService("cloud api", viper.GetString("domain_name"))
+	return jwtutils.SignJWTClaims(claims, signingKey)
 }
 
 // NewVizierPassThroughProxy creates a new passthrough proxy.
-func NewVizierPassThroughProxy(nc *nats.Conn, vc vzmgrClient) *VizierPassThroughProxy {
-	return &VizierPassThroughProxy{nc: nc, vc: vc}
+func NewVizierPassThroughProxy(nc *nats.Conn, vc vzmgrClient, sm scriptmgrClient, scriptModificationDisabled bool) *VizierPassThroughProxy {
+	return &VizierPassThroughProxy{nc: nc, vc: vc, sm: sm, scriptModificationDisabled: scriptModificationDisabled}
+}
+
+func (v *VizierPassThroughProxy) isScriptModified(ctx context.Context, script string) (bool, error) {
+	hash := sha256.New()
+	hash.Write([]byte(script))
+	hashStr := hex.EncodeToString(hash.Sum(nil))
+	req := &scriptmgrpb.CheckScriptExistsReq{Sha256Hash: hashStr}
+
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := v.sm.CheckScriptExists(ctx, req)
+
+	if err != nil {
+		return false, err
+	}
+	return !resp.Exists, nil
 }
 
 // ExecuteScript is the GRPC stream method.
@@ -55,6 +98,17 @@ func (v *VizierPassThroughProxy) ExecuteScript(req *vizierpb.ExecuteScriptReques
 		return err
 	}
 	defer rp.Finish()
+	if v.scriptModificationDisabled {
+		modified, err := v.isScriptModified(srv.Context(), req.QueryStr)
+		if err != nil {
+			return err
+		}
+
+		if modified {
+			return status.Error(codes.InvalidArgument, "Script modification has been disabled")
+		}
+	}
+
 	vizReq := rp.prepareVizierRequest()
 	vizReq.Msg = &cvmsgspb.C2VAPIStreamRequest_ExecReq{ExecReq: req}
 	if err := rp.sendMessageToVizier(vizReq); err != nil {

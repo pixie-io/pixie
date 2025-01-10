@@ -41,6 +41,8 @@ spec:
         - configMapRef:
             name: pl-auth-connector-config
         - configMapRef:
+            name: pl-script-bundles-config
+        - configMapRef:
             name: pl-errors-config
             optional: true
         env:
@@ -59,6 +61,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_VZMGR_SERVICE
+        - name: PL_SCRIPTMGR_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_SCRIPTMGR_SERVICE
         - name: PL_AUTH_SERVICE
           valueFrom:
             configMapKeyRef:

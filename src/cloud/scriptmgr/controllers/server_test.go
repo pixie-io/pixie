@@ -323,3 +323,46 @@ func TestScriptMgr_GetScriptContents(t *testing.T) {
 		})
 	}
 }
+
+func TestScriptMgr_CheckScriptExists(t *testing.T) {
+	testCases := []struct {
+		name       string
+		scriptHash string
+		exists     bool
+		expectErr  bool
+	}{
+		{
+			name:       "Script with matching hash should return script.",
+			scriptHash: "488f131003f415a61090901c544e0ace731e8a85b12ce0aea770273d656f08e0", // hex encoded output of 'liveview1' hash
+			exists:     true,
+			expectErr:  false,
+		},
+		{
+			name:       "Hash not in bundle returns false.",
+			scriptHash: "not-a-real-script",
+			exists:     false,
+			expectErr:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := mustSetupFakeBucket(t, testBundle)
+			s := controllers.NewServer(bundleBucket, bundlePath, c)
+			ctx := context.Background()
+			req := &scriptmgrpb.CheckScriptExistsReq{
+				Sha256Hash: tc.scriptHash,
+			}
+			expectedResp := &scriptmgrpb.CheckScriptExistsResp{
+				Exists: tc.exists,
+			}
+			resp, err := s.CheckScriptExists(ctx, req)
+			if tc.expectErr {
+				require.NotNil(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, expectedResp, resp)
+			}
+		})
+	}
+}
