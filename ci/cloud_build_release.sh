@@ -36,6 +36,23 @@ fi
 echo "The image tag is: ${release_tag}"
 image_repo="gcr.io/pixie-oss/pixie-prod"
 
+all_licenses_opts=("//tools/licenses:all_licenses" "--config=stamp" "--action_env=GOOGLE_APPLICATION_CREDENTIALS" "--remote_download_outputs=toplevel")
+all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
+deps_missing_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "[f.path for f in target.files.to_list() if f.basename == 'deps_licenses_missing.json'][0]" 2> /dev/null)"
+go_missing_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "[f.path for f in target.files.to_list() if f.basename == 'go_licenses_missing.json'][0]" 2> /dev/null)"
+
+print_missing_licenses() {
+  cat "${deps_missing_licenses_path}" || true
+  cat "${go_missing_licenses_path}" || true
+}
+
+trap print_missing_licenses ERR
+
+bazel build "${all_licenses_opts[@]}"
+
+# Clear the trap once license generation succeeds.
+trap - ERR
+
 bazel run -c opt \
   --config=stamp \
   --action_env=GOOGLE_APPLICATION_CREDENTIALS \
@@ -51,10 +68,6 @@ done < <(bazel run -c opt \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
   //k8s/cloud:list_image_bundle)
-
-all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS" "--remote_download_outputs=toplevel")
-all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
-bazel build "${all_licenses_opts[@]}"
 
 upload_artifact_to_mirrors "cloud" "${release_tag}" "${all_licenses_path}" "licenses.json"
 # The licenses file uses a non-standard path (outside of the "component/version/artifact" convention)
