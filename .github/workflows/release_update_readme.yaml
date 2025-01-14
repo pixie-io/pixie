@@ -44,7 +44,7 @@ jobs:
       run: |
         export COMPONENT="$(echo "${TAG_NAME}" | cut -d'/' -f2)"
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
-        ./ci/update_readme_with_latest_release.sh "${COMPONENT}" "${VERSION}" "${URL}"
+        ./ci/update_files_with_release_versions.sh "${COMPONENT}" "${VERSION}" "${URL}"
     - name: Create PR
       shell: bash
       env:
@@ -56,6 +56,7 @@ jobs:
         export BRANCH="${VERSION}-update-readme"
         git checkout -b "${BRANCH}"
         git add README.md
+        git add k8s/cloud/public/base/artifact_tracker_versions.yaml
         git commit -s -m "$(cat pr_title)"
         git push -f fork "${BRANCH}"
         gh pr create --repo pixie-io/pixie \
