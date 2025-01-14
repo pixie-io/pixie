@@ -458,4 +458,7 @@ message StackTraceFlameGraph {
   string node_column = 8;
   // The label for the percentage.
   string percentage_label = 9;
+  // The column containing the stacktrace's delta. This is only relevant for differential
+  // flamegraphs.
+  string difference_column = 10;
 }
