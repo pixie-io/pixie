@@ -9,11 +9,11 @@ spec:
   template:
     spec:
       containers:
-      - name: artifact-tracker-server
-        env:
-        - name: PL_VIZIER_VERSION
-          value: "0.14.14"
-        - name: PL_CLI_VERSION
-          value: "0.8.5"
-        - name: PL_OPERATOR_VERSION
-          value: "0.1.7"
+        - name: artifact-tracker-server
+          env:
+            - name: PL_VIZIER_VERSION
+              value: "0.14.14"
+            - name: PL_CLI_VERSION
+              value: "0.8.5"
+            - name: PL_OPERATOR_VERSION
+              value: "0.1.7"
