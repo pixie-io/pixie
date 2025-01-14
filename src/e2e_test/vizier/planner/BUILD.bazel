@@ -25,7 +25,6 @@ pl_go_test(
     tags = [
         "no_asan",
         "no_gcc",
-        "no_libcpp",
         "no_msan",
         "no_tsan",
     ],
