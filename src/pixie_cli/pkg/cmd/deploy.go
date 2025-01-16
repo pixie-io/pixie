@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -71,7 +72,6 @@ var BlockListedLabels = []string{
 }
 
 func init() {
-	DeployCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 	DeployCmd.Flags().StringP("extract_yaml", "e", "", "Directory to extract the Pixie yamls to")
 	DeployCmd.Flags().StringP("vizier_version", "v", "", "Pixie version to deploy")
 	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
@@ -106,7 +106,6 @@ var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys Pixie on the current K8s cluster",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
 		viper.BindPFlag("extract_yaml", cmd.Flags().Lookup("extract_yaml"))
 		viper.BindPFlag("vizier_version", cmd.Flags().Lookup("vizier_version"))
 		viper.BindPFlag("check", cmd.Flags().Lookup("check"))
@@ -605,6 +604,61 @@ func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, vzClien
 	return clusterID
 }
 
+func runSimpleHealthCheckScript(cloudAddr string, clusterID uuid.UUID) error {
+	v, err := vizier.ConnectionToVizierByID(cloudAddr, clusterID)
+	br := mustCreateBundleReader()
+	if err != nil {
+		return err
+	}
+	execScript := br.MustGetScript(script.AgentStatusScript)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	resp, err := v.ExecuteScriptStream(ctx, execScript, nil)
+	if err != nil {
+		return err
+	}
+
+	// TODO(zasgar): Make this use the Null output. We can't right now
+	// because of fatal message on vizier failure.
+	errCh := make(chan error)
+	// Eat all responses.
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				if ctx.Err() != nil {
+					errCh <- ctx.Err()
+					return
+				}
+				errCh <- nil
+				return
+			case msg := <-resp:
+				if msg == nil {
+					errCh <- nil
+					return
+				}
+				if msg.Err != nil {
+					if msg.Err == io.EOF {
+						errCh <- nil
+						return
+					}
+					errCh <- msg.Err
+					return
+				}
+				if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
+					errCh <- errors.New(msg.Resp.Status.Message)
+				}
+				// Eat messages.
+			}
+		}
+	}()
+
+	err = <-errCh
+	return err
+}
+
 func waitForHealthCheckTaskGenerator(cloudAddr string, clusterID uuid.UUID) func() error {
 	return func() error {
 		timeout := time.NewTimer(5 * time.Minute)
@@ -614,14 +668,9 @@ func waitForHealthCheckTaskGenerator(cloudAddr string, clusterID uuid.UUID) func
 			case <-timeout.C:
 				return errors.New("timeout waiting for healthcheck  (it is possible that Pixie stabilized after the healthcheck timeout. To check if Pixie successfully deployed, run `px debug pods`)")
 			default:
-				_, err := vizier.RunSimpleHealthCheckScript(mustCreateBundleReader(), cloudAddr, clusterID)
+				err := runSimpleHealthCheckScript(cloudAddr, clusterID)
 				if err == nil {
 					return nil
-				}
-				// The health check warning error indicates the cluster successfully deployed, but there are some warnings.
-				// Return the error to end the polling and show the warnings.
-				if _, ok := err.(*vizier.HealthCheckWarning); ok {
-					return err
 				}
 				time.Sleep(5 * time.Second)
 			}
@@ -642,17 +691,13 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 	hc := utils.NewSerialTaskRunner(healthCheckJobs)
 	err := hc.RunAndMonitor()
 	if err != nil {
-		if _, ok := err.(*vizier.HealthCheckWarning); ok {
-			utils.WithError(err).Error("Pixie healthcheck detected the following warnings:")
-		} else {
-			_ = pxanalytics.Client().Enqueue(&analytics.Track{
-				UserId: pxconfig.Cfg().UniqueClientID,
-				Event:  "Deploy Healthcheck Failed",
-				Properties: analytics.NewProperties().
-					Set("err", err.Error()),
-			})
-			utils.WithError(err).Fatal("Failed Pixie healthcheck")
-		}
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Deploy Healthcheck Failed",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
+		utils.WithError(err).Fatal("Failed Pixie healthcheck")
 	}
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,

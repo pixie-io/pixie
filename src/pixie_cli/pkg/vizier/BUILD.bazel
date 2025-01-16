@@ -25,7 +25,6 @@ go_library(
         "data_formatter.go",
         "errors.go",
         "lister.go",
-        "logs.go",
         "script.go",
         "stream_adapter.go",
         "utils.go",

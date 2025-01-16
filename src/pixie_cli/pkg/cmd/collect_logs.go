@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
-	"px.dev/pixie/src/pixie_cli/pkg/vizier"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 func init() {
@@ -42,7 +42,7 @@ var CollectLogsCmd = &cobra.Command{
 		viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		c := vizier.NewLogCollector(mustCreateBundleReader(), viper.GetString("cloud_addr"))
+		c := k8s.NewLogCollector()
 		fName := fmt.Sprintf("pixie_logs_%s.zip", time.Now().Format("20060102150405"))
 		err := c.CollectPixieLogs(fName)
 		if err != nil {
