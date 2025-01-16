@@ -9,3 +9,5 @@ rules:
     max: 120
   truthy:
     check-keys: false
+  comments:
+    min-spaces-from-content: 1
