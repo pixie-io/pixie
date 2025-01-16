@@ -56,7 +56,7 @@ jobs:
         mkdir -p "${ARTIFACTS_DIR}"
         ./ci/save_version_info.sh
         ./ci/cloud_build_release.sh
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08  # v4.6.0
       with:
         name: cloud-artifacts
         path: artifacts/
@@ -71,7 +71,7 @@ jobs:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
     - name: Create Release
       env:
         REF: ${{ github.event.ref }}
