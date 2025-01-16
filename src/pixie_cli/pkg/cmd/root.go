@@ -203,6 +203,7 @@ var RootCmd = &cobra.Command{
 
 // Name a variable to store a slice of commands that don't require cloudAddr
 var cmdsCloudAddrNotReqd = []*cobra.Command{
+	CollectLogsCmd,
 	VersionCmd,
 }
 
@@ -244,7 +245,7 @@ func checkAuthForCmd(c *cobra.Command) {
 			os.Exit(1)
 		}
 		switch c {
-		case CollectLogsCmd, DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
+		case DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
 			utils.Errorf("These commands are unsupported in Direct Vizier mode.")
 			os.Exit(1)
 		default:
@@ -253,7 +254,7 @@ func checkAuthForCmd(c *cobra.Command) {
 	}
 
 	switch c {
-	case CollectLogsCmd, DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
+	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
 		authenticated := auth.IsAuthenticated(viper.GetString("cloud_addr"))
 		if !authenticated {
 			utils.Errorf("Failed to authenticate. Please retry `px auth login`.")

@@ -19,33 +19,23 @@
 package vizier
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"strings"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/segmentio/analytics-go/v3"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 
 	apiutils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"
-	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/utils/script"
-)
-
-const (
-	equalityThreshold          = 0.01
-	headersInstalledPercColumn = "headers_installed_percent" // must match the column in px/agent_status_diagnostics
 )
 
 type taskWrapper struct {
@@ -205,6 +195,7 @@ func runScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 	return tw, err
 }
 
+// RunScript runs the script and return the data channel
 func RunScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, encOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions) (chan *ExecData, error) {
 	// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -264,144 +255,4 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 		}
 	}()
 	return mergedResponses, nil
-}
-
-type HealthCheckWarning struct {
-	message string
-}
-
-func (h *HealthCheckWarning) Error() string {
-	return h.message
-}
-
-func newHealthCheckWarning(message string) error {
-	return &HealthCheckWarning{message}
-}
-
-func evaluateHealthCheckResult(output string) error {
-	jsonData := make(map[string]interface{})
-
-	err := json.Unmarshal([]byte(output), &jsonData)
-	if err != nil {
-		return err
-	}
-	if v, ok := jsonData[headersInstalledPercColumn]; ok {
-		switch t := v.(type) {
-		case float64:
-			if math.Abs(1.0-t) > equalityThreshold {
-				msg := "Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please install kernel headers on all nodes."
-				return newHealthCheckWarning(msg)
-			}
-		}
-	} else {
-		return newHealthCheckWarning("Unable to detect if the cluster's nodes have the distro kernel headers installed (vizier too old to perform this check). Please ensure that the kernel headers are installed on all nodes.")
-	}
-	return nil
-}
-
-type healthCheckData struct {
-	line string
-	err  error
-}
-
-// Runs the health check script on the specified vizier. The script's output is evaluated with
-// the evaluateHealthCheckResult function to determine if the cluster is healthy. Only a single
-// line of output will be parsed from the script.
-func runHealthCheckScript(v *Connector, execScript *script.ExecutableScript) (chan string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
-
-	resp, err := RunScript(ctx, []*Connector{v}, execScript, encOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	reader, writer := io.Pipe()
-	defer writer.Close()
-	defer reader.Close()
-	factoryFunc := func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
-		return components.CreateStreamWriter("json", writer)
-	}
-	tw := NewStreamOutputAdapterWithFactory(ctx, resp, "json", decOpts, factoryFunc)
-
-	bufReader := bufio.NewReader(reader)
-	errCh := make(chan error, 1)
-	streamCh := make(chan healthCheckData, 1)
-	outputCh := make(chan string, 1)
-	go func() {
-		defer close(streamCh)
-		for {
-			line, err := bufReader.ReadString('\n')
-			streamCh <- healthCheckData{line, err}
-			if err != nil {
-				return
-			}
-		}
-	}()
-	// Consumes the first line of output from the stream or the error from the context.
-	// The px/agent_status_diagnostics script only outputs one line, but even in the case
-	// that the fallback (px/agent_status) is used, a single line informs whether the output
-	// can be processed properly.
-	go func() {
-		defer close(errCh)
-		defer close(outputCh)
-		for {
-			select {
-			case <-ctx.Done():
-				errCh <- ctx.Err()
-				return
-			case data := <-streamCh:
-				line := data.line
-				err := data.err
-				if err == nil {
-					err = evaluateHealthCheckResult(line)
-				}
-				outputCh <- line
-				errCh <- err
-				return
-			}
-		}
-	}()
-
-	err = tw.WaitForCompletion()
-
-	if err != nil {
-		return outputCh, err
-	}
-	err = <-errCh
-
-	return outputCh, err
-}
-
-// RunSimpleHealthCheckScript runs a diagnostic pxl script to verify query serving works.
-// For newer viziers, it performs additional checks to ensure that the cluster is healthy
-// and that common issues are detected.
-func RunSimpleHealthCheckScript(br *script.BundleManager, cloudAddr string, clusterID uuid.UUID) (chan string, error) {
-	v, err := ConnectionToVizierByID(cloudAddr, clusterID)
-	if err != nil {
-		return nil, err
-	}
-	execScript, err := br.GetScript(script.AgentStatusDiagnosticsScript)
-
-	if err != nil {
-		execScript, err = br.GetScript(script.AgentStatusScript)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	resp, err := runHealthCheckScript(v, execScript)
-	if scriptErr, ok := err.(*ScriptExecutionError); ok {
-		if scriptErr.Code() == CodeCompilerError {
-			// If the script compilation failed, we fall back to the old health check script.
-			execScript, err = br.GetScript(script.AgentStatusScript)
-			if err != nil {
-				return nil, err
-			}
-			return runHealthCheckScript(v, execScript)
-		}
-	}
-	return resp, err
 }
