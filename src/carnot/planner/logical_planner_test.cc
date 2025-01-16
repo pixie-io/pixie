@@ -865,17 +865,19 @@ TEST_F(LogicalPlannerTest, pod_name_conversion_without_fallback) {
   ASSERT_OK(plan->ToProto());
 }
 
-// PxL query that contains a GRPC bridge with 2 branches where branch 1 is a blocking node
-// and branch 2 contains a PEM only UDF func (not a metadata expression). This triggers a previous
-// splitter bug where a PEM only UDF is incorrectly placed on the after blocking side of the bridge.
-// Metadata expressions didn't have this problem since md annotations force PEM only scheduling,
-// however, calling UDF only UDFs directly triggers this problem.
-//
-// The PxL below is roughly equivalent to the following problematic bridge:
-//
-// MemSrc  ->  Map ->  Map (w/ PEM only UDF)  ->  GRPC Sink (df return)
-//                \
-//                 ->  GRPC Sink (px.debug)
+/*
+ * PxL query that contains a GRPC bridge with 2 branches where branch 1 is a blocking node
+ * and branch 2 contains a PEM only UDF func (not a metadata expression). This triggers a previous
+ * splitter bug where a PEM only UDF is incorrectly placed on the after blocking side of the bridge.
+ * Metadata expressions didn't have this problem since md annotations force PEM only scheduling,
+ * however, calling UDF only UDFs directly triggers this problem.
+ *
+ * The PxL below is roughly equivalent to the following problematic bridge:
+ *
+ * MemSrc  ->  Map ->  Map (w/ PEM only UDF)  ->  GRPC Sink (df return)
+ *                \
+ *                 ->  GRPC Sink (px.debug)
+ */
 const char kBrokenUpidToPodNameQuery[] = R"pxl(
 import px
 def dns_flow_graph():
