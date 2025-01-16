@@ -115,6 +115,7 @@ TEST_F(ConvertMetadataRuleTest, missing_conversion_column) {
 }
 
 TEST_F(ConvertMetadataRuleTest, multichild_with_fallback_func) {
+  std::string pod_name_col_prefix = "pod_name_";
   auto relation = Relation(http_events_relation);
   MetadataType conversion_column = MetadataType::UPID;
   std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
@@ -144,10 +145,12 @@ TEST_F(ConvertMetadataRuleTest, multichild_with_fallback_func) {
   EXPECT_NE(md_map, map);
 
   FuncIR* upid_to_pod_name = nullptr;
+  std::string upid_to_pod_name_col_name;
   for (auto col_expr : md_map->col_exprs()) {
-    if (col_expr.name == "pod_name_0") {
+    if (absl::StartsWith(col_expr.name, pod_name_col_prefix)) {
       EXPECT_MATCH(col_expr.node, Func());
       upid_to_pod_name = static_cast<FuncIR*>(col_expr.node);
+      upid_to_pod_name_col_name = col_expr.name;
     }
   }
   EXPECT_NE(upid_to_pod_name, nullptr);
@@ -161,10 +164,13 @@ TEST_F(ConvertMetadataRuleTest, multichild_with_fallback_func) {
   EXPECT_EQ(1, md_map->Children().size());
   auto fallback_map = static_cast<MapIR*>(md_map->Children()[0]);
   FuncIR* fallback_func_select = nullptr;
+  std::string fallback_func_select_col_name;
   for (auto col_expr : fallback_map->col_exprs()) {
-    if (col_expr.name == "pod_name_1") {
+    if (absl::StartsWith(col_expr.name, pod_name_col_prefix) &&
+        col_expr.name != upid_to_pod_name_col_name) {
       EXPECT_MATCH(col_expr.node, Func());
       fallback_func_select = static_cast<FuncIR*>(col_expr.node);
+      fallback_func_select_col_name = col_expr.name;
     }
   }
 
@@ -177,7 +183,7 @@ TEST_F(ConvertMetadataRuleTest, multichild_with_fallback_func) {
   auto equals_func = static_cast<FuncIR*>(orig_func_check);
   EXPECT_EQ("equal", equals_func->func_name());
   EXPECT_EQ(2, equals_func->all_args().size());
-  EXPECT_MATCH(equals_func->all_args()[0], ColumnNode("pod_name_0"));
+  EXPECT_MATCH(equals_func->all_args()[0], ColumnNode(upid_to_pod_name_col_name));
   EXPECT_MATCH(equals_func->all_args()[1], String(""));
   EXPECT_MATCH(orig_func_check, ResolvedExpression());
 
