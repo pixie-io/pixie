@@ -27,9 +27,7 @@ namespace px {
 // GCC's ingnored-attribute warning is triggered without wrapping pclose. This is likely do to the
 // nonnull attribute.
 struct pclose_deleter {
-  void operator()(FILE* file) const {
-    pclose(file);
-  }
+  void operator()(FILE* file) const { pclose(file); }
 };
 
 StatusOr<std::string> Exec(std::string cmd) {
