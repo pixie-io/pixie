@@ -24,8 +24,16 @@
 
 namespace px {
 
+// GCC's ingnored-attribute warning is triggered without wrapping pclose. This is likely do to the
+// nonnull attribute.
+struct pclose_deleter {
+  void operator()(FILE* file) const {
+    pclose(file);
+  }
+};
+
 StatusOr<std::string> Exec(std::string cmd) {
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  std::unique_ptr<FILE, pclose_deleter> pipe(popen(cmd.c_str(), "r"));
   if (pipe == nullptr) {
     return error::Internal("popen() failed!");
   }
