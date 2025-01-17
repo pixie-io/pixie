@@ -29,6 +29,8 @@ version="$2"
 url="$3"
 
 readme_path="README.md"
+# Strip the leading v from the version string
+at_version="${version#v}"
 at_versions_path="k8s/cloud/public/base/artifact_tracker_versions.yaml"
 
 latest_release_comment="<!--${artifact_type}-latest-release-->"
@@ -49,7 +51,7 @@ latest_release_line() {
 # environment variable is uppercased
 artifact_tracker_env_name="PL_${artifact_type^^}_VERSION"
 
-yq -i ".spec.template.spec.containers[] |= select(.name == \"artifact-tracker-server\").env[] |= select(.name == \"${artifact_tracker_env_name}\").value = \"${version}\"" "${at_versions_path}"
+yq -i ".spec.template.spec.containers[] |= select(.name == \"artifact-tracker-server\").env[] |= select(.name == \"${artifact_tracker_env_name}\").value = \"${at_version}\"" "${at_versions_path}"
 
 sed -i 's|.*'"${latest_release_comment}"'.*|'"$(latest_release_line)"'|' "${readme_path}"
 
