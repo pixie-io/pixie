@@ -22,6 +22,7 @@ package main
 // It will be responsible for managing and deploy Pixie on a cluster.
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/cmd"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
@@ -47,7 +49,6 @@ func main() {
 	if version.GetVersion().IsDev() {
 		selectedDSN = ""
 	}
-
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              selectedDSN,
 		AttachStacktrace: true,
@@ -82,7 +83,21 @@ func main() {
 		Event:  "Exec Complete",
 	})
 
-	log.SetOutput(os.Stderr)
 	utils.Info("Pixie CLI")
+
+	logFile := viper.GetString("log_file")
+	if len(logFile) > 0 {
+		utils.Info(fmt.Sprintf("Logging to %s", logFile))
+
+		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			log.WithError(err).Error("Cannot open log file")
+		}
+
+		defer f.Close()
+		log.SetOutput(f)
+	} else {
+		log.SetOutput(os.Stderr)
+	}
 	cmd.Execute()
 }

@@ -50,6 +50,7 @@ var (
 func init() {
 	// Flags that are relevant to all sub-commands.
 
+	RootCmd.PersistentFlags().StringP("log_file", "", "", "The log file to redirect output to. if not set, logs will be printed to stdout.")
 	RootCmd.PersistentFlags().StringP("cloud_addr", "a", defaultCloudAddr, "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
 
@@ -92,6 +93,9 @@ func init() {
 	RootCmd.AddCommand(DebugCmd)
 
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
+	// log_file is accessed in the cli's main func and as a result only works via the env var.
+	// Hide it from the help text to prevent confusion that the flag can be used.
+	RootCmd.PersistentFlags().MarkHidden("log_file")
 	RootCmd.PersistentFlags().MarkHidden("dev_cloud_namespace")
 	RootCmd.PersistentFlags().MarkHidden("do_not_track")
 
