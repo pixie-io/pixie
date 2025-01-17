@@ -27,11 +27,12 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
-	"px.dev/pixie/src/utils/shared/k8s"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 )
 
 func init() {
 	CollectLogsCmd.Flags().StringP("namespace", "n", "", "The namespace vizier is deployed in")
+	CollectLogsCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 }
 
 // CollectLogsCmd is the "deploy" command.
@@ -40,9 +41,10 @@ var CollectLogsCmd = &cobra.Command{
 	Short: "Collect Pixie logs on the cluster",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
+		viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		c := k8s.NewLogCollector()
+		c := vizier.NewLogCollector(mustCreateBundleReader(), viper.GetString("cloud_addr"))
 		fName := fmt.Sprintf("pixie_logs_%s.zip", time.Now().Format("20060102150405"))
 		err := c.CollectPixieLogs(fName)
 		if err != nil {

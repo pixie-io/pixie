@@ -50,6 +50,7 @@ var (
 func init() {
 	// Flags that are relevant to all sub-commands.
 
+	RootCmd.PersistentFlags().StringP("log_file", "", "", "The log file to redirect output to. if not set, logs will be printed to stdout.")
 	RootCmd.PersistentFlags().StringP("cloud_addr", "a", defaultCloudAddr, "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
 
@@ -92,6 +93,9 @@ func init() {
 	RootCmd.AddCommand(DebugCmd)
 
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
+	// log_file is accessed in the cli's main func and as a result only works via the env var.
+	// Hide it from the help text to prevent confusion that the flag can be used.
+	RootCmd.PersistentFlags().MarkHidden("log_file")
 	RootCmd.PersistentFlags().MarkHidden("dev_cloud_namespace")
 	RootCmd.PersistentFlags().MarkHidden("do_not_track")
 
@@ -203,7 +207,6 @@ var RootCmd = &cobra.Command{
 
 // Name a variable to store a slice of commands that don't require cloudAddr
 var cmdsCloudAddrNotReqd = []*cobra.Command{
-	CollectLogsCmd,
 	VersionCmd,
 }
 
@@ -245,7 +248,7 @@ func checkAuthForCmd(c *cobra.Command) {
 			os.Exit(1)
 		}
 		switch c {
-		case DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
+		case CollectLogsCmd, DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
 			utils.Errorf("These commands are unsupported in Direct Vizier mode.")
 			os.Exit(1)
 		default:
@@ -254,7 +257,7 @@ func checkAuthForCmd(c *cobra.Command) {
 	}
 
 	switch c {
-	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
+	case CollectLogsCmd, DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
 		authenticated := auth.IsAuthenticated(viper.GetString("cloud_addr"))
 		if !authenticated {
 			utils.Errorf("Failed to authenticate. Please retry `px auth login`.")
