@@ -319,8 +319,6 @@ func runHealthCheckScript(v *Connector, execScript *script.ExecutableScript) (ch
 	}
 
 	reader, writer := io.Pipe()
-	defer writer.Close()
-	defer reader.Close()
 	factoryFunc := func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
 		return components.CreateStreamWriter("json", writer)
 	}
@@ -328,44 +326,51 @@ func runHealthCheckScript(v *Connector, execScript *script.ExecutableScript) (ch
 
 	bufReader := bufio.NewReader(reader)
 	errCh := make(chan error, 1)
-	streamCh := make(chan healthCheckData, 1)
+	streamCh := make(chan *healthCheckData)
 	outputCh := make(chan string, 1)
 	go func() {
 		defer close(streamCh)
+		defer reader.Close()
 		for {
 			line, err := bufReader.ReadString('\n')
-			streamCh <- healthCheckData{line, err}
+			streamCh <- &healthCheckData{line, err}
 			if err != nil {
 				return
 			}
 		}
 	}()
-	// Consumes the first line of output from the stream or the error from the context.
-	// The px/agent_status_diagnostics script only outputs one line, but even in the case
-	// that the fallback (px/agent_status) is used, a single line informs whether the output
-	// can be processed properly.
+	// Consumes the output from the stream and returns the last item received unless
+	// the context deadline is reached. The px/agent_status_diagnostics script only
+	// outputs one line, but even when the fallback case is used (px/agent_status),
+	// a single line informs whether the health check passed or failed.
 	go func() {
 		defer close(errCh)
 		defer close(outputCh)
+		var healthCheckErr error
+		var lastLine string
 		for {
 			select {
 			case <-ctx.Done():
 				errCh <- ctx.Err()
 				return
 			case data := <-streamCh:
-				line := data.line
+				// If data is nil or the error is io.EOF, the stream has been completely consumed (channel closed).
+				if data == nil || errors.Is(data.err, io.EOF) {
+					outputCh <- lastLine
+					errCh <- healthCheckErr
+					return
+				}
+				lastLine = data.line
 				err := data.err
 				if err == nil {
-					err = evaluateHealthCheckResult(line)
+					healthCheckErr = evaluateHealthCheckResult(lastLine)
 				}
-				outputCh <- line
-				errCh <- err
-				return
 			}
 		}
 	}()
 
-	err = tw.WaitForCompletion()
+	err = tw.Finish()
+	writer.Close()
 
 	if err != nil {
 		return outputCh, err
