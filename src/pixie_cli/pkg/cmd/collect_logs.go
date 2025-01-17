@@ -32,6 +32,7 @@ import (
 
 func init() {
 	CollectLogsCmd.Flags().StringP("namespace", "n", "", "The namespace vizier is deployed in")
+	CollectLogsCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 }
 
 // CollectLogsCmd is the "deploy" command.
@@ -40,6 +41,7 @@ var CollectLogsCmd = &cobra.Command{
 	Short: "Collect Pixie logs on the cluster",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
+		viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		c := vizier.NewLogCollector(mustCreateBundleReader(), viper.GetString("cloud_addr"))
