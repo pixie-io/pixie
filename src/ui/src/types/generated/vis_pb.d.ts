@@ -2728,6 +2728,9 @@ export namespace px {
 
             /** StackTraceFlameGraph percentageLabel */
             percentageLabel?: (string|null);
+
+            /** StackTraceFlameGraph differenceColumn */
+            differenceColumn?: (string|null);
         }
 
         /** Represents a StackTraceFlameGraph. */
@@ -2765,6 +2768,9 @@ export namespace px {
 
             /** StackTraceFlameGraph percentageLabel. */
             public percentageLabel: string;
+
+            /** StackTraceFlameGraph differenceColumn. */
+            public differenceColumn: string;
 
             /**
              * Creates a new StackTraceFlameGraph instance using the specified properties.
