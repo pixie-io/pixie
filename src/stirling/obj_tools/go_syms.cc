@@ -148,13 +148,20 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
     ElfReader* elf_reader) {
   absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>> interface_types;
 
-  // All itable objects in the symbols are prefixed with this string.
-  const std::string_view kITablePrefix("go.itab.");
+  // Go 1.20 binaries and later use go:itab.<type_name>,<interface_name> as the symbol name.
+  // Go 1.19 binaries and earlier use go.itab.<type_name>,<interface_name> as the symbol name.
+  // Optimistically try the newer format first.
+  std::string_view kITablePrefix("go:itab.");
 
   PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> itable_symbols,
                       elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
                                                 /*symbol_type*/ ELFIO::STT_OBJECT));
-
+  if (itable_symbols.empty()) {
+    kITablePrefix = "go.itab.";
+    PX_ASSIGN_OR_RETURN(itable_symbols,
+                        elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
+                                                  /*symbol_type*/ ELFIO::STT_OBJECT));
+  }
   for (const auto& sym : itable_symbols) {
     // Expected format is:
     //  go.itab.<type_name>,<interface_name>
