@@ -2987,7 +2987,8 @@ class UPIDtoPodNameLocalAddrFallback : public ScalarUDF {
   /**
    * @brief Gets the pod name from UPID or from local addr if first lookup fails
    */
-  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value, StringValue pod_ip, Time64NSValue time) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value, StringValue pod_ip,
+                   Time64NSValue time) {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDtoPod(md, upid_value);
     if (pod_info == nullptr) {
@@ -3003,7 +3004,8 @@ class UPIDtoPodNameLocalAddrFallback : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::ExplicitRule::Create<UPIDtoPodNameLocalAddrFallback>(types::ST_POD_NAME, {types::ST_NONE, types::ST_NONE, types::ST_NONE})};
+    return {udf::ExplicitRule::Create<UPIDtoPodNameLocalAddrFallback>(
+        types::ST_POD_NAME, {types::ST_NONE, types::ST_NONE, types::ST_NONE})};
   }
 };
 

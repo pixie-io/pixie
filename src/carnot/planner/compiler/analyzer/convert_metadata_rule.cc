@@ -108,16 +108,15 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   // (upid_to_pod_name) fails.
   if (backup_conversion_available) {
     func_name = "_upid_to_podname_local_addr_fallback";
-    PX_ASSIGN_OR_RETURN(
-        ColumnIR * local_addr_column,
-        graph->CreateNode<ColumnIR>(ir_node->ast(), "local_addr", parent_op_idx));
-    PX_ASSIGN_OR_RETURN(
-        ColumnIR * time_column,
-        graph->CreateNode<ColumnIR>(ir_node->ast(), "time_", parent_op_idx));
+    PX_ASSIGN_OR_RETURN(ColumnIR * local_addr_column,
+                        graph->CreateNode<ColumnIR>(ir_node->ast(), "local_addr", parent_op_idx));
+    PX_ASSIGN_OR_RETURN(ColumnIR * time_column,
+                        graph->CreateNode<ColumnIR>(ir_node->ast(), "time_", parent_op_idx));
     PX_ASSIGN_OR_RETURN(
         conversion_func,
-        graph->CreateNode<FuncIR>(ir_node->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
-                                  std::vector<ExpressionIR*>{key_column, local_addr_column, time_column}));
+        graph->CreateNode<FuncIR>(
+            ir_node->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
+            std::vector<ExpressionIR*>{key_column, local_addr_column, time_column}));
   } else {
     PX_ASSIGN_OR_RETURN(
         conversion_func,
