@@ -11,7 +11,7 @@ spec:
         - name: artifact-tracker-server # yamllint disable rule:indentation
           env:
             - name: PL_VIZIER_VERSION
-              value: "0.14.14"
+              value: "0.14.15"
             - name: PL_CLI_VERSION
               value: "0.8.8"
             - name: PL_OPERATOR_VERSION
