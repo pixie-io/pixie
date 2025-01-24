@@ -2,6 +2,14 @@ apiVersion: v1
 entries:
   vizier-chart:
   - apiVersion: v2
+    created: "2025-01-24T23:51:05.887359301Z"
+    digest: 612106e0521277a2cc9c859ce18fd4b5d69ecec3ca4149ed84c4c0948e8b6a8a
+    name: vizier-chart
+    type: application
+    urls:
+    - https://github.com/pixie-io/pixie/releases/download/release/vizier/v0.14.15/vizier-chart-0.14.15.tgz
+    version: 0.14.15
+  - apiVersion: v2
     created: "2025-01-02T18:21:50.640294026Z"
     digest: 5251467f299f3957096054c7058d4c4b2e0016d28e42b6072fd590dc1543ae99
     name: vizier-chart
@@ -137,4 +145,4 @@ entries:
     urls:
     - https://github.com/releases/download/release/vizier/v0.13.8-pre-vzHelm2-3.4/vizier-chart-0.13.8-pre-vzHelm2-3.4.tgz
     version: 0.13.8-pre-vzHelm2-3.4
-generated: "2025-01-02T18:21:50.63888309Z"
+generated: "2025-01-24T23:51:05.885800157Z"
