@@ -70,6 +70,29 @@ StatusOr<std::string> ConvertMetadataRule::FindKeyColumn(std::shared_ptr<TableTy
       absl::StrJoin(parent_type->ColumnNames(), ","));
 }
 
+StatusOr<FuncIR*> AddUPIDToPodNameFallback(std::shared_ptr<TableType> parent_type, IRNode* ir_node,
+                                           IR* graph) {
+  if (!parent_type->HasColumn("local_addr") || !parent_type->HasColumn("time_")) {
+    return error::NotFound("Parent type does not have required columns for fallback conversion.");
+  }
+  PX_ASSIGN_OR_RETURN(auto upid_column, graph->CreateNode<ColumnIR>(ir_node->ast(), "upid", 0));
+  PX_ASSIGN_OR_RETURN(auto local_addr_column,
+                      graph->CreateNode<ColumnIR>(ir_node->ast(), "local_addr", 0));
+  PX_ASSIGN_OR_RETURN(auto time_column, graph->CreateNode<ColumnIR>(ir_node->ast(), "time_", 0));
+  return graph->CreateNode<FuncIR>(
+      ir_node->ast(),
+      FuncIR::Op{FuncIR::Opcode::non_op, "", "_upid_to_podname_local_addr_fallback"},
+      std::vector<ExpressionIR*>{upid_column, local_addr_column, time_column});
+}
+
+StatusOr<FuncIR*> AddBackupConversions(std::shared_ptr<TableType> parent_type,
+                                       std::string func_name, IRNode* ir_node, IR* graph) {
+  if (absl::StrContains(func_name, "upid_to_pod_name")) {
+    return AddUPIDToPodNameFallback(parent_type, ir_node, graph);
+  }
+  return error::NotFound("No backup conversion function available for $0", func_name);
+}
+
 StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   if (!Match(ir_node, Metadata())) {
     return false;
@@ -85,17 +108,30 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   PX_ASSIGN_OR_RETURN(auto parent, metadata->ReferencedOperator());
   PX_ASSIGN_OR_RETURN(auto containing_ops, metadata->ContainingOperators());
 
+  auto resolved_table_type = parent->resolved_table_type();
   PX_ASSIGN_OR_RETURN(std::string key_column_name,
-                      FindKeyColumn(parent->resolved_table_type(), md_property, ir_node));
-
-  PX_ASSIGN_OR_RETURN(ColumnIR * key_column,
-                      graph->CreateNode<ColumnIR>(ir_node->ast(), key_column_name, parent_op_idx));
+                      FindKeyColumn(resolved_table_type, md_property, ir_node));
 
   PX_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column_name));
-  PX_ASSIGN_OR_RETURN(
-      FuncIR * conversion_func,
-      graph->CreateNode<FuncIR>(ir_node->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
-                                std::vector<ExpressionIR*>{key_column}));
+
+  // TODO(ddelnano): Until the short lived process issue (gh#1638) is resolved, use a
+  // conversion function that uses local_addr for pod lookups when the upid based default
+  // (upid_to_pod_name) fails.
+  auto backup_conversion_func =
+      AddBackupConversions(resolved_table_type, func_name, ir_node, graph);
+  FuncIR* conversion_func = nullptr;
+  if (backup_conversion_func.ok()) {
+    conversion_func = backup_conversion_func.ValueOrDie();
+  }
+
+  if (conversion_func == nullptr) {
+    PX_ASSIGN_OR_RETURN(ColumnIR * key_column, graph->CreateNode<ColumnIR>(
+                                                   ir_node->ast(), key_column_name, parent_op_idx));
+    PX_ASSIGN_OR_RETURN(
+        conversion_func,
+        graph->CreateNode<FuncIR>(ir_node->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
+                                  std::vector<ExpressionIR*>{key_column}));
+  }
   for (int64_t parent_id : graph->dag().ParentsOf(metadata->id())) {
     // For each container node of the metadata expression, update it to point to the
     // new conversion func instead.

@@ -103,6 +103,16 @@ relation_map {
       column_semantic_type: ST_UPID
     }
     columns {
+      column_name: "local_addr"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "local_port"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
       column_name: "remote_addr"
       column_type: STRING
       column_semantic_type: ST_NONE
@@ -169,6 +179,46 @@ relation_map {
     }
     columns {
       column_name: "resp_latency_ns"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "cql_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "major_version"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
       column_type: INT64
       column_semantic_type: ST_DURATION_NS
     }
@@ -968,6 +1018,53 @@ schema_info {
   }
 }
 schema_info {
+  name: "cql_events"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
+  }
+  agent_list {
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
+  }
+  agent_list {
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000003
+  }
+}
+schema_info {
   name: "http_events"
   relation {
     columns {
@@ -978,6 +1075,11 @@ schema_info {
     columns {
       column_name: "upid"
       column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "local_addr"
+      column_type: STRING
       column_semantic_type: ST_NONE
     }
   }
