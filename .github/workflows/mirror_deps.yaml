@@ -11,16 +11,16 @@ jobs:
       packages: write
     runs-on: ubuntu-latest-16-cores
     steps:
-    - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc  # v2
+    - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v2
       with:
         username: ${{ secrets.DOCKERHUB_USER }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-    - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc  # v2
+    - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc  # v2
+    - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v2
       with:
         registry: quay.io
         username: ${{ secrets.QUAY_IO_USER }}
