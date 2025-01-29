@@ -195,7 +195,7 @@ struct Frame : public FrameBase {
 
   HandshakeType handshake_type;
 
-  uint24_t handshake_length;
+  uint24_t handshake_length = uint24_t(0);
 
   LegacyVersion handshake_version;
 
