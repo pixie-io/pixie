@@ -163,7 +163,7 @@ jobs:
         ./scripts/bazel_ignore_codes.sh test ${{ matrix.args }} --target_pattern_file=target_files/${{ matrix.tests }} \
           2> >(tee bazel_stderr)
     - name: Parse junit reports
-      uses: dorny/test-reporter@afe6793191b75b608954023a46831a3fe10048d4  # v1.7.0
+      uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5  # v1.9.1
       if: always()
       with:
         name: testlogs-${{ matrix.name }} tests
