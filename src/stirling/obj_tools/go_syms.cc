@@ -144,24 +144,29 @@ StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
   return ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr);
 }
 
+// Prefixes used to search for itable symbols in the binary. Follows the format:
+// <prefix>.<type_name>,<interface_name>. i.e. go.itab.<type_name>,<interface_name>
+constexpr std::array<std::string_view, 2> kITablePrefixes = {
+    "go:itab.",  // Prefix used by Go 1.20 binaries and later.
+    "go.itab.",  // Prefix used by Go 1.19 binaries and earlier.
+};
+
 StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
     ElfReader* elf_reader) {
   absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>> interface_types;
 
-  // Go 1.20 binaries and later use go:itab.<type_name>,<interface_name> as the symbol name.
-  // Go 1.19 binaries and earlier use go.itab.<type_name>,<interface_name> as the symbol name.
-  // Optimistically try the newer format first.
-  std::string_view kITablePrefix("go:itab.");
-
-  PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> itable_symbols,
-                      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
-                                                /*symbol_type*/ ELFIO::STT_OBJECT));
-  if (itable_symbols.empty()) {
-    kITablePrefix = "go.itab.";
+  std::vector<ElfReader::SymbolInfo> itable_symbols;
+  std::string_view iTablePrefix;
+  for (const auto& prefix : kITablePrefixes) {
     PX_ASSIGN_OR_RETURN(itable_symbols,
-                        elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
+                        elf_reader->SearchSymbols(prefix, SymbolMatchType::kPrefix,
                                                   /*symbol_type*/ ELFIO::STT_OBJECT));
+    if (!itable_symbols.empty()) {
+      iTablePrefix = prefix;
+      break;
+    }
   }
+
   for (const auto& sym : itable_symbols) {
     // Expected format is:
     //  go.itab.<type_name>,<interface_name>
@@ -173,7 +178,7 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
 
     std::string_view interface_name = sym_split[1];
     std::string_view type = sym_split[0];
-    type.remove_prefix(kITablePrefix.size());
+    type.remove_prefix(iTablePrefix.size());
 
     IntfImplTypeInfo info;
 
