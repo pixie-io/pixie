@@ -203,6 +203,12 @@ using px::utils::ToJSONString;
 // Most HTTP servers support 8K headers, so we truncate after that.
 // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
 constexpr size_t kMaxHTTPHeadersBytes = 8192;
+// TLS records have a maximum size of 16KiB. While there isn't a size limit
+// for the extensions, we limit it to 1 KiB to avoid excessive memory usage.
+// A typical ClientHello from curl is around 500 bytes. This assumes that
+// all extensions are captured, but we won't support capturing all extensions and
+// will avoid large extensions like the padding extension,
+constexpr size_t kMaxTLSExtensionsBytes = 1024;
 
 // Protobuf printer will limit strings to this length.
 constexpr size_t kMaxPBStringLen = 64;
@@ -1717,7 +1723,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req_type")>(static_cast<uint64_t>(req_message.content_type));
   r.Append<r.ColIndex("version")>(static_cast<uint64_t>(req_message.legacy_version));
-  r.Append<r.ColIndex("extensions")>(ToJSONString(req_message.extensions), kMaxHTTPHeadersBytes);
+  r.Append<r.ColIndex("extensions")>(ToJSONString(req_message.extensions), kMaxTLSExtensionsBytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
