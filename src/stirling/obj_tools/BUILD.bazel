@@ -137,6 +137,7 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/go:test_binaries",
         "//src/stirling/obj_tools/testdata/go:test_go_1_17_binary",
         "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_21_binary",
     ],
     deps = [
         ":cc_library",
