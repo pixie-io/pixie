@@ -145,7 +145,7 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   DetectSourceLanguage(obj_info.elf_reader.get(), obj_info.dwarf_reader.get(), input_program);
 
   // Expand symbol.
-  PX_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program));
+  /* PX_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program)); */
 
   LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
 

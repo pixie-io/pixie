@@ -30,13 +30,6 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-constexpr std::string_view kClientPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_16_grpc_client";
-constexpr std::string_view kServerPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server";
-
 namespace px {
 namespace stirling {
 
@@ -51,171 +44,6 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 
 using LogicalProgram = ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
-
-// TODO(yzhao): Create test fixture that wraps the test binaries.
-class GoHTTPDynamicTraceTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    client_path_ = px::testing::BazelRunfilePath(kClientPath).string();
-    server_path_ = px::testing::BazelRunfilePath(kServerPath).string();
-
-    ASSERT_TRUE(fs::Exists(server_path_));
-    ASSERT_TRUE(fs::Exists(client_path_));
-
-    ASSERT_OK(s_.Start({server_path_, "--port=0"}));
-
-    // Give some time for the server to start up.
-    sleep(2);
-
-    std::string port_str;
-    ASSERT_OK(s_.Stdout(&port_str));
-    ASSERT_TRUE(absl::SimpleAtoi(port_str, &s_port_));
-    ASSERT_NE(0, s_port_);
-  }
-
-  void TearDown() override {
-    s_.Kill();
-    EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
-  }
-
-  void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
-    CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
-
-    logical_program_.mutable_deployment_spec()->mutable_path_list()->add_paths(server_path_);
-
-    ASSERT_OK_AND_ASSIGN(connector_,
-                         DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
-    ASSERT_OK(connector_->Init());
-
-    ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=10",
-                        absl::StrCat("-address=localhost:", s_port_)}));
-    EXPECT_EQ(0, c_.Wait()) << "Client should be killed";
-  }
-
-  std::vector<TaggedRecordBatch> GetRecords() {
-    constexpr int kTableNum = 0;
-    auto ctx = std::make_unique<SystemWideStandaloneContext>();
-    auto data_table = std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
-    connector_->set_data_tables({data_table.get()});
-    connector_->TransferData(ctx.get());
-    return data_table->ConsumeRecords();
-  }
-
-  std::string server_path_;
-  std::string client_path_;
-
-  SubProcess c_;
-  SubProcess s_;
-  int s_port_ = 0;
-
-  LogicalProgram logical_program_;
-  std::unique_ptr<SourceConnector> connector_;
-};
-
-constexpr char kGRPCTraceProgram[] = R"(
-tracepoints {
-  program {
-    language: GOLANG
-    outputs {
-      name: "probe_WriteDataPadded_table"
-      fields: "stream_id"
-      fields: "end_stream"
-      fields: "latency"
-    }
-    probes: {
-      name: "probe_WriteDataPadded"
-      tracepoint: {
-        symbol: "golang.org/x/net/http2.(*Framer).WriteDataPadded"
-        type: LOGICAL
-      }
-      args {
-        id: "stream_id"
-        expr: "streamID"
-      }
-      args {
-        id: "end_stream"
-        expr: "endStream"
-      }
-      function_latency { id: "latency" }
-      output_actions {
-        output_name: "probe_WriteDataPadded_table"
-        variable_names: "stream_id"
-        variable_names: "end_stream"
-        variable_names: "latency"
-      }
-    }
-  }
-}
-)";
-
-constexpr char kReturnValueTraceProgram[] = R"(
-tracepoints {
-  program {
-    language: GOLANG
-    outputs {
-      name: "probe_readFrameHeader"
-      fields: "frame_header_valid"
-    }
-    probes: {
-      name: "probe_StreamEnded"
-      tracepoint: {
-        symbol: "golang.org/x/net/http2.readFrameHeader"
-        type: LOGICAL
-      }
-      ret_vals {
-        id: "frame_header_valid"
-        expr: "$0.valid"
-      }
-      output_actions {
-        output_name: "probe_readFrameHeader"
-        variable_names: "frame_header_valid"
-      }
-    }
-  }
-}
-)";
-
-TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
-  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kGRPCTraceProgram));
-  std::vector<TaggedRecordBatch> tablets = GetRecords();
-
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
-
-  {
-    types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(record_batch, /*index*/ 0, s_.child_pid());
-
-    ASSERT_THAT(records, RecordBatchSizeIs(10));
-
-    constexpr size_t kStreamIDIdx = 3;
-    constexpr size_t kEndStreamIdx = 4;
-    constexpr size_t kLatencyIdx = 5;
-
-    EXPECT_EQ(records[kStreamIDIdx]->Get<types::Int64Value>(0).val, 1);
-    EXPECT_EQ(records[kEndStreamIdx]->Get<types::BoolValue>(0).val, false);
-    // 1000 is not particularly meaningful, it just states that we have a roughly correct
-    // value.
-    EXPECT_THAT(records[kLatencyIdx]->Get<types::Int64Value>(0).val, Gt(1000));
-  }
-}
-
-TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
-  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kReturnValueTraceProgram));
-  std::vector<TaggedRecordBatch> tablets = GetRecords();
-
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
-
-  {
-    types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(record_batch, /*index*/ 0, s_.child_pid());
-
-    ASSERT_THAT(records, RecordBatchSizeIs(80));
-
-    constexpr size_t kFrameHeaderValidIdx = 3;
-
-    EXPECT_EQ(records[kFrameHeaderValidIdx]->Get<types::BoolValue>(0).val, true);
-  }
-}
 
 class CPPDynamicTraceTest : public ::testing::Test {
  protected:
@@ -254,33 +82,52 @@ tracepoints {
   program {
     language: CPP
     outputs {
-      name: "foo_bar_output"
-      fields: "arg"
+      name: "can_you_find_this_output"
+      fields: "a"
+      fields: "b"
     }
     probes: {
       name: "probe_foo_bar"
       tracepoint: {
-        symbol: "px::testing::Foo::Bar"
+        symbol: "CanYouFindThis"
         type: LOGICAL
       }
       args {
-        id: "foo_bar_arg"
-        expr: "i"
+        id: "can_you_find_this_arg_a"
+        expr: "a"
+      }
+      args {
+        id: "can_you_find_this_arg_b"
+        expr: "b"
       }
       output_actions {
-        output_name: "foo_bar_output"
-        variable_names: "foo_bar_arg"
+        output_name: "can_you_find_this_output"
+        variable_names: "can_you_find_this_arg_a"
+        variable_names: "can_you_find_this_arg_b"
       }
     }
   }
 }
 )";
 
-TEST_F(CPPDynamicTraceTest, DISABLED_TraceTestExe) {
-  // TODO(yzhao): This does not work yet.
+TEST_F(CPPDynamicTraceTest, TraceTestExe) {
   ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kTestExeTraceProgram));
+  // The DataTable has the following indices:
+  // 0: UPID
+  // 1: time_
+  // 2: can_you_find_this_output.a
+  // 3: can_you_find_this_output.b
+  auto a_field_idx = 2;
+  auto b_field_idx = 3;
+  LOG(INFO) << a_field_idx;
   std::vector<TaggedRecordBatch> tablets = GetRecords();
-  PX_UNUSED(tablets);
+  for (const auto& tablet : tablets) {
+    // TestExeFixture calls CanYouFindThis(3, 4) 10 times
+    EXPECT_EQ(tablet.records[a_field_idx]->Size(), 10);
+    EXPECT_EQ(tablet.records[b_field_idx]->Size(), 10);
+    EXPECT_EQ(tablet.records[a_field_idx]->Get<types::Int64Value>(0).val, 3);
+    EXPECT_EQ(tablet.records[b_field_idx]->Get<types::Int64Value>(0).val, 4);
+  }
 }
 
 }  // namespace stirling

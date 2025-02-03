@@ -21,7 +21,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/probe_transformer.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/cc/test_exe";
 
 namespace px {
 namespace stirling {
@@ -38,7 +38,7 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     outputs {
       name: "probe0_table"
       fields: "arg0"
@@ -48,13 +48,12 @@ tracepoints {
       fields: "arg4"
       fields: "arg5"
       fields: "retval0"
-      fields: "retval1"
       fields: "latency"
     }
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: LOGICAL
       }
       args {
@@ -85,10 +84,6 @@ tracepoints {
         id: "retval0"
         expr: "$$0"
       }
-      ret_vals {
-        id: "retval1"
-        expr: "$$1"
-      }
       function_latency { id: "fn_latency" }
       output_actions {
         output_name: "probe0_table"
@@ -99,7 +94,6 @@ tracepoints {
         variable_names: "arg4"
         variable_names: "arg5"
         variable_names: "retval0"
-        variable_names: "retval1"
         variable_names: "fn_latency"
       }
     }
@@ -115,10 +109,7 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
-    maps {
-      name: "pid_goid_map"
-    }
+    language: CPP
     maps {
       name: "probe0_argstash"
     }
@@ -131,43 +122,12 @@ tracepoints {
       fields: "arg4"
       fields: "arg5"
       fields: "retval0"
-      fields: "retval1"
       fields: "latency"
-    }
-    probes {
-      name: "probe_entry_runtime_casgstatus"
-      tracepoint {
-        symbol: "runtime.casgstatus"
-        type: ENTRY
-      }
-      consts {
-        name: "kGRunningState"
-        type: INT64
-        constant: "2"
-      }
-      args {
-        id: "goid"
-        expr: "gp.goid"
-      }
-      args {
-        id: "newval"
-        expr: "newval"
-      }
-      map_stash_actions {
-        map_name: "pid_goid_map"
-        key: TGID_PID
-        value_variable_names: "goid"
-        cond {
-          op: EQUAL
-          vars: "newval"
-          vars: "kGRunningState"
-        }
-      }
     }
     probes {
       name: "probe0_entry"
       tracepoint {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: ENTRY
       }
       args {
@@ -196,7 +156,7 @@ tracepoints {
       }
       map_stash_actions {
         map_name: "probe0_argstash"
-        key: GOID
+        key: TGID_PID
         value_variable_names: "arg0"
         value_variable_names: "arg1"
         value_variable_names: "arg2"
@@ -209,13 +169,13 @@ tracepoints {
     probes {
       name: "probe0_return"
       tracepoint {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: RETURN
       }
       function_latency { id: "fn_latency" }
       map_vals {
         map_name: "probe0_argstash"
-        key: GOID
+        key: TGID_PID
         value_ids: "arg0"
         value_ids: "arg1"
         value_ids: "arg2"
@@ -228,10 +188,6 @@ tracepoints {
         id: "retval0"
         expr: "$$0"
       }
-      ret_vals {
-        id: "retval1"
-        expr: "$$1"
-      }
       output_actions {
         output_name: "probe0_table"
         variable_names: "arg0"
@@ -241,12 +197,11 @@ tracepoints {
         variable_names: "arg4"
         variable_names: "arg5"
         variable_names: "retval0"
-        variable_names: "retval1"
         variable_names: "fn_latency"
       }
       map_delete_actions {
         map_name: "probe0_argstash"
-        key: GOID
+        key: TGID_PID
       }
     }
   }

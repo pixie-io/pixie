@@ -45,7 +45,7 @@ pl_cc_test(
     name = "code_gen_test",
     srcs = ["code_gen_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/cc:test_exe",
     ],
     deps = [
         ":cc_library",
@@ -56,7 +56,7 @@ pl_cc_test(
     name = "dwarvifier_test",
     srcs = ["dwarvifier_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/cc:test_exe",
     ],
     deps = [
         ":cc_library",
@@ -67,7 +67,7 @@ pl_cc_test(
     name = "probe_transformer_test",
     srcs = ["probe_transformer_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/cc:test_exe",
     ],
     deps = [
         ":cc_library",
@@ -79,7 +79,8 @@ pl_cc_test(
     name = "autogen_test",
     srcs = ["autogen_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/cc:test_exe",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_21_binary",
     ],
     deps = [
         ":cc_library",
@@ -91,9 +92,9 @@ pl_cc_test(
     name = "dynamic_tracer_test",
     srcs = ["dynamic_tracer_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_16_grpc_client",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs",
+        "//src/stirling/obj_tools/testdata/cc:test_exe",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_21_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_21_grpc_server_with_certs",
     ],
     tags = [
         "exclusive",

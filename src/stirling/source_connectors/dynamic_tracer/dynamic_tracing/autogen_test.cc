@@ -22,7 +22,9 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/autogen.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
+constexpr std::string_view kGoBinaryOverloadedSymbol =
+    "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
 
 namespace px {
 namespace stirling {
@@ -46,7 +48,7 @@ tracepoints {
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: LOGICAL
       }
     }
@@ -62,11 +64,11 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: LOGICAL
       }
     }
@@ -82,11 +84,11 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: LOGICAL
       }
     }
@@ -102,68 +104,56 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     outputs {
-      name: "main__d__MixedArgTypes_table"
-      fields: "b1"
-      fields: "b2"
-      fields: "b3"
-      fields: "i1"
-      fields: "i2"
-      fields: "i3"
-      fields: "__tilde__r6"
-      fields: "__tilde__r7"
+      name: "ABCSumMixed_table"
+      fields: "w"
+      fields: "x"
+      fields: "y"
+      fields: "z_a"
+      fields: "z_b"
+      fields: "z_c"
       fields: "latency"
     }
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: LOGICAL
       }
       args {
         id: "arg0"
-        expr: "b1"
+        expr: "w"
       }
       args {
         id: "arg1"
-        expr: "b2"
+        expr: "x"
       }
       args {
         id: "arg2"
-        expr: "b3"
+        expr: "y"
       }
       args {
         id: "arg3"
-        expr: "i1"
+        expr: "z_a"
       }
       args {
         id: "arg4"
-        expr: "i2"
+        expr: "z_b"
       }
       args {
         id: "arg5"
-        expr: "i3"
-      }
-      ret_vals {
-        id: "retval6"
-        expr: "~r6"
-      }
-      ret_vals {
-        id: "retval7"
-        expr: "~r7"
+        expr: "z_c"
       }
       function_latency { id: "fn_latency" }
       output_actions {
-        output_name: "main__d__MixedArgTypes_table"
+        output_name: "ABCSumMixed_table"
         variable_names: "arg0"
         variable_names: "arg1"
         variable_names: "arg2"
         variable_names: "arg3"
         variable_names: "arg4"
         variable_names: "arg5"
-        variable_names: "retval6"
-        variable_names: "retval7"
         variable_names: "fn_latency"
       }
     }
@@ -289,7 +279,9 @@ tracepoints {
   ir::logical::TracepointDeployment program;
   ASSERT_NO_FATAL_FAILURE(PrepareInput(kInputProgramWithAmbiguousSymbol, &program));
 
-  Status result = ResolveProbeSymbol(elf_reader_.get(), &program);
+  ASSERT_OK_AND_ASSIGN(auto elf_reader,
+                       ElfReader::Create(px::testing::BazelRunfilePath(kGoBinaryOverloadedSymbol)));
+  Status result = ResolveProbeSymbol(elf_reader.get(), &program);
   ASSERT_NOT_OK(result);
   ASSERT_THAT(result.ToString(),
               HasSubstr("Symbol is ambiguous. Found at least 2 possible matches"));

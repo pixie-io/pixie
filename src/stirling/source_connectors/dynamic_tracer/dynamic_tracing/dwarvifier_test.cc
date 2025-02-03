@@ -22,7 +22,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/cc/test_exe/test_exe";
 
 namespace px {
 namespace stirling {
@@ -39,35 +39,35 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     probes {
       tracepoint: {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: ENTRY
       }
       args {
         id: "arg0"
-        expr: "i1"
+        expr: "x"
       }
       args {
         id: "arg1"
-        expr: "i2"
+        expr: "y"
       }
       args {
         id: "arg2"
-        expr: "i3"
+        expr: "z_a"
       }
       args {
         id: "arg3"
-        expr: "b1"
+        expr: "z_b"
       }
       args {
         id: "arg4"
-        expr: "b2.B0"
+        expr: "z_c"
       }
       args {
         id: "arg5"
-        expr: "b2.B3"
+        expr: "w"
       }
     }
   }
@@ -80,10 +80,10 @@ deployment_spec {
     paths: "$0"
   }
 }
-language: GOLANG
+language: CPP
 probes {
   tracepoint {
-    symbol: "main.MixedArgTypes"
+    symbol: "ABCSumMixed"
     type: ENTRY
   }
   vars {
@@ -123,28 +123,30 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
     }
   }
   vars {
     scalar_var {
       name: "arg0"
-      type: INT
+      type: STRUCT_BLOB
       memory {
-        base: "sp_"
+        base: "parm__"
         offset: 8
+        size: 12
       }
     }
   }
   vars {
     scalar_var {
       name: "arg1"
-      type: INT
+      type: STRUCT_BLOB
       memory {
         base: "sp_"
-        offset: 24
+        offset: 8
+        size: 24
       }
     }
   }
@@ -153,38 +155,39 @@ probes {
       name: "arg2"
       type: INT
       memory {
-        base: "sp_"
-        offset: 32
+        base: "parm__"
+        offset: 24
       }
     }
   }
   vars {
     scalar_var {
       name: "arg3"
-      type: BOOL
+      type: LONG
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 32
       }
     }
   }
   vars {
     scalar_var {
       name: "arg4"
-      type: BOOL
+      type: INT
       memory {
-        base: "sp_"
-        offset: 17
+        base: "parm__"
+        offset: 40
       }
     }
   }
   vars {
     scalar_var {
       name: "arg5"
-      type: BOOL
+      type: STRUCT_BLOB
       memory {
         base: "sp_"
-        offset: 20
+        size: 12
+        offset: 32
       }
     }
   }
@@ -199,19 +202,15 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     probes {
       tracepoint: {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: RETURN
       }
       ret_vals {
         id: "retval0"
-        expr: "$$0"
-      }
-      ret_vals {
-        id: "retval1"
-        expr: "$$1.B1"
+        expr: "$$0.a"
       }
     }
   }
@@ -224,10 +223,10 @@ deployment_spec {
     paths: "$0"
   }
 }
-language: GOLANG
+language: CPP
 probes {
   tracepoint {
-    symbol: "main.MixedArgTypes"
+    symbol: "ABCSumMixed"
     type: RETURN
   }
   vars {
@@ -267,237 +266,24 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval0"
-      type: INT
-      memory {
-        base: "sp_"
-        offset: 48
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval1"
-      type: BOOL
-      memory {
-        base: "sp_"
-        offset: 57
-      }
-    }
-  }
-}
-)";
-
-constexpr std::string_view kImplicitNamedRetvalsIn = R"(
-deployment_spec {
-  path_list {
-    paths: "$0"
-  }
-}
-tracepoints {
-  program {
-    language: GOLANG
-    probes {
-      tracepoint: {
-        symbol: "main.MixedArgTypes"
-        type: RETURN
-      }
-      ret_vals {
-        id: "retval0"
-        expr: "~r6"
-      }
-      ret_vals {
-        id: "retval1"
-        expr: "~r7.B1"
-      }
-    }
-  }
-}
-)";
-
-constexpr std::string_view kImplicitNamedRetvalsOut = R"(
-deployment_spec {
-  path_list {
-    paths: "$0"
-  }
-}
-language: GOLANG
-probes {
-  tracepoint {
-    symbol: "main.MixedArgTypes"
-    type: RETURN
-  }
-  vars {
-    scalar_var {
-      name: "sp_"
+      name: "rc_"
       type: VOID_POINTER
-      reg: SP
+      reg: RC
     }
   }
   vars {
     scalar_var {
-      name: "tgid_"
-      type: INT32
-      builtin: TGID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_pid_"
-      type: UINT64
-      builtin: TGID_PID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_start_time_"
-      type: UINT64
-      builtin: TGID_START_TIME
-    }
-  }
-  vars {
-    scalar_var {
-      name: "time_"
-      type: UINT64
-      builtin: KTIME
-    }
-  }
-  vars {
-    scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval0"
-      type: INT
-      memory {
-        base: "sp_"
-        offset: 48
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval1"
-      type: BOOL
-      memory {
-        base: "sp_"
-        offset: 57
-      }
-    }
-  }
-}
-)";
-
-constexpr std::string_view kNamedRetvalsIn = R"(
-deployment_spec {
-  path_list {
-    paths: "$0"
-  }
-}
-tracepoints {
-  program {
-    language: GOLANG
-    probes {
-      tracepoint: {
-        symbol: "main.NamedRetvals"
-        type: RETURN
-      }
-      ret_vals {
-        id: "retval0"
-        expr: "int_out"
-      }
-      ret_vals {
-        id: "retval1"
-        expr: "bw_out"
-      }
-    }
-  }
-}
-)";
-
-constexpr std::string_view kNamedRetvalsOut = R"(
-deployment_spec {
-  path_list {
-    paths: "$0"
-  }
-}
-language: GOLANG
-probes {
-  tracepoint {
-    symbol: "main.NamedRetvals"
-    type: RETURN
-  }
-  vars {
-    scalar_var {
-      name: "sp_"
+      name: "rc__"
       type: VOID_POINTER
-      reg: SP
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_"
-      type: INT32
-      builtin: TGID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_pid_"
-      type: UINT64
-      builtin: TGID_PID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_start_time_"
-      type: UINT64
-      builtin: TGID_START_TIME
-    }
-  }
-  vars {
-    scalar_var {
-      name: "time_"
-      type: UINT64
-      builtin: KTIME
-    }
-  }
-  vars {
-    scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
+      reg: RC_PTR
     }
   }
   vars {
     scalar_var {
       name: "retval0"
-      type: INT
+      type: LONG
       memory {
-        base: "sp_"
-        offset: 48
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval1"
-      type: STRUCT_BLOB
-      memory {
-        base: "sp_"
-        offset: 56
-        size: 4
+        base: "rc_"
       }
     }
   }
@@ -512,19 +298,15 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     probes {
       tracepoint: {
-        symbol: "main.PointerWrapperWrapperWrapperFunc"
+        symbol: "OuterStructFunc"
         type: ENTRY
       }
       args {
         id: "arg0"
-        expr: "p.Ptr.Val.Ptr"
-      }
-      args {
-        id: "arg1"
-        expr: "p.Ptr.Val.V0"
+        expr: "x.O1.M0.L1"
       }
     }
   }
@@ -537,10 +319,10 @@ deployment_spec {
     paths: "$0"
   }
 }
-language: GOLANG
+language: CPP
 probes {
   tracepoint {
-    symbol: "main.PointerWrapperWrapperWrapperFunc"
+    symbol: "OuterStructFunc"
     type: ENTRY
   }
   vars {
@@ -580,29 +362,9 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "arg0_D_Ptr_X_"
+      name: "parm__"
       type: VOID_POINTER
-      memory {
-        base: "sp_"
-        offset: 16
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
-      type: VOID_POINTER
-      memory {
-        base: "arg0_D_Ptr_X_"
-        offset: 40
-      }
+      reg: SYSV_AMD64_ARGS_PTR
     }
   }
   vars {
@@ -610,27 +372,8 @@ probes {
       name: "arg0"
       type: INT
       memory {
-        base: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "arg1_D_Ptr_X_"
-      type: VOID_POINTER
-      memory {
         base: "sp_"
-        offset: 16
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "arg1"
-      type: INT64
-      memory {
-        base: "arg1_D_Ptr_X_"
-        offset: 16
+        offset: 20
       }
     }
   }
@@ -645,7 +388,7 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     maps {
       name: "my_stash"
     }
@@ -662,20 +405,20 @@ tracepoints {
     }
     probes: {
       tracepoint: {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: ENTRY
       }
       args {
         id: "arg0"
-        expr: "i1"
+        expr: "x"
       }
       args {
         id: "arg1"
-        expr: "b1"
+        expr: "y"
       }
       args {
         id: "arg2"
-        expr: "b2.B0"
+        expr: "y.a"
       }
       map_stash_actions {
         map_name: "my_stash"
@@ -693,7 +436,7 @@ tracepoints {
     }
     probes: {
       tracepoint: {
-        symbol: "main.MixedArgTypes"
+        symbol: "ABCSumMixed"
         type: RETURN
       }
       map_vals {
@@ -726,11 +469,49 @@ structs {
   name: "my_stash_value_t"
   fields {
     name: "arg0"
-    type: INT
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 4
+        type: INT
+        path: "/a"
+      }
+      entries {
+        offset: 4
+        size: 4
+        type: INT
+        path: "/b"
+      }
+      entries {
+        offset: 8
+        size: 4
+        type: INT
+        path: "/c"
+      }
+    }
   }
   fields {
     name: "arg1"
-    type: BOOL
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/a"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: LONG
+        path: "/b"
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: LONG
+        path: "/c"
+      }
+    }
   }
 }
 structs {
@@ -748,20 +529,54 @@ structs {
     type: UINT64
   }
   fields {
-    name: "goid_"
-    type: INT64
-  }
-  fields {
     name: "arg0"
-    type: INT
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 4
+        type: INT
+        path: "/a"
+      }
+      entries {
+        offset: 4
+        size: 4
+        type: INT
+        path: "/b"
+      }
+      entries {
+        offset: 8
+        size: 4
+        type: INT
+        path: "/c"
+      }
+    }
   }
   fields {
     name: "arg1"
-    type: BOOL
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/a"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: LONG
+        path: "/b"
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: LONG
+        path: "/c"
+      }
+    }
   }
   fields {
     name: "arg2"
-    type: BOOL
+    type: LONG
   }
 }
 structs {
@@ -779,16 +594,50 @@ structs {
     type: UINT64
   }
   fields {
-    name: "goid_"
-    type: INT64
-  }
-  fields {
     name: "arg0"
-    type: INT
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 4
+        type: INT
+        path: "/a"
+      }
+      entries {
+        offset: 4
+        size: 4
+        type: INT
+        path: "/b"
+      }
+      entries {
+        offset: 8
+        size: 4
+        type: INT
+        path: "/c"
+      }
+    }
   }
   fields {
     name: "arg1"
-    type: BOOL
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/a"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: LONG
+        path: "/b"
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: LONG
+        path: "/c"
+      }
+    }
   }
 }
 maps {
@@ -815,7 +664,7 @@ outputs {
 }
 probes {
   tracepoint {
-    symbol: "main.MixedArgTypes"
+    symbol: "ABCSumMixed"
     type: ENTRY
   }
   vars {
@@ -855,38 +704,40 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
     }
   }
   vars {
     scalar_var {
       name: "arg0"
-      type: INT
+      type: STRUCT_BLOB
       memory {
-        base: "sp_"
+        base: "parm__"
         offset: 8
+        size: 12
       }
     }
   }
   vars {
     scalar_var {
       name: "arg1"
-      type: BOOL
+      type: STRUCT_BLOB
       memory {
         base: "sp_"
-        offset: 16
+        offset: 8
+        size: 24
       }
     }
   }
   vars {
     scalar_var {
       name: "arg2"
-      type: BOOL
+      type: LONG
       memory {
         base: "sp_"
-        offset: 17
+        offset: 8
       }
     }
   }
@@ -918,7 +769,6 @@ probes {
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
     variable_names: "time_"
-    variable_names: "goid_"
     variable_names: "arg0"
     variable_names: "arg1"
     variable_names: "arg2"
@@ -926,7 +776,7 @@ probes {
 }
 probes {
   tracepoint {
-    symbol: "main.MixedArgTypes"
+    symbol: "ABCSumMixed"
     type: RETURN
   }
   vars {
@@ -966,9 +816,16 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
+      name: "rc_"
+      type: VOID_POINTER
+      reg: RC
+    }
+  }
+  vars {
+    scalar_var {
+      name: "rc__"
+      type: VOID_POINTER
+      reg: RC_PTR
     }
   }
   vars {
@@ -982,7 +839,7 @@ probes {
   vars {
     scalar_var {
       name: "arg0"
-      type: INT
+      type: STRUCT_BLOB
       member {
         struct_base: "my_stash_ptr"
         is_struct_base_pointer: true
@@ -993,7 +850,7 @@ probes {
   vars {
     scalar_var {
       name: "arg1"
-      type: BOOL
+      type: STRUCT_BLOB
       member {
         struct_base: "my_stash_ptr"
         is_struct_base_pointer: true
@@ -1008,7 +865,6 @@ probes {
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
     variable_names: "time_"
-    variable_names: "goid_"
     variable_names: "arg0"
     variable_names: "arg1"
   }
@@ -1017,7 +873,7 @@ probes {
     key_variable_name: "goid_"
   }
 }
-language: GOLANG
+language: CPP
 arrays {
   name: "out_table_data_buffer_array"
   type {
@@ -1042,14 +898,14 @@ deployment_spec {
 }
 tracepoints {
   program {
-    language: GOLANG
+    language: CPP
     outputs {
       name: "out_table"
       fields: "out"
     }
     probes {
       tracepoint: {
-        symbol: "main.OuterStructFunc"
+        symbol: "OuterStructFunc"
         type: ENTRY
       }
       args {
@@ -1086,16 +942,12 @@ structs {
     type: UINT64
   }
   fields {
-    name: "goid_"
-    type: INT64
-  }
-  fields {
     name: "out"
     type: STRUCT_BLOB
     blob_decoders {
       entries {
         size: 8
-        type: INT64
+        type: LONG
         path: "/O0"
       }
       entries {
@@ -1107,7 +959,7 @@ structs {
       entries {
         offset: 12
         size: 4
-        type: INT32
+        type: INT
         path: "/O1/M0/L1"
       }
       entries {
@@ -1131,7 +983,7 @@ structs {
       entries {
         offset: 36
         size: 4
-        type: INT32
+        type: INT
         path: "/O1/M2/L1"
       }
       entries {
@@ -1150,7 +1002,7 @@ outputs {
 }
 probes {
   tracepoint {
-    symbol: "main.OuterStructFunc"
+    symbol: "OuterStructFunc"
     type: ENTRY
   }
   vars {
@@ -1190,9 +1042,9 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
     }
   }
   vars {
@@ -1213,276 +1065,10 @@ probes {
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
     variable_names: "time_"
-    variable_names: "goid_"
     variable_names: "arg0"
   }
 }
-language: GOLANG
-arrays {
-  name: "out_table_data_buffer_array"
-  type {
-    struct_type: "out_table_value_t"
-  }
-  capacity: 1
-}
-)";
-
-constexpr std::string_view kGolangErrorInterfaceProbeIn = R"(
-deployment_spec {
-  path_list {
-    paths: "$0"
-  }
-}
-tracepoints {
-  program {
-    language: GOLANG
-    outputs {
-      name: "out_table"
-      fields: "error"
-    }
-    probes: {
-      tracepoint: {
-        symbol: "main.ReturnError"
-        type: RETURN
-      }
-      args {
-        id: "retval"
-        expr: "~r0"
-      }
-      output_actions {
-        output_name: "out_table"
-        variable_names: "retval"
-      }
-    }
-  }
-}
-)";
-
-constexpr std::string_view kGolangErrorInterfaceProbeOut = R"(
-deployment_spec {
-  path_list {
-    paths: "$0"
-  }
-}
-structs {
-  name: "out_table_value_t"
-  fields {
-    name: "tgid_"
-    type: INT32
-  }
-  fields {
-    name: "tgid_start_time_"
-    type: UINT64
-  }
-  fields {
-    name: "time_"
-    type: UINT64
-  }
-  fields {
-    name: "goid_"
-    type: INT64
-  }
-  fields {
-    name: "error"
-    type: STRUCT_BLOB
-    blob_decoders {
-      entries {
-        size: 8
-        type: VOID_POINTER
-        path: "/tab"
-      }
-      entries {
-        offset: 8
-        size: 8
-        type: VOID_POINTER
-        path: "/data"
-      }
-    }
-    blob_decoders {
-      entries {
-        size: 8
-        type: INT
-        path: "/X"
-      }
-      entries {
-        offset: 8
-        size: 8
-        type: INT
-        path: "/Y"
-      }
-    }
-    blob_decoders {
-      entries {
-        size: 8
-        type: VOID_POINTER
-        path: "/str"
-      }
-      entries {
-        offset: 8
-        size: 8
-        type: INT
-        path: "/len"
-      }
-    }
-  }
-}
-outputs {
-  name: "out_table"
-  fields: "error"
-  struct_type: "out_table_value_t"
-}
-probes {
-  tracepoint {
-    symbol: "main.ReturnError"
-    type: RETURN
-  }
-  vars {
-    scalar_var {
-      name: "sp_"
-      type: VOID_POINTER
-      reg: SP
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_"
-      type: INT32
-      builtin: TGID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_pid_"
-      type: UINT64
-      builtin: TGID_PID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "tgid_start_time_"
-      type: UINT64
-      builtin: TGID_START_TIME
-    }
-  }
-  vars {
-    scalar_var {
-      name: "time_"
-      type: UINT64
-      builtin: KTIME
-    }
-  }
-  vars {
-    scalar_var {
-      name: "goid_"
-      type: INT64
-      builtin: GOID
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval_intf_tab"
-      type: UINT64
-      memory {
-        base: "sp_"
-        offset: 8
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval_intf_data"
-      type: VOID_POINTER
-      memory {
-        base: "sp_"
-        offset: 16
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "main__IntStruct_sym_addr1"
-      type: UINT64
-      constant: "5104328"
-    }
-  }
-  vars {
-    scalar_var {
-      name: "runtime__errorString_sym_addr2"
-      type: UINT64
-      constant: "5104360"
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval"
-      type: STRUCT_BLOB
-      memory {
-        op: DEFINE_ONLY
-      }
-    }
-  }
-  vars {
-    scalar_var {
-      name: "retval"
-      type: STRUCT_BLOB
-      memory {
-        base: "sp_"
-        offset: 8
-        size: 16
-        op: ASSIGN_ONLY
-      }
-    }
-  }
-  output_actions {
-    perf_buffer_name: "out_table"
-    data_buffer_array_name: "out_table_data_buffer_array"
-    output_struct_name: "out_table_value_t"
-    variable_names: "tgid_"
-    variable_names: "tgid_start_time_"
-    variable_names: "time_"
-    variable_names: "goid_"
-    variable_names: "retval"
-  }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "retval_intf_tab"
-      vars: "main__IntStruct_sym_addr1"
-    }
-    vars {
-      scalar_var {
-        name: "retval"
-        type: STRUCT_BLOB
-        memory {
-          base: "retval_intf_data"
-          size: 16
-          decoder_idx: 1
-          op: ASSIGN_ONLY
-        }
-      }
-    }
-  }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "retval_intf_tab"
-      vars: "runtime__errorString_sym_addr2"
-    }
-    vars {
-      scalar_var {
-        name: "retval"
-        type: STRUCT_BLOB
-        memory {
-          base: "retval_intf_data"
-          size: 16
-          decoder_idx: 2
-          op: ASSIGN_ONLY
-        }
-      }
-    }
-  }
-}
-language: GOLANG
+language: CPP
 arrays {
   name: "out_table_data_buffer_array"
   type {
@@ -1535,17 +1121,13 @@ TEST_P(DwarfInfoTest, Transform) {
 #endif
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    DwarfInfoTestSuite, DwarfInfoTest,
-    ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
-                      DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
-                      DwarfInfoTestParam{kImplicitNamedRetvalsIn, kImplicitNamedRetvalsOut},
-                      DwarfInfoTestParam{kNamedRetvalsIn, kNamedRetvalsOut},
-                      DwarfInfoTestParam{kNestedArgProbeIn, kNestedArgProbeOut},
-                      DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
-                      DwarfInfoTestParam{kStructProbeIn, kStructProbeOut},
-                      DwarfInfoTestParam{kGolangErrorInterfaceProbeIn,
-                                         kGolangErrorInterfaceProbeOut}));
+INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,
+                         ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
+                                           DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
+                                           DwarfInfoTestParam{kNestedArgProbeIn,
+                                                              kNestedArgProbeOut},
+                                           DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
+                                           DwarfInfoTestParam{kStructProbeIn, kStructProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
