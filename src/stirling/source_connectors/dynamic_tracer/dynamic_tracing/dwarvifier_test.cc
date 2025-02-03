@@ -23,6 +23,7 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
 constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
+constexpr std::string_view kCPPBinaryPath = "src/stirling/obj_tools/testdata/cc/test_exe/test_exe";
 
 namespace px {
 namespace stirling {
@@ -1277,6 +1278,194 @@ arrays {
 }
 )";
 
+constexpr std::string_view kCPPStructProbeIn = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "out_table"
+      fields: "out"
+    }
+    probes {
+      tracepoint: {
+        symbol: "OuterStructFunc"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "x"
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_names: "arg0"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kCPPStructProbeOut = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "tgid_"
+    type: INT32
+  }
+  fields {
+    name: "tgid_start_time_"
+    type: UINT64
+  }
+  fields {
+    name: "time_"
+    type: UINT64
+  }
+  fields {
+    name: "out"
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/O0"
+      }
+      entries {
+        offset: 8
+        size: 1
+        type: BOOL
+        path: "/O1/M0/L0"
+      }
+      entries {
+        offset: 12
+        size: 4
+        type: INT
+        path: "/O1/M0/L1"
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: VOID_POINTER
+        path: "/O1/M0/L2"
+      }
+      entries {
+        offset: 24
+        size: 1
+        type: BOOL
+        path: "/O1/M1"
+      }
+      entries {
+        offset: 32
+        size: 1
+        type: BOOL
+        path: "/O1/M2/L0"
+      }
+      entries {
+        offset: 36
+        size: 4
+        type: INT
+        path: "/O1/M2/L1"
+      }
+      entries {
+        offset: 40
+        size: 8
+        type: VOID_POINTER
+        path: "/O1/M2/L2"
+      }
+    }
+  }
+}
+outputs {
+  name: "out_table"
+  fields: "out"
+  struct_type: "out_table_value_t"
+}
+probes {
+  tracepoint {
+    symbol: "OuterStructFunc"
+    type: ENTRY
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 8
+        size: 48
+      }
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "arg0"
+  }
+}
+language: CPP
+arrays {
+  name: "out_table_data_buffer_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
+}
+)";
+
 constexpr std::string_view kGolangErrorInterfaceProbeIn = R"(
 deployment_spec {
   path_list {
@@ -1576,31 +1765,37 @@ arrays {
 )";
 
 struct DwarfInfoTestParam {
+  std::string_view binary_path;
   std::string_view input;
   std::string_view expected_output;
+  std::string_view error_message = "";
 };
 
-class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
- protected:
-  DwarfInfoTest() : binary_path_(px::testing::BazelRunfilePath(kBinaryPath)) {}
-
-  std::string binary_path_;
-};
+class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {};
 
 TEST_P(DwarfInfoTest, Transform) {
   using obj_tools::DwarfReader;
   using obj_tools::ElfReader;
 
   DwarfInfoTestParam p = GetParam();
+  std::string binary_path = px::testing::BazelRunfilePath(p.binary_path);
 
-  std::string input_str = absl::Substitute(p.input, binary_path_);
+  std::string input_str = absl::Substitute(p.input, binary_path);
   ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
-  std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);
+  std::string expected_output_str = absl::Substitute(p.expected_output, binary_path);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::CreateIndexingAll(binary_path_));
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary_path_));
+                       DwarfReader::CreateIndexingAll(binary_path));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary_path));
+
+  if (!p.error_message.empty()) {
+    auto status = GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get());
+    EXPECT_FALSE(status.ok());
+    EXPECT_THAT(status.msg(), ::testing::HasSubstr(p.error_message));
+    return;
+  }
+
   ASSERT_OK_AND_ASSIGN(
       ir::physical::Program physical_program,
       GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get()));
@@ -1618,17 +1813,21 @@ TEST_P(DwarfInfoTest, Transform) {
 #endif
 }
 
+constexpr std::string_view kStructRegErrorPrefix =
+    "Structs variables from registers aren't supported yet";
 INSTANTIATE_TEST_SUITE_P(
     DwarfInfoTestSuite, DwarfInfoTest,
-    ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
-                      DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
-                      DwarfInfoTestParam{kImplicitNamedRetvalsIn, kImplicitNamedRetvalsOut},
-                      DwarfInfoTestParam{kNamedRetvalsIn, kNamedRetvalsOut},
-                      DwarfInfoTestParam{kNestedArgProbeIn, kNestedArgProbeOut},
-                      DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
-                      DwarfInfoTestParam{kStructProbeIn, kStructProbeOut},
-                      DwarfInfoTestParam{kGolangErrorInterfaceProbeIn,
-                                         kGolangErrorInterfaceProbeOut}));
+    ::testing::Values(
+        DwarfInfoTestParam{kBinaryPath, kEntryProbeIn, kEntryProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kReturnProbeIn, kReturnProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kImplicitNamedRetvalsIn, kImplicitNamedRetvalsOut},
+        DwarfInfoTestParam{kBinaryPath, kNamedRetvalsIn, kNamedRetvalsOut, kStructRegErrorPrefix},
+        DwarfInfoTestParam{kBinaryPath, kNestedArgProbeIn, kNestedArgProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kActionProbeIn, kActionProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kStructProbeIn, kStructProbeOut, kStructRegErrorPrefix},
+        DwarfInfoTestParam{kCPPBinaryPath, kCPPStructProbeIn, kCPPStructProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kGolangErrorInterfaceProbeIn,
+                           kGolangErrorInterfaceProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

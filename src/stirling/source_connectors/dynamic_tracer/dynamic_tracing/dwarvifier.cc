@@ -801,9 +801,14 @@ Status Dwarvifier::ProcessStructBlob(const ArgInfo& arg_info, const std::string&
                       dwarf_reader_->GetStructSpec(type_info.type_name));
   VLOG(1) << arg_info.ToString();
   // TODO(ddelnano): Remove once structs in registers are supported (gh#2106)
-  DCHECK(arg_info.type_info.type != VarType::kStruct ||
-         arg_info.location.loc_type == LocationType::kStack)
-      << "StructBlob should be a stack variable. Structs in registers aren't supported yet.";
+  if (arg_info.location.loc_type == LocationType::kRegister) {
+    auto message = absl::Substitute(
+        "Structs variables from registers aren't supported yet. Udd an expr to '$0' to access an "
+        "individual, non struct field (e.g. expr: \"struct_name.field_a\") until this is supported "
+        "(gh#2106).",
+        var_name);
+    return error::InvalidArgument(message);
+  }
   PX_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
                       CreateStructSpecProto(struct_spec_entires, language_));
 

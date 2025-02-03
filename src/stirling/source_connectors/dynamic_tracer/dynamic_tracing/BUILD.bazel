@@ -56,6 +56,7 @@ pl_cc_test(
     name = "dwarvifier_test",
     srcs = ["dwarvifier_test.cc"],
     data = [
+        "//src/stirling/obj_tools/testdata/cc:test_exe",
         "//src/stirling/obj_tools/testdata/go:test_go_1_21_binary",
     ],
     deps = [
