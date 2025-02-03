@@ -63,7 +63,7 @@ bool Init() {
   // Make sure TLS tracing is enabled.
   FLAGS_stirling_enable_tls_tracing = true;
 
-  // We turn off CQL and NATS tracing to give some BPF instructions back for Mux.
+  // We turn off CQL and NATS tracing to give some BPF instructions back for TLS.
   // This is required for older kernels with only 4096 BPF instructions.
   FLAGS_stirling_enable_cass_tracing = false;
   FLAGS_stirling_enable_nats_tracing = false;
