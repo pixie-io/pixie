@@ -1278,7 +1278,7 @@ arrays {
 }
 )";
 
-constexpr std::string_view kCPPStructProbeIn = R"(
+constexpr std::string_view kCPPStackStructProbeIn = R"(
 deployment_spec {
   path_list {
     paths: "$0"
@@ -1309,7 +1309,7 @@ tracepoints {
 }
 )";
 
-constexpr std::string_view kCPPStructProbeOut = R"(
+constexpr std::string_view kCPPStackStructProbeOut = R"(
 deployment_spec {
   path_list {
     paths: "$0"
@@ -1391,6 +1391,164 @@ outputs {
 probes {
   tracepoint {
     symbol: "OuterStructFunc"
+    type: ENTRY
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 8
+        size: 48
+      }
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "arg0"
+  }
+}
+language: CPP
+arrays {
+  name: "out_table_data_buffer_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
+}
+)";
+
+constexpr std::string_view kCPPRegStructProbeIn = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "out_table"
+      fields: "out"
+    }
+    probes {
+      tracepoint: {
+        symbol: "ABCSumMixed"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "x"
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_names: "arg0"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kCPPRegStructProbeOut = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "tgid_"
+    type: INT32
+  }
+  fields {
+    name: "tgid_start_time_"
+    type: UINT64
+  }
+  fields {
+    name: "time_"
+    type: UINT64
+  }
+  fields {
+    name: "out"
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/a"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: LONG
+        path: "/b
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: LONG
+        path: "/c"
+      }
+    }
+  }
+}
+outputs {
+  name: "out_table"
+  fields: "out"
+  struct_type: "out_table_value_t"
+}
+probes {
+  tracepoint {
+    symbol: "ABCSumMixed"
     type: ENTRY
   }
   vars {
@@ -1825,7 +1983,8 @@ INSTANTIATE_TEST_SUITE_P(
         DwarfInfoTestParam{kBinaryPath, kNestedArgProbeIn, kNestedArgProbeOut},
         DwarfInfoTestParam{kBinaryPath, kActionProbeIn, kActionProbeOut},
         DwarfInfoTestParam{kBinaryPath, kStructProbeIn, kStructProbeOut, kStructRegErrorPrefix},
-        DwarfInfoTestParam{kCPPBinaryPath, kCPPStructProbeIn, kCPPStructProbeOut},
+        DwarfInfoTestParam{kCPPBinaryPath, kCPPStackStructProbeIn, kCPPStackStructProbeOut},
+        DwarfInfoTestParam{kCPPBinaryPath, kCPPRegStructProbeIn, kCPPRegStructProbeOut, kStructRegErrorPrefix},
         DwarfInfoTestParam{kBinaryPath, kGolangErrorInterfaceProbeIn,
                            kGolangErrorInterfaceProbeOut}));
 
