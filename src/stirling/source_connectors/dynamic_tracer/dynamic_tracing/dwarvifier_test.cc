@@ -1984,7 +1984,8 @@ INSTANTIATE_TEST_SUITE_P(
         DwarfInfoTestParam{kBinaryPath, kActionProbeIn, kActionProbeOut},
         DwarfInfoTestParam{kBinaryPath, kStructProbeIn, kStructProbeOut, kStructRegErrorPrefix},
         DwarfInfoTestParam{kCPPBinaryPath, kCPPStackStructProbeIn, kCPPStackStructProbeOut},
-        DwarfInfoTestParam{kCPPBinaryPath, kCPPRegStructProbeIn, kCPPRegStructProbeOut, kStructRegErrorPrefix},
+        DwarfInfoTestParam{kCPPBinaryPath, kCPPRegStructProbeIn, kCPPRegStructProbeOut,
+                           kStructRegErrorPrefix},
         DwarfInfoTestParam{kBinaryPath, kGolangErrorInterfaceProbeIn,
                            kGolangErrorInterfaceProbeOut}));
 
