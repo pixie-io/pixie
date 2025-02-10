@@ -1,5 +1,5 @@
 /*
- * Copyright 2018- The Pixie Authors.
+ * Copyright 2019- The Pixie Authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ TEST(ReadGoBuildVersionTest, BuildinfoEndianAgnostic) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(std::string version, ReadGoBuildVersion(elf_reader.get()));
-  EXPECT_THAT(version, StrEq("go1.19.10"));
+  EXPECT_THAT(version, StrEq("go1.19.13"));
 }
 
 TEST(ReadGoBuildVersionTest, BuildinfoLittleEndian) {

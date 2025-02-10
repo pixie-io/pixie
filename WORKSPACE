@@ -228,17 +228,17 @@ go_download_sdk(
 
 go_download_sdk(
     name = "go_sdk_1_19",
-    version = "1.19.10",
+    version = "1.19.13",
 )
 
 go_download_sdk(
     name = "go_sdk_1_20",
-    version = "1.20.5",
+    version = "1.20.14",
 )
 
 go_download_sdk(
     name = "go_sdk_1_21",
-    version = "1.21.0",
+    version = "1.21.13",
 )
 
 go_download_sdk(
@@ -262,7 +262,7 @@ go_download_sdk(
     name = "go_sdk_boringcrypto",
     experiments = ["boringcrypto"],
     # TODO(james): update this to 1.21.0, once there is a 1.21.1 release.
-    version = "1.20.4",
+    version = "1.20.14",
 )
 
 pip_parse(
