@@ -262,7 +262,7 @@ go_download_sdk(
     name = "go_sdk_boringcrypto",
     experiments = ["boringcrypto"],
     # TODO(james): update this to 1.21.0, once there is a 1.21.1 release.
-    version = "1.20.14",
+    version = "1.20.13",
 )
 
 pip_parse(
