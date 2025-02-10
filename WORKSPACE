@@ -241,6 +241,16 @@ go_download_sdk(
     version = "1.21.0",
 )
 
+go_download_sdk(
+    name = "go_sdk_1_22",
+    version = "1.22.12",
+)
+
+go_download_sdk(
+    name = "go_sdk_1_23",
+    version = "1.23.6",
+)
+
 # The go_sdk_boringcrypto SDK is used for testing boringcrypto specific functionality (TLS tracing).
 # This SDK is used for specific test cases and is not meant to be used wholesale for a particular go
 # version.
