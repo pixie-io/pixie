@@ -24,11 +24,11 @@ BAZEL_BUILD_CMD="bazel build --compilation_mode=opt"
 
 TEST_EXE_BASE_DIR="bazel-bin/src/stirling/source_connectors/socket_tracer/protocols/http2/testing"
 
-GRPC_CLIENT_LABEL="src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_17_grpc_client"
-GRPC_CLIENT_EXE="${TEST_EXE_BASE_DIR}/go_grpc_client/golang_1_17_grpc_client"
+GRPC_CLIENT_LABEL="src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_23_grpc_client"
+GRPC_CLIENT_EXE="${TEST_EXE_BASE_DIR}/go_grpc_client/golang_1_23_grpc_client"
 
-GRPC_SERVER_LABEL="src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_17_grpc_server"
-GRPC_SERVER_EXE="${TEST_EXE_BASE_DIR}/go_grpc_server/golang_1_17_grpc_server"
+GRPC_SERVER_LABEL="src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_23_grpc_server"
+GRPC_SERVER_EXE="${TEST_EXE_BASE_DIR}/go_grpc_server/golang_1_23_grpc_server"
 
 STIRLING_WRAPPER_LABEL="src/stirling/binaries:stirling_wrapper"
 STIRLING_WRAPPER_EXE="bazel-bin/src/stirling/binaries/stirling_wrapper"

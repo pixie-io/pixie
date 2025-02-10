@@ -14,18 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label")
-
-# TODO(vihang): load this from pl_build_system once we remove go 1.16
-pl_supported_go_sdk_versions = [
-    "1.17",
-    "1.18",
-    "1.19",
-    "1.20",
-    "1.21",
-    "1.22",
-    "1.23",
-]
+load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label", "pl_supported_go_sdk_versions")
 
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 

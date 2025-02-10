@@ -21,8 +21,6 @@
 
 #include "src/common/exec/subprocess.h"
 #include "src/stirling/core/output.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_17_grpc_client_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_17_grpc_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_18_grpc_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_18_grpc_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_grpc_client_container.h"
@@ -77,11 +75,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
   typename TClientServerContainers::ClientContainer client_;
 };
 
-struct Go1_17GRPCClientServerContainers {
-  using ServerContainer = ::px::stirling::testing::Go1_17_GRPCServerContainer;
-  using ClientContainer = ::px::stirling::testing::Go1_17_GRPCClientContainer;
-};
-
 struct Go1_18GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_18_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_18_GRPCClientContainer;
@@ -117,10 +110,10 @@ struct GoBoringCryptoGRPCClientServerContainers {
   using ClientContainer = ::px::stirling::testing::GoBoringCryptoGRPCClientContainer;
 };
 
-typedef ::testing::Types<GoBoringCryptoGRPCClientServerContainers, Go1_17GRPCClientServerContainers,
-                         Go1_18GRPCClientServerContainers, Go1_19GRPCClientServerContainers,
-                         Go1_20GRPCClientServerContainers, Go1_21GRPCClientServerContainers,
-                         Go1_22GRPCClientServerContainers, Go1_23GRPCClientServerContainers>
+typedef ::testing::Types<GoBoringCryptoGRPCClientServerContainers, Go1_18GRPCClientServerContainers,
+                         Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers,
+                         Go1_21GRPCClientServerContainers, Go1_22GRPCClientServerContainers,
+                         Go1_23GRPCClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 

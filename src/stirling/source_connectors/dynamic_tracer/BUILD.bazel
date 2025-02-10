@@ -48,9 +48,7 @@ pl_cc_bpf_test(
     timeout = "moderate",
     srcs = ["dynamic_trace_bpf_test.cc"],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_16_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_21_grpc_client",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_21_grpc_server_with_certs",
     ],
     tags = [
