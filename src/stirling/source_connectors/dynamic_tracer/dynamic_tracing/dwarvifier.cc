@@ -803,7 +803,7 @@ Status Dwarvifier::ProcessStructBlob(const ArgInfo& arg_info, const std::string&
   // TODO(ddelnano): Remove once structs in registers are supported (gh#2106)
   if (arg_info.location.loc_type == LocationType::kRegister) {
     auto message = absl::Substitute(
-        "Structs variables from registers aren't supported yet. Udd an expr to '$0' to access an "
+        "Structs variables from registers aren't supported yet. Add an expr to '$0' to access an "
         "individual, non struct field (e.g. expr: \"struct_name.field_a\") until this is supported "
         "(gh#2106).",
         var_name);
