@@ -31,6 +31,8 @@ namespace stirling {
 namespace protocols {
 namespace tls {
 
+using px::utils::JSONObjectBuilder;
+
 constexpr size_t kTLSRecordHeaderLength = 5;
 constexpr size_t kExtensionMinimumLength = 4;
 constexpr size_t kSNIExtensionMinimumLength = 3;
@@ -39,11 +41,9 @@ constexpr size_t kSNIExtensionMinimumLength = 3;
 // In TLS 1.2 and earlier, gmt_unix_time is 4 bytes and Random is 28 bytes.
 constexpr size_t kRandomStructLength = 32;
 
-StatusOr<ParseState> ExtractSNIExtension(std::map<std::string, std::string>* exts,
-                                         BinaryDecoder* decoder) {
+StatusOr<ParseState> ExtractSNIExtension(ReqExtensions* exts, BinaryDecoder* decoder) {
   PX_ASSIGN_OR(auto server_name_list_length, decoder->ExtractBEInt<uint16_t>(),
                return ParseState::kInvalid);
-  std::vector<std::string> server_names;
   while (server_name_list_length > 0) {
     PX_ASSIGN_OR(auto server_name_type, decoder->ExtractBEInt<uint8_t>(),
                  return error::Internal("Failed to extract server name type"));
@@ -56,10 +56,9 @@ StatusOr<ParseState> ExtractSNIExtension(std::map<std::string, std::string>* ext
     PX_ASSIGN_OR(auto server_name, decoder->ExtractString(server_name_length),
                  return error::Internal("Failed to extract server name"));
 
-    server_names.push_back(std::string(server_name));
+    exts->server_names.push_back(std::string(server_name));
     server_name_list_length -= kSNIExtensionMinimumLength + server_name_length;
   }
-  exts->insert({"server_name", ToJSONString(server_names)});
   return ParseState::kSuccess;
 }
 
@@ -162,6 +161,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
     return ParseState::kSuccess;
   }
 
+  ReqExtensions req_extensions;
+  RespExtensions resp_extensions;
   while (extensions_length > 0) {
     PX_ASSIGN_OR(auto extension_type, decoder->ExtractBEInt<uint16_t>(),
                  return ParseState::kInvalid);
@@ -170,7 +171,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
     if (extension_length > 0) {
       if (extension_type == 0x00) {
-        if (!ExtractSNIExtension(&frame->extensions, decoder).ok()) {
+        if (!ExtractSNIExtension(&req_extensions, decoder).ok()) {
           return ParseState::kInvalid;
         }
       } else {
@@ -182,6 +183,13 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
     extensions_length -= kExtensionMinimumLength + extension_length;
   }
+  JSONObjectBuilder req_body_builder;
+  req_body_builder.WriteKVRecursive("extensions", req_extensions);
+  frame->req_body = req_body_builder.GetString();
+
+  JSONObjectBuilder resp_body_builder;
+  resp_body_builder.WriteKVRecursive("extensions", resp_extensions);
+  frame->resp_body = resp_body_builder.GetString();
 
   return ParseState::kSuccess;
 }

@@ -50,7 +50,7 @@ using ::testing::UnorderedElementsAre;
 
 struct TraceRecords {
   std::vector<tls::Record> tls_records;
-  std::vector<std::string> tls_extensions;
+  std::vector<std::string> req_body;
 };
 
 class NginxOpenSSL_3_0_8_ContainerWrapper
@@ -80,11 +80,11 @@ tls::Record GetExpectedTLSRecord() {
   return expected_record;
 }
 
-inline std::vector<std::string> GetExtensions(const types::ColumnWrapperRecordBatch& rb,
-                                              const std::vector<size_t>& indices) {
+inline std::vector<std::string> GetRequestBody(const types::ColumnWrapperRecordBatch& rb,
+                                               const std::vector<size_t>& indices) {
   std::vector<std::string> exts;
   for (size_t idx : indices) {
-    exts.push_back(rb[kTLSExtensionsIdx]->Get<types::StringValue>(idx));
+    exts.push_back(rb[kTLSReqBodyIdx]->Get<types::StringValue>(idx));
   }
   return exts;
 }
@@ -127,9 +127,9 @@ class TLSVersionParameterizedTest
 
     TraceRecords records = this->GetTraceRecords(this->server_.PID());
     EXPECT_THAT(records.tls_records, SizeIs(1));
-    EXPECT_THAT(records.tls_extensions, SizeIs(1));
-    auto sni_str = R"({"server_name":"[\"test-host\"]"})";
-    EXPECT_THAT(records.tls_extensions[0], StrEq(sni_str));
+    EXPECT_THAT(records.req_body, SizeIs(1));
+    auto sni_str = R"({"extensions":{"server_name":["test-host"]}})";
+    EXPECT_THAT(records.req_body[0], StrEq(sni_str));
   }
 
   // Returns the trace records of the process specified by the input pid.
@@ -144,7 +144,7 @@ class TLSVersionParameterizedTest
         FindRecordIdxMatchesPID(record_batch, kTLSUPIDIdx, pid);
     std::vector<tls::Record> tls_records =
         ToRecordVector<tls::Record>(record_batch, server_record_indices);
-    std::vector<std::string> extensions = GetExtensions(record_batch, server_record_indices);
+    std::vector<std::string> extensions = GetRequestBody(record_batch, server_record_indices);
 
     return {std::move(tls_records), std::move(extensions)};
   }

@@ -315,8 +315,7 @@ TEST_F(TLSParserTest, ParseValidClientHello) {
   ASSERT_GT(frame.session_id.size(), 0);
 
   // Validate the SNI extension was parsed properly
-  ASSERT_EQ(frame.extensions.size(), 1);
-  ASSERT_EQ(frame.extensions["server_name"], "[\"argocd-cluster-repo-server\"]");
+  ASSERT_EQ(frame.req_body, R"({"extensions":{"server_name":["argocd-cluster-repo-server"]}})");
   ASSERT_EQ(state, ParseState::kSuccess);
 }
 

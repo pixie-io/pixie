@@ -37,7 +37,7 @@ static constexpr DataElement kTLSElements[] = {
         canonical_data_elements::kLocalAddr,
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
-        {"req_type", "The type of request from the TLS record (Client/ServerHello, etc.)",
+        {"content_type", "The content type of the TLS record (e.g. handshake, alert, heartbeat, etc)",
          types::DataType::INT64,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL_ENUM},
@@ -45,10 +45,14 @@ static constexpr DataElement kTLSElements[] = {
          types::DataType::INT64,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL_ENUM},
-        {"extensions", "Extensions in the TLS record",
+        {"req_body", "Request body in JSON format. Structure depends on content type (e.g. handshakes contain TLS extensions)",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
-         types::PatternType::GENERAL},
+         types::PatternType::STRUCTURED},
+        {"resp_body", "Response body in JSON format. Structure depends on content type (e.g. handshakes contain TLS extensions)",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::STRUCTURED},
         canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
         canonical_data_elements::kPXInfo,
@@ -61,9 +65,9 @@ static constexpr auto kTLSTable =
 DEFINE_PRINT_TABLE(TLS)
 
 constexpr int kTLSUPIDIdx = kTLSTable.ColIndex("upid");
-constexpr int kTLSCmdIdx = kTLSTable.ColIndex("req_type");
+constexpr int kTLSCmdIdx = kTLSTable.ColIndex("content_type");
 constexpr int kTLSVersionIdx = kTLSTable.ColIndex("version");
-constexpr int kTLSExtensionsIdx = kTLSTable.ColIndex("extensions");
+constexpr int kTLSReqBodyIdx = kTLSTable.ColIndex("req_body");
 
 }  // namespace stirling
 }  // namespace px
