@@ -559,8 +559,6 @@ pl_cc_bpf_test(
         "//src/common/exec:cc_library",
         "//src/common/testing/test_utils:cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_17_tls_client_container",
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_17_tls_server_container",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_18_tls_client_container",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_18_tls_server_container",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_19_tls_client_container",
