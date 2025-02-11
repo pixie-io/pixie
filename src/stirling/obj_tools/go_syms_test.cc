@@ -51,7 +51,7 @@ TEST(ReadGoBuildVersionTest, BuildinfoEndianAgnostic) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(std::string version, ReadGoBuildVersion(elf_reader.get()));
-  EXPECT_THAT(version, StrEq("go1.19.10"));
+  EXPECT_THAT(version, StrEq("go1.19.13"));
 }
 
 TEST(ReadGoBuildVersionTest, BuildinfoLittleEndian) {
