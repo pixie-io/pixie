@@ -22,7 +22,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
+constexpr std::string_view kCPPBinaryPath = "src/stirling/obj_tools/testdata/cc/test_exe/test_exe";
 
 namespace px {
 namespace stirling {
@@ -130,11 +131,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
       }
     }
   }
@@ -143,8 +150,8 @@ probes {
       name: "arg1"
       type: INT
       memory {
-        base: "sp_"
-        offset: 24
+        base: "parm__"
+        offset: 48
       }
     }
   }
@@ -153,8 +160,8 @@ probes {
       name: "arg2"
       type: INT
       memory {
-        base: "sp_"
-        offset: 32
+        base: "parm__"
+        offset: 56
       }
     }
   }
@@ -163,8 +170,8 @@ probes {
       name: "arg3"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -173,8 +180,8 @@ probes {
       name: "arg4"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 17
+        base: "parm__"
+        offset: 16
       }
     }
   }
@@ -183,8 +190,8 @@ probes {
       name: "arg5"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 20
+        base: "parm__"
+        offset: 19
       }
     }
   }
@@ -274,11 +281,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 48
+        base: "parm__"
       }
     }
   }
@@ -287,8 +300,8 @@ probes {
       name: "retval1"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 57
+        base: "parm__"
+        offset: 9
       }
     }
   }
@@ -311,11 +324,11 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "~r6"
+        expr: "~r0"
       }
       ret_vals {
         id: "retval1"
-        expr: "~r7.B1"
+        expr: "~r1.B1"
       }
     }
   }
@@ -378,11 +391,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 48
+        base: "parm__"
       }
     }
   }
@@ -391,8 +410,8 @@ probes {
       name: "retval1"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 57
+        base: "parm__"
+        offset: 9
       }
     }
   }
@@ -482,11 +501,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 48
+        base: "parm__"
       }
     }
   }
@@ -495,8 +520,8 @@ probes {
       name: "retval1"
       type: STRUCT_BLOB
       memory {
-        base: "sp_"
-        offset: 56
+        base: "parm__"
+        offset: 8
         size: 4
       }
     }
@@ -587,11 +612,18 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0_D_Ptr_X_"
       type: VOID_POINTER
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -619,8 +651,8 @@ probes {
       name: "arg1_D_Ptr_X_"
       type: VOID_POINTER
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -862,11 +894,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0"
       type: INT
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
       }
     }
   }
@@ -875,8 +913,8 @@ probes {
       name: "arg1"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -885,8 +923,8 @@ probes {
       name: "arg2"
       type: BOOL
       memory {
-        base: "sp_"
-        offset: 17
+        base: "parm__"
+        offset: 16
       }
     }
   }
@@ -972,6 +1010,13 @@ probes {
     }
   }
   vars {
+    scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
     map_var {
       name: "my_stash_ptr"
       type: "my_stash_value_t"
@@ -1003,7 +1048,6 @@ probes {
   }
   output_actions {
     perf_buffer_name: "out_table2"
-    data_buffer_array_name: "out_table2_data_buffer_array"
     output_struct_name: "out_table2_value_t"
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
@@ -1011,6 +1055,7 @@ probes {
     variable_names: "goid_"
     variable_names: "arg0"
     variable_names: "arg1"
+    data_buffer_array_name: "out_table2_data_buffer_array"
   }
   map_delete_actions {
     map_name: "my_stash"
@@ -1197,11 +1242,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "arg0"
       type: STRUCT_BLOB
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
         size: 48
       }
     }
@@ -1218,6 +1269,352 @@ probes {
   }
 }
 language: GOLANG
+arrays {
+  name: "out_table_data_buffer_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
+}
+)";
+
+constexpr std::string_view kCPPStackStructProbeIn = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "out_table"
+      fields: "out"
+    }
+    probes {
+      tracepoint: {
+        symbol: "OuterStructFunc"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "x"
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_names: "arg0"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kCPPStackStructProbeOut = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "tgid_"
+    type: INT32
+  }
+  fields {
+    name: "tgid_start_time_"
+    type: UINT64
+  }
+  fields {
+    name: "time_"
+    type: UINT64
+  }
+  fields {
+    name: "out"
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/O0"
+      }
+      entries {
+        offset: 8
+        size: 1
+        type: BOOL
+        path: "/O1/M0/L0"
+      }
+      entries {
+        offset: 12
+        size: 4
+        type: INT
+        path: "/O1/M0/L1"
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: VOID_POINTER
+        path: "/O1/M0/L2"
+      }
+      entries {
+        offset: 24
+        size: 1
+        type: BOOL
+        path: "/O1/M1"
+      }
+      entries {
+        offset: 32
+        size: 1
+        type: BOOL
+        path: "/O1/M2/L0"
+      }
+      entries {
+        offset: 36
+        size: 4
+        type: INT
+        path: "/O1/M2/L1"
+      }
+      entries {
+        offset: 40
+        size: 8
+        type: VOID_POINTER
+        path: "/O1/M2/L2"
+      }
+    }
+  }
+}
+outputs {
+  name: "out_table"
+  fields: "out"
+  struct_type: "out_table_value_t"
+}
+probes {
+  tracepoint {
+    symbol: "OuterStructFunc"
+    type: ENTRY
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 8
+        size: 48
+      }
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "arg0"
+  }
+}
+language: CPP
+arrays {
+  name: "out_table_data_buffer_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
+}
+)";
+
+constexpr std::string_view kCPPRegStructProbeIn = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "out_table"
+      fields: "out"
+    }
+    probes {
+      tracepoint: {
+        symbol: "ABCSumMixed"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "x"
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_names: "arg0"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kCPPRegStructProbeOut = R"(
+deployment_spec {
+  path_list {
+    paths: "$0"
+  }
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "tgid_"
+    type: INT32
+  }
+  fields {
+    name: "tgid_start_time_"
+    type: UINT64
+  }
+  fields {
+    name: "time_"
+    type: UINT64
+  }
+  fields {
+    name: "out"
+    type: STRUCT_BLOB
+    blob_decoders {
+      entries {
+        size: 8
+        type: LONG
+        path: "/a"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: LONG
+        path: "/b
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: LONG
+        path: "/c"
+      }
+    }
+  }
+}
+outputs {
+  name: "out_table"
+  fields: "out"
+  struct_type: "out_table_value_t"
+}
+probes {
+  tracepoint {
+    symbol: "ABCSumMixed"
+    type: ENTRY
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: SYSV_AMD64_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 8
+        size: 48
+      }
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "arg0"
+  }
+}
+language: CPP
 arrays {
   name: "out_table_data_buffer_array"
   type {
@@ -1324,6 +1721,8 @@ structs {
         path: "/len"
       }
     }
+    blob_decoders {
+    }
   }
 }
 outputs {
@@ -1380,11 +1779,17 @@ probes {
   }
   vars {
     scalar_var {
+      name: "parm__"
+      type: VOID_POINTER
+      reg: GOLANG_ARGS_PTR
+    }
+  }
+  vars {
+    scalar_var {
       name: "retval_intf_tab"
       type: UINT64
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
       }
     }
   }
@@ -1393,8 +1798,8 @@ probes {
       name: "retval_intf_data"
       type: VOID_POINTER
       memory {
-        base: "sp_"
-        offset: 16
+        base: "parm__"
+        offset: 8
       }
     }
   }
@@ -1402,14 +1807,21 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5104328"
+      constant: "4989600"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "5104360"
+      constant: "4989792"
+    }
+  }
+  vars {
+    scalar_var {
+      name: "internal___poll__errNetClosing_sym_addr3"
+      type: UINT64
+      constant: "4989824"
     }
   }
   vars {
@@ -1426,8 +1838,7 @@ probes {
       name: "retval"
       type: STRUCT_BLOB
       memory {
-        base: "sp_"
-        offset: 8
+        base: "parm__"
         size: 16
         op: ASSIGN_ONLY
       }
@@ -1435,13 +1846,13 @@ probes {
   }
   output_actions {
     perf_buffer_name: "out_table"
-    data_buffer_array_name: "out_table_data_buffer_array"
     output_struct_name: "out_table_value_t"
     variable_names: "tgid_"
     variable_names: "tgid_start_time_"
     variable_names: "time_"
     variable_names: "goid_"
     variable_names: "retval"
+    data_buffer_array_name: "out_table_data_buffer_array"
   }
   cond_blocks {
     cond {
@@ -1481,6 +1892,25 @@ probes {
       }
     }
   }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "retval_intf_tab"
+      vars: "internal___poll__errNetClosing_sym_addr3"
+    }
+    vars {
+      scalar_var {
+        name: "retval"
+        type: STRUCT_BLOB
+        memory {
+          base: "retval_intf_data"
+          size: 16
+          decoder_idx: 3
+          op: ASSIGN_ONLY
+        }
+      }
+    }
+  }
 }
 language: GOLANG
 arrays {
@@ -1493,31 +1923,37 @@ arrays {
 )";
 
 struct DwarfInfoTestParam {
+  std::string_view binary_path;
   std::string_view input;
   std::string_view expected_output;
+  std::string_view error_message = "";
 };
 
-class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
- protected:
-  DwarfInfoTest() : binary_path_(px::testing::BazelRunfilePath(kBinaryPath)) {}
-
-  std::string binary_path_;
-};
+class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {};
 
 TEST_P(DwarfInfoTest, Transform) {
   using obj_tools::DwarfReader;
   using obj_tools::ElfReader;
 
   DwarfInfoTestParam p = GetParam();
+  std::string binary_path = px::testing::BazelRunfilePath(p.binary_path);
 
-  std::string input_str = absl::Substitute(p.input, binary_path_);
+  std::string input_str = absl::Substitute(p.input, binary_path);
   ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
-  std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);
+  std::string expected_output_str = absl::Substitute(p.expected_output, binary_path);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::CreateIndexingAll(binary_path_));
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary_path_));
+                       DwarfReader::CreateIndexingAll(binary_path));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary_path));
+
+  if (!p.error_message.empty()) {
+    auto status = GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get());
+    EXPECT_FALSE(status.ok());
+    EXPECT_THAT(status.msg(), ::testing::HasSubstr(p.error_message));
+    return;
+  }
+
   ASSERT_OK_AND_ASSIGN(
       ir::physical::Program physical_program,
       GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get()));
@@ -1535,17 +1971,23 @@ TEST_P(DwarfInfoTest, Transform) {
 #endif
 }
 
+constexpr std::string_view kStructRegErrorPrefix =
+    "Structs variables from registers aren't supported yet";
 INSTANTIATE_TEST_SUITE_P(
     DwarfInfoTestSuite, DwarfInfoTest,
-    ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
-                      DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
-                      DwarfInfoTestParam{kImplicitNamedRetvalsIn, kImplicitNamedRetvalsOut},
-                      DwarfInfoTestParam{kNamedRetvalsIn, kNamedRetvalsOut},
-                      DwarfInfoTestParam{kNestedArgProbeIn, kNestedArgProbeOut},
-                      DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
-                      DwarfInfoTestParam{kStructProbeIn, kStructProbeOut},
-                      DwarfInfoTestParam{kGolangErrorInterfaceProbeIn,
-                                         kGolangErrorInterfaceProbeOut}));
+    ::testing::Values(
+        DwarfInfoTestParam{kBinaryPath, kEntryProbeIn, kEntryProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kReturnProbeIn, kReturnProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kImplicitNamedRetvalsIn, kImplicitNamedRetvalsOut},
+        DwarfInfoTestParam{kBinaryPath, kNamedRetvalsIn, kNamedRetvalsOut, kStructRegErrorPrefix},
+        DwarfInfoTestParam{kBinaryPath, kNestedArgProbeIn, kNestedArgProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kActionProbeIn, kActionProbeOut},
+        DwarfInfoTestParam{kBinaryPath, kStructProbeIn, kStructProbeOut, kStructRegErrorPrefix},
+        DwarfInfoTestParam{kCPPBinaryPath, kCPPStackStructProbeIn, kCPPStackStructProbeOut},
+        DwarfInfoTestParam{kCPPBinaryPath, kCPPRegStructProbeIn, kCPPRegStructProbeOut,
+                           kStructRegErrorPrefix},
+        DwarfInfoTestParam{kBinaryPath, kGolangErrorInterfaceProbeIn,
+                           kGolangErrorInterfaceProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

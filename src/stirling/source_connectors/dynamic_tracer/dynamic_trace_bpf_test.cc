@@ -32,11 +32,12 @@
 
 constexpr std::string_view kClientPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_16_grpc_client";
+    "golang_1_21_grpc_client";
 constexpr std::string_view kServerPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server";
+    "golang_1_21_grpc_server";
 
+DECLARE_bool(debug_dt_pipeline);
 namespace px {
 namespace stirling {
 

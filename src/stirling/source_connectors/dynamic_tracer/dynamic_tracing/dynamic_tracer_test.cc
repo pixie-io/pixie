@@ -26,7 +26,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
 
 namespace px {
 namespace stirling {
@@ -45,7 +45,7 @@ using ::testing::SizeIs;
 
 constexpr char kClientPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_16_grpc_client";
+    "golang_1_21_grpc_client";
 
 constexpr char kClientPathExpected[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
@@ -53,7 +53,7 @@ constexpr char kClientPathExpected[] =
 
 constexpr char kServerPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server";
+    "golang_1_21_grpc_server";
 
 constexpr char kServerPathExpected[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
@@ -347,7 +347,7 @@ const std::vector<std::string> kExpectedBCC = {
     "  uint8_t truncated;",
     "};",
     "struct pid_goid_map_value_t {",
-    "  int64_t goid;",
+    "  uint64_t goid;",
     "} __attribute__((packed, aligned(1)));",
     "struct probe0_argstash_value_t {",
     "  int arg0;",
@@ -382,13 +382,16 @@ const std::vector<std::string> kExpectedBCC = {
     "uint64_t tgid_start_time_ = pl_tgid_start_time();",
     "uint64_t time_ = bpf_ktime_get_ns();",
     "int64_t goid_ = pl_goid();",
+    "uint64_t parm___[9];parm___[0] = ctx->ax;parm___[1] = ctx->bx;parm___[2] = ctx->cx;parm___[3] "
+    "= ctx->di;parm___[4] = ctx->si;parm___[5] = ctx->r8;parm___[6] = ctx->r9;parm___[7] = "
+    "ctx->r10;parm___[8] = ctx->r11;void* parm__ = &parm___;",
     "int64_t kGRunningState = 2;",
     "void* goid_X_;",
-    "bpf_probe_read(&goid_X_, sizeof(void*), sp_ + 8);",
-    "int64_t goid;",
-    "bpf_probe_read(&goid, sizeof(int64_t), goid_X_ + 152);",
+    "bpf_probe_read(&goid_X_, sizeof(void*), parm__ + 0);",
+    "uint64_t goid;",
+    "bpf_probe_read(&goid, sizeof(uint64_t), goid_X_ + 152);",
     "uint32_t newval;",
-    "bpf_probe_read(&newval, sizeof(uint32_t), sp_ + 20);",
+    "bpf_probe_read(&newval, sizeof(uint32_t), parm__ + 16);",
     "struct pid_goid_map_value_t pid_goid_map_value = {};",
     "pid_goid_map_value.goid = goid;",
     "if (newval == kGRunningState) {",
@@ -403,12 +406,15 @@ const std::vector<std::string> kExpectedBCC = {
     "uint64_t tgid_start_time_ = pl_tgid_start_time();",
     "uint64_t time_ = bpf_ktime_get_ns();",
     "int64_t goid_ = pl_goid();",
+    "uint64_t parm___[9];parm___[0] = ctx->ax;parm___[1] = ctx->bx;parm___[2] = ctx->cx;parm___[3] "
+    "= ctx->di;parm___[4] = ctx->si;parm___[5] = ctx->r8;parm___[6] = ctx->r9;parm___[7] = "
+    "ctx->r10;parm___[8] = ctx->r11;void* parm__ = &parm___;",
     "int arg0;",
-    "bpf_probe_read(&arg0, sizeof(int), sp_ + 8);",
+    "bpf_probe_read(&arg0, sizeof(int), parm__ + 0);",
     "int arg1;",
-    "bpf_probe_read(&arg1, sizeof(int), sp_ + 24);",
+    "bpf_probe_read(&arg1, sizeof(int), parm__ + 48);",
     "int arg2;",
-    "bpf_probe_read(&arg2, sizeof(int), sp_ + 32);",
+    "bpf_probe_read(&arg2, sizeof(int), parm__ + 56);",
     "struct probe0_argstash_value_t probe0_argstash_value = {};",
     "probe0_argstash_value.arg0 = arg0;",
     "probe0_argstash_value.arg1 = arg1;",
@@ -424,8 +430,11 @@ const std::vector<std::string> kExpectedBCC = {
     "uint64_t tgid_start_time_ = pl_tgid_start_time();",
     "uint64_t time_ = bpf_ktime_get_ns();",
     "int64_t goid_ = pl_goid();",
+    "uint64_t parm___[9];parm___[0] = ctx->ax;parm___[1] = ctx->bx;parm___[2] = ctx->cx;parm___[3] "
+    "= ctx->di;parm___[4] = ctx->si;parm___[5] = ctx->r8;parm___[6] = ctx->r9;parm___[7] = "
+    "ctx->r10;parm___[8] = ctx->r11;void* parm__ = &parm___;",
     "int retval0;",
-    "bpf_probe_read(&retval0, sizeof(int), sp_ + 48);",
+    "bpf_probe_read(&retval0, sizeof(int), parm__ + 0);",
     "struct probe0_argstash_value_t* probe0_argstash_ptr = probe0_argstash.lookup(&goid_);",
     "if (probe0_argstash_ptr == NULL) { return 0; }",
     "int arg0 = probe0_argstash_ptr->arg0;",
@@ -467,7 +476,7 @@ TEST(DynamicTracerTest, Compile) {
 
   const auto& spec = bcc_program.uprobe_specs[0];
 
-  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("test_go_1_16_binary")));
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("test_go_1_21_binary")));
   EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "runtime.casgstatus"));
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry_runtime_casgstatus"));

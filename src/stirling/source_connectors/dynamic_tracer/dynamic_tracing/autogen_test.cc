@@ -22,7 +22,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/autogen.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
 
 namespace px {
 namespace stirling {
@@ -111,8 +111,8 @@ tracepoints {
       fields: "i1"
       fields: "i2"
       fields: "i3"
-      fields: "__tilde__r6"
-      fields: "__tilde__r7"
+      fields: "__tilde__r0"
+      fields: "__tilde__r1"
       fields: "latency"
     }
     probes {
@@ -147,13 +147,15 @@ tracepoints {
       }
       ret_vals {
         id: "retval6"
-        expr: "~r6"
+        expr: "~r0"
       }
       ret_vals {
         id: "retval7"
-        expr: "~r7"
+        expr: "~r1"
       }
-      function_latency { id: "fn_latency" }
+      function_latency {
+        id: "fn_latency"
+      }
       output_actions {
         output_name: "main__d__MixedArgTypes_table"
         variable_names: "arg0"
