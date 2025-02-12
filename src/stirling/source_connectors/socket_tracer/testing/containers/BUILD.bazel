@@ -132,6 +132,18 @@ container_image(
 ]
 
 container_image(
+    name = "nodejs_acorn_image",
+    base = "@node_14_18_1_alpine_linux_amd64_image//image",
+    cmd = [
+        "node",
+        "/etc/node/acorn_server.js",
+    ],
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/acornjs:acorn_client_server_layer",
+    ],
+)
+
+container_image(
     name = "amqp_image",
     base = "@rabbitmq_3_management//image",
 )
