@@ -29,8 +29,7 @@ import (
 )
 
 func init() {
-	levelStr := os.Getenv("LOG_LEVEL")
-	level, err := log.ParseLevel(levelStr)
+	level, err := log.ParseLevel("trace")
 	if err != nil {
 		level = log.InfoLevel
 	}
