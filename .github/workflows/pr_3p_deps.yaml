@@ -11,7 +11,7 @@ jobs:
   dependency-review:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
     - uses: actions/dependency-review-action@3b139cfc5fae8b618d3eae3675e383bb1769c019  # v4.5.0
       with:
         # Refer to the following for the allowlist.
