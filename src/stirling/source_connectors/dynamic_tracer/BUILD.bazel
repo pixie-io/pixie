@@ -49,7 +49,11 @@ pl_cc_bpf_test(
     srcs = ["dynamic_trace_bpf_test.cc"],
     data = [
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_21_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_22_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_23_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_21_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_22_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_23_grpc_server_with_certs",
     ],
     tags = [
         "cpu:16",
@@ -70,6 +74,8 @@ pl_cc_bpf_test(
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe",
         "//src/stirling/obj_tools/testdata/go:test_go_1_21_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_22_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_23_binary",
         "//src/stirling/testing/dns:dns_hammer",
         "//src/stirling/testing/dns:dns_hammer_image.tar",
     ],
