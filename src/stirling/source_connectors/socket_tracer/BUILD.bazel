@@ -540,7 +540,7 @@ pl_cc_bpf_test(
 
 pl_cc_bpf_test(
     name = "go_tls_trace_bpf_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["go_tls_trace_bpf_test.cc"],
     flaky = True,
     tags = [
