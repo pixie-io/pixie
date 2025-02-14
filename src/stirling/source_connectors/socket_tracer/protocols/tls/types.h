@@ -187,20 +187,23 @@ enum class ExtensionType : uint16_t {
 // Extensions that are common to both the client and server side
 // of a TLS handshake
 struct SharedExtensions {
-  void ToJSON(::px::utils::JSONObjectBuilder* /*builder*/) const {}
+  std::vector<std::string> server_names;
+
+  virtual void ToJSON(::px::utils::JSONObjectBuilder* /*builder*/) const {}
+  virtual ~SharedExtensions() = default;
 };
 
 struct ReqExtensions : public SharedExtensions {
-  std::vector<std::string> server_names;
-
-  void ToJSON(::px::utils::JSONObjectBuilder* builder) const {
+  void ToJSON(::px::utils::JSONObjectBuilder* builder) const override {
     SharedExtensions::ToJSON(builder);
     builder->WriteKV("server_name", server_names);
   }
 };
 
 struct RespExtensions : public SharedExtensions {
-  void ToJSON(::px::utils::JSONObjectBuilder* builder) const { SharedExtensions::ToJSON(builder); }
+  void ToJSON(::px::utils::JSONObjectBuilder* builder) const override {
+    SharedExtensions::ToJSON(builder);
+  }
 };
 
 struct Frame : public FrameBase {
@@ -217,8 +220,7 @@ struct Frame : public FrameBase {
   LegacyVersion handshake_version;
 
   std::string session_id;
-  std::string req_body;
-  std::string resp_body;
+  std::string body;
 
   bool consumed = false;
 
@@ -227,9 +229,8 @@ struct Frame : public FrameBase {
   std::string ToString() const override {
     return absl::Substitute(
         "TLS Frame [len=$0 content_type=$1 legacy_version=$2 handshake_version=$3 "
-        "handshake_type=$4 req_body=$5 resp_body=$6]",
-        length, content_type, legacy_version, handshake_version, handshake_type, req_body,
-        resp_body);
+        "handshake_type=$4 body=$5]",
+        length, content_type, legacy_version, handshake_version, handshake_type, body);
   }
 };
 

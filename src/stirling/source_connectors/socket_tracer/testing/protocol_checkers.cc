@@ -113,9 +113,9 @@ std::vector<tls::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& r
   std::vector<tls::Record> result;
 
   for (const auto& idx : indices) {
-    auto version = rb[kTLSVersionIdx]->Get<types::Int64Value>(idx);
     tls::Record r;
-    r.req.legacy_version = static_cast<tls::LegacyVersion>(version.val);
+    r.req.body = rb[kTLSReqBodyIdx]->Get<types::StringValue>(idx);
+    r.resp.body = rb[kTLSRespBodyIdx]->Get<types::StringValue>(idx);
     result.push_back(r);
   }
   return result;

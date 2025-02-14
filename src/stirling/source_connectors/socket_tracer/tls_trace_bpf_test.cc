@@ -48,11 +48,6 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-struct TraceRecords {
-  std::vector<tls::Record> tls_records;
-  std::vector<std::string> req_body;
-};
-
 class NginxOpenSSL_3_0_8_ContainerWrapper
     : public ::px::stirling::testing::NginxOpenSSL_3_0_8_Container {
  public:
@@ -78,15 +73,6 @@ bool Init() {
 tls::Record GetExpectedTLSRecord() {
   tls::Record expected_record;
   return expected_record;
-}
-
-inline std::vector<std::string> GetRequestBody(const types::ColumnWrapperRecordBatch& rb,
-                                               const std::vector<size_t>& indices) {
-  std::vector<std::string> exts;
-  for (size_t idx : indices) {
-    exts.push_back(rb[kTLSReqBodyIdx]->Get<types::StringValue>(idx));
-  }
-  return exts;
 }
 
 class TLSVersionParameterizedTest
@@ -125,15 +111,15 @@ class TLSVersionParameterizedTest
     client.Wait();
     this->StopTransferDataThread();
 
-    TraceRecords records = this->GetTraceRecords(this->server_.PID());
-    EXPECT_THAT(records.tls_records, SizeIs(1));
-    EXPECT_THAT(records.req_body, SizeIs(1));
+    auto records = this->GetTraceRecords(this->server_.PID());
+    EXPECT_THAT(records, SizeIs(1));
+    EXPECT_GT(records[0].req.body.size(), 0);
     auto sni_str = R"({"extensions":{"server_name":["test-host"]}})";
-    EXPECT_THAT(records.req_body[0], StrEq(sni_str));
+    EXPECT_THAT(records[0].req.body, StrEq(sni_str));
   }
 
   // Returns the trace records of the process specified by the input pid.
-  TraceRecords GetTraceRecords(int pid) {
+  std::vector<tls::Record> GetTraceRecords(int pid) {
     std::vector<TaggedRecordBatch> tablets =
         this->ConsumeRecords(SocketTraceConnector::kTLSTableNum);
     if (tablets.empty()) {
@@ -142,11 +128,7 @@ class TLSVersionParameterizedTest
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
     std::vector<size_t> server_record_indices =
         FindRecordIdxMatchesPID(record_batch, kTLSUPIDIdx, pid);
-    std::vector<tls::Record> tls_records =
-        ToRecordVector<tls::Record>(record_batch, server_record_indices);
-    std::vector<std::string> extensions = GetRequestBody(record_batch, server_record_indices);
-
-    return {std::move(tls_records), std::move(extensions)};
+    return ToRecordVector<tls::Record>(record_batch, server_record_indices);
   }
 
   NginxOpenSSL_3_0_8_ContainerWrapper server_;

@@ -1721,10 +1721,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
   r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
-  r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(req_message.content_type));
-  r.Append<r.ColIndex("version")>(static_cast<uint64_t>(req_message.legacy_version));
-  r.Append<r.ColIndex("req_body")>(req_message.req_body, kMaxTLSBodyBytes);
-  r.Append<r.ColIndex("resp_body")>(resp_message.resp_body, kMaxTLSBodyBytes);
+  r.Append<r.ColIndex("req_type")>(static_cast<uint64_t>(req_message.content_type));
+  r.Append<r.ColIndex("req_body")>(req_message.body, kMaxTLSBodyBytes);
+  r.Append<r.ColIndex("resp_body")>(resp_message.body, kMaxTLSBodyBytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
