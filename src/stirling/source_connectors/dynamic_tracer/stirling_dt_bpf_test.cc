@@ -274,14 +274,33 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
 // Dynamic Trace Golang tests
 //-----------------------------------------------------------------------------
 
-class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
+constexpr std::string_view kGo1_21BinaryPath =
+    "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
+const std::string_view kGo1_22BinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_22_binary";
+const std::string_view kGo1_23BinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_23_binary";
+
+struct DynamicTraceGolangTestCase {
+  const std::filesystem::path binary_path;
+};
+class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest,
+                               public ::testing::WithParamInterface<DynamicTraceGolangTestCase> {
  protected:
-  const std::string kBinaryPath =
-      BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_21_binary");
+  std::string kBinaryPath;
+  void SetUp() override {
+    StirlingDynamicTraceBPFTest::SetUp();
+    kBinaryPath = BazelRunfilePath(GetParam().binary_path);
+    ASSERT_TRUE(fs::Exists(kBinaryPath));
+  }
 };
 
-TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
+INSTANTIATE_TEST_SUITE_P(DynamicTraceGolangTestInstances, DynamicTraceGolangTest,
+                         ::testing::Values(DynamicTraceGolangTestCase{kGo1_21BinaryPath},
+                                           DynamicTraceGolangTestCase{kGo1_22BinaryPath},
+                                           DynamicTraceGolangTestCase{kGo1_23BinaryPath}));
+
+TEST_P(DynamicTraceGolangTest, TraceLatencyOnly) {
   BinaryRunner trace_target;
+  LOG(INFO) << kBinaryPath;
   trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgramTxtPB = R"(
@@ -324,7 +343,7 @@ TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
   EXPECT_GT(rb[latency_field_idx]->Get<types::Int64Value>(0), 0);
 }
 
-TEST_F(DynamicTraceGolangTest, TraceString) {
+TEST_P(DynamicTraceGolangTest, TraceString) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);
 
@@ -379,7 +398,7 @@ TEST_F(DynamicTraceGolangTest, TraceString) {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), "pixienaut");
 }
 
-TEST_F(DynamicTraceGolangTest, TraceLongString) {
+TEST_P(DynamicTraceGolangTest, TraceLongString) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);
 
@@ -432,7 +451,7 @@ TEST_F(DynamicTraceGolangTest, TraceLongString) {
 // to work around the stack size limit.
 // TODO(ddelnano): Re-enable once Struct variable types can be resolved from registers (gh#2106).
 // STRUCT_BLOB type assumes the struct exists in a packed format in memory.
-TEST_F(DynamicTraceGolangTest, DISABLED_TraceStructBlob) {
+TEST_P(DynamicTraceGolangTest, DISABLED_TraceStructBlob) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);
 
@@ -490,13 +509,22 @@ TEST_F(DynamicTraceGolangTest, DISABLED_TraceStructBlob) {
 }
 
 struct ReturnedErrorInterfaceTestCase {
+  const std::filesystem::path binary_path;
   std::string logical_program;
   std::string expected_output;
 };
 
 class ReturnedErrorInterfaceTest
-    : public DynamicTraceGolangTest,
-      public ::testing::WithParamInterface<ReturnedErrorInterfaceTestCase> {};
+    : public StirlingDynamicTraceBPFTest,
+      public ::testing::WithParamInterface<ReturnedErrorInterfaceTestCase> {
+ protected:
+  std::string kBinaryPath;
+  void SetUp() override {
+    StirlingDynamicTraceBPFTest::SetUp();
+    kBinaryPath = BazelRunfilePath(GetParam().binary_path);
+    ASSERT_TRUE(fs::Exists(kBinaryPath));
+  }
+};
 
 TEST_P(ReturnedErrorInterfaceTest, TraceError) {
   BinaryRunner trace_target;
@@ -553,18 +581,41 @@ tracepoints {
 INSTANTIATE_TEST_SUITE_P(
     NilAndNonNilError, ReturnedErrorInterfaceTest,
     ::testing::Values(
-        ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
+        ReturnedErrorInterfaceTestCase{kGo1_21BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
                                        "{\"X\":3,\"Y\":4}"},
-        ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
+        ReturnedErrorInterfaceTestCase{kGo1_21BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
+                                       "{\"tab\":0,\"data\":0}"},
+        ReturnedErrorInterfaceTestCase{kGo1_22BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
+                                       "{\"X\":3,\"Y\":4}"},
+        ReturnedErrorInterfaceTestCase{kGo1_22BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
+                                       "{\"tab\":0,\"data\":0}"},
+        ReturnedErrorInterfaceTestCase{kGo1_23BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
+                                       "{\"X\":3,\"Y\":4}"},
+        ReturnedErrorInterfaceTestCase{kGo1_23BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
                                        "{\"tab\":0,\"data\":0}"}));
 
 struct TestParam {
+  const std::filesystem::path binary_path;
   std::string function_symbol;
   std::string value;
 };
 
-class DynamicTraceGolangTestWithParam : public DynamicTraceGolangTest,
-                                        public ::testing::WithParamInterface<TestParam> {};
+class DynamicTraceGolangTestWithParam : public StirlingDynamicTraceBPFTest,
+                                        public ::testing::WithParamInterface<TestParam> {
+ protected:
+  std::string kBinaryPath;
+  void SetUp() override {
+    StirlingDynamicTraceBPFTest::SetUp();
+    kBinaryPath = BazelRunfilePath(GetParam().binary_path);
+    ASSERT_TRUE(fs::Exists(kBinaryPath));
+  }
+};
 
 TEST_P(DynamicTraceGolangTestWithParam, TraceByteArray) {
   auto params = GetParam();
@@ -628,9 +679,14 @@ TEST_P(DynamicTraceGolangTestWithParam, TraceByteArray) {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), params.value);
 }
 
-INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
-                         ::testing::Values(TestParam{"main.BytesToHex", "Bytes"},
-                                           TestParam{"main.Uint8ArrayToHex", "Uint8"}));
+INSTANTIATE_TEST_SUITE_P(
+    GolangByteArrayTests, DynamicTraceGolangTestWithParam,
+    ::testing::Values(TestParam{kGo1_21BinaryPath, "main.BytesToHex", "Bytes"},
+                      TestParam{kGo1_21BinaryPath, "main.Uint8ArrayToHex", "Uint8"},
+                      TestParam{kGo1_22BinaryPath, "main.BytesToHex", "Bytes"},
+                      TestParam{kGo1_22BinaryPath, "main.Uint8ArrayToHex", "Uint8"},
+                      TestParam{kGo1_23BinaryPath, "main.BytesToHex", "Bytes"},
+                      TestParam{kGo1_23BinaryPath, "main.Uint8ArrayToHex", "Uint8"}));
 
 //-----------------------------------------------------------------------------
 // Dynamic Trace C++ tests
@@ -954,7 +1010,7 @@ TEST_F(DynamicTraceCppTest, ArgsOnStackAndRegisters) {
 
 class DynamicTraceSharedLibraryTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = BazelRunfilePath("src/stirling/testing/dns/dns_hammer");
+  std::string kBinaryPath = BazelRunfilePath("src/stirling/testing/dns/dns_hammer");
 };
 
 TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfo) {
