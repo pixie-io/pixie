@@ -61,6 +61,9 @@ struct conn_info_t {
   // Whether the connection uses SSL.
   bool ssl;
 
+  // TLS version if connection uses SSL
+  int32_t ssl_version;
+
   enum ssl_source_t ssl_source;
 
   // The number of bytes written/read on this connection.
@@ -188,6 +191,9 @@ struct socket_data_event_t {
     // Whether the traffic was collected from an encrypted channel.
     bool ssl;
 
+    // TLS version of the connection
+    int32_t ssl_version;
+
     enum ssl_source_t ssl_source;
 
     // Represents the syscall or function that produces this event.
@@ -294,6 +300,8 @@ struct data_args_t {
 
   // For SSL_write_ex and SSL_read_ex
   size_t* ssl_ex_len;
+
+  int32_t ssl_version;
 };
 
 struct close_args_t {

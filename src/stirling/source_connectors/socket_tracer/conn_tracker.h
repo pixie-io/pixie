@@ -330,6 +330,7 @@ class ConnTracker : NotCopyMoveable {
   traffic_protocol_t protocol() const { return protocol_; }
   endpoint_role_t role() const { return role_; }
   bool ssl() const { return ssl_; }
+  ssl_version_t ssl_version() const { return ssl_version_; }
   ConnStatsTracker& conn_stats() { return conn_stats_; }
 
   /**
@@ -591,6 +592,9 @@ class ConnTracker : NotCopyMoveable {
   // Returns false if the protocol change is disallowed.
   bool SetSSL(bool ssl, ssl_source_t ssl_source, std::string_view reason);
 
+  // returns true if version was assigned
+  bool SetSSLVersion(bool ssl, int32_t ssl_version, std::string_view reason);
+
   // Returns true if the state was changed.
   bool SetRole(endpoint_role_t role, std::string_view reason);
 
@@ -706,6 +710,7 @@ class ConnTracker : NotCopyMoveable {
   endpoint_role_t role_ = kRoleUnknown;
   bool ssl_ = false;
   ssl_source_t ssl_source_ = kSSLNone;
+  ssl_version_t ssl_version_ = kSSLvNone;
   SocketOpen open_info_;
   SocketClose close_info_;
   ConnStatsTracker conn_stats_;

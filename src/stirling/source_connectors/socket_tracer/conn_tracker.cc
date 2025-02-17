@@ -145,7 +145,7 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetRole(event->attr.role, "inferred from data_event");
   SetProtocol(event->attr.protocol, "inferred from data_event");
   SetSSL(event->attr.ssl, event->attr.ssl_source, "inferred from data_event");
-
+  SetSSLVersion(event->attr.ssl, event->attr.ssl_version, "infered from data event");
   CheckTracker();
   UpdateTimestamps(event->attr.timestamp_ns);
   UpdateDataStats(*event);
@@ -565,6 +565,30 @@ bool ConnTracker::SetSSL(bool ssl, ssl_source_t ssl_source, std::string_view rea
   return true;
 }
 
+bool ConnTracker::SetSSLVersion(bool ssl, int32_t ssl_version, std::string_view reason) {
+  if (ssl) {
+    switch (ssl_version) {
+      case 0x301:
+        ssl_version_ = kSSLv1_0;
+        break;
+      case 0x302:
+        ssl_version_ = kSSLv1_1;
+        break;
+      case 0x303:
+        ssl_version_ = kSSLv1_2;
+        break;
+      case 0x304:
+        ssl_version_ = kSSLv1_3;
+        break;
+      default:
+        ssl_version_ = kSSLvNone;
+    }
+    return true;
+  }
+
+  CONN_TRACE(1) << absl::Substitute("SSL version was updated : $0, reason=[$1]", ssl_version, reason);
+  return true;
+}
 void ConnTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
 

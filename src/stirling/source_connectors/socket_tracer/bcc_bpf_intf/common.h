@@ -104,3 +104,12 @@ enum ssl_source_t {
   kLibNettyTcnativeSource,
   kStaticallyLinkedSource,
 };
+
+// Indicates the TLS version under trace if TLS is in use.
+enum ssl_version_t {
+  kSSLvNone = 0,
+  kSSLv1_0,
+  kSSLv1_1,
+  kSSLv1_2,
+  kSSLv1_3,
+};

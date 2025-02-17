@@ -46,6 +46,7 @@ constexpr DataElement kHTTPElements[] = {
         canonical_data_elements::kLocalAddr,
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
+        canonical_data_elements::kSSLVersion,
         canonical_data_elements::kEncrypted,
         {"major_version", "HTTP major version, can be 1 or 2",
          types::DataType::INT64,
@@ -133,6 +134,7 @@ constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("resp_message");
 constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("resp_body");
 constexpr int kHTTPRespBodySizeIdx = kHTTPTable.ColIndex("resp_body_size");
 constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("latency");
+constexpr int kHTTPSSLVersion = kHTTPTable.ColIndex("ssl_version");
 
 }  // namespace stirling
 }  // namespace px

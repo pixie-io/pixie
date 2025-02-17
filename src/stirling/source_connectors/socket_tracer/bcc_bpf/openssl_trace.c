@@ -21,6 +21,7 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
+#include "../bcc_bpf_intf/socket_trace.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/macros.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/node_openssl_trace.c"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
@@ -170,10 +171,15 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
     return 0;
   }
 
+  int32_t tls_version = 0;
+  bpf_probe_read_user(&tls_version, sizeof(tls_version), ssl);
+
   struct data_args_t write_args = {};
   write_args.source_fn = kSSLWrite;
   write_args.fd = fd;
   write_args.buf = buf;
+  write_args.ssl_version = tls_version;
+
   active_ssl_write_args_map.update(&id, &write_args);
 
   // Mark connection as SSL right away, so encrypted traffic does not get traced.
@@ -209,11 +215,14 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   if (fd == kInvalidFD) {
     return 0;
   }
+  int32_t tls_version = 0;
+  bpf_probe_read_user(&tls_version, sizeof(tls_version), ssl);
 
   struct data_args_t read_args = {};
   read_args.source_fn = kSSLRead;
   read_args.fd = fd;
   read_args.buf = buf;
+  read_args.ssl_version = tls_version;
   active_ssl_read_args_map.update(&id, &read_args);
 
   // Mark connection as SSL right away, so encrypted traffic does not get traced.
@@ -250,6 +259,10 @@ static int probe_entry_SSL_write_syscall_fd_access_agnostic(struct pt_regs* ctx,
   struct data_args_t write_args = {};
   write_args.source_fn = kSSLWrite;
   write_args.buf = buf;
+  int32_t tls_version = 0;
+  bpf_probe_read_user(&tls_version, sizeof(tls_version), ssl);
+  write_args.ssl_version = tls_version;
+
   if (is_ex_call) {
     size_t* ssl_ex_len = (size_t*)PT_REGS_PARM4(ctx);
     write_args.ssl_ex_len = ssl_ex_len;
@@ -317,6 +330,9 @@ static int probe_entry_SSL_read_syscall_fd_access_agnostic(struct pt_regs* ctx, 
   struct data_args_t read_args = {};
   read_args.source_fn = kSSLRead;
   read_args.buf = buf;
+  int32_t tls_version = 0;
+  bpf_probe_read_user(&tls_version, sizeof(tls_version), ssl);
+  read_args.ssl_version = tls_version;  // Store the extracted TLS version
   if (is_ex_call) {
     size_t* ssl_ex_len = (size_t*)PT_REGS_PARM4(ctx);
     read_args.ssl_ex_len = ssl_ex_len;

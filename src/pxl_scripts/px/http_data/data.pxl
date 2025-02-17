@@ -28,6 +28,15 @@ def http_data(start_time: str, source_filter: str, destination_filter: str, num_
     # Add context.
     df.node = df.ctx['node']
     df.pid = px.upid_to_pid(df.upid)
+    df.ssl_version = df.ctx['ssl_version']
+
+        ssl_version_map = {
+            0: "SSLv1.0",
+            1: "SSLv1.1",
+            2: "SSLv1.2",
+            3: "SSLv1.3"
+        }
+        df.ssl_version_str = px.select(df.ssl_version in ssl_version_map, ssl_version_map[df.ssl_version], "Unknown")
     df = add_source_dest_columns(df)
     df = add_source_dest_links(df, start_time)
 

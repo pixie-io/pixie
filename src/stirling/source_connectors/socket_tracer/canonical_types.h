@@ -70,6 +70,15 @@ constexpr DataElement kTraceRole = {
     &kEndpointRoleDecoder,
 };
 
+constexpr DataElement kSSLVersion = {
+  "ssl_version",
+  "The SSL version if connection is tls",
+  types::DataType::INT64,
+  types::SemanticType::ST_NONE,
+  types::PatternType::GENERAL_ENUM,
+  &kSSLVersionDecoder,
+};
+
 constexpr DataElement kLatencyNS = {
     "latency",
     "Request-response latency.",

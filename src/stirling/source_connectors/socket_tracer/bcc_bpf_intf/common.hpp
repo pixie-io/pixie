@@ -38,6 +38,9 @@ static const std::map<int64_t, std::string_view> kTrafficProtocolDecoder =
 static const std::map<int64_t, std::string_view> kEndpointRoleDecoder =
     px::EnumDefToMap<endpoint_role_t>();
 
+static const std::map<int64_t, std::string_view> kSSLVersionDecoder =
+    px::EnumDefToMap<ssl_version_t>();
+
 inline std::string ToString(const conn_id_t& conn_id) {
   return absl::Substitute("[upid=$0:$1 fd=$2 gen=$3]", conn_id.upid.pid,
                           conn_id.upid.start_time_ticks, conn_id.fd, conn_id.tsid);
