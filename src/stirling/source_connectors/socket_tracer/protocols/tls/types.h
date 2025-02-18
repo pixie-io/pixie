@@ -43,8 +43,6 @@ namespace stirling {
 namespace protocols {
 namespace tls {
 
-using ::px::utils::ToJSONString;
-
 enum class ContentType : uint8_t {
   kChangeCipherSpec = 0x14,
   kAlert = 0x15,
@@ -186,6 +184,28 @@ enum class ExtensionType : uint16_t {
   kRenegotiationInfo = 65281,
 };
 
+// Extensions that are common to both the client and server side
+// of a TLS handshake
+struct SharedExtensions {
+  std::vector<std::string> server_names;
+
+  virtual void ToJSON(::px::utils::JSONObjectBuilder* /*builder*/) const {}
+  virtual ~SharedExtensions() = default;
+};
+
+struct ReqExtensions : public SharedExtensions {
+  void ToJSON(::px::utils::JSONObjectBuilder* builder) const override {
+    SharedExtensions::ToJSON(builder);
+    builder->WriteKV("server_name", server_names);
+  }
+};
+
+struct RespExtensions : public SharedExtensions {
+  void ToJSON(::px::utils::JSONObjectBuilder* builder) const override {
+    SharedExtensions::ToJSON(builder);
+  }
+};
+
 struct Frame : public FrameBase {
   ContentType content_type;
 
@@ -195,12 +215,12 @@ struct Frame : public FrameBase {
 
   HandshakeType handshake_type;
 
-  uint24_t handshake_length;
+  uint24_t handshake_length = uint24_t(0);
 
   LegacyVersion handshake_version;
 
   std::string session_id;
-  std::map<std::string, std::string> extensions;
+  std::string body;
 
   bool consumed = false;
 
@@ -209,9 +229,8 @@ struct Frame : public FrameBase {
   std::string ToString() const override {
     return absl::Substitute(
         "TLS Frame [len=$0 content_type=$1 legacy_version=$2 handshake_version=$3 "
-        "handshake_type=$4 extensions=$5]",
-        length, content_type, legacy_version, handshake_version, handshake_type,
-        ToJSONString(extensions));
+        "handshake_type=$4 body=$5]",
+        length, content_type, legacy_version, handshake_version, handshake_type, body);
   }
 };
 

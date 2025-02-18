@@ -117,6 +117,11 @@ DEFINE_int32(stirling_enable_mongodb_tracing,
              gflags::Int32FromEnv("PX_STIRLING_ENABLE_MONGODB_TRACING",
                                   px::stirling::TraceMode::OnForNewerKernel),
              "If true, stirling will trace and process MongoDB messages");
+DEFINE_int32(
+    stirling_enable_tls_tracing,
+    gflags::Int32FromEnv("PX_STIRLING_ENABLE_TLS_TRACING", px::stirling::TraceMode::Off),
+    "If true, stirling will trace and process TLS protocol (not the TLS payload) messages. Note: "
+    "this disables tracing the plaintext within encrypted connections until gh#2095 is addressed.");
 DEFINE_bool(stirling_disable_golang_tls_tracing,
             gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
             "If true, stirling will not trace TLS traffic for Go applications. This implies "
@@ -198,6 +203,12 @@ using px::utils::ToJSONString;
 // Most HTTP servers support 8K headers, so we truncate after that.
 // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
 constexpr size_t kMaxHTTPHeadersBytes = 8192;
+// TLS records have a maximum size of 16KiB. The bulk of the body columns are extensions
+// and while there isn't a size limit for them, we limit it to 1 KiB to avoid excessive
+// memory usage. A typical ClientHello from curl is around 500 bytes. This assumes that
+// all extensions are captured, but we won't support capturing all extensions and
+// will avoid large extensions like the padding extension,
+constexpr size_t kMaxTLSBodyBytes = 1024;
 
 // Protobuf printer will limit strings to this length.
 constexpr size_t kMaxPBStringLen = 64;
@@ -283,6 +294,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                    kAMQPTableNum,
                                    {kRoleClient, kRoleServer},
                                    TRANSFER_STREAM_PROTOCOL(amqp)}},
+      {kProtocolTLS, TransferSpec{FLAGS_stirling_enable_tls_tracing,
+                                  kTLSTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSFER_STREAM_PROTOCOL(tls)}},
       {kProtocolUnknown, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                       /* table_num */ static_cast<uint32_t>(-1),
                                       /* trace_roles */ {},
@@ -491,6 +506,7 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", protocol_transfer_specs_[kProtocolMongo].enabled),
+      absl::StrCat("-DENABLE_TLS_TRACING=", protocol_transfer_specs_[kProtocolTLS].enabled),
       absl::StrCat("-DBPF_LOOP_LIMIT=", FLAGS_stirling_bpf_loop_limit),
       absl::StrCat("-DBPF_CHUNK_LIMIT=", FLAGS_stirling_bpf_chunk_limit),
   };
@@ -1681,6 +1697,35 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("resp_body")>(std::move(record.resp.frame_body));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::tls::Record record, DataTable* data_table) {
+  protocols::tls::Frame& req_message = record.req;
+  protocols::tls::Frame& resp_message = record.resp;
+
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kTLSTable> r(data_table, resp_message.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  // Note that there is a string copy here,
+  // But std::move is not allowed because we re-use conn object.
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+  r.Append<r.ColIndex("req_type")>(static_cast<uint64_t>(req_message.content_type));
+  r.Append<r.ColIndex("req_body")>(req_message.body, kMaxTLSBodyBytes);
+  r.Append<r.ColIndex("resp_body")>(resp_message.body, kMaxTLSBodyBytes);
+  r.Append<r.ColIndex("latency")>(
+      CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif

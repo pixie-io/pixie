@@ -66,6 +66,7 @@ DECLARE_int32(stirling_enable_kafka_tracing);
 DECLARE_int32(stirling_enable_mux_tracing);
 DECLARE_int32(stirling_enable_amqp_tracing);
 DECLARE_int32(stirling_enable_mongodb_tracing);
+DECLARE_int32(stirling_enable_tls_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
@@ -95,9 +96,9 @@ class SocketTraceConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "socket_tracer";
   // PROTOCOL_LIST
-  static constexpr auto kTables =
-      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable,
-                kRedisTable, kNATSTable, kKafkaTable, kMuxTable, kAMQPTable, kMongoDBTable);
+  static constexpr auto kTables = MakeArray(
+      kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable, kRedisTable,
+      kNATSTable, kKafkaTable, kMuxTable, kAMQPTable, kMongoDBTable, kTLSTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
@@ -111,6 +112,7 @@ class SocketTraceConnector : public BCCSourceConnector {
   static constexpr uint32_t kMuxTableNum = TableNum(kTables, kMuxTable);
   static constexpr uint32_t kAMQPTableNum = TableNum(kTables, kAMQPTable);
   static constexpr uint32_t kMongoDBTableNum = TableNum(kTables, kMongoDBTable);
+  static constexpr uint32_t kTLSTableNum = TableNum(kTables, kTLSTable);
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.

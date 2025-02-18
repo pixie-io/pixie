@@ -18,6 +18,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/tls/parse.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,6 +32,8 @@ namespace stirling {
 namespace protocols {
 namespace tls {
 
+using px::utils::JSONObjectBuilder;
+
 constexpr size_t kTLSRecordHeaderLength = 5;
 constexpr size_t kExtensionMinimumLength = 4;
 constexpr size_t kSNIExtensionMinimumLength = 3;
@@ -39,11 +42,9 @@ constexpr size_t kSNIExtensionMinimumLength = 3;
 // In TLS 1.2 and earlier, gmt_unix_time is 4 bytes and Random is 28 bytes.
 constexpr size_t kRandomStructLength = 32;
 
-StatusOr<ParseState> ExtractSNIExtension(std::map<std::string, std::string>* exts,
-                                         BinaryDecoder* decoder) {
+StatusOr<ParseState> ExtractSNIExtension(SharedExtensions* exts, BinaryDecoder* decoder) {
   PX_ASSIGN_OR(auto server_name_list_length, decoder->ExtractBEInt<uint16_t>(),
                return ParseState::kInvalid);
-  std::vector<std::string> server_names;
   while (server_name_list_length > 0) {
     PX_ASSIGN_OR(auto server_name_type, decoder->ExtractBEInt<uint8_t>(),
                  return error::Internal("Failed to extract server name type"));
@@ -56,10 +57,9 @@ StatusOr<ParseState> ExtractSNIExtension(std::map<std::string, std::string>* ext
     PX_ASSIGN_OR(auto server_name, decoder->ExtractString(server_name_length),
                  return error::Internal("Failed to extract server name"));
 
-    server_names.push_back(std::string(server_name));
+    exts->server_names.push_back(std::string(server_name));
     server_name_list_length -= kSNIExtensionMinimumLength + server_name_length;
   }
-  exts->insert({"server_name", ToJSONString(server_names)});
   return ParseState::kSuccess;
 }
 
@@ -76,7 +76,7 @@ StatusOr<ParseState> ExtractSNIExtension(std::map<std::string, std::string>* ext
  * diagram: https://en.wikipedia.org/wiki/Transport_Layer_Security#TLS_record
  */
 
-ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
+ParseState ParseFullFrame(SharedExtensions* extensions, BinaryDecoder* decoder, Frame* frame) {
   PX_ASSIGN_OR(auto raw_content_type, decoder->ExtractBEInt<uint8_t>(),
                return ParseState::kInvalid);
   auto content_type = magic_enum::enum_cast<tls::ContentType>(raw_content_type);
@@ -170,7 +170,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
     if (extension_length > 0) {
       if (extension_type == 0x00) {
-        if (!ExtractSNIExtension(&frame->extensions, decoder).ok()) {
+        if (!ExtractSNIExtension(extensions, decoder).ok()) {
           return ParseState::kInvalid;
         }
       } else {
@@ -182,6 +182,9 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
     extensions_length -= kExtensionMinimumLength + extension_length;
   }
+  JSONObjectBuilder body_builder;
+  body_builder.WriteKVRecursive("extensions", *extensions);
+  frame->body = body_builder.GetString();
 
   return ParseState::kSuccess;
 }
@@ -189,7 +192,7 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 }  // namespace tls
 
 template <>
-ParseState ParseFrame(message_type_t, std::string_view* buf, tls::Frame* frame, NoState*) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, tls::Frame* frame, NoState*) {
   // TLS record header is 5 bytes. The size of the record is in bytes 4 and 5.
   if (buf->length() < tls::kTLSRecordHeaderLength) {
     return ParseState::kNeedsMoreData;
@@ -200,7 +203,13 @@ ParseState ParseFrame(message_type_t, std::string_view* buf, tls::Frame* frame, 
   }
 
   BinaryDecoder decoder(*buf);
-  auto parse_result = tls::ParseFullFrame(&decoder, frame);
+  std::unique_ptr<tls::SharedExtensions> extensions;
+  if (type == kRequest) {
+    extensions = std::make_unique<tls::ReqExtensions>();
+  } else {
+    extensions = std::make_unique<tls::RespExtensions>();
+  }
+  auto parse_result = tls::ParseFullFrame(extensions.get(), &decoder, frame);
   if (parse_result == ParseState::kSuccess) {
     buf->remove_prefix(length + tls::kTLSRecordHeaderLength);
   }
