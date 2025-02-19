@@ -1,6 +1,7 @@
 module px.dev/pixie
 
-go 1.21
+go 1.22
+
 toolchain go1.22.5
 
 require (
