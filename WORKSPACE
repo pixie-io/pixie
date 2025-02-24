@@ -33,7 +33,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.21.0",
+    version = "1.24.0",
 )
 
 go_rules_dependencies()
@@ -251,8 +251,7 @@ go_download_sdk(
 go_download_sdk(
     name = "go_sdk_boringcrypto",
     experiments = ["boringcrypto"],
-    # TODO(james): update this to 1.21.0, once there is a 1.21.1 release.
-    version = "1.20.13",
+    version = "1.23.5",
 )
 
 pip_parse(
