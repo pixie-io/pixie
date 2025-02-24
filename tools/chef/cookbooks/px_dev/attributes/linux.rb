@@ -33,9 +33,9 @@ default['codecov']['sha256'] =
   '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
 
 default['golang']['download_path'] =
-  'https://go.dev/dl/go1.21.0.linux-amd64.tar.gz'
+  'https://go.dev/dl/go1.24.0.linux-amd64.tar.gz'
 default['golang']['sha256'] =
-  'd0398903a16ba2232b389fb31032ddf57cac34efda306a0eebac34f0965a0742'
+  'dea9ca38a0b852a74e81c26134671af7c0fbe65d81b0dc1c5bfe22cf7d4c8858'
 
 default['golangci-lint']['download_path'] =
   'https://github.com/golangci/golangci-lint/releases/download/v1.51.1/golangci-lint-1.51.1-linux-amd64.tar.gz'
