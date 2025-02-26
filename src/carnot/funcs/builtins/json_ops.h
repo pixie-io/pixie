@@ -255,8 +255,8 @@ class SplitUDF : public udf::ScalarUDF {
           | # Returns By=http://frontend.px.dev;URI=http://testclient.px.dev
           | df.xfcc_hdr = px.pluck(df.req_headers, 'X-Forwarded-Client-Cert')
           | df.xfcc_parts = px.split(df.xfcc_hdr, ';')
-          | df.by = px.pluck_array(df.xfcc_hdr, 0) # Returns "By=http://frontend.px.dev"
-          | df.uri = px.pluck_array(df.xfcc_hdr, 1) # Returns "URI=http://testclient.px.dev"
+          | df.by = px.pluck_array(df.xfcc_parts, 0) # Returns "By=http://frontend.px.dev"
+          | df.uri = px.pluck_array(df.xfcc_parts, 1) # Returns "URI=http://testclient.px.dev"
       )doc")
         .Arg("input_str", "The string to split.")
         .Arg("delimiter", "The string value to split the input string.")
