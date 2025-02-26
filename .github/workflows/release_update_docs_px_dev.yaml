@@ -68,7 +68,7 @@ jobs:
         git config --global user.name 'pixie-io-buildbot'
         git config --global user.email 'build@pixielabs.ai'
         git remote add fork git@github.com:pixie-io-buildbot/docs.px.dev.git
-    - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
+    - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806  # v4.1.9
       with:
         name: pxl_documentation
         path: external/

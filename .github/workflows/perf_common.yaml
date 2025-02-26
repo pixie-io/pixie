@@ -119,7 +119,7 @@ jobs:
     outputs:
       experiments: ${{ steps.get-outputs.outputs.run_output }}
     steps:
-    - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
+    - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806  # v4.1.9
     - id: get-outputs
       run: |
         all_run_output="$(cat */run_output | jq --slurp -c '.[]')"
