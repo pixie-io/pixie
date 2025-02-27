@@ -1807,21 +1807,21 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "4989600"
+      constant: "4989632"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "4989792"
+      constant: "4989824"
     }
   }
   vars {
     scalar_var {
       name: "internal___poll__errNetClosing_sym_addr3"
       type: UINT64
-      constant: "4989824"
+      constant: "4989856"
     }
   }
   vars {
