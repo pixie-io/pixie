@@ -1505,8 +1505,8 @@ def pl_go_dependencies():
         name = "com_github_golang_jwt_jwt_v4",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/golang-jwt/jwt/v4",
-        sum = "h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=",
-        version = "v4.5.0",
+        sum = "h1:JdqV9zKUdtaa9gdPlywC3aeoEsR681PlKC+4F5gQgeo=",
+        version = "v4.5.1",
     )
     go_repository(
         name = "com_github_golang_migrate_migrate",
