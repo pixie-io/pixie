@@ -55,8 +55,8 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, std::shared_ptr<VarTable> var_table,
-    CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
+    IR* graph, std::shared_ptr<VarTable> var_table, CompilerState* compiler_state,
+    ModuleHandler* module_handler, bool func_based_exec,
     const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
@@ -70,11 +70,11 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler,
-    bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
+    IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
+    const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
-  return Create(graph, VarTable::Create(), compiler_state, module_handler,
-                func_based_exec, reserved_names, module_map);
+  return Create(graph, VarTable::Create(), compiler_state, module_handler, func_based_exec,
+                reserved_names, module_map);
 }
 
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
@@ -90,8 +90,8 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
     std::shared_ptr<VarTable> var_table) {
   // The flag values should come from the parent var table, not be copied here.
   auto visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, compiler_state_, global_var_table_, var_table,
-                         func_based_exec_, {}, module_handler_, udf_registry_));
+      new ASTVisitorImpl(ir_graph_, compiler_state_, global_var_table_, var_table, func_based_exec_,
+                         {}, module_handler_, udf_registry_));
   return visitor;
 }
 

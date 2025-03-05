@@ -44,10 +44,9 @@ StatusOr<std::string> OTelGenerator::GetUnusedVarName(CompilerState* compiler_st
   compiler::ModuleHandler module_handler;
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   auto var_table = compiler::VarTable::Create();
-  PX_ASSIGN_OR_RETURN(auto ast_walker,
-                      compiler::ASTVisitorImpl::Create(
-                          ir.get(), var_table, compiler_state, &module_handler,
-                          func_based_exec, absl::flat_hash_set<std::string>{}));
+  PX_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                           ir.get(), var_table, compiler_state, &module_handler,
+                                           func_based_exec, absl::flat_hash_set<std::string>{}));
 
   PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   auto cur_name = base_name;

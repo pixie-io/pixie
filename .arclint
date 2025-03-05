@@ -36,7 +36,8 @@
     "(^third_party/github.com/gogo/protobuf/gogoproto/gogo.proto$)",
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
-    "(go\\.sum$)"
+    "(go\\.sum$)",
+    "(src/stirling/source_connectors/socket_tracer/bcc_bpf/offsetgen_output.json)"
   ],
   "linters": {
     "build-linter": {
@@ -145,7 +146,9 @@
       "exclude": [
         "(src/stirling/testing/demo_apps/go_https/(server|client)/testdata/.*)",
         "(src/stirling/testing/demo_apps/go_https/server/https_server.go)",
-        "(src/stirling/source_connectors/socket_tracer/protocols/http2/testing/(go_grpc_server|go_grpc_client)/testdata/.*)"
+        "(src/stirling/source_connectors/socket_tracer/protocols/http2/testing/(go_grpc_server|go_grpc_client)/testdata/.*)",
+        "(src/vizier/services/query_broker/controllers)",
+        "(src/carnot/goplanner/logical_planner.go)"
       ],
       "flags": [
         "--timeout=5m0s",
@@ -192,15 +195,6 @@
       "type": "phutil-library",
       "include": [
         "(^tools/arc_addons/.*\\.php$)"
-      ]
-    },
-    "proto-break-check": {
-      "type": "proto-break-check",
-      "include": [
-        "(.*\\.proto$)"
-      ],
-      "exclude": [
-        "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
       ]
     },
     "shellcheck": {

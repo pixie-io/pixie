@@ -171,7 +171,8 @@ DEFINE_uint32(datastream_buffer_retention_size,
               "The maximum size of a data stream buffer retained between cycles.");
 
 DEFINE_uint64(total_conn_tracker_mem_usage,
-              gflags::Uint64FromEnv("PX_TOTAL_CONN_TRACKER_MEM_USAGE", 100 * 1024 * 1024), /* 100 MiB */
+              gflags::Uint64FromEnv("PX_TOTAL_CONN_TRACKER_MEM_USAGE",
+                                    100 * 1024 * 1024), /* 100 MiB */
               "The maximum size of the collective connection tracker buffer.");
 DEFINE_uint64(max_body_bytes, gflags::Uint64FromEnv("PL_STIRLING_MAX_BODY_BYTES", 512),
               "The maximum number of bytes in the body of protocols like HTTP");
@@ -835,7 +836,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
                                    socket_info_mgr_.get());
 
     if (transfer_spec.transfer_fn != nullptr) {
-      current_conn_tracker_buffer_size += transfer_spec.transfer_fn(*this, ctx, conn_tracker, data_table);
+      current_conn_tracker_buffer_size +=
+          transfer_spec.transfer_fn(*this, ctx, conn_tracker, data_table);
     } else {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be
@@ -1081,8 +1083,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     LOG_EVERY_N(WARNING, 1000) << absl::Substitute(
         "Total buffer size of all active ConnTrackers $0 exceeds the limit $1. "
         "Dropping data event of size $2 for protocol $3",
-        total_conn_tracker_mem_usage_, FLAGS_total_conn_tracker_mem_usage, msg_size,
-        protocol);
+        total_conn_tracker_mem_usage_, FLAGS_total_conn_tracker_mem_usage, msg_size, protocol);
     stats_.Increment(StatKey::kDroppedSocketDataEventCount);
     return;
   }
@@ -1704,7 +1705,7 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 
 template <typename TProtocolTraits>
 size_t SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tracker,
-                                          DataTable* data_table) {
+                                            DataTable* data_table) {
   using TFrameType = typename TProtocolTraits::frame_type;
   using TKey = typename TProtocolTraits::key_type;
 

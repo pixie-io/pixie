@@ -96,9 +96,9 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 
   absl::flat_hash_map<std::string, std::string> module_map;
   module_map["pxviews"] = kPxlViews;
-  PX_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(
-                                           ir.get(), compiler_state, &module_handler,
-                                           func_based_exec, reserved_names, module_map));
+  PX_ASSIGN_OR_RETURN(auto ast_walker,
+                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler,
+                                             func_based_exec, reserved_names, module_map));
 
   PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {

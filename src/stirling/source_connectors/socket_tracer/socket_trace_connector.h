@@ -96,9 +96,9 @@ class SocketTraceConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "socket_tracer";
   // PROTOCOL_LIST
-  static constexpr auto kTables = MakeArray(
-      kConnStatsTable, kHTTPTable, kMySQLTable, kPGSQLTable, kDNSTable, kRedisTable,
-      kKafkaTable, kAMQPTable, kMongoDBTable);
+  static constexpr auto kTables =
+      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kPGSQLTable, kDNSTable, kRedisTable,
+                kKafkaTable, kAMQPTable, kMongoDBTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);

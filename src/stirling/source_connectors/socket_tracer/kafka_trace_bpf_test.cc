@@ -86,7 +86,8 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
   StatusOr<int32_t> CreateTopic() {
     std::string cmd = absl::StrFormat(
         "podman exec %s bash -c 'kafka-topics --create --topic foo --partitions 1 "
-        "--replication-factor 1 --if-not-exists --bootstrap-server localhost:29092 & echo $! && wait'",
+        "--replication-factor 1 --if-not-exists --bootstrap-server localhost:29092 & echo $! && "
+        "wait'",
         kafka_server_.container_name());
 
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));

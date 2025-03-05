@@ -37,8 +37,7 @@ class KafkaContainer : public ContainerRunner {
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/kafka_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "kafka_server";
-  static constexpr std::string_view kReadyMessage =
-      "from now on will use";
+  static constexpr std::string_view kReadyMessage = "from now on will use";
 };
 
 }  // namespace testing

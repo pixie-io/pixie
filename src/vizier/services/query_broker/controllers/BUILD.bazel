@@ -39,7 +39,6 @@ go_library(
         "//src/vizier:__subpackages__",
     ],
     deps = [
-        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/carnot/carnotpb:carnot_pl_go_proto",
         "//src/carnot/goplanner:go_default_library",
@@ -51,7 +50,6 @@ go_library(
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",
-        "//src/shared/services/authcontext",
         "//src/shared/services/utils",
         "//src/shared/types/typespb:types_pl_go_proto",
         "//src/table_store/schemapb:schema_pl_go_proto",
@@ -78,7 +76,6 @@ go_library(
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
         "@org_golang_google_grpc//codes",
-        "@org_golang_google_grpc//metadata",
         "@org_golang_google_grpc//status",
         "@org_golang_x_sync//errgroup",
     ],

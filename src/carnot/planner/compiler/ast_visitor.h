@@ -86,9 +86,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, CompilerState* compiler_state,
-      ModuleHandler* module_handler, bool func_based_exec = false,
-      const absl::flat_hash_set<std::string>& reserved_names = {},
+      IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler,
+      bool func_based_exec = false, const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
 
   /**
@@ -106,8 +105,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, std::shared_ptr<VarTable> var_table,
-      CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec = false,
+      IR* graph, std::shared_ptr<VarTable> var_table, CompilerState* compiler_state,
+      ModuleHandler* module_handler, bool func_based_exec = false,
       const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
 
