@@ -20,7 +20,7 @@ load("@rules_python//python:packaging.bzl", "py_wheel")
 py_wheel(
     name = "pxapi",
     author = "The Pixie Maintainers",
-    author_email = "help@pixielabs.ai",
+    author_email = "maintainers@px.dev",
     classifiers = [
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9",
