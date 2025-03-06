@@ -21,9 +21,6 @@
 #include <memory>
 #include <string>
 
-#include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
-#include "opentelemetry/proto/collector/metrics/v1/metrics_service.pb.h"
-
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
@@ -51,6 +48,7 @@ class OTelExportSinkNode : public SinkNode {
                          size_t parent_index) override;
 
  private:
+  Status ConsumeLogs(ExecState* exec_state, const table_store::schema::RowBatch& rb);
   Status ConsumeMetrics(ExecState* exec_state, const table_store::schema::RowBatch& rb);
   Status ConsumeSpans(ExecState* exec_state, const table_store::schema::RowBatch& rb);
 
@@ -60,6 +58,8 @@ class OTelExportSinkNode : public SinkNode {
       metrics_service_stub_;
   opentelemetry::proto::collector::trace::v1::ExportTraceServiceResponse trace_response_;
   opentelemetry::proto::collector::trace::v1::TraceService::StubInterface* trace_service_stub_;
+  opentelemetry::proto::collector::logs::v1::ExportLogsServiceResponse logs_response_;
+  opentelemetry::proto::collector::logs::v1::LogsService::StubInterface* logs_service_stub_;
   std::unique_ptr<plan::OTelExportSinkOperator> plan_node_;
 
   std::unique_ptr<SpanConfig> span_config_;
