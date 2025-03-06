@@ -358,6 +358,34 @@ message EmptySourceOperator {
   repeated px.types.DataType column_types = 2;
 }
 
+// OTelLog maps operator columns to each field in the OpenTelemetry Log configuration.
+// The mapping ensures that each row of the table will be a separate log.
+// Maps to the config described here:
+// https://github.com/open-telemetry/opentelemetry-proto/blob/d7770822d70c7bd47a6891fc9faacc66fc4af3d3/opentelemetry/proto/logs/v1/logs.proto#L136
+message OTelLog {
+  // A mapping of the OpenTelemetry attribute name to the data that populates that attribute.
+  repeated OTelAttribute attributes = 1;
+
+  // start_time_column points to the column that contains the start
+  // time of the aggregation. Column must be of type TIME64NS.
+  int64 time_column_index = 2;
+
+  // (Optional) The column that contains the observed time. Defaults
+  // to time_column_index (time_unix_nano) if not set (index < 0).
+  int64 observed_time_column_index = 3;
+
+  // The severity number to use for the log. This corresponds to the OTel's
+  // opentelemetry.proto.logs.v1.SeverityNumber enum.
+  // https://github.com/open-telemetry/opentelemetry-proto/blob/9d7c091a619d8f53c31cd54c0b604eec3f7611c1/opentelemetry/proto/logs/v1/logs.proto#L86
+  int64 severity_number = 4;
+
+  // The severity text string to use for the log (e.g. "INFO", "ERROR").
+  string severity_text = 5;
+
+  // Column corresponding to the body of the log.
+  int64 body_column_index = 6;
+}
+
 // OTelSpan maps operator columns to each field in the OpenTelemetry Span configuration.
 // The mapping ensures that each row of the table will be a separate span.
 // Maps to the config described here:
@@ -511,10 +539,12 @@ message OTelExportSinkOperator {
   OTelEndpointConfig endpoint_config = 1;
   // Resource describes where the telemetry data comes from.
   OTelResource resource = 2;
-  // Metrics describest the exported metrics for this resource.
+  // Metrics describes the exported metrics for this resource.
   repeated OTelMetric metrics = 3;
-  // Metrics describes the exported spans for this resource.
+  // Spans describes the exported spans for this resource.
   repeated OTelSpan spans = 4;
+  // Logs describes the exported logs for this resource.
+  repeated OTelLog logs = 5;
 }
 
 // Scalar expression is any single valued expression.

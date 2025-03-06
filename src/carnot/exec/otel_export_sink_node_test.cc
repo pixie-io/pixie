@@ -18,6 +18,7 @@
 
 #include "src/carnot/exec/otel_export_sink_node.h"
 
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -25,6 +26,9 @@
 #include <gtest/gtest.h>
 #include <sole.hpp>
 
+#include "opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.h"
+#include "opentelemetry/proto/collector/logs/v1/logs_service.pb.h"
+#include "opentelemetry/proto/collector/logs/v1/logs_service_mock.grpc.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service_mock.grpc.pb.h"
@@ -62,6 +66,7 @@ using ::testing::SetArgPointee;
 using testing::proto::EqualsProto;
 namespace otelmetricscollector = opentelemetry::proto::collector::metrics::v1;
 namespace oteltracecollector = opentelemetry::proto::collector::trace::v1;
+namespace otellogscollector = opentelemetry::proto::collector::logs::v1;
 
 class OTelExportSinkNodeTest : public ::testing::Test {
  public:
@@ -75,6 +80,9 @@ class OTelExportSinkNodeTest : public ::testing::Test {
     trace_mock_unique_ = std::make_unique<oteltracecollector::MockTraceServiceStub>();
     trace_mock_ = trace_mock_unique_.get();
 
+    logs_mock_unique_ = std::make_unique<otellogscollector::MockLogsServiceStub>();
+    logs_mock_ = logs_mock_unique_.get();
+
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store, MockResultSinkStubGenerator,
         [this](const std::string& url,
@@ -87,6 +95,11 @@ class OTelExportSinkNodeTest : public ::testing::Test {
           url_ = url;
           return std::move(trace_mock_unique_);
         },
+        [this](const std::string& url,
+               bool) -> std::unique_ptr<otellogscollector::LogsService::StubInterface> {
+          url_ = url;
+          return std::move(logs_mock_unique_);
+        },
         sole::uuid4(), nullptr, nullptr, [](grpc::ClientContext*) {});
   }
 
@@ -94,12 +107,14 @@ class OTelExportSinkNodeTest : public ::testing::Test {
   std::string url_;
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<udf::Registry> func_registry_;
+  otellogscollector::MockLogsServiceStub* logs_mock_;
   otelmetricscollector::MockMetricsServiceStub* metrics_mock_;
   oteltracecollector::MockTraceServiceStub* trace_mock_;
 
  private:
   // Ownership will be transferred to the GRPC node, so access this ptr via `metrics_mock_` in the
   // tests.
+  std::unique_ptr<otellogscollector::MockLogsServiceStub> logs_mock_unique_;
   std::unique_ptr<otelmetricscollector::MockMetricsServiceStub> metrics_mock_unique_;
   std::unique_ptr<oteltracecollector::MockTraceServiceStub> trace_mock_unique_;
 };
@@ -1836,6 +1851,177 @@ eos: true)pb";
   retval = tester.node()->ConsumeNext(exec_state_.get(), *rb.get(), 1);
   EXPECT_OK(retval);
 }
+
+class OTelLogTest : public OTelExportSinkNodeTest,
+                    public ::testing::WithParamInterface<TestCase> {};
+
+TEST_P(OTelLogTest, process_data) {
+  auto tc = GetParam();
+  std::vector<otellogscollector::ExportLogsServiceRequest> actual_protos(
+      tc.expected_otel_protos.size());
+  size_t i = 0;
+  EXPECT_CALL(*logs_mock_, Export(_, _, _))
+      .Times(tc.expected_otel_protos.size())
+      .WillRepeatedly(Invoke([&i, &actual_protos](const auto&, const auto& proto, const auto&) {
+        actual_protos[i] = proto;
+        ++i;
+        return grpc::Status::OK;
+      }));
+
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(tc.operator_proto, &otel_sink_op));
+  std::map<std::string, std::string> context;
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1, context);
+  auto s = plan_node->Init(otel_sink_op);
+
+  // Load a RowBatch to get the Input RowDescriptor.
+  table_store::schemapb::RowBatchData row_batch_proto;
+  EXPECT_TRUE(
+      google::protobuf::TextFormat::ParseFromString(tc.incoming_rowbatches[0], &row_batch_proto));
+  RowDescriptor input_rd = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie()->desc();
+  RowDescriptor output_rd({});
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  for (const auto& rb_pb_txt : tc.incoming_rowbatches) {
+    table_store::schemapb::RowBatchData row_batch_proto;
+    EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(rb_pb_txt, &row_batch_proto));
+    auto rb = RowBatch::FromProto(row_batch_proto).ConsumeValueOrDie();
+    tester.ConsumeNext(*rb.get(), 1, 0);
+  }
+
+  for (size_t i = 0; i < tc.expected_otel_protos.size(); ++i) {
+    EXPECT_THAT(actual_protos[i], EqualsProto(tc.expected_otel_protos[i]));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(OTelLog, OTelLogTest,
+                         ::testing::ValuesIn(std::vector<TestCase>{
+                             {"basic_test",
+                              R"pb(
+resource {
+  attributes {
+    name: "service.name"
+    column {
+      column_type: STRING
+      column_index: 1
+      can_be_json_encoded_array: true
+    }
+  }
+}
+logs {
+  time_column_index: 0
+  attributes {
+   column {
+      column_type: STRING
+      column_index: 1
+    }
+  }
+  body_column_index: 2
+  severity_text: "info"
+  severity_number: 9
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 } }
+cols { string_data { data: "aaaa" } }
+cols { string_data { data: "2025-03-05T22:30:24.313268+00:00 dev-vm kernel: ll header: 00000000: ff ff ff ff ff ff 42 01 0a 81 00 01 08 06" } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_logs {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "aaaa"
+      }
+    }
+  }
+  scope_logs {
+    log_records {
+      time_unix_nano: 10
+      observed_time_unix_nano: 10
+      severity_text: "info"
+      severity_number: 9
+      body: {
+        string_value: "2025-03-05T22:30:24.313268+00:00 dev-vm kernel: ll header: 00000000: ff ff ff ff ff ff 42 01 0a 81 00 01 08 06"
+      }
+      attributes {
+        value {
+          string_value: "aaaa"
+        }
+      }
+    }
+  }
+})pb"}},
+                             {"with_observed_time",
+                              R"pb(
+resource {
+  attributes {
+    name: "service.name"
+    column {
+      column_type: STRING
+      column_index: 2
+      can_be_json_encoded_array: true
+    }
+  }
+}
+logs {
+  time_column_index: 0
+  observed_time_column_index: 1
+  attributes {
+   column {
+      column_type: STRING
+      column_index: 2
+    }
+  }
+  body_column_index: 3
+  severity_text: "info"
+  severity_number: 9
+})pb",
+
+                              {R"pb(
+cols { time64ns_data { data: 10 } }
+cols { time64ns_data { data: 12 } }
+cols { string_data { data: "aaaa" } }
+cols { string_data { data: "2025-03-05T22:30:24.313268+00:00 dev-vm kernel: ll header: 00000000: ff ff ff ff ff ff 42 01 0a 81 00 01 08 06" } }
+num_rows: 1
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_logs {
+  resource {
+    attributes {
+      key: "service.name"
+      value {
+        string_value: "aaaa"
+      }
+    }
+  }
+  scope_logs {
+    log_records {
+      time_unix_nano: 10
+      observed_time_unix_nano: 12
+      severity_text: "info"
+      severity_number: 9
+      body: {
+        string_value: "2025-03-05T22:30:24.313268+00:00 dev-vm kernel: ll header: 00000000: ff ff ff ff ff ff 42 01 0a 81 00 01 08 06"
+      }
+      attributes {
+        value {
+          string_value: "aaaa"
+        }
+      }
+    }
+  }
+})pb"}},
+                         }),
+                         [](const ::testing::TestParamInfo<TestCase>& info) {
+                           return info.param.name;
+                         });
 
 }  // namespace exec
 }  // namespace carnot
