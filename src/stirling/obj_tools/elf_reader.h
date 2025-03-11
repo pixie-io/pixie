@@ -112,6 +112,44 @@ class ElfReader {
    *
    */
   StatusOr<std::optional<std::string>> AddrToSymbol(size_t addr);
+
+  /**
+   * Looks up the symbol for an instruction address.
+   * Unlike AddrToSymbol, this function covers the entirety of the function body.
+   * Any address in the body of the function is resolved, not just where the symbol is located.
+   *
+   * @param addr The symbol address to lookup.
+   * @return Symbol name if address was found in the symbol table.
+   *         std::nullopt if search completed by address was not found.
+   *         Error if search failed to run as expected.
+   */
+  StatusOr<std::optional<std::string>> InstrAddrToSymbol(size_t addr);
+
+  class Symbolizer {
+   public:
+    /**
+     * Associate the address range [addr, addr+size] with the provided symbol name.
+     * No checking is performed for overlapping regions, which will result in undefined behavior.
+     */
+    void AddEntry(uintptr_t addr, size_t size, std::string name);
+
+    /**
+     * Lookup the symbol for the specified address.
+     */
+    std::string_view Lookup(uintptr_t addr) const;
+
+   private:
+    struct SymbolAddrInfo {
+      size_t size;
+      std::string name;
+    };
+
+    // Key is an address.
+    absl::btree_map<uintptr_t, SymbolAddrInfo> symbols_;
+  };
+
+  StatusOr<std::unique_ptr<Symbolizer>> GetSymbolizer();
+
   /**
    * Returns the address of the return instructions of the function.
    */

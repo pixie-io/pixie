@@ -979,6 +979,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     PX_ASSIGN_OR_RETURN(
         arg.location,
         arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars, arg.retarg));
+    VLOG(2) << arg;
   }
 
   return arg_info;

@@ -1,0 +1,185 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.stirling.dynamic_tracing.ir.logical;
+
+option go_package = "logicalpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.proto";
+
+message Constant {
+  // Name must be unique in the scope of a Probe.
+  string name = 1;
+  // Describes type of the constant.
+  // TODO(oazizi): This type should be inferred, like all other things in the logical form.
+  shared.ScalarType type = 2;
+  // This is directly assigned to the variable.
+  string constant = 3;
+}
+
+message Argument {
+  // Used to reference this argument.
+  string id = 1;
+  // An expression that accesses a subfield of this argument.
+  // For example, "foo" refers to an argument named "foo".
+  // And "foo.bar" refers to the "bar" field of argument named "foo".
+  //
+  // NOTE: This should only be a accessor expression started with the name of an
+  // argument.
+  string expr = 2;
+}
+
+message ReturnValue {
+  // Used to reference this return value.
+  string id = 1;
+  // The expression describes how to access this value.
+  // The expression is in the form of `$<return value index>.<field>.<field>`.
+  // For example,
+  // `$0.i32`, which is the first return value's `i32` field.
+  //
+  // The index to this return value. This is only meaningful for languages that
+  // support multiple return values, like Go. Note that Golang index all return
+  // values along with the input arguments (excluding the receiver).
+  string expr = 2;
+}
+
+message MapValue {
+  string map_name = 1;
+  // The builtin to generate the key value.
+  shared.BPFHelper key = 2;
+  repeated string value_ids = 3;
+}
+
+message MapStashAction {
+  string map_name = 1;
+  shared.BPFHelper key = 2;
+  // The name of the variable to be inserted into this map.
+  repeated string value_variable_names = 3;
+  // If set, this decide the condition which this map stash should be executed.
+  shared.Condition cond = 4;
+}
+
+message MapDeleteAction {
+  string map_name = 1;
+  shared.BPFHelper key = 2;
+}
+
+// Describes the structure of the data Output.
+message Output {
+  string name = 1;
+  repeated string fields = 2;
+}
+
+message OutputAction {
+  string output_name = 1;
+  // The name of the variables to be output.
+  repeated string variable_names = 3;
+}
+
+// Corresponds to a logical probe.
+message Probe {
+  string name = 1;
+  // Where to attach this probe.
+  shared.Tracepoint tracepoint = 2;
+  // This is only used by intermediate IR to implement if condition that
+  // compares with a constant.
+  repeated Constant consts = 3;
+  // Input arguments of a function.
+  repeated Argument args = 4;
+  // Return values of a function.
+  repeated ReturnValue ret_vals = 5;
+  // Map variables to unstash.
+  // TODO(yzhao/oazizi): This is only used in return probes. One possible restructuring would be
+  // to create intermediate IR with entry & return probes (the down side is excessive copying
+  // between logical and intermediate IRs, because they share most fields).
+  // Additionally, if we were to not have function_latency in physical IR, then a new message
+  // is needed inside intermediate IR, but not appropriate in logical IR, to model binary
+  // expression.
+  // The reason not to split the logical and intermediate IRs is that they really are the same spec.
+  // The logical IR just uses some short-hand which the ProbeTransformer makes explicit.
+  repeated MapValue map_vals = 6;
+  // Latency of a function.
+  oneof function_latency_oneof {
+    shared.FunctionLatency function_latency = 7;
+  }
+  // Inserts key and value into a map.
+  //
+  // The variable to be inserted into the map must be one of the above args,
+  // ret_vals, and function_latency.
+  repeated MapStashAction map_stash_actions = 8;
+  // Deletes a map entry, by key.
+  repeated MapDeleteAction map_delete_actions = 11;
+  // Writes a value to the output table.
+  //
+  // The variable to be inserted into the output table must be one of the above
+  // args, ret_vals, and function_latency.
+  repeated OutputAction output_actions = 9;
+  // Used for debugging to print variable defined above.
+  repeated shared.Printk printks = 10;
+}
+
+// TODO(yzhao): This is equivalent to Program.
+message TracepointSpec {
+  // The language in which the binary was written.
+  // For now, must manually specify the language, so please avoid AUTO.
+  shared.Language language = 1;
+  // Maps holding shared state across probes.
+  repeated shared.Map maps = 2;
+  // The programs outputs to a table.
+  // TODO(yzhao): Remove repeated.
+  repeated Output outputs = 3;
+  // All the probes of the program.
+  // When used as the logical IR, this must be exactly 1 probe.
+  // When used as the intermediate IR, this can be multiple probes.
+  repeated Probe probes = 4;
+}
+
+message BPFTrace {
+  // Bpftrace code to be deployed.
+  string program = 1;
+}
+
+// A logical program, either an application tracepoint, or a bpftrace.
+message TracepointDeployment {
+  // The name of this deployment. Used to identify this operation.
+  string name = 1;
+  // The liveness time of the tracepoint, represented in ns. After this time,
+  // the tracepoint will be deleted.
+  google.protobuf.Duration ttl = 2 [ (gogoproto.customname) = "TTL" ];
+  // The target processes of this deployment.
+  // Right now this only applies to PXL application tracepoints.
+  // May become applicable to bpftrace when we support bpftrace uprobes.
+  shared.DeploymentSpec deployment_spec = 3;
+  // Describes a Tracepoint with a output table name.
+  message Tracepoint {
+    // The name of the table to hold the output data.
+    string table_name = 1;
+    // A native PXL tracepoint specification.
+    TracepointSpec program = 2;
+    // This applies to bpftrace. Note that only one bpftrace program is allowed.
+    BPFTrace bpftrace = 5 [ (gogoproto.customname) = "BPFTrace" ];
+    // It's an error to have both TracepointSpec program and bpftrace specified.
+    // TODO(yzhao): Move tracepoints and bpftrace to be options in an oneof field.
+    // This is not done at the beginning to minimize the work for supporting bpftrace.
+  }
+  repeated Tracepoint tracepoints = 4;
+}

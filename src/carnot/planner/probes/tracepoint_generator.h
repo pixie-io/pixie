@@ -16,26 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package controllers_test
+#pragma once
 
-import (
-	"testing"
+#include "src/carnot/planner/compiler/ast_visitor.h"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/mock/gomock"
+#include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
-	"px.dev/pixie/src/carnot/planner/distributedpb"
-)
+namespace px {
+namespace carnot {
+namespace planner {
+namespace compiler {
 
-func TestMutationExecutor_Execute(t *testing.T) {
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+/**
+ * Take a tracepoint specification in PXL format, and compiles it to a logical tracepoint Program.
+ */
+StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
+    std::string_view query);
 
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	t.Skip("These tests are incomplete and need to be done")
-}
+}  // namespace compiler
+}  // namespace planner
+}  // namespace carnot
+}  // namespace px

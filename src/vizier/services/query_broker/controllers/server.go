@@ -60,7 +60,6 @@ const (
 // Planner describes the interface for any planner.
 type Planner interface {
 	Plan(req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
-	CompileMutations(request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error)
 	GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error)
 	Free()
 }
@@ -91,7 +90,7 @@ type Server struct {
 }
 
 // QueryExecutorFactory creates a new QueryExecutor.
-type QueryExecutorFactory func(*Server, MutationExecFactory) QueryExecutor
+type QueryExecutorFactory func(*Server) QueryExecutor
 
 // NewServer creates GRPC handlers.
 func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, dataPrivacy DataPrivacy,
@@ -180,7 +179,7 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 		receivedRows:       0,
 	}
 
-	queryExec := s.queryExecFactory(s, NewMutationExecutor)
+	queryExec := s.queryExecFactory(s)
 	if err := queryExec.Run(ctx, req, consumer); err != nil {
 		return err
 	}
@@ -320,7 +319,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		}
 		consumer = c
 	}
-	queryExec := s.queryExecFactory(s, NewMutationExecutor)
+	queryExec := s.queryExecFactory(s)
 	if err := queryExec.Run(ctx, req, consumer); err != nil {
 		return err
 	}

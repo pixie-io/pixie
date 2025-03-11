@@ -37,7 +37,6 @@
 #include "src/table_store/schemapb/schema.pb.h"
 
 using px::carnot::planner::distributedpb::LogicalPlannerResult;
-using px::carnot::planner::plannerpb::CompileMutationsResponse;
 using px::carnot::planner::plannerpb::GenerateOTelScriptResponse;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
@@ -111,37 +110,6 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* query_request_str_c,
 
   // Serialize the logical plan into bytes.
   return PrepareResult(&planner_result_pb, resultLen);
-}
-
-char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* mutation_request_str_c,
-                              int mutation_request_str_len, int* resultLen) {
-  std::string mutation_request_pb_str(mutation_request_str_c,
-                                      mutation_request_str_c + mutation_request_str_len);
-
-  // Load in the mutation request protobuf.
-  px::carnot::planner::plannerpb::CompileMutationsRequest mutation_request_pb;
-  PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
-                          LoadProto(mutation_request_pb_str, &mutation_request_pb,
-                                    "Failed to parse the mutation request"));
-
-  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
-
-  auto dynamic_trace_or_s = planner->CompileTrace(mutation_request_pb);
-  if (!dynamic_trace_or_s.ok()) {
-    return ExitEarly<CompileMutationsResponse>(dynamic_trace_or_s.status(), resultLen);
-  }
-  std::unique_ptr<px::carnot::planner::compiler::MutationsIR> trace =
-      dynamic_trace_or_s.ConsumeValueOrDie();
-
-  // If the response is ok, then we can go ahead and set this up.
-  CompileMutationsResponse mutations_response_pb;
-  WrapStatus(&mutations_response_pb, dynamic_trace_or_s.status());
-
-  PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
-                          trace->ToProto(&mutations_response_pb));
-
-  // Serialize the tracing program into bytes.
-  return PrepareResult(&mutations_response_pb, resultLen);
 }
 
 char* PlannerGenerateOTelScript(PlannerPtr planner_ptr,

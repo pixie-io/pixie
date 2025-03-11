@@ -141,7 +141,10 @@ StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
   PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
                       elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
 
-  return ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr);
+  PX_ASSIGN_OR_RETURN(auto version, ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr));
+  PX_ASSIGN_OR_RETURN(auto mod, ReadGoString(elf_reader, ptr_size, ptr_addr + ptr_size, read_ptr));
+  LOG(INFO) << mod;
+  return version;
 }
 
 // Prefixes used to search for itable symbols in the binary. Follows the format:

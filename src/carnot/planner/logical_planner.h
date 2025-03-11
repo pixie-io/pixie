@@ -26,7 +26,6 @@
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/plannerpb/service.pb.h"
-#include "src/carnot/planner/probes/probes.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace px {
@@ -56,9 +55,6 @@ class LogicalPlanner : public NotCopyable {
    */
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
       const plannerpb::QueryRequest& query);
-
-  StatusOr<std::unique_ptr<compiler::MutationsIR>> CompileTrace(
-      const plannerpb::CompileMutationsRequest& mutations_req);
 
   StatusOr<std::unique_ptr<plannerpb::GenerateOTelScriptResponse>> GenerateOTelScript(
       const plannerpb::GenerateOTelScriptRequest& generate_req);

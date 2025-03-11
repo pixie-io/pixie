@@ -87,32 +87,6 @@ func (cm GoPlanner) Plan(queryRequest *plannerpb.QueryRequest) (*distributedpb.L
 	return plan, nil
 }
 
-// CompileMutations compiles the query into a mutation of Pixie Data Table.
-func (cm GoPlanner) CompileMutations(request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
-	var resultLen C.int
-
-	requestBytes, err := proto.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-	requestData := C.CBytes(requestBytes)
-	defer C.free(requestData)
-
-	res := C.PlannerCompileMutations(cm.planner, (*C.char)(requestData), C.int(len(requestBytes)), &resultLen)
-	defer C.StrFree(res)
-	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
-	if resultLen == 0 {
-		return nil, errors.New("no result returned")
-	}
-
-	resultPB := &plannerpb.CompileMutationsResponse{}
-	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
-		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
-	}
-
-	return resultPB, nil
-}
-
 // GenerateOTelScript generates an OTel export script based on the script passed in.
 func (cm GoPlanner) GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error) {
 	var resultLen C.int

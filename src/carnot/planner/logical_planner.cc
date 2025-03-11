@@ -149,21 +149,6 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   return distributed_plan;
 }
 
-StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
-    const plannerpb::CompileMutationsRequest& mutations_req) {
-  // Compile into the IR.
-  auto ms = mutations_req.logical_planner_state().plan_options().max_output_rows_per_table();
-  VLOG(1) << "Max output rows: " << ms;
-  PX_ASSIGN_OR_RETURN(
-      std::unique_ptr<CompilerState> compiler_state,
-      CreateCompilerState(mutations_req.logical_planner_state(), registry_info_.get(), ms));
-
-  std::vector<plannerpb::FuncToExecute> exec_funcs(mutations_req.exec_funcs().begin(),
-                                                   mutations_req.exec_funcs().end());
-
-  return compiler_.CompileTrace(mutations_req.query_str(), compiler_state.get(), exec_funcs);
-}
-
 StatusOr<std::unique_ptr<plannerpb::GenerateOTelScriptResponse>> LogicalPlanner::GenerateOTelScript(
     const plannerpb::GenerateOTelScriptRequest& generate_req) {
   PX_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,

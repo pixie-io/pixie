@@ -1,0 +1,227 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.stirling.dynamic_tracing.ir.shared;
+
+option go_package = "px.dev/pixie/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb";
+
+enum Language {
+  // Dynamic tracer will automatically infer the language when set to unknown.
+  // This is the preferred usage.
+  LANG_UNKNOWN = 0;
+  C = 1;
+  CPP = 2;
+  GOLANG = 3;
+}
+
+// All enum values must be consecutive, as they are used as array index in codegen.
+enum BPFHelper {
+  GOID = 0;
+  TGID = 1;
+  TGID_PID = 2;
+  TGID_START_TIME = 3;
+  // Return the kernel time in nanoseconds.
+  KTIME = 4;
+}
+
+// This scalar type encompasses basic types across all supported languages.
+// For Golang, refer to: https://golang.org/pkg/go/types/#pkg-variables
+// For C++, refer to: https://en.cppreference.com/w/cpp/language/types
+// TODO(oazizi): Move to physical.proto once last use in logical form is removed.
+enum ScalarType {
+  UNKNOWN = 0;
+  // Boolean.
+  BOOL = 100;
+  // Integer types (relative definitions).
+  // The widths of these types may change depending on the hardware.
+  // Note that C++ absolute width types (e.g. uint32_t) map to these types,
+  // with the mapping recorded in the DWARF information.
+  SHORT = 200;
+  USHORT = 201;
+  INT = 202;
+  UINT = 203;
+  LONG = 204;
+  ULONG = 205;
+  LONGLONG = 206;
+  ULONGLONG = 207;
+  // Integer types (absolute widths).
+  // Used by Golang only (see note about C++ above).
+  INT8 = 300;
+  INT16 = 301;
+  INT32 = 302;
+  INT64 = 303;
+  UINT8 = 304;
+  UINT16 = 305;
+  UINT32 = 306;
+  UINT64 = 307;
+  // Character types.
+  CHAR = 400;
+  UCHAR = 401;
+  // Floating point types.
+  FLOAT = 500;
+  DOUBLE = 501;
+  VOID_POINTER = 900;
+  STRING = 1000;
+  BYTE_ARRAY = 1001;
+  // A struct represented as a blob of bytes.
+  STRUCT_BLOB = 1100;
+}
+
+// Describes where to attach a probe.
+message Tracepoint {
+  message Function {
+    // The name of the function. The format varies between languages.
+    // In C++, it includes the fully qualified name of the function, including namespaces.
+    // For example:
+    // namespace px {
+    //   struct Foo {
+    //     void Bar(int i) { ... }
+    //     template <typename T> void Bar(T t) { ... }
+    //   };
+    // }  // namespace px
+    //
+    // px::Foo::Bar points to the only member function of struct Foo.
+    string name = 1;
+    // The types of the parameters.
+    // This only applies to C++ (or any languages that support function overloading).
+    // Use string to represent the type, instead of ScalarType, for greater flexibility to describe
+    // scalar types and composite types.
+    //
+    // Use the example above, these types are described in the function signature:
+    // px::Foo::Bar(int)
+    repeated string param_types = 2;
+  }
+  // Describes the target function to attach a Tracepoint.
+  Function function = 3;
+  // TODO(yzhao): Remove this field.
+  string symbol = 1;
+  enum Type {
+    // Only for logical IR.
+    LOGICAL = 0;
+    // Intermediate and physical IR uses this to specify a BPF entry probe.
+    ENTRY = 1;
+    // Intermediate and physical IR uses this to specify a BPF return probe.
+    RETURN = 2;
+  }
+  // This has to be LOGICAL for logical IR.
+  Type type = 2;
+}
+
+// This cannot replace class UPID in src/shared/metadata/base_types.h, because the C++ UPID is
+// created to be compatible with Arrow and uses uint128 for efficient processing.
+message UPID {
+  // A unique ID for a particular agent.
+  uint32 asid = 1;
+  // The PID of the running process on a particular node.
+  uint32 pid = 2;
+  // The start time stamp of the process, used to distinguish between processes having the same
+  // PID across different time frame.
+  uint64 ts_ns = 3;
+}
+
+message BinaryPathList {
+  repeated string paths = 1;
+}
+
+message UPIDList {
+  repeated UPID upids = 1;
+}
+
+// Describes the target of attaching a Tracepoint.
+message DeploymentSpec {
+  message SharedObject {
+    // The name of the shared library to trace.
+    // The name should not include a path or the version number.
+    // E.g. /lib/x86_64-linux-gnu/libc.so.6 -> libc
+    string name = 1;
+    // A running process which is used to locate the shared library.
+    // The shared object must be used by this process.
+    // Note, however, that the tracepoint is attached to the shared library; not just this process.
+    UPID upid = 2;
+  }
+
+  // TODO(chengruizhe): Consider adding a PodProcessList that contains a repeated field of
+  // PodProcesses.
+  message PodProcess {
+    // The names of the Pods.
+    repeated string pods = 1;
+    // The name of the container inside the above Pods.
+    string container = 2;
+    // The application processes whose cmdline contains this regexp are selected.
+    string process = 3;
+  }
+  oneof target_oneof {
+    // The path of the object file (may be executable or shared library).
+    BinaryPathList path_list = 1;
+    // The UPID of a running process.
+    // Resolved to an executable.
+    UPIDList upid_list = 3;
+    // An way to specify a shared object to be traced.
+    SharedObject shared_object = 8;
+    // Describes the target process to attach.
+    PodProcess pod_process = 10;
+  }
+}
+
+// Wraps an oneof field which can be either scalar or struct.
+message VariableType {
+  oneof type_oneof {
+    ScalarType scalar = 2;
+    string struct_type = 3;
+  }
+}
+
+// Describe a BPF map.
+// Corresponds to px.Map().
+message Map {
+  string name = 1;
+  // TODO(yzhao): Remove the following 2 lines and create PerfBuffer in physical.proto with them.
+  VariableType key_type = 2;    // Exclusive to physical IR.
+  VariableType value_type = 3;  // Exclusive to physical IR.
+}
+
+// Describes a condition to be checked.
+message Condition {
+  enum Op {
+    // NIL means this condition should be ignored.
+    NIL = 0;
+    EQUAL = 1;
+  }
+  // Describes the operation performed on the variables listed below.
+  Op op = 1;
+  // List variables used in the operation.
+  repeated string vars = 2;
+}
+
+// bpf_trace_printk() on a text.
+message Printk {
+  oneof content_oneof {
+    // A piece of hardcoded text.
+    string text = 1;
+    // Another ScalarVariable, cannot be StructVariable.
+    string scalar = 2;
+  }
+}
+
+// Indicates a variable named 'id' should be generated, and represents the latency from function
+// entry to return.
+message FunctionLatency {
+  string id = 1;
+}

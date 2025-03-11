@@ -23,7 +23,6 @@ go_library(
         "data_privacy.go",
         "errors.go",
         "launch_query.go",
-        "mutation_executor.go",
         "proto_utils.go",
         "query_executor.go",
         "query_flags.go",
@@ -89,7 +88,6 @@ pl_go_test(
     name = "controllers_test",
     srcs = [
         "launch_query_test.go",
-        "mutation_executor_test.go",
         "proto_utils_test.go",
         "query_executor_test.go",
         "query_flags_test.go",

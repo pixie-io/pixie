@@ -172,7 +172,7 @@ def _cc_deps():
     # Uncomment these to develop bcc and/or bpftrace locally. Should also comment out the corresponding _bazel_repo lines.
     # _local_repo("com_github_iovisor_bcc", build_file = "//bazel/external/local_dev:bcc.BUILD")
     # _local_repo("com_github_iovisor_bpftrace", build_file = "//bazel/external/local_dev:bpftrace.BUILD")
-    _bazel_repo("com_github_iovisor_bcc", build_file = "//bazel/external:bcc.BUILD")
+    _bazel_repo("com_github_iovisor_bcc", build_file = "//bazel/external:bcc.BUILD", patches= ["//bazel/external:bcc.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_iovisor_bpftrace", build_file = "//bazel/external:bpftrace.BUILD")
 
     # TODO(jps): For jattach, consider using a patch and directly pulling from upstream (vs. fork).

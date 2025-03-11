@@ -1,0 +1,181 @@
+diff --git a/src/cc/CMakeLists.txt b/src/cc/CMakeLists.txt
+index 632adf36..5aadfd84 100644
+--- a/src/cc/CMakeLists.txt
++++ b/src/cc/CMakeLists.txt
+@@ -67,9 +67,6 @@ if(NOT CMAKE_USE_LIBBPF_PACKAGE)
+ endif()
+ 
+ set(bcc_common_sources bcc_common.cc bpf_module.cc bcc_btf.cc exported_files.cc)
+-if (${LLVM_PACKAGE_VERSION} VERSION_EQUAL 6 OR ${LLVM_PACKAGE_VERSION} VERSION_GREATER 6)
+-  set(bcc_common_sources ${bcc_common_sources} bcc_debug.cc)
+-endif()
+ 
+ if(ENABLE_LLVM_NATIVECODEGEN)
+ set(bcc_common_sources ${bcc_common_sources} bpf_module_rw_engine.cc)
+diff --git a/src/cc/bcc_btf.cc b/src/cc/bcc_btf.cc
+index be248612..f07853b5 100644
+--- a/src/cc/bcc_btf.cc
++++ b/src/cc/bcc_btf.cc
+@@ -367,9 +367,9 @@ int32_t BTFStringTable::addString(std::string S) {
+   return Offset;
+ }
+ 
+-BTF::BTF(bool debug, sec_map_def &sections) : debug_(debug),
++BTF::BTF(bool /*debug*/, sec_map_def &sections) : debug_(false),
+     btf_(nullptr), btf_ext_(nullptr), sections_(sections) {
+-  if (!debug)
++  if (!false)
+     libbpf_set_print(NULL);
+ }
+ 
+diff --git a/src/cc/bpf_module.cc b/src/cc/bpf_module.cc
+index c0dd0119..4160bc22 100644
+--- a/src/cc/bpf_module.cc
++++ b/src/cc/bpf_module.cc
+@@ -60,7 +60,6 @@
+ #include <vector>
+ 
+ #include "bcc_btf.h"
+-#include "bcc_debug.h"
+ #include "bcc_elf.h"
+ #include "bcc_libbpf_inc.h"
+ #include "common.h"
+@@ -162,8 +161,8 @@ BPFModule::BPFModule(unsigned flags, TableStorage *ts, bool rw_engine_enabled,
+   LLVMInitializeBPFAsmPrinter();
+ #if LLVM_VERSION_MAJOR >= 6
+   LLVMInitializeBPFAsmParser();
+-  if (flags & DEBUG_SOURCE)
+-    LLVMInitializeBPFDisassembler();
++  /* if (flags & DEBUG_SOURCE) */
++  /*   LLVMInitializeBPFDisassembler(); */
+ #endif
+   LLVMLinkInMCJIT(); /* call empty function to force linking of MCJIT */
+   if (!ts_) {
+@@ -283,8 +282,8 @@ void BPFModule::dump_ir(Module &mod) {
+ 
+ int BPFModule::run_pass_manager(Module &mod) {
+   if (verifyModule(mod, &errs())) {
+-    if (flags_ & DEBUG_LLVM_IR)
+-      dump_ir(mod);
++    /* if (flags_ & DEBUG_LLVM_IR) */
++    /*   dump_ir(mod); */
+     return -1;
+   }
+ 
+@@ -306,8 +305,8 @@ int BPFModule::run_pass_manager(Module &mod) {
+ 
+   // Add passes and run
+   MPM.addPass(AlwaysInlinerPass());
+-  if (flags_ & DEBUG_LLVM_IR)
+-    MPM.addPass(PrintModulePass(outs()));
++  /* if (flags_ & DEBUG_LLVM_IR) */
++  /*   MPM.addPass(PrintModulePass(outs())); */
+   MPM.run(mod, MAM);
+ #else
+   legacy::PassManager PM;
+@@ -323,8 +322,8 @@ int BPFModule::run_pass_manager(Module &mod) {
+    */
+   LLVMAddAlwaysInlinerPass(reinterpret_cast<LLVMPassManagerRef>(&PM));
+   PMB.populateModulePassManager(PM);
+-  if (flags_ & DEBUG_LLVM_IR)
+-    PM.add(createPrintModulePass(outs()));
++  /* if (flags_ & DEBUG_LLVM_IR) */
++  /*   PM.add(createPrintModulePass(outs())); */
+   PM.run(mod);
+ #endif
+ 
+@@ -594,11 +593,11 @@ int BPFModule::finalize() {
+   });
+   finalize_prog_func_info();
+ 
+-  if (flags_ & DEBUG_SOURCE) {
+-    SourceDebugger src_debugger(mod, *sections_p, *prog_func_info_, mod_src_,
+-                                src_dbg_fmap_);
+-    src_debugger.dump();
+-  }
++  /* if (flags_ & DEBUG_SOURCE) { */
++  /*   SourceDebugger src_debugger(mod, *sections_p, *prog_func_info_, mod_src_, */
++  /*                               src_dbg_fmap_); */
++  /*   src_debugger.dump(); */
++  /* } */
+ 
+   load_btf(*sections_p);
+   if (load_maps(*sections_p))
+diff --git a/src/cc/frontends/clang/b_frontend_action.cc b/src/cc/frontends/clang/b_frontend_action.cc
+index 95cec3cb..739fb7bb 100644
+--- a/src/cc/frontends/clang/b_frontend_action.cc
++++ b/src/cc/frontends/clang/b_frontend_action.cc
+@@ -1861,18 +1861,18 @@ void BFrontendAction::EndSourceFileAction() {
+   // Additional misc rewrites
+   DoMiscWorkAround();
+ 
+-  if (flags_ & DEBUG_PREPROCESSOR)
+-    rewriter_->getEditBuffer(rewriter_->getSourceMgr().getMainFileID()).write(llvm::errs());
++  /* if (flags_ & DEBUG_PREPROCESSOR) */
++  /*   rewriter_->getEditBuffer(rewriter_->getSourceMgr().getMainFileID()).write(llvm::errs()); */
+ #if LLVM_VERSION_MAJOR >= 9
+   llvm::raw_string_ostream tmp_os(mod_src_);
+   rewriter_->getEditBuffer(rewriter_->getSourceMgr().getMainFileID())
+       .write(tmp_os);
+ #else
+-  if (flags_ & DEBUG_SOURCE) {
+-    llvm::raw_string_ostream tmp_os(mod_src_);
+-    rewriter_->getEditBuffer(rewriter_->getSourceMgr().getMainFileID())
+-        .write(tmp_os);
+-  }
++  /* if (flags_ & DEBUG_SOURCE) { */
++  /*   llvm::raw_string_ostream tmp_os(mod_src_); */
++  /*   rewriter_->getEditBuffer(rewriter_->getSourceMgr().getMainFileID()) */
++  /*       .write(tmp_os); */
++  /* } */
+ #endif
+ 
+   for (auto func : func_range_) {
+diff --git a/src/cc/frontends/clang/loader.cc b/src/cc/frontends/clang/loader.cc
+index 7950cda4..df6614c0 100644
+--- a/src/cc/frontends/clang/loader.cc
++++ b/src/cc/frontends/clang/loader.cc
+@@ -231,8 +231,8 @@ int ClangLoader::parse(
+     }
+   }
+ 
+-  if (flags_ & DEBUG_PREPROCESSOR)
+-    std::cout << "Running from kernel directory at: " << kpath.c_str() << "\n";
++  /* if (flags_ & DEBUG_PREPROCESSOR) */
++  /*   std::cout << "Running from kernel directory at: " << kpath.c_str() << "\n"; */
+ 
+   // clang needs to run inside the kernel dir
+   DirStack dstack(kpath);
+@@ -288,13 +288,6 @@ int ClangLoader::parse(
+   vector<string> kflags;
+   if (kbuild_helper.get_flags(un.machine, &kflags))
+     return -1;
+-#if LLVM_VERSION_MAJOR >= 9
+-  flags_cstr.push_back("-g");
+-  flags_cstr.push_back("-gdwarf-4");
+-#else
+-  if (flags_ & DEBUG_SOURCE)
+-    flags_cstr.push_back("-g");
+-#endif
+   for (auto it = kflags.begin(); it != kflags.end(); ++it)
+     flags_cstr.push_back(it->c_str());
+ 
+@@ -447,12 +440,12 @@ int ClangLoader::do_compile(
+   // Initialize a compiler invocation object from the clang (-cc1) arguments.
+   const llvm::opt::ArgStringList &ccargs = cmd.getArguments();
+ 
+-  if (flags_ & DEBUG_PREPROCESSOR) {
+-    llvm::errs() << "clang";
+-    for (auto arg : ccargs)
+-      llvm::errs() << " " << arg;
+-    llvm::errs() << "\n";
+-  }
++  /* if (flags_ & DEBUG_PREPROCESSOR) { */
++  /*   llvm::errs() << "clang"; */
++  /*   for (auto arg : ccargs) */
++  /*     llvm::errs() << " " << arg; */
++  /*   llvm::errs() << "\n"; */
++  /* } */
+ 
+   // pre-compilation pass for generating tracepoint structures
+   CompilerInstance compiler0;

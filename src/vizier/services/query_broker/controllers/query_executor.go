@@ -85,12 +85,6 @@ type DataPrivacy interface {
 	RedactionOptions(ctx context.Context) (*distributedpb.RedactionOptions, error)
 }
 
-// MutationExecFactory is a function that creates a new MutationExecutorImpl.
-type MutationExecFactory func(Planner,
-	metadatapb.MetadataTracepointServiceClient,
-	metadatapb.MetadataConfigServiceClient,
-	*distributedpb.DistributedState) MutationExecutor
-
 // QueryExecutorImpl implements the QueryExecutor interface.
 type QueryExecutorImpl struct {
 	resultAddress       string
@@ -109,8 +103,6 @@ type QueryExecutorImpl struct {
 	startTime         time.Time
 	compilationTimeNs int64
 
-	mutationExecFactory MutationExecFactory
-
 	// queryName is used for labeling execution time metrics.
 	queryName string
 	// numPEMsQueried is stored so that the prometheus metric is only updated if the query succeeded.
@@ -118,7 +110,7 @@ type QueryExecutorImpl struct {
 }
 
 // NewQueryExecutorFromServer creates a new QueryExecutor using the properties of a query broker server.
-func NewQueryExecutorFromServer(s *Server, mutExecFactory MutationExecFactory) QueryExecutor {
+func NewQueryExecutorFromServer(s *Server) QueryExecutor {
 	return NewQueryExecutor(
 		s.env.Address(),
 		s.env.SSLTargetName(),
@@ -129,7 +121,6 @@ func NewQueryExecutorFromServer(s *Server, mutExecFactory MutationExecFactory) Q
 		s.mdconf,
 		s.resultForwarder,
 		s.planner,
-		mutExecFactory,
 	)
 }
 
@@ -144,7 +135,6 @@ func NewQueryExecutor(
 	mdconf metadatapb.MetadataConfigServiceClient,
 	resultForwarder QueryResultForwarder,
 	planner Planner,
-	mutExecFactory MutationExecFactory,
 ) QueryExecutor {
 	return &QueryExecutorImpl{
 		resultAddress:       resultAddress,
@@ -156,7 +146,6 @@ func NewQueryExecutor(
 		mdconf:              mdconf,
 		resultForwarder:     resultForwarder,
 		planner:             planner,
-		mutationExecFactory: mutExecFactory,
 		queryName:           "",
 		numPEMsQueried:      0,
 	}
@@ -288,38 +277,6 @@ func (q *QueryExecutorImpl) getPlanOpts(queryStr string) (*planpb.PlanOptions, e
 
 	planOpts := flags.GetPlanOptions()
 	return planOpts, nil
-}
-
-func (q *QueryExecutorImpl) runMutation(ctx context.Context, resultCh chan<- *vizierpb.ExecuteScriptResponse, req *vizierpb.ExecuteScriptRequest, planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState) error {
-	mutationExec := q.mutationExecFactory(q.planner, q.mdtp, q.mdconf, distributedState)
-
-	s, err := mutationExec.Execute(ctx, req, planOpts)
-	if err != nil {
-		return err
-	}
-	if s != nil {
-		if err := q.sendResponse(ctx, resultCh, StatusToVizierResponse(q.queryID, s)); err != nil {
-			return err
-		}
-		return StatusToError(s)
-	}
-	mutationInfo, err := mutationExec.MutationInfo(ctx)
-	if err != nil {
-		return err
-	}
-
-	resp := &vizierpb.ExecuteScriptResponse{
-		QueryID:      q.queryID.String(),
-		MutationInfo: mutationInfo,
-	}
-	if err := q.sendResponse(ctx, resultCh, resp); err != nil {
-		return err
-	}
-
-	if mutationInfo.Status.Code != int32(codes.OK) {
-		return VizierStatusToError(mutationInfo.Status)
-	}
-	return nil
 }
 
 func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vizierpb.ExecuteScriptResponse, req *plannerpb.QueryRequest, planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState) (*distributedpb.DistributedPlan, error) {
@@ -472,12 +429,6 @@ func (q *QueryExecutorImpl) prepareScript(ctx context.Context, resultCh chan<- *
 	}
 
 	distributedState := q.agentsTracker.GetAgentInfo().DistributedState()
-
-	if req.Mutation {
-		if err := q.runMutation(ctx, resultCh, req, planOpts, &distributedState); err != nil {
-			return err
-		}
-	}
 
 	// Convert request to a format expected by the planner.
 	convertedReq, err := VizierQueryRequestToPlannerQueryRequest(req)

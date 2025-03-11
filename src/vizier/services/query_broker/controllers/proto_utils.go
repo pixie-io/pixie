@@ -158,15 +158,6 @@ func convertConfigs(config *vizierpb.Configs) *plannerpb.Configs {
 	return c
 }
 
-// VizierQueryRequestToPlannerMutationRequest maps request to mutation.
-func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
-	return &plannerpb.CompileMutationsRequest{
-		QueryStr:  vpb.QueryStr,
-		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
-		Configs:   convertConfigs(vpb.Configs),
-	}, nil
-}
-
 // VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
 func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
 	return &plannerpb.QueryRequest{
