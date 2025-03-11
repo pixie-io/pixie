@@ -38,7 +38,7 @@ class KafkaContainer : public ContainerRunner {
       "src/stirling/source_connectors/socket_tracer/testing/containers/kafka_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "kafka_server";
   static constexpr std::string_view kReadyMessage =
-      "Recorded new controller, from now on will use broker";
+      "from now on will use";
 };
 
 }  // namespace testing

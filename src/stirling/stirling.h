@@ -30,7 +30,6 @@
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_registry.h"
 #include "src/stirling/proto/stirling.pb.h"
-#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/utils/linux_headers.h"
 
 DECLARE_string(stirling_sources);
@@ -110,23 +109,6 @@ class Stirling : public NotCopyable {
    * Will clobber any existing handlers, so make sure no other handlers on these signals exist.
    */
   virtual void RegisterUserDebugSignalHandlers(int signum = SIGUSR2) = 0;
-
-  /**
-   * Registers probes defined inside a tracing program.
-   */
-  virtual void RegisterTracepoint(
-      sole::uuid trace_id,
-      std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) = 0;
-
-  /**
-   * Returns the status of the probe registration for the trace identified by the input ID.
-   */
-  virtual StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) = 0;
-
-  /**
-   * Remove a dynamically created tracepoint.
-   */
-  virtual Status RemoveTracepoint(sole::uuid trace_id) = 0;
 
   /**
    * Populate the Publish Proto object. Agent calls this function to get the Publish

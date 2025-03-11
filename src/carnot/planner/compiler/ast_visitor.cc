@@ -30,7 +30,6 @@
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/type_object.h"
 #include "src/carnot/planner/parser/parser.h"
-#include "src/carnot/planner/probes/config_module.h"
 
 namespace px {
 namespace carnot {
@@ -56,12 +55,12 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, std::shared_ptr<VarTable> var_table, MutationsIR* mutations,
+    IR* graph, std::shared_ptr<VarTable> var_table,
     CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
     const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
-      graph, mutations, compiler_state, VarTable::Create(), std::move(var_table), func_based_exec,
+      graph, compiler_state, VarTable::Create(), std::move(var_table), func_based_exec,
       reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
 
   PX_RETURN_IF_ERROR(ast_visitor->InitGlobals());
@@ -71,10 +70,10 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, MutationsIR* mutations, CompilerState* compiler_state, ModuleHandler* module_handler,
+    IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler,
     bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
-  return Create(graph, VarTable::Create(), mutations, compiler_state, module_handler,
+  return Create(graph, VarTable::Create(), compiler_state, module_handler,
                 func_based_exec, reserved_names, module_map);
 }
 
@@ -91,7 +90,7 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
     std::shared_ptr<VarTable> var_table) {
   // The flag values should come from the parent var table, not be copied here.
   auto visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, mutations_, compiler_state_, global_var_table_, var_table,
+      new ASTVisitorImpl(ir_graph_, compiler_state_, global_var_table_, var_table,
                          func_based_exec_, {}, module_handler_, udf_registry_));
   return visitor;
 }
@@ -102,10 +101,6 @@ Status ASTVisitorImpl::SetupModules(
   PX_ASSIGN_OR_RETURN(
       (*module_handler_)[PixieModule::kPixieModuleObjName],
       PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_, reserved_names_));
-  PX_ASSIGN_OR_RETURN((*module_handler_)[TraceModule::kTraceModuleObjName],
-                      TraceModule::Create(mutations_, this));
-  PX_ASSIGN_OR_RETURN((*module_handler_)[ConfigModule::kConfigModuleObjName],
-                      ConfigModule::Create(mutations_, this));
   for (const auto& [module_name, module_text] : module_name_to_pxl_map) {
     PX_ASSIGN_OR_RETURN((*module_handler_)[module_name], Module::Create(module_text, this));
   }

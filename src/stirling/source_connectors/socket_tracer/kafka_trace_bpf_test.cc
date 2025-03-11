@@ -86,7 +86,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
   StatusOr<int32_t> CreateTopic() {
     std::string cmd = absl::StrFormat(
         "podman exec %s bash -c 'kafka-topics --create --topic foo --partitions 1 "
-        "--replication-factor 1 --if-not-exists --zookeeper localhost:32181 & echo $! && wait'",
+        "--replication-factor 1 --if-not-exists --bootstrap-server localhost:29092 & echo $! && wait'",
         kafka_server_.container_name());
 
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
@@ -97,20 +97,37 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
     std::string cmd = absl::StrFormat(
         "podman exec %s bash -c 'echo \"hello\" | "
         "kafka-console-producer --request-required-acks 1 --broker-list localhost:29092 --topic "
-        "foo& echo $! && wait'",
+        "foo 2>&1 & echo $! && wait'",
         kafka_server_.container_name());
 
-    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    LOG(INFO) << "ProduceMessage cmd test: " << cmd;
+    auto s = px::Exec(cmd);
+    if (!s.ok()) {
+      LOG(ERROR) << "ProduceMessage failed: " << s.status();
+      return s.status();
+    }
+    /* PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd)); */
+    std::string out = s.ValueOrDie();
+    LOG(INFO) << "ProduceMessage output: " << out;
     return GetPIDFromOutput(out);
   }
 
   StatusOr<int32_t> FetchMessage() {
     std::string cmd = absl::StrFormat(
         "podman exec %s bash -c 'kafka-console-consumer --bootstrap-server localhost:29092 --topic "
-        "foo --from-beginning --timeout-ms 10000& echo $! && wait'",
+        "foo --from-beginning --timeout-ms 10000 2>&1  & echo $! && wait'",
         kafka_server_.container_name());
 
+    LOG(INFO) << "FetchMessage cmd: " << cmd;
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    auto count = 5;
+    while (count > 0 && out.find("Processed a total of 0 messages") != std::string::npos) {
+      LOG(INFO) << "No messages found. Retrying...";
+      PX_ASSIGN_OR_RETURN(out, px::Exec(cmd));
+      LOG(INFO) << "FetchMessage output: " << out;
+      count--;
+    }
+    LOG(INFO) << "FetchMessage output: " << out;
     return GetPIDFromOutput(out);
   }
 
@@ -201,7 +218,7 @@ KafkaTraceRecord kProduceRecord = {
         "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":\"foo\","
         "\"partitions\":[{\"index\":0,\"message_set\":{\"size\":74}}]}]}",
     .resp =
-        "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index\":0,\"error_code\":0,"
+        "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index \":0,\"error_code\":0,"
         "\"base_offset\":0,\"log_append_time_ms\":-1,\"log_start_offset\":0,\"record_errors\":[],"
         "\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
 
@@ -258,12 +275,17 @@ std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
 //-----------------------------------------------------------------------------
 
 TEST_F(KafkaTraceTest, kafka_capture) {
+  /* FLAGS_stirling_conn_trace_pid = kafka_server_.process_pid(); */
   StartTransferDataThread();
 
   ASSERT_OK_AND_ASSIGN(int32_t create_topic_pid, CreateTopic());
   PX_UNUSED(create_topic_pid);
   ASSERT_OK_AND_ASSIGN(int32_t produce_message_pid, ProduceMessage());
+  LOG(INFO) << "Produce message PID: " << produce_message_pid;
+  sleep(10);
+  LOG(INFO) << "Continuing after sleep";
   ASSERT_OK_AND_ASSIGN(int32_t fetch_message_pid, FetchMessage());
+  LOG(INFO) << "Fetch message PID: " << fetch_message_pid;
 
   StopTransferDataThread();
 

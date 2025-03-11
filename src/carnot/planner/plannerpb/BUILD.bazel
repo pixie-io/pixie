@@ -27,11 +27,9 @@ pl_proto_library(
     srcs = ["service.proto"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_proto",
-        "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_proto",
         "//src/carnot/planpb:plan_pl_proto",
         "//src/common/base/statuspb:status_pl_proto",
         "//src/shared/types/typespb:types_pl_proto",
-        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )

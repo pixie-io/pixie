@@ -22,12 +22,9 @@
 #include "src/carnot/funcs/builtins/json_ops.h"
 #include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/funcs/builtins/math_sketches.h"
-#include "src/carnot/funcs/builtins/ml_ops.h"
 #include "src/carnot/funcs/builtins/pii_ops.h"
-#include "src/carnot/funcs/builtins/pprof_ops.h"
 #include "src/carnot/funcs/builtins/regex_ops.h"
 #include "src/carnot/funcs/builtins/request_path_ops.h"
-#include "src/carnot/funcs/builtins/sql_ops.h"
 #include "src/carnot/funcs/builtins/string_ops.h"
 #include "src/carnot/funcs/builtins/uri_ops.h"
 #include "src/carnot/funcs/builtins/util_ops.h"
@@ -45,14 +42,11 @@ void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterMathSketchesOrDie(registry);
   RegisterJSONOpsOrDie(registry);
   RegisterStringOpsOrDie(registry);
-  RegisterMLOpsOrDie(registry);
   RegisterRequestPathOpsOrDie(registry);
-  RegisterSQLOpsOrDie(registry);
   RegisterRegexOpsOrDie(registry);
   RegisterPIIOpsOrDie(registry);
   RegisterURIOpsOrDie(registry);
   RegisterUtilOpsOrDie(registry);
-  RegisterPProfOpsOrDie(registry);
 }
 
 }  // namespace builtins

@@ -745,14 +745,9 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   // tracker model only works with one or the other, meaning if TLS tracing is enabled, tracing the
   // plaintext within an encrypted conn will not work. ENABLE_TLS_TRACING will default to false
   // until this is revisted.
-  if (ENABLE_TLS_TRACING && (inferred_message.type = infer_tls_message(buf, count)) != kUnknown) {
-    inferred_message.protocol = kProtocolTLS;
-  } else if (ENABLE_HTTP_TRACING &&
+  if (ENABLE_HTTP_TRACING &&
              (inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolHTTP;
-  } else if (ENABLE_CQL_TRACING &&
-             (inferred_message.type = infer_cql_message(buf, count)) != kUnknown) {
-    inferred_message.protocol = kProtocolCQL;
   } else if (ENABLE_MONGO_TRACING &&
              (inferred_message.type = infer_mongo_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolMongo;
@@ -762,9 +757,6 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   } else if (ENABLE_MYSQL_TRACING &&
              (inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
-  } else if (ENABLE_MUX_TRACING &&
-             (inferred_message.type = infer_mux_message(buf, count)) != kUnknown) {
-    inferred_message.protocol = kProtocolMux;
   } else if (ENABLE_KAFKA_TRACING &&
              (inferred_message.type = infer_kafka_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolKafka;
@@ -778,9 +770,6 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     // For Redis, the message type is left to be kUnknown.
     // The message types are then inferred via traffic direction and client/server role.
     inferred_message.protocol = kProtocolRedis;
-  } else if (ENABLE_NATS_TRACING &&
-             (inferred_message.type = infer_nats_message(buf, count)) != kUnknown) {
-    inferred_message.protocol = kProtocolNATS;
   }
 
   conn_info->prev_count = count;

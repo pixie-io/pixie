@@ -53,18 +53,6 @@ class Compiler {
   StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query,
                                             CompilerState* compiler_state);
 
-  /**
-   * @brief Compiles the query to a Trace
-   *
-   * @param query the query to compile
-   * @param compiler_state compiler state
-   * @param exec_funcs list of funcs to execute.
-   * @return the IR for the dynamic trace.
-   */
-  StatusOr<std::unique_ptr<MutationsIR>> CompileTrace(const std::string& query,
-                                                      CompilerState* compiler_state,
-                                                      const ExecFuncs& exec_funcs);
-
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state,
                                           const ExecFuncs& exec_funcs);

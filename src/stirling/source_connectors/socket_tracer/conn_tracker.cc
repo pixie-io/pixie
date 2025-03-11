@@ -662,19 +662,15 @@ auto CreateTraceRoles() {
   //               This is an PxL-breaking change, so must be done with caution,
   //               and with proper notification to users.
   res.Set(kProtocolMySQL, {kRoleServer, kRoleClient});
-  res.Set(kProtocolCQL, {kRoleServer});
   res.Set(kProtocolPGSQL, {kRoleServer});
   // TODO(oazizi): Remove DNS client-side tracing.
   //               This is an PxL-breaking change, so must be done with caution,
   //               and with proper notification to users.
   res.Set(kProtocolDNS, {kRoleClient, kRoleServer});
   res.Set(kProtocolRedis, {kRoleServer});
-  res.Set(kProtocolNATS, {kRoleServer});
   res.Set(kProtocolMongo, {kRoleServer});
   res.Set(kProtocolKafka, {kRoleServer});
-  res.Set(kProtocolMux, {kRoleServer});
   res.Set(kProtocolAMQP, {kRoleServer});
-  res.Set(kProtocolTLS, {kRoleServer});
 
   DCHECK(res.AreAllKeysSet());
   return res;

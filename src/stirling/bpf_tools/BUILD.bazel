@@ -43,7 +43,6 @@ pl_cc_library(
         "//src/stirling/obj_tools:cc_library",
         "//src/stirling/utils:cc_library",
         "@com_github_iovisor_bcc//:bcc",
-        "@com_github_iovisor_bpftrace//:bpftrace",
     ],
 )
 

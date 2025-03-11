@@ -92,13 +92,12 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
-  MutationsIR mutations_ir;
   ModuleHandler module_handler;
 
   absl::flat_hash_map<std::string, std::string> module_map;
   module_map["pxviews"] = kPxlViews;
   PX_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(
-                                           ir.get(), &mutations_ir, compiler_state, &module_handler,
+                                           ir.get(), compiler_state, &module_handler,
                                            func_based_exec, reserved_names, module_map));
 
   PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
@@ -106,31 +105,6 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
     PX_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
   }
   return ir;
-}
-
-StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string& query,
-                                                              CompilerState* compiler_state,
-                                                              const ExecFuncs& exec_funcs) {
-  Parser parser;
-  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
-
-  IR ir;
-  bool func_based_exec = exec_funcs.size() > 0;
-  absl::flat_hash_set<std::string> reserved_names;
-  for (const auto& func : exec_funcs) {
-    reserved_names.insert(func.output_table_prefix());
-  }
-  std::unique_ptr<MutationsIR> mutations = std::make_unique<MutationsIR>();
-  ModuleHandler module_handler;
-  PX_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(&ir, mutations.get(), compiler_state, &module_handler,
-                                             func_based_exec, reserved_names));
-
-  PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-  if (func_based_exec) {
-    PX_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
-  }
-  return mutations;
 }
 
 Status Compiler::VerifyGraphHasResultSink(IR* ir) {

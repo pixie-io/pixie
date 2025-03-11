@@ -37,8 +37,11 @@ namespace {
   } while (0)
 
 void InitLLVMImpl() {
+#if X86_64
   InitTarget(X86);
+#elif AARCH64
   InitTarget(AArch64);
+#endif
 }
 #undef InitTarget
 }  // namespace

@@ -72,17 +72,13 @@ pl_cc_test(
     # PROTOCOL_LIST: Requires update on new protocols.
     defines = [
         "ENABLE_HTTP_TRACING=true",
-        "ENABLE_CQL_TRACING=true",
-        "ENABLE_MUX_TRACING=true",
         "ENABLE_PGSQL_TRACING=true",
         "ENABLE_MYSQL_TRACING=true",
         "ENABLE_KAFKA_TRACING=true",
         "ENABLE_DNS_TRACING=true",
         "ENABLE_REDIS_TRACING=true",
-        "ENABLE_NATS_TRACING=true",
         "ENABLE_MONGO_TRACING=true",
         "ENABLE_AMQP_TRACING=true",
-        "ENABLE_TLS_TRACING=true",
     ],
     deps = [
         "//src/stirling/bpf_tools/bcc_bpf:headers",

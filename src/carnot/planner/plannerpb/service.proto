@@ -22,7 +22,6 @@ package px.carnot.planner.plannerpb;
 
 option go_package = "plannerpb";
 
-import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/statuspb/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
@@ -100,19 +99,6 @@ message QueryResponse {
   px.carnot.planner.distributedpb.DistributedPlan plan = 2;
 }
 
-// CompileMutationRequest represents any request that compiles to a mutation of
-// Pixie internal data state.
-message CompileMutationsRequest {
-  px.carnot.planner.distributedpb.LogicalPlannerState logical_planner_state = 5;
-  // The pxl script to run that compiles into a mutation
-  string query_str = 1;
-  // exec_funcs is a list of functions to execute.
-  // If any functions specified cannot be found the planner will return a compiler error.
-  repeated FuncToExecute exec_funcs = 3;
-  // Configs specifies extra configuration to be given to the compiler.
-  Configs configs = 4;
-}
-
 // DeleteTracepoint is a mutation that deletes a tracepoint running on Vizier.
 message DeleteTracepoint {
   // The name of the Tracepoint to delete.
@@ -127,30 +113,6 @@ message ConfigUpdate {
   string value = 2;
   // The pod name of the agent that will receive this config update.
   string agent_pod_name = 3;
-}
-
-// The definition of a mutation to perfom on Vizier. Mutations include operations
-// that add and delete tables to the database.
-message CompileMutation {
-  oneof mutation {
-    // Trace contains the compiled Dynamic Trace definition passed in by the
-    // request.
-    carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment trace = 2;
-    // Mutation that deletes a tracepoint.
-    DeleteTracepoint delete_tracepoint = 3;
-    // Mutation that sets a config.
-    ConfigUpdate config_update = 4;
-  }
-}
-
-// CompileMutationsResponse holds the mutations compiled by the planner.
-message CompileMutationsResponse {
-  // The Status of the Mutation Compilation Request. Holds an error with debug
-  // information if the originating request had a bug, otherwise will be set to
-  // OK.
-  px.statuspb.Status status = 1;
-  // The set of mutations to run on the Vizier.
-  repeated CompileMutation mutations = 2;
 }
 
 message GenerateOTelScriptRequest {
@@ -169,8 +131,6 @@ message GenerateOTelScriptResponse {
 service PlannerService {
   // CompileQuery compiles a query into a set of logical plans.
   rpc CompileQuery(QueryRequest) returns (QueryResponse);
-  // CompileMutations compiles a set of mutations into a set of logical plans.
-  rpc CompileMutations(CompileMutationsRequest) returns (CompileMutationsResponse);
   // GenerateOTelScript generates an OTel script from a PXL script.
   rpc GenerateOTelScript(GenerateOTelScriptRequest) returns (GenerateOTelScriptResponse);
 }

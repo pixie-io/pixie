@@ -38,7 +38,6 @@ pl_cc_library(
     ],
     deps = [
         "//src/carnot/carnotpb:carnot_pl_cc_proto",
-        "//src/carnot/exec/ml:cc_library",
         "//src/carnot/plan:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",

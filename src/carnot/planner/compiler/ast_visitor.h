@@ -39,8 +39,6 @@
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/var_table.h"
 #include "src/carnot/planner/plannerpb/service.pb.h"
-#include "src/carnot/planner/probes/probes.h"
-#include "src/carnot/planner/probes/tracing_module.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace px {
@@ -88,7 +86,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, MutationsIR* mutations, CompilerState* compiler_state,
+      IR* graph, CompilerState* compiler_state,
       ModuleHandler* module_handler, bool func_based_exec = false,
       const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
@@ -108,7 +106,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, std::shared_ptr<VarTable> var_table, MutationsIR* mutations,
+      IR* graph, std::shared_ptr<VarTable> var_table,
       CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec = false,
       const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
@@ -192,7 +190,7 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, MutationsIR* mutations, CompilerState* compiler_state,
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state,
                  std::shared_ptr<VarTable> global_var_table, std::shared_ptr<VarTable> var_table,
                  bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
                  ModuleHandler* module_handler, const std::shared_ptr<udf::Registry>& udf_registry)
@@ -203,7 +201,6 @@ class ASTVisitorImpl : public ASTVisitor {
         func_based_exec_(func_based_exec),
         reserved_names_(reserved_names),
         module_handler_(module_handler),
-        mutations_(mutations),
         udf_registry_(udf_registry) {}
 
   Status InitGlobals();
@@ -599,8 +596,6 @@ class ASTVisitorImpl : public ASTVisitor {
   // The object that holds onto modules. Added separately from VarTable to prevent re-compilation of
   // modules.
   ModuleHandler* module_handler_;
-  // The IR holding mutation information.
-  MutationsIR* mutations_;
   // Compile time registry for udfs. Used to execute constant expressions which simplifies
   // expression management for arguments.
   std::shared_ptr<udf::Registry> udf_registry_;

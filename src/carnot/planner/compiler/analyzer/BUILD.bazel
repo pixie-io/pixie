@@ -41,7 +41,6 @@ pl_cc_library(
         "//src/carnot/planner/metadata:cc_library",
         "//src/carnot/planner/objects:cc_library",
         "//src/carnot/planner/parser:cc_library",
-        "//src/carnot/planner/probes:cc_library",
         "//src/carnot/planner/rules:cc_library",
         "//src/carnot/udf:cc_library",
         "//src/shared/scriptspb:scripts_pl_cc_proto",

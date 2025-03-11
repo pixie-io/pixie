@@ -185,15 +185,9 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 template void DataStream::ProcessBytesToFrames<
     protocols::http::stream_id_t, protocols::http::Message, protocols::http::StateWrapper>(
     message_type_t type, protocols::http::StateWrapper* state);
-template void DataStream::ProcessBytesToFrames<protocols::mux::stream_id_t, protocols::mux::Frame,
-                                               protocols::NoState>(message_type_t type,
-                                                                   protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<
     protocols::mysql::connection_id_t, protocols::mysql::Packet, protocols::mysql::StateWrapper>(
     message_type_t type, protocols::mysql::StateWrapper* state);
-template void DataStream::ProcessBytesToFrames<protocols::cass::stream_id_t, protocols::cass::Frame,
-                                               protocols::NoState>(message_type_t type,
-                                                                   protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<
     protocols::pgsql::connection_id_t, protocols::pgsql::RegularMessage,
     protocols::pgsql::StateWrapper>(message_type_t type, protocols::pgsql::StateWrapper* state);
@@ -206,9 +200,6 @@ template void DataStream::ProcessBytesToFrames<protocols::redis::stream_id_t,
 template void DataStream::ProcessBytesToFrames<
     protocols::kafka::correlation_id_t, protocols::kafka::Packet, protocols::kafka::StateWrapper>(
     message_type_t type, protocols::kafka::StateWrapper* state);
-template void DataStream::ProcessBytesToFrames<protocols::nats::stream_id_t,
-                                               protocols::nats::Message, protocols::NoState>(
-    message_type_t type, protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<protocols::amqp::channel_id, protocols::amqp::Frame,
                                                protocols::NoState>(message_type_t type,
                                                                    protocols::NoState* state);
@@ -216,9 +207,6 @@ template void DataStream::ProcessBytesToFrames<
     protocols::mongodb::stream_id_t, protocols::mongodb::Frame, protocols::mongodb::StateWrapper>(
     message_type_t type, protocols::mongodb::StateWrapper* state);
 
-template void DataStream::ProcessBytesToFrames<protocols::tls::stream_id_t, protocols::tls::Frame,
-                                               protocols::NoState>(message_type_t type,
-                                                                   protocols::NoState* state);
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;
