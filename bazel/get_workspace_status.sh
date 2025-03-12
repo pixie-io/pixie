@@ -64,7 +64,7 @@ else
 fi
 
 # Use 0.0.0-dev for all dev build versions. We don't have a version number that is
-# shared accross all our binaries which makes it hard to semantically version.
+# shared across all our binaries which makes it hard to semantically version.
 echo "STABLE_BUILD_SCM_REVISION ${git_rev}"
 echo "STABLE_BUILD_TAG 0.0.0-dev"
 echo "STABLE_BUILD_NUMBER 0"
