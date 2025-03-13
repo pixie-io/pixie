@@ -69,6 +69,7 @@ struct Message : public FrameBase {
   std::map<std::string, uint32_t> header_fields;
   std::map<std::string, std::string> properties, payload;
 
+  // TODO(ddelnano): This should take into account header_fields and properties
   size_t ByteSize() const override { return sizeof(Message) + payload.size(); }
 
   std::string ToString() const override {
