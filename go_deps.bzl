@@ -4434,8 +4434,8 @@ def pl_go_dependencies():
         name = "org_golang_x_crypto",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/crypto",
-        sum = "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
-        version = "v0.31.0",
+        sum = "h1:b15kiHdrGCHrP6LvwaQ3c03kgNhhiMgvlhxHQhmg2Xs=",
+        version = "v0.35.0",
     )
     go_repository(
         name = "org_golang_x_exp",
@@ -4476,8 +4476,8 @@ def pl_go_dependencies():
         name = "org_golang_x_net",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/net",
-        sum = "h1:74SYHlV8BIgHIFC/LrYkOGIwL19eTYXQ5wc6TBuO36I=",
-        version = "v0.33.0",
+        sum = "h1:vWF2fRbw4qslQsQzgFqZff+BItCvGFQqKzKIzx1rmoA=",
+        version = "v0.36.0",
     )
     go_repository(
         name = "org_golang_x_oauth2",
