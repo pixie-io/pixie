@@ -40,7 +40,7 @@ message FuncDoc {
   // The arguments of the function.
   repeated IdentDoc args = 1;
   // The variable args field (*args) if the function supports it.
-  // *args will catch all unnamed aruments that aren't explicitly state. Ie
+  // *args will catch all unnamed arguments that aren't explicitly state. Ie
   // `def func(*args)` can be called as `func(val1, val2)`
   IdentDoc repeated_args = 2;
   // The variable keyword args field (**kwargs) if the function supports it.

@@ -247,7 +247,7 @@ data:
         }
 
         # This is the server that we use for all the locations that don't have a subdomain.
-        # This just serves the minimal pages necessary to authenticate and get into a subdomain specfic site.
+        # This just serves the minimal pages necessary to authenticate and get into a subdomain specific site.
         server {
             listen [::]:56000 ssl http2;
             listen 56000 ssl http2;
