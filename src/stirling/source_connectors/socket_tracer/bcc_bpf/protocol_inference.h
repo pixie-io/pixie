@@ -745,8 +745,7 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   // tracker model only works with one or the other, meaning if TLS tracing is enabled, tracing the
   // plaintext within an encrypted conn will not work. ENABLE_TLS_TRACING will default to false
   // until this is revisted.
-  if (ENABLE_HTTP_TRACING &&
-             (inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
+  if (ENABLE_HTTP_TRACING && (inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolHTTP;
   } else if (ENABLE_MONGO_TRACING &&
              (inferred_message.type = infer_mongo_message(buf, count)) != kUnknown) {

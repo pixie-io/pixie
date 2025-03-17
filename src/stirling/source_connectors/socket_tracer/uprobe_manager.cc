@@ -20,6 +20,7 @@
 
 #include <fcntl.h>
 #include <openssl/md5.h>
+#include <rapidjson/error/en.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -57,15 +58,196 @@ DEFINE_string(
     "Comma separated list of binary filenames that should be excluded from uprobe attachment."
     "For a binary at path /path/to/binary, the filename would be binary");
 
+OBJ_STRVIEW(offsetgen_output_json, offsetgen_output);
+
 namespace px {
 namespace stirling {
 
+using ::px::stirling::obj_tools::BuildInfo;
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
 using ::px::system::GetKernelVersion;
 using ::px::system::KernelVersion;
 using ::px::system::KernelVersionOrder;
 using ::px::system::ProcPidRootPath;
+
+location_type_t parseLocationType(const std::string& loc) {
+  if (loc == "stack") {
+    return kLocationTypeStack;
+  } else if (loc == "registers") {
+    return kLocationTypeRegisters;
+  }
+  return kLocationTypeInvalid;
+}
+
+/**
+ * parseOffsetOnly:
+ *   - For a JSON leaf representing a struct's offset (where we ignore location):
+ *     - If `null`, return -1
+ *     - If a bare integer, return that
+ *     - If an object with {offset:N}, return N
+ *     - Otherwise, return -1
+ */
+int32_t parseOffsetOnly(const rapidjson::Value& val) {
+  if (val.IsNull()) {
+    return -1;
+  } else if (val.IsNumber()) {
+    // bare integer
+    int64_t bigVal = val.GetInt64();
+    return static_cast<int32_t>(bigVal);  // watch for overflow
+  } else if (val.IsObject()) {
+    // e.g. { "location": "...", "offset": 42 }
+    const auto& obj = val.GetObject();
+    if (obj.HasMember("offset") && obj["offset"].IsNumber()) {
+      int64_t bigVal = obj["offset"].GetInt64();
+      return static_cast<int32_t>(bigVal);
+    } else {
+      return -1;
+    }
+  }
+  // If it's a string, array, etc., treat it as unknown => -1
+  return -1;
+}
+
+/**
+ * parseOffsetAndLocation:
+ *   - For a JSON leaf representing a func's offset & location:
+ *     - offsetOut => -1 if null; store the integer or the object's "offset" otherwise
+ *     - locOut => nullptr if null, otherwise a valid location_t pointer
+ */
+// NOLINTNEXTLINE : runtime/references.
+void parseOffsetAndLocation(const rapidjson::Value& val, int32_t& offsetOut,
+                            // NOLINTNEXTLINE : runtime/references.
+                            std::unique_ptr<location_t>& locOut) {
+  offsetOut = -1;
+  locOut.reset();  // ensures nullptr
+
+  if (val.IsNull()) {
+    // offset = -1, loc => nullptr
+    return;
+  } else if (val.IsNumber()) {
+    // bare integer
+    int64_t bigVal = val.GetInt64();
+    offsetOut = static_cast<int32_t>(bigVal);
+
+    auto tmp = std::make_unique<location_t>();
+    tmp->type = kLocationTypeInvalid;  // no explicit location
+    tmp->offset = offsetOut;
+    locOut = std::move(tmp);
+  } else if (val.IsObject()) {
+    // e.g. { "location":"stack", "offset": 42 }
+    const auto& obj = val.GetObject();
+
+    int32_t tmpOffset = -1;
+    if (obj.HasMember("offset") && obj["offset"].IsNumber()) {
+      int64_t bigVal = obj["offset"].GetInt64();
+      tmpOffset = static_cast<int32_t>(bigVal);
+    }
+    location_type_t t = kLocationTypeInvalid;
+    if (obj.HasMember("location") && obj["location"].IsString()) {
+      t = parseLocationType(obj["location"].GetString());
+    }
+
+    offsetOut = tmpOffset;
+    auto tmp = std::make_unique<location_t>();
+    tmp->type = t;
+    tmp->offset = tmpOffset;
+    locOut = std::move(tmp);
+  }
+  // else string/array => offsetOut=-1, loc=nullptr
+}
+
+/**
+ * parseStructsObject:
+ *   - The RapidJSON value is doc["structs"], an object
+ *   - For each "structName" -> "fieldName" -> "versionKey"
+ *     parse a single offset ( -1 if null or unknown )
+ */
+void parseStructsObject(const rapidjson::Value& structsVal) {
+  for (auto itr = structsVal.MemberBegin(); itr != structsVal.MemberEnd(); ++itr) {
+    std::string structName = itr->name.GetString();
+    if (!itr->value.IsObject()) {
+      continue;
+    }
+    const auto& fieldMapObj = itr->value.GetObject();  // e.g. "data", "Flags", etc.
+
+    for (auto fieldIt = fieldMapObj.MemberBegin(); fieldIt != fieldMapObj.MemberEnd(); ++fieldIt) {
+      std::string fieldName = fieldIt->name.GetString();
+      if (!fieldIt->value.IsObject()) {
+        continue;
+      }
+      const auto& versionsObj = fieldIt->value.GetObject();
+
+      for (auto verIt = versionsObj.MemberBegin(); verIt != versionsObj.MemberEnd(); ++verIt) {
+        std::string versionKey = verIt->name.GetString();
+        int32_t off = parseOffsetOnly(verIt->value);
+        auto& offsetMap = GetStructsOffsetMap();
+        offsetMap[structName][fieldName][versionKey] = off;
+      }
+    }
+  }
+}
+
+void parseFuncsObject(const rapidjson::Value& funcsVal) {
+  for (auto itr = funcsVal.MemberBegin(); itr != funcsVal.MemberEnd(); ++itr) {
+    std::string funcName = itr->name.GetString();
+    if (!itr->value.IsObject()) {
+      continue;
+    }
+    const auto& argMapObj = itr->value.GetObject();  // e.g. "data", "Flags", etc.
+
+    for (auto argIt = argMapObj.MemberBegin(); argIt != argMapObj.MemberEnd(); ++argIt) {
+      std::string argName = argIt->name.GetString();
+      if (!argIt->value.IsObject()) {
+        continue;
+      }
+      const auto& versionsObj = argIt->value.GetObject();
+
+      for (auto verIt = versionsObj.MemberBegin(); verIt != versionsObj.MemberEnd(); ++verIt) {
+        std::string versionKey = verIt->name.GetString();
+
+        int32_t offsetVal = -1;
+        std::unique_ptr<location_t> locPtr;
+        parseOffsetAndLocation(verIt->value, offsetVal, locPtr);
+
+        auto& locationMap = GetFuncsLocationMap();
+        locationMap[funcName][argName][versionKey] = std::move(locPtr);
+      }
+    }
+  }
+}
+
+static void InitSymAddrs() {
+  // objcopy will add comments to the JSON file since we redefine symbols
+  size_t brace_pos = offsetgen_output_json.find('{');
+  std::string_view offsetgen_just_json = offsetgen_output_json.substr(brace_pos);
+  rapidjson::MemoryStream ms(offsetgen_just_json.data(), offsetgen_just_json.size());
+
+  // 2) Parse with RapidJSON
+  rapidjson::Document doc;
+  rapidjson::ParseResult parseRes = doc.ParseStream(ms);
+  if (!parseRes) {
+    LOG(ERROR) << "JSON parse error: " << rapidjson::GetParseError_En(parseRes.Code())
+               << " at offset " << parseRes.Offset() << "\n";
+    return;
+  }
+
+  // 3) We expect top-level "structs" and "funcs". Parse each if present:
+  if (doc.HasMember("structs") && doc["structs"].IsObject()) {
+    parseStructsObject(doc["structs"]);
+  }
+  if (doc.HasMember("funcs") && doc["funcs"].IsObject()) {
+    parseFuncsObject(doc["funcs"]);
+  }
+  LOG(INFO) << "g_structsOffsetMap: " << GetStructsOffsetMap().size() << "\n";
+  LOG(INFO) << "g_funcsLocationMap: " << GetFuncsLocationMap().size() << "\n";
+  return;
+}
+
+void InitSymaddrsOnce() {
+  static std::once_flag initialized;
+  std::call_once(initialized, InitSymAddrs);
+}
 
 constexpr std::string_view kUprobeSkippedMessage =
     "binary filename '$0' contained in uprobe opt out list, skipping.";
@@ -74,6 +256,7 @@ UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   auto opt_out_list = absl::StrSplit(FLAGS_stirling_uprobe_opt_out, ",", absl::SkipWhitespace());
   uprobe_opt_out_ = absl::flat_hash_set<std::string>(opt_out_list.begin(), opt_out_list.end());
+  InitSymaddrsOnce();
 }
 
 void UProbeManager::Init(bool disable_go_tls_tracing, bool enable_http2_tracing,
@@ -175,9 +358,11 @@ Status UProbeManager::UpdateOpenSSLSymAddrs(obj_tools::RawFptrManager* fptr_mana
 }
 
 Status UProbeManager::UpdateGoCommonSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
-                                             const std::vector<int32_t>& pids) {
+                                             const std::vector<int32_t>& pids,
+                                             const std::string& go_version,
+                                             const BuildInfo& build_info) {
   PX_ASSIGN_OR_RETURN(struct go_common_symaddrs_t symaddrs,
-                      GoCommonSymAddrs(elf_reader, dwarf_reader));
+                      GoCommonSymAddrs(elf_reader, dwarf_reader, go_version, build_info));
 
   for (auto& pid : pids) {
     PX_RETURN_IF_ERROR(go_common_symaddrs_map_->SetValue(pid, symaddrs));
@@ -187,9 +372,11 @@ Status UProbeManager::UpdateGoCommonSymAddrs(ElfReader* elf_reader, DwarfReader*
 }
 
 Status UProbeManager::UpdateGoHTTP2SymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
-                                            const std::vector<int32_t>& pids) {
+                                            const std::vector<int32_t>& pids,
+                                            const std::string& go_version,
+                                            const BuildInfo& build_info) {
   PX_ASSIGN_OR_RETURN(struct go_http2_symaddrs_t symaddrs,
-                      GoHTTP2SymAddrs(elf_reader, dwarf_reader));
+                      GoHTTP2SymAddrs(elf_reader, dwarf_reader, go_version, build_info));
 
   for (auto& pid : pids) {
     PX_RETURN_IF_ERROR(go_http2_symaddrs_map_->SetValue(pid, symaddrs));
@@ -199,8 +386,10 @@ Status UProbeManager::UpdateGoHTTP2SymAddrs(ElfReader* elf_reader, DwarfReader* 
 }
 
 Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
-                                          const std::vector<int32_t>& pids) {
-  PX_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(elf_reader, dwarf_reader));
+                                          const std::vector<int32_t>& pids,
+                                          const std::string& go_version) {
+  PX_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs,
+                      GoTLSSymAddrs(elf_reader, dwarf_reader, go_version));
 
   for (auto& pid : pids) {
     PX_RETURN_IF_ERROR(go_tls_symaddrs_map_->SetValue(pid, symaddrs));
@@ -525,9 +714,10 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid,
 StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
                                                 obj_tools::ElfReader* elf_reader,
                                                 obj_tools::DwarfReader* dwarf_reader,
-                                                const std::vector<int32_t>& pids) {
+                                                const std::vector<int32_t>& pids,
+                                                const std::string& go_version) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, pids);
+  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, pids, go_version);
   if (!s.ok()) {
     // Doesn't appear to be a binary with the mandatory symbols.
     // Might not even be a golang binary.
@@ -547,9 +737,11 @@ StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
 StatusOr<int> UProbeManager::AttachGoHTTP2UProbes(const std::string& binary,
                                                   obj_tools::ElfReader* elf_reader,
                                                   obj_tools::DwarfReader* dwarf_reader,
-                                                  const std::vector<int32_t>& pids) {
+                                                  const std::vector<int32_t>& pids,
+                                                  const std::string& go_version,
+                                                  const BuildInfo& build_info) {
   // Step 1: Update BPF symaddrs for this binary.
-  Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, pids);
+  Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, pids, go_version, build_info);
   if (!s.ok()) {
     return 0;
   }
@@ -877,17 +1069,34 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       continue;
     }
 
-    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status =
-        DwarfReader::CreateIndexingAll(binary);
-    if (!dwarf_reader_status.ok()) {
+    auto build_info_status = ReadGoBuildVersion(elf_reader.get());
+
+    if (!build_info_status.ok()) {
       VLOG(1) << absl::Substitute(
           "Failed to get binary $0 debug symbols. Cannot deploy uprobes. "
           "Message = $1",
-          binary, dwarf_reader_status.msg());
+          binary, build_info_status.msg());
       continue;
     }
-    std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
-    Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec);
+
+    auto [go_version, build_info] = build_info_status.ConsumeValueOrDie();
+    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status;
+    if (!FLAGS_disable_dwarf_parsing) {
+      dwarf_reader_status = DwarfReader::CreateIndexingAll(binary);
+
+      if (!dwarf_reader_status.ok()) {
+        VLOG(1) << absl::Substitute(
+            "Failed to get binary $0 debug symbols. Cannot deploy uprobes. "
+            "Message = $1",
+            binary, dwarf_reader_status.msg());
+        continue;
+      }
+    }
+
+    std::unique_ptr<DwarfReader> dwarf_reader =
+        !FLAGS_disable_dwarf_parsing ? dwarf_reader_status.ConsumeValueOrDie() : nullptr;
+    Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec, go_version,
+                                      build_info);
     if (!s.ok()) {
       VLOG(1) << absl::Substitute(
           "Golang binary $0 does not have the mandatory symbols (e.g. TCPConn).", binary);
@@ -898,7 +1107,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     if (!cfg_disable_go_tls_tracing_) {
       VLOG(1) << absl::Substitute("Attempting to attach Go TLS uprobes to binary $0", binary);
       StatusOr<int> attach_status =
-          AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
+          AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec, go_version);
       if (!attach_status.ok()) {
         monitor_.AppendSourceStatusRecord("socket_tracer", attach_status.status(),
                                           "AttachGoTLSUProbes");
@@ -911,8 +1120,8 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
     // Go HTTP2 Probes.
     if (!cfg_disable_go_tls_tracing_ && cfg_enable_http2_tracing_) {
-      StatusOr<int> attach_status =
-          AttachGoHTTP2UProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
+      StatusOr<int> attach_status = AttachGoHTTP2UProbes(
+          binary, elf_reader.get(), dwarf_reader.get(), pid_vec, go_version, build_info);
       if (!attach_status.ok()) {
         monitor_.AppendSourceStatusRecord("socket_tracer", attach_status.status(),
                                           "AttachGoHTTP2UProbes");

@@ -18,11 +18,14 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
 #include <string>
 
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/obj_tools/raw_fptr_manager.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
@@ -30,6 +33,8 @@
 
 DECLARE_bool(openssl_force_raw_fptrs);
 DECLARE_bool(openssl_raw_fptrs_enabled);
+
+DECLARE_bool(disable_dwarf_parsing);
 
 namespace px {
 namespace stirling {
@@ -41,21 +46,26 @@ constexpr std::string_view kLibNettyTcnativePrefix = "libnetty_tcnative_linux_x8
  * uprobe deployment.
  */
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
-                                                       obj_tools::DwarfReader* dwarf_reader);
+                                                       obj_tools::DwarfReader* dwarf_reader,
+                                                       const std::string& go_version,
+                                                       const obj_tools::BuildInfo& build_info);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go HTTP2
  * uprobe deployment.
  */
 StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader,
-                                                     obj_tools::DwarfReader* dwarf_reader);
+                                                     obj_tools::DwarfReader* dwarf_reader,
+                                                     const std::string& go_version,
+                                                     const obj_tools::BuildInfo& build_info);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go TLS
  * uprobe deployment.
  */
 StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reader,
-                                                 obj_tools::DwarfReader* dwarf_reader);
+                                                 obj_tools::DwarfReader* dwarf_reader,
+                                                 const std::string& go_version);
 
 /**
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
@@ -76,6 +86,11 @@ StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs(const std::filesyst
 px::Status PopulateGoTLSDebugSymbols(obj_tools::ElfReader* elf_reader,
                                      obj_tools::DwarfReader* dwarf_reader,
                                      struct go_tls_symaddrs_t* symaddrs);
+
+std::map<std::string, std::map<std::string, std::map<std::string, int32_t>>>& GetStructsOffsetMap();
+
+std::map<std::string, std::map<std::string, std::map<std::string, std::unique_ptr<location_t>>>>&
+GetFuncsLocationMap();
 
 }  // namespace stirling
 }  // namespace px

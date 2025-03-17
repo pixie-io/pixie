@@ -38,7 +38,7 @@ pl_go_binary(
 
 [
     go_cross_binary(
-        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_server", sdk_version),
+        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_binary", sdk_version),
         sdk_version = sdk_version,
         tags = ["manual"],
         target = ":server",
@@ -48,8 +48,8 @@ pl_go_binary(
 
 [
     filegroup(
-        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_server_with_certs", sdk_version),
-        srcs = [pl_go_sdk_version_template_to_label(":golang_%s_grpc_server", sdk_version)],
+        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_binary_with_certs", sdk_version),
+        srcs = [pl_go_sdk_version_template_to_label(":golang_%s_grpc_binary", sdk_version)],
         data = [
             "https-server.crt",
             "https-server.key",

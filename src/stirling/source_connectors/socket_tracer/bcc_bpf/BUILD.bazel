@@ -47,6 +47,11 @@ cc_library(
     ],
 )
 
+pl_bpf_cc_resource(
+    name = "offsetgen_output",
+    src = "offsetgen_output.json",
+)
+
 # To examine the preprocessing output, build :socket_trace_bpf_preprocess.
 pl_bpf_cc_resource(
     name = "socket_trace",

@@ -539,7 +539,6 @@ std::vector<uint64_t> FindRetInsts(Arch arch, utils::u8string_view byte_code) {
     return {};
   }
 
-  LOG(INFO) << absl::Substitute("Finding return instructions for arch=$0", arch);
   auto disasm = GetLLVMDisasmContextForArch(arch);
 
   // Size of the buffer to hold disassembled assembly code. Since we do not really use the assembly

@@ -39,6 +39,10 @@ gazelle(
 # gazelle:exclude **/*.pb.go
 # gazelle:exclude **/mock.go
 # gazelle:exclude external
+# gazelle:exclude src/stirling/testing/demo_apps/go_https/server/testdata/*
+# gazelle:exclude src/stirling/testing/demo_apps/go_https/client/testdata/*
+# gazelle:exclude src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/testdata/*
+# gazelle:exclude src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/testdata/*
 
 # Make gazelle not generate proto files. We need to use gogo proto and this does
 # not seem to work automatically right now. Keep an eye out on issue:

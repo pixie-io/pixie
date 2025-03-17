@@ -51,7 +51,6 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/stirling_error/stirling_error_connector.h"
 
-
 DEFINE_string(stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProd"),
               "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler|kTCPStats] or "
               "comma separated list of "
@@ -65,9 +64,9 @@ namespace {
 #define REGISTRY_PAIR(source) \
   { SourceRegistry::CreateRegistryElement<source>(source::kName) }
 const std::vector<SourceRegistry::RegistryElement> kAllSources = {
-    REGISTRY_PAIR(JVMStatsConnector),          REGISTRY_PAIR(StirlingErrorConnector),
-    REGISTRY_PAIR(ProcStatConnector),          REGISTRY_PAIR(PerfProfileConnector),
-    REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
+    REGISTRY_PAIR(JVMStatsConnector),     REGISTRY_PAIR(StirlingErrorConnector),
+    REGISTRY_PAIR(ProcStatConnector),     REGISTRY_PAIR(PerfProfileConnector),
+    REGISTRY_PAIR(SocketTraceConnector),  REGISTRY_PAIR(ProcessStatsConnector),
     REGISTRY_PAIR(NetworkStatsConnector),
 };
 #undef REGISTRY_PAIR

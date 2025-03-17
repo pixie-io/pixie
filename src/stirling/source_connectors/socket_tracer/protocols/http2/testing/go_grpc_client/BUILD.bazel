@@ -39,7 +39,7 @@ pl_go_binary(
 
 [
     go_cross_binary(
-        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_client", sdk_version),
+        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_binary", sdk_version),
         sdk_version = sdk_version,
         tags = ["manual"],
         target = ":client",

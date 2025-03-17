@@ -18,8 +18,10 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
@@ -33,11 +35,24 @@ namespace obj_tools {
 // Returns true if the executable is built by Golang.
 bool IsGoExecutable(ElfReader* elf_reader);
 
+struct Module {
+  std::string path;
+  std::string version;
+  std::string sum;
+  std::unique_ptr<Module> replace = nullptr;
+};
+
+struct BuildInfo {
+  std::string path;
+  Module main;
+  std::vector<Module> deps;
+  std::vector<std::pair<std::string, std::string>> settings;
+};
+
+StatusOr<BuildInfo> ReadBuildInfo(const std::string& mod);
 // Returns the build version of a Golang executable. The executable is read through the input
 // elf_reader.
-// TODO(yzhao): We'll use this to determine the corresponding Golang executable's TLS data
-// structures and their offsets.
-StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader);
+StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildVersion(ElfReader* elf_reader);
 
 // Describes a Golang type that implement an interface.
 struct IntfImplTypeInfo {

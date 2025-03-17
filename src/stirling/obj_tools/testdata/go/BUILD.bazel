@@ -75,6 +75,7 @@ filegroup(
         # (https://github.com/golang/go/blob/1dbbafc70fd3e2c284469ab3e0936c1bb56129f6/src/debug/buildinfo/buildinfo.go#L189-L190)
         # and so it cannot be tested without compiling against an older Go version.
         "test_go_1_17_binary",
+        "offsetgen",
         ":test_go_1_18_binary",
         ":test_go_1_19_binary",
         ":test_go_1_20_binary",

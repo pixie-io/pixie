@@ -57,13 +57,12 @@ StatusOr<md::UPID> ToUPID(uint32_t pid) {
 class GRPCServer {
  public:
   static constexpr std::string_view kServerPath =
-      "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-      "golang_$0_grpc_server";
+      "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/$0";
 
   GRPCServer() = default;
 
-  void LaunchServer(std::string go_version, bool use_https) {
-    std::string server_path = absl::Substitute(kServerPath, go_version);
+  void LaunchServer(std::string binary_path, bool use_https) {
+    std::string server_path = absl::Substitute(kServerPath, binary_path);
     server_path = px::testing::BazelRunfilePath(server_path).string();
     CHECK(fs::Exists(server_path));
 
@@ -93,11 +92,10 @@ class GRPCServer {
 class GRPCClient {
  public:
   static constexpr std::string_view kClientPath =
-      "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-      "golang_$0_grpc_client";
+      "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/$0";
 
-  void LaunchClient(std::string_view go_version, bool use_compression, bool use_https, int port) {
-    std::string client_path = absl::Substitute(kClientPath, go_version);
+  void LaunchClient(std::string_view binary_path, bool use_compression, bool use_https, int port) {
+    std::string client_path = absl::Substitute(kClientPath, binary_path);
     client_path = px::testing::BazelRunfilePath(client_path).string();
 
     CHECK(fs::Exists(client_path));
@@ -115,9 +113,10 @@ class GRPCClient {
 };
 
 struct TestParams {
-  std::string go_version;
+  std::string binary_path;
   bool use_compression;
   bool use_https;
+  bool disable_dwarf_parsing = false;
 };
 
 using TestFixture = testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>;
@@ -125,6 +124,13 @@ using TestFixture = testing::SocketTraceBPFTestFixture</* TClientSideTracing */ 
 class GRPCTraceTest : public TestFixture, public ::testing::WithParamInterface<TestParams> {
  protected:
   GRPCTraceTest() {}
+  ~GRPCTraceTest() {
+    // Ensure that the server is killed.
+    server_.s_.Kill();
+    if (client_.c_.IsRunning()) {
+      client_.c_.Kill();
+    }
+  }
 
   void TearDown() override {
     TestFixture::TearDown();
@@ -140,14 +146,16 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   auto params = GetParam();
 
   PX_SET_FOR_SCOPE(FLAGS_socket_tracer_enable_http2_gzip, params.use_compression);
-  server_.LaunchServer(params.go_version, params.use_https);
+  PX_SET_FOR_SCOPE(FLAGS_disable_dwarf_parsing, params.disable_dwarf_parsing);
+  server_.LaunchServer(params.binary_path, params.use_https);
 
   // Deploy uprobes on the newly launched server.
   RefreshContext(/* blocking_deploy_uprobes */ true);
 
   StartTransferDataThread();
 
-  client_.LaunchClient(params.go_version, params.use_compression, params.use_https, server_.port());
+  client_.LaunchClient(params.binary_path, params.use_compression, params.use_https,
+                       server_.port());
 
   StopTransferDataThread();
 
@@ -190,13 +198,21 @@ INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
                          ::testing::Values(
                              // Did not enumerate all combinations, as they are independent based on
                              // our knowledge, and to minimize test size to reduce flakiness.
-                             TestParams{"1_18", false, true}, TestParams{"1_18", true, false},
-                             TestParams{"1_19", false, false}, TestParams{"1_19", true, true},
-                             TestParams{"1_20", true, true}, TestParams{"1_20", true, false},
-                             TestParams{"1_21", true, true}, TestParams{"1_21", true, false},
-                             TestParams{"1_22", true, true}, TestParams{"1_22", true, false},
-                             TestParams{"1_23", true, true}, TestParams{"1_23", true, false},
-                             TestParams{"boringcrypto", true, true}));
+                             TestParams{"golang_1_18_grpc_binary", false, true},
+                             TestParams{"golang_1_18_grpc_binary", true, false},
+                             TestParams{"golang_1_19_grpc_binary", false, false},
+                             TestParams{"golang_1_19_grpc_binary", true, true},
+                             TestParams{"golang_1_20_grpc_binary", true, true},
+                             TestParams{"golang_1_20_grpc_binary", true, false},
+                             TestParams{"golang_1_21_grpc_binary", true, true},
+                             TestParams{"golang_1_21_grpc_binary", true, false},
+                             TestParams{"golang_1_22_grpc_binary", true, true},
+                             TestParams{"golang_1_22_grpc_binary", true, false},
+                             TestParams{"golang_1_23_grpc_binary", true, true},
+                             TestParams{"golang_1_23_grpc_binary", true, false},
+                             TestParams{"testdata/offsetgen_binary", true, true, true},
+                             TestParams{"testdata/offsetgen_binary", true, false, true},
+                             TestParams{"golang_boringcrypto_grpc_binary", true, true}));
 
 class PyGRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:

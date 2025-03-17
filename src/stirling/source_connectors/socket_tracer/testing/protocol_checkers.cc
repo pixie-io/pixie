@@ -19,7 +19,6 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 
 #include "src/stirling/source_connectors/socket_tracer/http_table.h"
-#include "src/stirling/source_connectors/socket_tracer/tls_table.h"
 #include "src/stirling/testing/common.h"
 
 namespace px {
@@ -27,9 +26,7 @@ namespace stirling {
 namespace testing {
 
 namespace http = protocols::http;
-namespace mux = protocols::mux;
 namespace mongodb = protocols::mongodb;
-namespace tls = protocols::tls;
 
 //-----------------------------------------------------------------------------
 // HTTP Checkers
@@ -49,19 +46,6 @@ std::vector<http::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& 
     r.resp.resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
     r.resp.resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
     r.resp.body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
-    result.push_back(r);
-  }
-  return result;
-}
-
-template <>
-std::vector<protocols::mux::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
-                                                   const std::vector<size_t>& indices) {
-  std::vector<mux::Record> result;
-
-  for (const auto& idx : indices) {
-    mux::Record r;
-    r.req.type = static_cast<int8_t>(rb[kMuxReqTypeIdx]->Get<types::Int64Value>(idx).val);
     result.push_back(r);
   }
   return result;
@@ -92,33 +76,11 @@ std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch
 }
 
 template <>
-std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
-                                          int32_t pid) {
-  std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPID(record_batch, kMuxUPIDIdx, pid);
-  return ToRecordVector<mux::Record>(record_batch, target_record_indices);
-}
-
-template <>
 std::vector<mongodb::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                               int32_t pid) {
   std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(record_batch, kMongoDBUPIDIdx, pid);
   return ToRecordVector<mongodb::Record>(record_batch, target_record_indices);
-}
-
-template <>
-std::vector<tls::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
-                                        const std::vector<size_t>& indices) {
-  std::vector<tls::Record> result;
-
-  for (const auto& idx : indices) {
-    tls::Record r;
-    r.req.body = rb[kTLSReqBodyIdx]->Get<types::StringValue>(idx);
-    r.resp.body = rb[kTLSRespBodyIdx]->Get<types::StringValue>(idx);
-    result.push_back(r);
-  }
-  return result;
 }
 
 }  // namespace testing

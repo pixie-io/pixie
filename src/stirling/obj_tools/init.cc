@@ -31,7 +31,6 @@ namespace {
     LLVMInitialize##TargetName##Target();       \
     LLVMInitialize##TargetName##TargetInfo();   \
     LLVMInitialize##TargetName##TargetMC();     \
-    LLVMInitialize##TargetName##AsmPrinter();   \
     LLVMInitialize##TargetName##AsmParser();    \
     LLVMInitialize##TargetName##Disassembler(); \
   } while (0)

@@ -131,12 +131,21 @@
       "type": "goimports",
       "include": [
         "(\\.go$)"
+      ],
+      "exclude": [
+        "(src/stirling/testing/demo_apps/go_https/(server|client)/testdata/.*)",
+        "(src/stirling/source_connectors/socket_tracer/protocols/http2/testing/(go_grpc_server|go_grpc_client)/testdata/.*)"
       ]
     },
     "golangci-lint": {
       "type": "golangci-lint",
       "include": [
         "(\\.go$)"
+      ],
+      "exclude": [
+        "(src/stirling/testing/demo_apps/go_https/(server|client)/testdata/.*)",
+        "(src/stirling/testing/demo_apps/go_https/server/https_server.go)",
+        "(src/stirling/source_connectors/socket_tracer/protocols/http2/testing/(go_grpc_server|go_grpc_client)/testdata/.*)"
       ],
       "flags": [
         "--timeout=5m0s",

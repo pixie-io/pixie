@@ -52,3 +52,10 @@ pl_go_binary(
     )
     for sdk_version in pl_all_supported_go_sdk_versions
 ]
+
+filegroup(
+    name = "client_bin",
+    srcs = [
+        "https_client",
+    ],
+)

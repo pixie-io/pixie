@@ -50,6 +50,13 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "server_bin",
+    srcs = [
+        "https_server",
+    ],
+)
+
 pl_go_binary(
     name = "server",
     embed = [":server_lib"],

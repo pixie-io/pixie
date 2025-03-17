@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/json/json.h"
 #include "src/stirling/obj_tools/abi_model.h"
 #include "src/stirling/obj_tools/utils.h"
 
@@ -89,6 +90,12 @@ struct ArgInfo {
   std::string ToString() const {
     return absl::Substitute("type_info=[$0] location=[$1] retarg=$2", type_info.ToString(),
                             location.ToString(), retarg);
+  }
+
+  void ToJSON(::px::utils::JSONObjectBuilder* builder) const {
+    builder->WriteKV("offset", location.offset);
+    builder->WriteKV("location", magic_enum::enum_name(location.loc_type));
+    builder->WriteKV("raw_output", ToString());
   }
 };
 
