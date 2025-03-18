@@ -40,7 +40,6 @@ py_wheel(
     python_tag = "py3",
     requires = [
         "Authlib==1.5.1",
-        "gogo-python==0.0.1",
         "grpcio==1.70.0",
         "grpcio-tools==1.70.0",
         "protobuf==5.29.3",

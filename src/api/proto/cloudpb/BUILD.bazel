@@ -27,6 +27,7 @@ pl_proto_library(
         "//src/api/proto/vispb:vis_pl_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -42,6 +43,13 @@ pl_go_proto_library(
     ],
 )
 
+# pl_py_grpc_library(
+#     name = "gogo_python_pl_py_grpc",
+#     # imports = [""],
+#     proto = "//third_party/gogo/protobuf/gogoproto:gogo_python_proto",
+#     visibility = ["//src:__subpackages__"],
+# )
+
 pl_py_grpc_library(
     name = "cloudapi_pl_py_grpc",
     imports = ["../../../../"],
@@ -51,5 +59,6 @@ pl_py_grpc_library(
         "//src/api/proto/uuidpb:uuid_pl_py_proto",
         "//src/api/proto/vispb:vis_pl_py_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_py_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_py_proto",
     ],
 )

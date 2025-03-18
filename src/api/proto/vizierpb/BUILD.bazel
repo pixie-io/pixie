@@ -53,4 +53,7 @@ pl_py_grpc_library(
     imports = ["../../../"],
     proto = ":vizier_pl_proto",
     visibility = ["//src:__subpackages__"],
+    deps = [
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_py_proto",
+    ],
 )

@@ -108,10 +108,6 @@ cryptography==42.0.4 \
     --hash=sha256:fb0cef872d8193e487fc6bdb08559c3aa41b659a7d9be48b2e10747f47863925 \
     --hash=sha256:ffc73996c4fca3d2b6c1c8c12bfd3ad00def8621da24f547626bf06441400449
     # via authlib
-gogo-python==0.0.1 \
-    --hash=sha256:55300f8c7f3645a267a391cb439f89f15d21aa58e3a07653353923f9f6a3627b \
-    --hash=sha256:6f68d3aa598ee2ca4d3bb44b8afa2d4ef4a3198d6f5ae3824f38fbca2c6653ed
-    # via -r requirements.txt
 grpcio==1.70.0 \
     --hash=sha256:0495c86a55a04a874c7627fd33e5beaee771917d92c0e6d9d797628ac40e7655 \
     --hash=sha256:07269ff4940f6fb6710951116a04cd70284da86d0a4368fd5a3b552744511f5a \
