@@ -24,11 +24,11 @@ SYSROOT=""
 EXTRAS=""
 
 usage() {
-    echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -b <busybox> -e <src>:<dest>,<src2>:<dest2> -k <kernel_package>"
+    echo "Usage: $0 -o <output_disk> -s <sysroot.tar.gz> -b <busybox> -e <src>:<dest>,<src2>:<dest2> -k <kernel_package>"
     echo "       <output_disk>           The generated ext2fs file system image as a qcow2 file"
     echo "       <sysroot.tar.gz>        The input sysroot to use for the disk"
     echo "       <additional_files>      Additional files that need to be written to the image"
-    echo "       <kernel package>        The tar.gz package of kernel and header files."
+    echo "       <kernel_package>        The tar.gz package of kernel and header files."
     exit 1
 }
 
