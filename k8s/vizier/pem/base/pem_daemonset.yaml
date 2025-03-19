@@ -69,8 +69,36 @@ spec:
       containers:
       - name: pem
         image: vizier-pem_image:latest
-        args: []
+        args:
+        - --disable_dwarf_parsing=1
+        - --stirling_socket_tracer_percpu_bw_scaling_factor=0
+        - --stirling_socket_tracer_max_total_data_bw=104857600 # 100MB
+        - --stirling_socket_tracer_max_total_control_bw=10485760 # 10MB
         env:
+        - name: PX_STIRLING_HTTP_BODY_LIMIT_BYTES
+          value: "4096"
+        - name: PL_STIRLING_SOURCES
+          value: "socket_tracer,process_stats"
+        - name: PX_STIRLING_ENABLE_MUX_TRACING
+          value: "0"
+        - name: PX_STIRLING_ENABLE_NATS_TRACING
+          value: "0"
+        - name: PX_STIRLING_ENABLE_CASS_TRACING
+          value: "0"
+        - name: PX_STIRLING_ENABLE_DNS_TRACING
+          value: "0"
+        - name: PX_STIRLING_ENABLE_MUX_TRACING
+          value: "0"
+        - name: PX_STIRLING_ENABLE_TLS_TRACING
+          value: "0"
+        - name: PL_TABLE_STORE_DATA_LIMIT_MB
+          value: "100"
+        - name: PL_DATASTREAM_BUFFER_SPIKE_SIZE
+          value: "20971520" # 20MB
+        - name: PL_DATASTREAM_BUFFER_MAX_GAP_SIZE
+          value: "5242880" # 5MB
+        - name: PX_TOTAL_CONN_TRACKER_MEM_USAGE
+          value: "104857600" # 100MB
         - name: TCMALLOC_SAMPLE_PARAMETER
           value: "1048576"
         - name: PL_CLIENT_TLS_CERT
@@ -114,7 +142,11 @@ spec:
               optional: true
         - name: PL_CLOCK_CONVERTER
           value: "default"
-        resources: {}
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            memory: 512Mi
         securityContext:
           capabilities:
             add:
