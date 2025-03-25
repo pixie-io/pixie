@@ -389,9 +389,7 @@ func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.
 		return 0, 0, nil, err
 	}
 	for _, kelvinPod := range kelvinPodsList.Items {
-		if kelvinPod.Status.Phase != corev1.PodRunning {
-			unhealthyDataPlanePods = append(unhealthyDataPlanePods, kelvinPod)
-		}
+		unhealthyDataPlanePods = append(unhealthyDataPlanePods, kelvinPod)
 	}
 
 	var unhealthyPEMPods []corev1.Pod
@@ -419,7 +417,7 @@ func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.
 		return unhealthyPEMPods[i].ObjectMeta.Name < unhealthyPEMPods[j].ObjectMeta.Name
 	})
 	for i := 0; i < len(unhealthyPEMPods); i++ {
-		if len(unhealthyDataPlanePods) <= maxUnhealthyDataPlanePods {
+		if len(unhealthyDataPlanePods) >= maxUnhealthyDataPlanePods {
 			break
 		}
 		unhealthyDataPlanePods = append(unhealthyDataPlanePods, unhealthyPEMPods[i])
