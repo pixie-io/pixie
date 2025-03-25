@@ -84,6 +84,14 @@ pl_cc_binary(
     ],
 )
 
+pl_cc_binary(
+    name = "go_func_dwarf_dump",
+    srcs = ["go_func_dwarf_dump.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+    ],
+)
+
 cc_image(
     name = "stirling_dt_image",
     base = ":stirling_binary_base_image",
