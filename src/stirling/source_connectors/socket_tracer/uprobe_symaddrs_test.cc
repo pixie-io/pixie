@@ -64,8 +64,6 @@ TEST_F(UprobeSymaddrsTest, GoCommonSymAddrs) {
   EXPECT_EQ(symaddrs.FD_Sysfd_offset, 16);
   EXPECT_EQ(symaddrs.tlsConn_conn_offset, 0);
   EXPECT_EQ(symaddrs.g_goid_offset, 152);
-
-  LOG(INFO) << ToString(symaddrs);
 }
 
 TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
@@ -83,7 +81,6 @@ TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
             (location_t{.type = kLocationTypeRegisters, .offset = 0}));
   EXPECT_EQ(symaddrs.writeHeader_hf_ptr_loc,
             (location_t{.type = kLocationTypeRegisters, .offset = 24}));
-  LOG(INFO) << ToString(symaddrs);
 }
 
 TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
@@ -97,7 +94,6 @@ TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
   EXPECT_EQ(symaddrs.Write_b_loc, (location_t{.type = kLocationTypeRegisters, .offset = 8}));
   EXPECT_EQ(symaddrs.Read_c_loc, (location_t{.type = kLocationTypeRegisters, .offset = 0}));
   EXPECT_EQ(symaddrs.Read_b_loc, (location_t{.type = kLocationTypeRegisters, .offset = 8}));
-  LOG(INFO) << ToString(symaddrs);
 }
 
 // Note that DwarfReader cannot be created if there is no dwarf info.

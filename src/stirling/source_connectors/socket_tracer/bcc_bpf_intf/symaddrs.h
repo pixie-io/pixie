@@ -58,6 +58,22 @@ struct location_t {
   int32_t offset;
 };
 
+#ifdef __cplusplus
+inline std::string ToString(const struct location_t& location) {
+  return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(location.type),
+                          location.offset);
+}
+
+inline std::ostream& operator<<(std::ostream& os, const struct location_t& location) {
+  os << ToString(location);
+  return os;
+}
+
+inline bool operator==(const struct location_t& a, const struct location_t& b) {
+  return a.type == b.type && a.offset == b.offset;
+}
+#endif
+
 // A set of symbols that are useful for various different uprobes.
 // Currently, this includes mostly connection related items,
 // which applies to any network protocol tracing (HTTP2, TLS, etc.).
@@ -236,151 +252,6 @@ struct go_tls_symaddrs_t {
   struct location_t Read_retval0_loc;  // 40
   struct location_t Read_retval1_loc;  // 48
 };
-
-#ifdef __cplusplus
-inline std::string ToString(const struct location_t& location) {
-  return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(location.type),
-                          location.offset);
-}
-
-inline std::ostream& operator<<(std::ostream& os, const struct location_t& location) {
-  os << ToString(location);
-  return os;
-}
-
-inline bool operator==(const struct location_t& a, const struct location_t& b) {
-  return a.type == b.type && a.offset == b.offset;
-}
-
-inline std::string ToString(const struct go_common_symaddrs_t& symaddrs) {
-  return absl::StrFormat(
-      "internal_syscallConn=%#lx\n"
-      "tls_Conn=%#lx\n"
-      "net_TCPConn=%#lx\n"
-      "FD_Sysfd_offset=%#x\n"
-      "tlsConn_conn_offset=%#x\n"
-      "syscallConn_conn_offset=%#x\n"
-      "g_goid_offset=%#x\n"
-      "g_addr_offset=%#x\n",
-      symaddrs.internal_syscallConn, symaddrs.tls_Conn, symaddrs.net_TCPConn,
-      symaddrs.FD_Sysfd_offset, symaddrs.tlsConn_conn_offset, symaddrs.syscallConn_conn_offset,
-      symaddrs.g_goid_offset, symaddrs.g_addr_offset);
-}
-
-inline std::string ToString(const struct go_tls_symaddrs_t& symaddrs) {
-  return absl::StrFormat(
-      "Write_c_loc=%s\n"
-      "Write_b_loc=%s\n"
-      "Write_retval0_loc=%s\n"
-      "Write_retval1_loc=%s\n"
-      "Read_c_loc=%s\n"
-      "Read_b_loc=%s\n"
-      "Read_retval0_loc=%s\n"
-      "Read_retval1_loc=%s\n",
-      ToString(symaddrs.Write_c_loc), ToString(symaddrs.Write_b_loc),
-      ToString(symaddrs.Write_retval0_loc), ToString(symaddrs.Write_retval1_loc),
-      ToString(symaddrs.Read_c_loc), ToString(symaddrs.Read_b_loc),
-      ToString(symaddrs.Read_retval0_loc), ToString(symaddrs.Read_retval1_loc));
-}
-
-inline std::string ToString(const struct go_http2_symaddrs_t& symaddrs) {
-  return absl::StrFormat(
-      "http_http2bufferedWriter=%#lx\n"
-      "transport_bufWriter=%#lx\n"
-      "http2Framer_WriteDataPadded_f_loc=%s\n"
-      "http2Framer_WriteDataPadded_streamID_loc=%s\n"
-      "http2Framer_WriteDataPadded_endStream_loc=%s\n"
-      "http2Framer_WriteDataPadded_data_ptr_loc=%s\n"
-      "http2Framer_WriteDataPadded_data_len_loc=%s\n"
-      "http2_WriteDataPadded_f_loc=%s\n"
-      "http2_WriteDataPadded_streamID_loc=%s\n"
-      "http2_WriteDataPadded_endStream_loc=%s\n"
-      "http2_WriteDataPadded_data_ptr_loc=%s\n"
-      "http2_WriteDataPadded_data_len_loc=%s\n"
-      "http2Framer_checkFrameOrder_fr_loc=%s\n"
-      "http2Framer_checkFrameOrder_f_loc=%s\n"
-      "http2_checkFrameOrder_fr_loc=%s\n"
-      "http2_checkFrameOrder_f_loc=%s\n"
-      "writeFrame_w_loc=%s\n"
-      "writeFrame_ctx_loc=%s\n"
-      "WriteField_e_loc=%s\n"
-      "WriteField_f_name_loc=%s\n"
-      "WriteField_f_value_loc=%s\n"
-      "processHeaders_sc_loc=%s\n"
-      "processHeaders_f_loc=%s\n"
-      "http2Server_operateHeaders_t_loc=%s\n"
-      "http2Server_operateHeaders_frame_loc=%s\n"
-      "http2Client_operateHeaders_t_loc=%s\n"
-      "http2Client_operateHeaders_frame_loc=%s\n"
-      "writeHeader_l_loc=%s\n"
-      "writeHeader_streamID_loc=%s\n"
-      "writeHeader_endStream_loc=%s\n"
-      "writeHeader_hf_ptr_loc=%s\n"
-      "writeHeader_hf_len_loc=%s\n"
-      "HeaderField_Name_offset=%#x\n"
-      "HeaderField_Value_offset=%#x\n"
-      "http2Server_conn_offset=%#x\n"
-      "http2Client_conn_offset=%#x\n"
-      "loopyWriter_framer_offset=%#x\n"
-      "Framer_w_offset=%#x\n"
-      "MetaHeadersFrame_HeadersFrame_offset=%#x\n"
-      "MetaHeadersFrame_Fields_offset=%#x\n"
-      "HeadersFrame_FrameHeader_offset=%#x\n"
-      "FrameHeader_Type_offset=%#x\n"
-      "FrameHeader_Flags_offset=%#x\n"
-      "FrameHeader_StreamID_offset=%#x\n"
-      "DataFrame_data_offset=%#x\n"
-      "bufWriter_conn_offset=%#x\n"
-      "http2serverConn_conn_offset=%#x\n"
-      "http2serverConn_hpackEncoder_offset=%#x\n"
-      "http2HeadersFrame_http2FrameHeader_offset=%#x\n"
-      "http2FrameHeader_Type_offset=%#x\n"
-      "http2FrameHeader_Flags_offset=%#x\n"
-      "http2FrameHeader_StreamID_offset=%#x\n"
-      "http2DataFrame_data_offset=%#x\n"
-      "http2bufferedWriter_w_offset=%#x\n"
-      "http2MetaHeadersFrame_http2HeadersFrame_offset=%#x\n"
-      "http2MetaHeadersFrame_Fields_offset=%#x\n"
-      "http2Framer_w_offset=%#x\n",
-      symaddrs.http_http2bufferedWriter, symaddrs.transport_bufWriter,
-      ToString(symaddrs.http2Framer_WriteDataPadded_f_loc),
-      ToString(symaddrs.http2Framer_WriteDataPadded_streamID_loc),
-      ToString(symaddrs.http2Framer_WriteDataPadded_endStream_loc),
-      ToString(symaddrs.http2Framer_WriteDataPadded_data_ptr_loc),
-      ToString(symaddrs.http2Framer_WriteDataPadded_data_len_loc),
-      ToString(symaddrs.http2_WriteDataPadded_f_loc),
-      ToString(symaddrs.http2_WriteDataPadded_streamID_loc),
-      ToString(symaddrs.http2_WriteDataPadded_endStream_loc),
-      ToString(symaddrs.http2_WriteDataPadded_data_ptr_loc),
-      ToString(symaddrs.http2_WriteDataPadded_data_len_loc),
-      ToString(symaddrs.http2Framer_checkFrameOrder_fr_loc),
-      ToString(symaddrs.http2Framer_checkFrameOrder_f_loc),
-      ToString(symaddrs.http2_checkFrameOrder_fr_loc),
-      ToString(symaddrs.http2_checkFrameOrder_f_loc), ToString(symaddrs.writeFrame_w_loc),
-      ToString(symaddrs.writeFrame_ctx_loc), ToString(symaddrs.WriteField_e_loc),
-      ToString(symaddrs.WriteField_f_name_loc), ToString(symaddrs.WriteField_f_value_loc),
-      ToString(symaddrs.processHeaders_sc_loc), ToString(symaddrs.processHeaders_f_loc),
-      ToString(symaddrs.http2Server_operateHeaders_t_loc),
-      ToString(symaddrs.http2Server_operateHeaders_frame_loc),
-      ToString(symaddrs.http2Client_operateHeaders_t_loc),
-      ToString(symaddrs.http2Client_operateHeaders_frame_loc), ToString(symaddrs.writeHeader_l_loc),
-      ToString(symaddrs.writeHeader_streamID_loc), ToString(symaddrs.writeHeader_endStream_loc),
-      ToString(symaddrs.writeHeader_hf_ptr_loc), ToString(symaddrs.writeHeader_hf_len_loc),
-      symaddrs.HeaderField_Name_offset, symaddrs.HeaderField_Value_offset,
-      symaddrs.http2Server_conn_offset, symaddrs.http2Client_conn_offset,
-      symaddrs.loopyWriter_framer_offset, symaddrs.Framer_w_offset,
-      symaddrs.MetaHeadersFrame_HeadersFrame_offset, symaddrs.MetaHeadersFrame_Fields_offset,
-      symaddrs.HeadersFrame_FrameHeader_offset, symaddrs.FrameHeader_Type_offset,
-      symaddrs.FrameHeader_Flags_offset, symaddrs.FrameHeader_StreamID_offset,
-      symaddrs.DataFrame_data_offset, symaddrs.bufWriter_conn_offset,
-      symaddrs.http2serverConn_conn_offset, symaddrs.http2serverConn_hpackEncoder_offset,
-      symaddrs.http2HeadersFrame_http2FrameHeader_offset, symaddrs.http2FrameHeader_Type_offset,
-      symaddrs.http2FrameHeader_Flags_offset, symaddrs.http2FrameHeader_StreamID_offset,
-      symaddrs.http2DataFrame_data_offset, symaddrs.http2bufferedWriter_w_offset,
-      symaddrs.http2MetaHeadersFrame_http2HeadersFrame_offset,
-      symaddrs.http2MetaHeadersFrame_Fields_offset, symaddrs.http2Framer_w_offset);
-}
-#endif
 
 struct openssl_symaddrs_t {
   // Offset of rbio in struct ssl_st.

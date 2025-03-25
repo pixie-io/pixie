@@ -207,6 +207,12 @@ using px::utils::ToJSONString;
 // Most HTTP servers support 8K headers, so we truncate after that.
 // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
 constexpr size_t kMaxHTTPHeadersBytes = 8192;
+// TLS records have a maximum size of 16KiB. The bulk of the body columns are extensions
+// and while there isn't a size limit for them, we limit it to 1 KiB to avoid excessive
+// memory usage. A typical ClientHello from curl is around 500 bytes. This assumes that
+// all extensions are captured, but we won't support capturing all extensions and
+// will avoid large extensions like the padding extension,
+constexpr size_t kMaxTLSBodyBytes = 1024;
 
 // Protobuf printer will limit strings to this length.
 constexpr size_t kMaxPBStringLen = 64;
@@ -245,6 +251,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                    kHTTPTableNum,
                                    {kRoleClient, kRoleServer},
                                    TRANSFER_STREAM_PROTOCOL(http)}},
+      {kProtocolCQL, TransferSpec{FLAGS_stirling_enable_cass_tracing,
+                                  kCQLTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSFER_STREAM_PROTOCOL(cass)}},
       {kProtocolHTTP2, TransferSpec{FLAGS_stirling_enable_http2_tracing,
                                     kHTTPTableNum,
                                     {kRoleClient, kRoleServer},
@@ -268,6 +278,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     // SocketInfo to infer the role.
                                     {kRoleUnknown, kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(redis)}},
+      {kProtocolNATS, TransferSpec{FLAGS_stirling_enable_nats_tracing,
+                                   kNATSTableNum,
+                                   {kRoleClient, kRoleServer},
+                                   TRANSFER_STREAM_PROTOCOL(nats)}},
       {kProtocolKafka, TransferSpec{FLAGS_stirling_enable_kafka_tracing,
                                     kKafkaTableNum,
                                     {kRoleClient, kRoleServer},
@@ -276,10 +290,18 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     kMongoDBTableNum,
                                     {kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(mongodb)}},
+      {kProtocolMux, TransferSpec{FLAGS_stirling_enable_mux_tracing,
+                                  kMuxTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSFER_STREAM_PROTOCOL(mux)}},
       {kProtocolAMQP, TransferSpec{FLAGS_stirling_enable_amqp_tracing,
                                    kAMQPTableNum,
                                    {kRoleClient, kRoleServer},
                                    TRANSFER_STREAM_PROTOCOL(amqp)}},
+      {kProtocolTLS, TransferSpec{FLAGS_stirling_enable_tls_tracing,
+                                  kTLSTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSFER_STREAM_PROTOCOL(tls)}},
       {kProtocolUnknown, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                       /* table_num */ static_cast<uint32_t>(-1),
                                       /* trace_roles */ {},
@@ -478,13 +500,17 @@ Status SocketTraceConnector::InitBPF() {
   std::vector<std::string> defines = {
       absl::StrCat("-DENABLE_TLS_DEBUG_SOURCES=", FLAGS_stirling_debug_tls_sources),
       absl::StrCat("-DENABLE_HTTP_TRACING=", protocol_transfer_specs_[kProtocolHTTP].enabled),
+      absl::StrCat("-DENABLE_CQL_TRACING=", protocol_transfer_specs_[kProtocolCQL].enabled),
+      absl::StrCat("-DENABLE_MUX_TRACING=", protocol_transfer_specs_[kProtocolMux].enabled),
       absl::StrCat("-DENABLE_PGSQL_TRACING=", protocol_transfer_specs_[kProtocolPGSQL].enabled),
       absl::StrCat("-DENABLE_MYSQL_TRACING=", protocol_transfer_specs_[kProtocolMySQL].enabled),
       absl::StrCat("-DENABLE_KAFKA_TRACING=", protocol_transfer_specs_[kProtocolKafka].enabled),
       absl::StrCat("-DENABLE_DNS_TRACING=", protocol_transfer_specs_[kProtocolDNS].enabled),
       absl::StrCat("-DENABLE_REDIS_TRACING=", protocol_transfer_specs_[kProtocolRedis].enabled),
+      absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", protocol_transfer_specs_[kProtocolMongo].enabled),
+      absl::StrCat("-DENABLE_TLS_TRACING=", protocol_transfer_specs_[kProtocolTLS].enabled),
       absl::StrCat("-DBPF_LOOP_LIMIT=", FLAGS_stirling_bpf_loop_limit),
       absl::StrCat("-DBPF_CHUNK_LIMIT=", FLAGS_stirling_bpf_chunk_limit),
   };
@@ -1459,6 +1485,32 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::cass::Record entry, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kCQLTable> r(data_table, entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+  r.Append<r.ColIndex("encrypted")>(conn_tracker.ssl());
+  r.Append<r.ColIndex("req_op")>(static_cast<uint64_t>(entry.req.op));
+  r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
+  r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("latency")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::dns::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -1503,6 +1555,29 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
   r.Append<r.ColIndex("req_cmd")>(ToString(entry.req.tag, /* is_req */ true));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::mux::Record entry, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kMuxTable> r(data_table, entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+  r.Append<r.ColIndex("encrypted")>(conn_tracker.ssl());
+  r.Append<r.ColIndex("req_type")>(entry.req.type);
+  r.Append<r.ColIndex("latency")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
@@ -1590,6 +1665,30 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::nats::Record record, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  endpoint_role_t role = conn_tracker.role();
+  DataTable::RecordBuilder<&kNATSTable> r(data_table, record.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(role);
+  r.Append<r.ColIndex("encrypted")>(conn_tracker.ssl());
+  r.Append<r.ColIndex("cmd")>(record.req.command);
+  r.Append<r.ColIndex("body")>(record.req.options);
+  r.Append<r.ColIndex("resp")>(record.resp.command);
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::kafka::Record record, DataTable* data_table) {
   constexpr size_t kMaxKafkaBodyBytes = 65536;
 
@@ -1639,6 +1738,35 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("resp_body")>(std::move(record.resp.frame_body));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::tls::Record record, DataTable* data_table) {
+  protocols::tls::Frame& req_message = record.req;
+  protocols::tls::Frame& resp_message = record.resp;
+
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kTLSTable> r(data_table, resp_message.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  // Note that there is a string copy here,
+  // But std::move is not allowed because we re-use conn object.
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+  r.Append<r.ColIndex("req_type")>(static_cast<uint64_t>(req_message.content_type));
+  r.Append<r.ColIndex("req_body")>(req_message.body, kMaxTLSBodyBytes);
+  r.Append<r.ColIndex("resp_body")>(resp_message.body, kMaxTLSBodyBytes);
+  r.Append<r.ColIndex("latency")>(
+      CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif

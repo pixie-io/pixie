@@ -239,8 +239,8 @@ static void InitSymAddrs() {
   if (doc.HasMember("funcs") && doc["funcs"].IsObject()) {
     parseFuncsObject(doc["funcs"]);
   }
-  LOG(INFO) << "g_structsOffsetMap: " << GetStructsOffsetMap().size() << "\n";
-  LOG(INFO) << "g_funcsLocationMap: " << GetFuncsLocationMap().size() << "\n";
+  VLOG(1) << "g_structsOffsetMap: " << GetStructsOffsetMap().size() << "\n";
+  VLOG(1) << "g_funcsLocationMap: " << GetFuncsLocationMap().size() << "\n";
   return;
 }
 

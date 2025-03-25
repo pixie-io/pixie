@@ -96,19 +96,23 @@ class SocketTraceConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "socket_tracer";
   // PROTOCOL_LIST
-  static constexpr auto kTables =
-      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kPGSQLTable, kDNSTable, kRedisTable,
-                kKafkaTable, kAMQPTable, kMongoDBTable);
+  static constexpr auto kTables = MakeArray(
+      kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable, kRedisTable,
+      kNATSTable, kKafkaTable, kMuxTable, kAMQPTable, kMongoDBTable, kTLSTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = TableNum(kTables, kMySQLTable);
+  static constexpr uint32_t kCQLTableNum = TableNum(kTables, kCQLTable);
   static constexpr uint32_t kPGSQLTableNum = TableNum(kTables, kPGSQLTable);
   static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
   static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
+  static constexpr uint32_t kNATSTableNum = TableNum(kTables, kNATSTable);
   static constexpr uint32_t kKafkaTableNum = TableNum(kTables, kKafkaTable);
+  static constexpr uint32_t kMuxTableNum = TableNum(kTables, kMuxTable);
   static constexpr uint32_t kAMQPTableNum = TableNum(kTables, kAMQPTable);
   static constexpr uint32_t kMongoDBTableNum = TableNum(kTables, kMongoDBTable);
+  static constexpr uint32_t kTLSTableNum = TableNum(kTables, kTLSTable);
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
