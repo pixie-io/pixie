@@ -110,7 +110,7 @@ size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start
  */
 template <typename TFrameType, typename TStateType = NoState>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, TFrameType* frame,
-                      TStateType* state = nullptr);
+                      TStateType* state = nullptr, bool lazy_parsing_enabled = false);
 
 /**
  * Returns the stream ID of the given frame.
