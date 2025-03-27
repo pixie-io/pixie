@@ -47,9 +47,6 @@ DEFINE_bool(openssl_raw_fptrs_enabled, false,
             "If true, allows the openssl tracing implementation to fall back to function pointers "
             "if dlopen/dlsym is unable to find symbols");
 
-DEFINE_bool(disable_dwarf_parsing, true,
-            "Disable parsing of DWARF info for symbol offsets and uprobes");
-
 std::map<std::string, std::map<std::string, std::map<std::string, int32_t>>> g_structsOffsetMap;
 
 std::map<std::string, std::map<std::string, std::map<std::string, std::unique_ptr<location_t>>>>

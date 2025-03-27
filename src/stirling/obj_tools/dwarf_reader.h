@@ -36,6 +36,8 @@
 #include "src/stirling/obj_tools/abi_model.h"
 #include "src/stirling/obj_tools/utils.h"
 
+DECLARE_bool(disable_dwarf_parsing);
+
 namespace px {
 namespace stirling {
 namespace obj_tools {

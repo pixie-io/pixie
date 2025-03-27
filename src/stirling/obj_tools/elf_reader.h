@@ -33,6 +33,8 @@
 
 using ::px::utils::u8string;
 
+DECLARE_uint64(elf_reader_max_file_size);
+
 namespace px {
 namespace stirling {
 namespace obj_tools {

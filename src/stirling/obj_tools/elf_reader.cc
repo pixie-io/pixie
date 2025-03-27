@@ -32,6 +32,8 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/init.h"
 
+DEFINE_uint64(elf_reader_max_file_size, 30 << 20, "Maximum file size for ELF files. Value of 0 means no limit. Default is 30MB.");
+
 namespace px {
 namespace stirling {
 namespace obj_tools {
@@ -167,6 +169,11 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
 
   elf_reader->binary_path_ = binary_path;
 
+  PX_ASSIGN_OR_RETURN(auto stat, fs::Stat(binary_path));
+  uint64_t file_size = stat.st_size;
+  if (file_size > FLAGS_elf_reader_max_file_size) {
+    return error::Internal("File size $0 exceeds ElfReader's max file size $1. Refusing to process file", file_size, FLAGS_elf_reader_max_file_size);
+  }
   if (!elf_reader->elf_reader_.load_header_and_sections(binary_path)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
   }

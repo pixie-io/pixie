@@ -650,6 +650,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnStaticBinary(
     const uint32_t pid, const std::filesystem::path& proc_exe) {
   const auto host_proc_exe = ProcPidRootPath(pid, proc_exe);
 
+  VLOG(1) << absl::Substitute("Attaching OpenSSL probes on static binary: $0", host_proc_exe.string());
   PX_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(host_proc_exe));
   auto statusor = elf_reader->SearchTheOnlySymbol("SSL_write");
 
@@ -663,6 +664,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnStaticBinary(
     spec.probe_fn = absl::StrCat(spec.probe_fn, "_syscall_fd_access");
     PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
   }
+  VLOG(1) << absl::Substitute("Successfully attached OpenSSL probes on static binary: $0",
+                              host_proc_exe.string());
   return kOpenSSLUProbes.size();
 }
 

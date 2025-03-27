@@ -34,7 +34,8 @@
 #include "src/stirling/obj_tools/dwarf_utils.h"
 #include "src/stirling/obj_tools/init.h"
 
-DECLARE_bool(disable_dwarf_parsing);
+DEFINE_bool(disable_dwarf_parsing, true,
+            "Disable parsing of DWARF info for symbol offsets and uprobes");
 
 namespace px {
 namespace stirling {

@@ -53,7 +53,7 @@ ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
   std::filesystem::path self_path = GetSelfPath().ValueOrDie();
   auto elf_reader_or_s = obj_tools::ElfReader::Create(self_path.string());
   if (!elf_reader_or_s.ok()) {
-    LOG(FATAL) << "Failed to create ElfReader for self probe";
+    LOG(FATAL) << "Failed to create ElfReader for self probe: " << elf_reader_or_s.status();
   }
   auto elf_reader = elf_reader_or_s.ConsumeValueOrDie();
 
