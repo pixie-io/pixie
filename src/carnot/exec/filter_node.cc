@@ -132,36 +132,37 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper& p
 Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   // Current implementation does not merge across row batches, we should
   // consider this for cases where the filter has really low selectivity.
-  PX_ASSIGN_OR_RETURN(auto pred_col, evaluator_->EvaluateSingleExpression(
-                                         exec_state, rb, *plan_node_->expression()));
+  /* PX_ASSIGN_OR_RETURN(auto pred_col, evaluator_->EvaluateSingleExpression( */
+  /*                                        exec_state, rb, *plan_node_->expression())); */
 
-  // Verify that the type of the column is boolean.
-  DCHECK_EQ(pred_col->data_type(), types::BOOLEAN) << "Predicate expression must be a boolean";
+  /* // Verify that the type of the column is boolean. */
+  /* DCHECK_EQ(pred_col->data_type(), types::BOOLEAN) << "Predicate expression must be a boolean"; */
 
-  const types::BoolValueColumnWrapper& pred_col_wrapper =
-      *static_cast<types::BoolValueColumnWrapper*>(pred_col.get());
-  size_t num_pred = pred_col_wrapper.Size();
+  /* const types::BoolValueColumnWrapper& pred_col_wrapper = */
+  /*     *static_cast<types::BoolValueColumnWrapper*>(pred_col.get()); */
+  /* size_t num_pred = pred_col_wrapper.Size(); */
 
-  DCHECK_EQ(static_cast<size_t>(rb.num_rows()), num_pred);
+  /* DCHECK_EQ(static_cast<size_t>(rb.num_rows()), num_pred); */
 
   // Find out how many of them returned true;
-  size_t num_output_records = 0;
-  for (size_t i = 0; i < num_pred; ++i) {
-    if (pred_col_wrapper[i].val) {
-      ++num_output_records;
-    }
-  }
+  size_t num_output_records = rb.num_rows();
+  /* for (size_t i = 0; i < num_pred; ++i) { */
+  /*   if (pred_col_wrapper[i].val) { */
+  /*     ++num_output_records; */
+  /*   } */
+  /* } */
 
   RowBatch output_rb(*output_descriptor_, num_output_records);
   DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
 
   for (const auto& [output_col_idx, input_col_idx] : Enumerate(plan_node_->selected_cols())) {
     auto input_col = rb.ColumnAt(input_col_idx);
-    auto col_type = output_descriptor_->type(output_col_idx);
-#define TYPE_CASE(_dt_) \
-  PX_RETURN_IF_ERROR(PredicateCopyValues<_dt_>(pred_col_wrapper, input_col.get(), &output_rb));
-    PX_SWITCH_FOREACH_DATATYPE(col_type, TYPE_CASE);
-#undef TYPE_CASE
+    PX_RETURN_IF_ERROR(output_rb.AddColumn(input_col));
+    /* auto col_type = output_descriptor_->type(output_col_idx); */
+/* #define TYPE_CASE(_dt_) \ */
+/*   PX_RETURN_IF_ERROR(PredicateCopyValues<_dt_>(pred_col_wrapper, input_col.get(), &output_rb)); */
+/*     PX_SWITCH_FOREACH_DATATYPE(col_type, TYPE_CASE); */
+/* #undef TYPE_CASE */
   }
 
   output_rb.set_eow(rb.eow());
