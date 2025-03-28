@@ -1,0 +1,8 @@
+import px
+
+df = px.GetAgentStatus(False)
+df = df[['asid', 'hostname']]
+heap_stats = px._HeapGrowthStacks()
+df = df.merge(heap_stats, how='inner', left_on='asid', right_on='asid')
+df = df[['hostname', 'heap']]
+px.display(df)
