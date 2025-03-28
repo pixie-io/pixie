@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -25,8 +25,6 @@ usage() {
   echo "Common gcloud ssh options include --project."
   exit 1
 }
-
-set -e
 
 heap_profile_dir="$1"
 cluster_id="$2"
