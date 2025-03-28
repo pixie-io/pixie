@@ -1871,8 +1871,7 @@ TEST_P(OTelLogTest, process_data) {
   planpb::OTelExportSinkOperator otel_sink_op;
 
   EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(tc.operator_proto, &otel_sink_op));
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
   auto s = plan_node->Init(otel_sink_op);
 
   // Load a RowBatch to get the Input RowDescriptor.
