@@ -123,3 +123,42 @@ cc_grpc_library(
     grpc_only = True,
     deps = [":metrics_service_proto_cc"],
 )
+
+proto_library(
+    name = "logs_proto",
+    srcs = [
+        "opentelemetry/proto/logs/v1/logs.proto",
+    ],
+    deps = [
+        ":common_proto",
+        ":resource_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "logs_proto_cc",
+    deps = [":logs_proto"],
+)
+
+proto_library(
+    name = "logs_service_proto",
+    srcs = [
+        "opentelemetry/proto/collector/logs/v1/logs_service.proto",
+    ],
+    deps = [
+        ":logs_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "logs_service_proto_cc",
+    deps = [":logs_service_proto"],
+)
+
+cc_grpc_library(
+    name = "logs_service_grpc_cc",
+    srcs = [":logs_service_proto"],
+    generate_mocks = True,
+    grpc_only = True,
+    deps = [":logs_service_proto_cc"],
+)

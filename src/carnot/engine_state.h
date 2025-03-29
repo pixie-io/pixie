@@ -87,6 +87,9 @@ class EngineState : public NotCopyable {
         [this](const std::string& remote_addr, bool insecure) {
           return TraceStubGenerator(remote_addr, insecure);
         },
+        [this](const std::string& remote_addr, bool insecure) {
+          return LogsStubGenerator(remote_addr, insecure);
+        },
         query_id, model_pool_.get(), grpc_router_, add_auth_to_grpc_context_func_, metrics_.get());
   }
   std::shared_ptr<grpc::Channel> CreateChannel(const std::string& remote_addr, bool insecure) {
@@ -112,6 +115,12 @@ class EngineState : public NotCopyable {
   std::unique_ptr<opentelemetry::proto::collector::trace::v1::TraceService::StubInterface>
   TraceStubGenerator(const std::string& remote_addr, bool insecure) {
     return opentelemetry::proto::collector::trace::v1::TraceService::NewStub(
+        CreateChannel(remote_addr, insecure));
+  }
+
+  std::unique_ptr<opentelemetry::proto::collector::logs::v1::LogsService::StubInterface>
+  LogsStubGenerator(const std::string& remote_addr, bool insecure) {
+    return opentelemetry::proto::collector::logs::v1::LogsService::NewStub(
         CreateChannel(remote_addr, insecure));
   }
 
