@@ -107,7 +107,7 @@ jobs:
       run: gcloud auth revoke
     # Github actions doesn't have native support for gathering outputs from matrix runs.
     # So we upload an artifact for each one and gather them ourselves in `get-perf-outputs`.
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: ${{ hashFiles('run_output') }}
         path: run_output
