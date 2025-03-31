@@ -62,7 +62,7 @@ jobs:
         ./ci/save_version_info.sh
         ./ci/cli_build_release.sh
     - name: Upload Github Artifacts
-      uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: linux-artifacts
         path: artifacts/
@@ -73,7 +73,7 @@ jobs:
         MANIFEST_UPDATES: ""
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       run: ./ci/update_artifact_manifest.sh
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: artifact-upload-log
         path: ${{ env.ARTIFACT_UPLOAD_LOG }}
@@ -104,7 +104,7 @@ jobs:
         mkdir -p "artifacts/"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         ./ci/cli_merge_sign.sh
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: macos-artifacts
         path: artifacts/
@@ -150,11 +150,11 @@ jobs:
         mkdir -p "artifacts/"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         ./ci/cli_upload_signed.sh
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: macos-signed-artifacts
         path: artifacts/
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1  # v4.6.1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: manifest-updates
         path: ${{ env.MANIFEST_UPDATES }}
