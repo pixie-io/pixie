@@ -22,7 +22,7 @@ package px.vizierconfigpb;
 
 option go_package = "vizierconfigpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 
 // Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go.

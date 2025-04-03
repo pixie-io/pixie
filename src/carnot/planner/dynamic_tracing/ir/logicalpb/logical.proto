@@ -22,7 +22,7 @@ package px.carnot.planner.dynamic_tracing.ir.logical;
 
 option go_package = "logicalpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 
 message Argument {

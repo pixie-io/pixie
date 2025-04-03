@@ -11,3 +11,20 @@ index abacbc80..09b2c9bf 100644
      ]
      env.update({
          "CGO_ENABLED": "1",
+diff --git a/proto/gogo.bzl b/proto/gogo.bzl
+index 05a8f044..374e7295 100644
+--- a/proto/gogo.bzl
++++ b/proto/gogo.bzl
+@@ -17,9 +17,9 @@ def _gogo_special_proto_impl(ctx):
+     ctx.file("BUILD.bazel", "")
+     ctx.symlink(
+         ctx.path(Label("@com_github_gogo_protobuf//gogoproto:gogo.proto")),
+-        "github.com/gogo/protobuf/gogoproto/gogo.proto",
++        "github/gogo/protobuf/gogoproto/gogo.proto",
+     )
+-    ctx.file("github.com/gogo/protobuf/gogoproto/BUILD.bazel", """
++    ctx.file("github/gogo/protobuf/gogoproto/BUILD.bazel", """
+ load("@rules_proto//proto:defs.bzl", "proto_library")
+
+ proto_library(
+

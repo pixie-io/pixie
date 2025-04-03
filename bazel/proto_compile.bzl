@@ -172,6 +172,11 @@ def _colocate_python_files_impl(ctx):
                 dest.path,
             )
             for src, dest in src_dest
+        # ]) + "\n" + "\n".join([
+        #     "sed -i 's|from github.com|from github|g' {}".format(
+        #         dest.path,
+        #     )
+        #     for src, dest in src_dest
         ]),
     )
     ctx.actions.run(
