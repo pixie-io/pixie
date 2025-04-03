@@ -19,7 +19,7 @@
 // Generate the code for deep-copying the CRD in go.
 //go:generate controller-gen object
 // Generate the CRD YAMLs.
-//go:generate controller-gen crd:trivialVersions=true rbac:roleName=operator-role webhook output:crd:artifacts:config=crd output:crd:dir:=../../../../../k8s/operator/crd/base
+//go:generate controller-gen crd rbac:roleName=operator-role webhook output:crd:artifacts:config=crd output:crd:dir:=../../../../../k8s/operator/crd/base
 // Generate the clientset.
 //go:generate client-gen --input=px.dev/v1alpha1 --clientset-name=versioned --go-header-file=/dev/null --input-base=px.dev/pixie/src/operator/apis --output-package=px.dev/pixie/src/operator/client
 

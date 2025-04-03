@@ -1,11 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: viziers.px.dev
 spec:
   group: px.dev
@@ -22,14 +20,19 @@ spec:
         description: Vizier is the Schema for the viziers API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -51,18 +54,18 @@ spec:
                   Vizier should be pointing to.
                 type: string
               clusterName:
-                description: ClusterName is a name for the Vizier instance, usually
-                  specifying which cluster the Vizier is deployed to. If not specified,
-                  a random name will be generated.
+                description: |-
+                  ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
+                  deployed to. If not specified, a random name will be generated.
                 type: string
               customDeployKeySecret:
                 description: CustomDeployKeySecret is the name of the secret where
                   the deploy key is stored.
                 type: string
               dataAccess:
-                description: DataAccess defines the level of data that may be accesssed
-                  when executing a script on the cluster. If none specified, assumes
-                  full data access.
+                description: |-
+                  DataAccess defines the level of data that may be accesssed when executing a script on the cluster. If none specified,
+                  assumes full data access.
                 enum:
                 - Full
                 - Restricted
@@ -78,9 +81,9 @@ spec:
                       to the PEM via environment variables.
                     type: object
                   datastreamBufferSize:
-                    description: DatastreamBufferSize is the data buffer size per
-                      connection. Default size is 1 Mbyte. For high-throughput applications,
-                      try increasing this number if experiencing data loss.
+                    description: |-
+                      DatastreamBufferSize is the data buffer size per connection.
+                      Default size is 1 Mbyte. For high-throughput applications, try increasing this number if experiencing data loss.
                     format: int32
                     type: integer
                   datastreamBufferSpikeSize:
@@ -90,15 +93,15 @@ spec:
                     type: integer
                 type: object
               deployKey:
-                description: DeployKey is the deploy key associated with the Vizier
-                  instance. This is used to link the Vizier to a specific user/org.
-                  This is required unless specifying a CustomDeployKeySecret.
+                description: |-
+                  DeployKey is the deploy key associated with the Vizier instance. This is used to link the Vizier to a
+                  specific user/org. This is required unless specifying a CustomDeployKeySecret.
                 type: string
               devCloudNamespace:
-                description: 'DevCloudNamespace should be specified only for dev versions
-                  of Pixie cloud which have no ingress to help redirect traffic to
-                  the correct service. The DevCloudNamespace is the namespace that
-                  the dev Pixie cloud is running on, for example: "plc-dev".'
+                description: |-
+                  DevCloudNamespace should be specified only for dev versions of Pixie cloud which have no ingress to help
+                  redirect traffic to the correct service. The DevCloudNamespace is the namespace that the dev Pixie cloud is
+                  running on, for example: "plc-dev".
                 type: string
               disableAutoUpdate:
                 description: DisableAutoUpdate specifies whether auto update should
@@ -109,28 +112,28 @@ spec:
                   for the K8s leaderships elections which Vizier uses manage pod leadership.
                 properties:
                   electionPeriodMs:
-                    description: ElectionPeriodMs defines how frequently Vizier attempts
-                      to run a K8s leader election, in milliseconds. The period also
-                      determines how long Vizier waits for a leader election response
-                      back from the K8s API. If the K8s API is slow to respond, consider
-                      increasing this number.
+                    description: |-
+                      ElectionPeriodMs defines how frequently Vizier attempts to run a K8s leader election, in milliseconds. The period
+                      also determines how long Vizier waits for a leader election response back from the K8s API. If the K8s API is
+                      slow to respond, consider increasing this number.
                     format: int64
                     type: integer
                 type: object
               patches:
                 additionalProperties:
                   type: string
-                description: Patches defines patches that should be applied to Vizier
-                  resources. The key of the patch should be the name of the resource
-                  that is patched. The value of the patch is the patch, encoded as
-                  a string which follow the "strategic merge patch" rules for K8s.
+                description: |-
+                  Patches defines patches that should be applied to Vizier resources.
+                  The key of the patch should be the name of the resource that is patched. The value of the patch is the patch,
+                  encoded as a string which follow the "strategic merge patch" rules for K8s.
                 type: object
               pemMemoryLimit:
                 description: PemMemoryLimit is a memory limit applied specifically
                   to PEM pods.
                 type: string
               pemMemoryRequest:
-                description: PemMemoryRequest is a memory request applied specifically
+                description: |-
+                  PemMemoryRequest is a memory request applied specifically
                   to PEM pods. It will automatically use the value of pemMemoryLimit
                   if not specified.
                 type: string
@@ -152,29 +155,34 @@ spec:
                   nodeSelector:
                     additionalProperties:
                       type: string
-                    description: 'NodeSelector is a selector which must be true for
-                      the pod to fit on a node. Selector which must match a node''s
-                      labels for the pod to be scheduled on that node. More info:
-                      https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-                      This field cannot be updated once the cluster is created.'
+                    description: |-
+                      NodeSelector is a selector which must be true for the pod to fit on a node.
+                      Selector which must match a node's labels for the pod to be scheduled on that node.
+                      More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+                      This field cannot be updated once the cluster is created.
                     type: object
                   resources:
-                    description: Resources is the resource requirements for a container.
+                    description: |-
+                      Resources is the resource requirements for a container.
                       This field cannot be updated once the cluster is created.
                     properties:
                       claims:
-                        description: "Claims lists the names of resources, defined
-                          in spec.resourceClaims, that are used by this container.
-                          \n This is an alpha field and requires enabling the DynamicResourceAllocation
-                          feature gate. \n This field is immutable."
+                        description: |-
+                          Claims lists the names of resources, defined in spec.resourceClaims,
+                          that are used by this container.
+
+                          This is an alpha field and requires enabling the
+                          DynamicResourceAllocation feature gate.
+
+                          This field is immutable.
                         items:
                           description: ResourceClaim references one entry in PodSpec.ResourceClaims.
                           properties:
                             name:
-                              description: Name must match the name of one entry in
-                                pod.spec.resourceClaims of the Pod where this field
-                                is used. It makes that resource available inside a
-                                container.
+                              description: |-
+                                Name must match the name of one entry in pod.spec.resourceClaims of
+                                the Pod where this field is used. It makes that resource available
+                                inside a container.
                               type: string
                           required:
                           - name
@@ -190,8 +198,9 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: 'Limits describes the maximum amount of compute
-                          resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                        description: |-
+                          Limits describes the maximum amount of compute resources allowed.
+                          More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                         type: object
                       requests:
                         additionalProperties:
@@ -200,21 +209,22 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: 'Requests describes the minimum amount of compute
-                          resources required. If Requests is omitted for a container,
-                          it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                        description: |-
+                          Requests describes the minimum amount of compute resources required.
+                          If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                          otherwise to an implementation-defined value.
+                          More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                         type: object
                     type: object
                   securityContext:
-                    description: The securityContext which should be set on non-privileged
-                      pods. All pods which require privileged permissions will still
-                      require a privileged securityContext.
+                    description: |-
+                      The securityContext which should be set on non-privileged pods. All pods which require privileged permissions
+                      will still require a privileged securityContext.
                     properties:
                       enabled:
-                        description: Whether a securityContext should be set on the
-                          pod. In cases where no PSPs are applied to the cluster,
-                          this is not necessary.
+                        description: |-
+                          Whether a securityContext should be set on the pod. In cases where no PSPs are applied to the cluster, this is
+                          not necessary.
                         type: boolean
                       fsGroup:
                         description: A special supplemental group that applies to
@@ -233,54 +243,53 @@ spec:
                         type: integer
                     type: object
                   tolerations:
-                    description: 'Tolerations allows scheduling pods on nodes with
-                      matching taints. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/:
-                      This field cannot be updated once the cluster is created.'
+                    description: |-
+                      Tolerations allows scheduling pods on nodes with matching taints.
+                      More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/:
+                      This field cannot be updated once the cluster is created.
                     items:
-                      description: The pod this Toleration is attached to tolerates
-                        any taint that matches the triple <key,value,effect> using
-                        the matching operator <operator>.
+                      description: |-
+                        The pod this Toleration is attached to tolerates any taint that matches
+                        the triple <key,value,effect> using the matching operator <operator>.
                       properties:
                         effect:
-                          description: Effect indicates the taint effect to match.
-                            Empty means match all taint effects. When specified, allowed
-                            values are NoSchedule, PreferNoSchedule and NoExecute.
+                          description: |-
+                            Effect indicates the taint effect to match. Empty means match all taint effects.
+                            When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
                           type: string
                         key:
-                          description: Key is the taint key that the toleration applies
-                            to. Empty means match all taint keys. If the key is empty,
-                            operator must be Exists; this combination means to match
-                            all values and all keys.
+                          description: |-
+                            Key is the taint key that the toleration applies to. Empty means match all taint keys.
+                            If the key is empty, operator must be Exists; this combination means to match all values and all keys.
                           type: string
                         operator:
-                          description: Operator represents a key's relationship to
-                            the value. Valid operators are Exists and Equal. Defaults
-                            to Equal. Exists is equivalent to wildcard for value,
-                            so that a pod can tolerate all taints of a particular
-                            category.
+                          description: |-
+                            Operator represents a key's relationship to the value.
+                            Valid operators are Exists and Equal. Defaults to Equal.
+                            Exists is equivalent to wildcard for value, so that a pod can
+                            tolerate all taints of a particular category.
                           type: string
                         tolerationSeconds:
-                          description: TolerationSeconds represents the period of
-                            time the toleration (which must be of effect NoExecute,
-                            otherwise this field is ignored) tolerates the taint.
-                            By default, it is not set, which means tolerate the taint
-                            forever (do not evict). Zero and negative values will
-                            be treated as 0 (evict immediately) by the system.
+                          description: |-
+                            TolerationSeconds represents the period of time the toleration (which must be
+                            of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+                            it is not set, which means tolerate the taint forever (do not evict). Zero and
+                            negative values will be treated as 0 (evict immediately) by the system.
                           format: int64
                           type: integer
                         value:
-                          description: Value is the taint value the toleration matches
-                            to. If the operator is Exists, the value should be empty,
-                            otherwise just a regular string.
+                          description: |-
+                            Value is the taint value the toleration matches to.
+                            If the operator is Exists, the value should be empty, otherwise just a regular string.
                           type: string
                       type: object
                     type: array
                 type: object
               registry:
-                description: 'Registry specifies the image registry to use rather
-                  than Pixie''s default registry (gcr.io). We expect any forward slashes
-                  in Pixie''s image paths are replaced with a "-". For example: "gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest"
-                  should be pushed to "$registry/gcr.io-pixie-oss-pixie-dev-vizier-metadata_server_image:latest".'
+                description: |-
+                  Registry specifies the image registry to use rather than Pixie's default registry (gcr.io). We expect any forward slashes in
+                  Pixie's image paths are replaced with a "-". For example: "gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest"
+                  should be pushed to "$registry/gcr.io-pixie-oss-pixie-dev-vizier-metadata_server_image:latest".
                 type: string
               useEtcdOperator:
                 description: UseEtcdOperator specifies whether the metadata service
@@ -294,9 +303,9 @@ spec:
             description: VizierStatus defines the observed state of Vizier
             properties:
               checksum:
-                description: A checksum of the last reconciled Vizier spec. If this
-                  checksum does not match the checksum of the current vizier spec,
-                  reconciliation should be performed.
+                description: |-
+                  A checksum of the last reconciled Vizier spec. If this checksum does not match the checksum
+                  of the current vizier spec, reconciliation should be performed.
                 format: byte
                 type: string
               lastReconciliationPhaseTime:
@@ -313,9 +322,9 @@ spec:
                   instance.
                 type: string
               reconciliationPhase:
-                description: ReconciliationPhase describes the state the Reconciler
-                  is in for this Vizier. See the documentation above the ReconciliationPhase
-                  type for more information.
+                description: |-
+                  ReconciliationPhase describes the state the Reconciler is in for this Vizier. See the
+                  documentation above the ReconciliationPhase type for more information.
                 type: string
               sentryDSN:
                 description: SentryDSN is key for Viziers that is used to send errors
@@ -329,9 +338,9 @@ spec:
                   is in its lifecycle.
                 type: string
               vizierReason:
-                description: VizierReason is a short, machine understandable string
-                  that gives the reason for the transition into the Vizier's current
-                  status.
+                description: |-
+                  VizierReason is a short, machine understandable string that gives the reason
+                  for the transition into the Vizier's current status.
                 type: string
             type: object
         type: object
@@ -339,9 +348,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

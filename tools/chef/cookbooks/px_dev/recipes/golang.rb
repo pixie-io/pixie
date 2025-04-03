@@ -42,7 +42,7 @@ ENV['PATH'] = "/opt/px_dev/tools/golang/bin:#{ENV['PATH']}"
 execute 'install go binaries' do
   ENV['GOPATH'] = "/opt/px_dev/gopath"
   command %(go install github.com/golang/mock/mockgen@v1.5.0 && \
-            go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 && \
+            go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2 && \
             go install k8s.io/code-generator/cmd/client-gen@v0.20.6 && \
             go install github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible && \
             go install github.com/google/go-containerregistry/cmd/crane@v0.15.2 && \
