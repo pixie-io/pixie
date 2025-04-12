@@ -140,7 +140,7 @@
       ],
       "flags": [
         "--timeout=5m0s",
-        "--out-format=checkstyle"
+        "--output.checkstyle.path=stdout"
       ]
     },
     "jshint-ui": {

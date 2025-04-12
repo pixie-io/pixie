@@ -39,9 +39,9 @@ default['golang']['sha256'] =
   '7af054e5088b68c24b3d6e135e5ca8d91bbd5a05cb7f7f0187367b3e6e9e05ee'
 
 default['golangci-lint']['download_path'] =
-  'https://github.com/golangci/golangci-lint/releases/download/v1.51.1/golangci-lint-1.51.1-darwin-amd64.tar.gz'
+  'https://github.com/golangci/golangci-lint/releases/download/v2.0.2/golangci-lint-2.0.2-darwin-amd64.tar.gz'
 default['golangci-lint']['sha256'] =
-  'fba08acc4027f69f07cef48fbff70b8a7ecdfaa1c2aba9ad3fb31d60d9f5d4bc'
+  'a88cbdc86b483fe44e90bf2dcc3fec2af8c754116e6edf0aa6592cac5baa7a0e'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v18.16.0/node-v18.16.0-darwin-x64.tar.gz'
