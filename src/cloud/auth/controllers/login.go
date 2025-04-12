@@ -385,7 +385,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	if !utils.IsNilUUIDProto(inviteOrgID) {
 		orgInfoPb, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if orgInfoPb == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "misformatted invite link")

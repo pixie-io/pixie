@@ -17,19 +17,25 @@ linters:
     errcheck:
       exclude-functions:
       - io.Close
-      - github.com/spf13/pflag.MarkHidden
+      - (*github.com/spf13/pflag.FlagSet).MarkHidden
       - github.com/spf13/viper.BindEnv
       - github.com/spf13/viper.BindPFlag
-      - github.com/spf13/cobra.Help
-      - github.com/spf13/cobra.MarkFlagRequired
-      - github.com/spf13/cobra.Usage
+      - github.com/spf13/viper.BindPFlags
+      - (*github.com/spf13/cobra.Command).Help
+      - (*github.com/spf13/cobra.Command).MarkFlagRequired
+      - (*github.com/spf13/cobra.Command).Usage
       - (github.com/segmentio/analytics-go/v3.Client).Enqueue
-      - database/sql.Rollback
-      - github.com/nats-io/nats.go.Unsubscribe
+      - (*database/sql.Tx).Rollback
+      - (*github.com/nats-io/nats.go.Subscription).Unsubscribe
+    revive:
+      rules:
+      - name: unused-parameter
+        disabled: true
     staticcheck:
       checks:
       - all
       - "-ST1005"  # ignore the "ST1005: error strings should not be capitalized" check
+      - "-QF1008"  # ignore omit embedded fields from selector expression
   exclusions:
     generated: lax
     presets:

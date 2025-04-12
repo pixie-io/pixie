@@ -138,11 +138,11 @@ func cleanupOldPebbleData() {
 func mustInitPebbleDatastore() *pebbledb.DataStore {
 	cleanupOldPebbleData()
 	log.Infof("Using pebbledb: %s for metadata", pebbleOpenDir)
-	pebbleDb, err := pebble.Open(pebbleOpenDir, &pebble.Options{})
+	pebbleDB, err := pebble.Open(pebbleOpenDir, &pebble.Options{})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to open pebble database. If out of space, increase the storage size of the `metadata-pv-claim` PersistentVolumeClaim and restart the vizier-metadata pod")
 	}
-	return pebbledb.New(pebbleDb, pebbledbTTLDuration)
+	return pebbledb.New(pebbleDB, pebbledbTTLDuration)
 }
 
 func etcdTLSConfig() (*tls.Config, error) {

@@ -96,9 +96,8 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
     }
 
     $lines = explode("\n", $stdout);
-    // golangci-lint outputs a summary at the end of the output, which we
-    // don't want to parse. See the example below:
-    // 0 issues.
+    // golangci-lint outputs a summary at the end of the output. This is the only
+    // non XML output. Remove it to parse the XML correctly.
     $stdout = preg_replace('/\d+ issue(?:s)?\./', '', $stdout);
     $ok = @$report_dom->loadXML($stdout);
 

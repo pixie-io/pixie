@@ -68,13 +68,6 @@ func randStringRunes(n int) string {
 	return string(b)
 }
 
-func min(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 func fakeLoad(w *http.ResponseWriter, latency float64, mIters, respSize int64) float64 {
 	// add some jitters
 	// latency = rand.NormFloat64()*latency/10 + latency

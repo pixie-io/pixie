@@ -254,7 +254,7 @@ func (v *StreamOutputAdapter) handleStream(ctx context.Context, stream chan *Exe
 			case *vizierpb.ExecuteScriptResponse_Data:
 				err = v.handleData(ctx, res)
 			default:
-				err = fmt.Errorf("unhandled response type" + reflect.TypeOf(msg.Resp.Result).String())
+				err = fmt.Errorf("unhandled response type %s", reflect.TypeOf(msg.Resp.Result).String())
 			}
 			if err != nil {
 				v.err = newScriptExecutionError(CodeBadData, "failed to handle data from Vizier: "+err.Error())

@@ -117,24 +117,24 @@ func parseSpec(spec string) SequenceGenerator {
 	linRegex := regexp.MustCompile(`lin\((\d+), \s*(\d+),\s*(\d+)\)`)
 	expMatches := expRegex.FindStringSubmatch(spec)
 	if len(expMatches) == 4 {
-		min := parseOrDie(expMatches[1])
-		max := parseOrDie(expMatches[2])
+		minSeq := parseOrDie(expMatches[1])
+		maxSeq := parseOrDie(expMatches[2])
 		base := parseOrDie(expMatches[3])
 		return &expSequenceGenerator{
-			Min:  min,
-			Max:  max,
+			Min:  minSeq,
+			Max:  maxSeq,
 			Base: base,
 		}
 	}
 
 	linMatches := linRegex.FindStringSubmatch(spec)
 	if len(linMatches) == 4 {
-		min := parseOrDie(linMatches[1])
-		max := parseOrDie(linMatches[2])
+		minSeq := parseOrDie(linMatches[1])
+		maxSeq := parseOrDie(linMatches[2])
 		step := parseOrDie(linMatches[3])
 		return &linSequenceGenerator{
-			Min:  min,
-			Max:  max,
+			Min:  minSeq,
+			Max:  maxSeq,
 			Step: step,
 		}
 	}

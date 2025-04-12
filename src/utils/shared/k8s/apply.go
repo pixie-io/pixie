@@ -163,7 +163,7 @@ func GetResourcesFromYAML(yamlFile io.Reader) ([]*Resource, error) {
 
 		_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 		if err != nil {
-			log.WithError(err).Fatalf(err.Error())
+			log.WithError(err).Fatal(err.Error())
 			return nil, err
 		}
 
