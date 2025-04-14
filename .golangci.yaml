@@ -13,6 +13,7 @@ linters:
   - predeclared
   - revive
   - whitespace
+  - errcheck
   settings:
     errcheck:
       exclude-functions:
@@ -52,8 +53,15 @@ issues:
   max-same-issues: 0
 formatters:
   enable:
-  - gofmt
+  - gci
+  - gofumpt
   settings:
+    gci:
+      sections:
+      - standard
+      - default
+      - prefix(px.dev)
+      custom-order: true
     goimports:
       local-prefixes:
       - px.dev

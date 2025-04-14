@@ -102,7 +102,7 @@ func (r *renderedYAML) patch(patches []*experimentpb.PatchSpec) error {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	if err := os.WriteFile(path.Join(tmpdir, "resources.yaml"), r.yaml, 0666); err != nil {
+	if err := os.WriteFile(path.Join(tmpdir, "resources.yaml"), r.yaml, 0o666); err != nil {
 		return err
 	}
 

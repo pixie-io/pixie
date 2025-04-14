@@ -760,8 +760,8 @@ func convertExecFuncs(inputFuncs []*vizierpb.ExecuteScriptRequest_FuncToExecute)
 }
 
 func main() {
-	var readScriptFromDir = true
-	var scriptDir = "/home/philkuz/library/pixie/pxl_scripts/px/cluster/"
+	readScriptFromDir := true
+	scriptDir := "/home/philkuz/library/pixie/pxl_scripts/px/cluster/"
 	// Create the compiler.
 	var udfInfoPb udfspb.UDFInfo
 	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
@@ -830,7 +830,6 @@ func main() {
 		agent.QueryBrokerAddress = id.String()
 	}
 	plannerResultPB, err := c.Plan(queryRequestPB)
-
 	if err != nil {
 		log.Fatalf("Failed to plan: %v", err)
 	}
@@ -873,7 +872,7 @@ func main() {
 		defer f.Close()
 	}
 
-	f, err := os.OpenFile(path, os.O_RDWR, 0644)
+	f, err := os.OpenFile(path, os.O_RDWR, 0o644)
 	if err != nil {
 		log.WithError(err).Fatalf("failed to open")
 	}

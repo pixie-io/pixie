@@ -372,7 +372,8 @@ func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData, tableID string) (*vizie
 func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 	// Map of the received table names to their table ID on the output proto.
 	tableIDMap map[string]string,
-	compilationTimeNs int64) (*vizierpb.ExecuteScriptResponse, error) {
+	compilationTimeNs int64,
+) (*vizierpb.ExecuteScriptResponse, error) {
 	res := &vizierpb.ExecuteScriptResponse{
 		QueryID: utils.UUIDFromProtoOrNil(r.QueryID).String(),
 	}
@@ -424,7 +425,8 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan,
 	agentStats *[]*queryresultspb.AgentExecutionStats,
 	planTableID string,
-	maxQueryPlanStringSizeBytes int) ([]*vizierpb.ExecuteScriptResponse, error) {
+	maxQueryPlanStringSizeBytes int,
+) ([]*vizierpb.ExecuteScriptResponse, error) {
 	queryPlan, err := GetQueryPlanAsDotString(plan, planMap, agentStats)
 	if err != nil {
 		log.WithError(err).Error("error with query plan")
@@ -545,7 +547,8 @@ func AgentRelationToVizierRelation(relation *schemapb.Relation) *vizierpb.Relati
 
 // TableRelationResponses returns the query metadata table schemas as ExecuteScriptResponses.
 func TableRelationResponses(queryID uuid.UUID, tableIDMap map[string]string,
-	planMap map[uuid.UUID]*planpb.Plan) ([]*vizierpb.ExecuteScriptResponse, error) {
+	planMap map[uuid.UUID]*planpb.Plan,
+) ([]*vizierpb.ExecuteScriptResponse, error) {
 	var results []*vizierpb.ExecuteScriptResponse
 	schemas := OutputSchemaFromPlan(planMap)
 

@@ -37,9 +37,7 @@ const (
 	degradedThreshold = .25
 )
 
-var (
-	kernelMinVersion = semver.Version{Major: 4, Minor: 14, Patch: 0}
-)
+var kernelMinVersion = semver.Version{Major: 4, Minor: 14, Patch: 0}
 
 func getNodeKernelVersion(node *v1.Node) string {
 	version := node.Status.NodeInfo.KernelVersion

@@ -233,7 +233,6 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 
 	sha256ObjectPath := objectPath + ".sha256"
 	r, err := s.sc.Bucket(bucket).Object(sha256ObjectPath).NewReader(ctx)
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to fetch sha256 file")
 	}

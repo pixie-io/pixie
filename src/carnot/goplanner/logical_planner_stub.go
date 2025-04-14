@@ -33,8 +33,7 @@ import (
 var errorUnimplemented = errors.New(" ¡UNIMPLEMENTED STUB FOR STATIC ANALYSIS. goplanner ONLY RUNS WITH __CGO__ ENABLED! ")
 
 // GoPlanner wraps the C Planner.
-type GoPlanner struct {
-}
+type GoPlanner struct{}
 
 // New creates a new GoPlanner object.
 func New(udfInfo *udfspb.UDFInfo) (GoPlanner, error) {

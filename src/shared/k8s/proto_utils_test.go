@@ -21,14 +21,13 @@ package k8s_test
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"px.dev/pixie/src/shared/k8s"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
@@ -1647,10 +1646,11 @@ func TestReplicaSetToProto(t *testing.T) {
 		},
 	}
 
-	selector := metav1.LabelSelector{MatchLabels: map[string]string{
-		"env":     "prod",
-		"managed": "helm",
-	},
+	selector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"env":     "prod",
+			"managed": "helm",
+		},
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
 				Key:      "app",
@@ -1744,7 +1744,8 @@ func TestDeploymentToProto(t *testing.T) {
 			{
 				Kind: "Pod",
 				Name: "pod",
-				UID:  "1234"},
+				UID:  "1234",
+			},
 		},
 		Labels: map[string]string{
 			"env": "prod",

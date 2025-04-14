@@ -1024,7 +1024,6 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 	// Update retention scripts with new info.
 	query = `UPDATE plugin_retention_scripts SET script_name = $1, export_url = PGP_SYM_ENCRYPT($2, $3), description = $4 WHERE script_id = $5`
 	_, err = txn.Exec(query, scriptName, exportURL, s.dbKey, description, scriptID)
-
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update retention script")
 	}

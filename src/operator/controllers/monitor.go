@@ -808,7 +808,6 @@ func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
 	}
 
 	body, err := io.ReadAll(resp.Body)
-
 	if err != nil {
 		log.WithError(err).Error("Error reading the response body")
 		return false, ""

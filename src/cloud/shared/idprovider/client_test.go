@@ -76,6 +76,7 @@ func fillDefaults(p *testClientConfig) *testClientConfig {
 
 	return p
 }
+
 func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient, func()) {
 	p = fillDefaults(p)
 

@@ -84,7 +84,6 @@ func (v *VizierPassThroughProxy) isScriptModified(ctx context.Context, script st
 	}
 
 	resp, err := v.sm.CheckScriptExists(ctx, req)
-
 	if err != nil {
 		return false, err
 	}

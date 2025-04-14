@@ -389,7 +389,6 @@ func RunSimpleHealthCheckScript(br *script.BundleManager, cloudAddr string, clus
 		return nil, err
 	}
 	execScript, err := br.GetScript(script.AgentStatusDiagnosticsScript)
-
 	if err != nil {
 		execScript, err = br.GetScript(script.AgentStatusScript)
 		if err != nil {

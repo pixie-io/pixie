@@ -69,7 +69,6 @@ func downloadVizierYAMLs(conn *grpc.ClientConn, authToken, versionStr string, te
 // FetchVizierYAMLMap fetches Vizier YAML files and write to a map <fname>:<yaml string>.
 func FetchVizierYAMLMap(conn *grpc.ClientConn, authToken, versionStr string) (map[string]string, error) {
 	reader, err := downloadVizierYAMLs(conn, authToken, versionStr, false)
-
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +84,6 @@ func FetchVizierYAMLMap(conn *grpc.ClientConn, authToken, versionStr string) (ma
 // FetchVizierTemplates fetches the Vizier templates for the given version.
 func FetchVizierTemplates(conn *grpc.ClientConn, authToken, versionStr string) ([]*yamls.YAMLFile, error) {
 	reader, err := downloadVizierYAMLs(conn, authToken, versionStr, true)
-
 	if err != nil {
 		return nil, err
 	}

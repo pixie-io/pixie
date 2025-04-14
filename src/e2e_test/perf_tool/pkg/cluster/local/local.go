@@ -28,8 +28,7 @@ import (
 )
 
 // ClusterProvider uses whatever cluster your local kubeconfig points to.
-type ClusterProvider struct {
-}
+type ClusterProvider struct{}
 
 var _ cluster.Provider = &ClusterProvider{}
 

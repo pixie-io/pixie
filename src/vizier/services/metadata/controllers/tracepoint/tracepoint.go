@@ -38,11 +38,9 @@ import (
 	"px.dev/pixie/src/vizier/services/shared/agentpb"
 )
 
-var (
-	// ErrTracepointAlreadyExists is produced if a tracepoint already exists with the given name
-	// and does not have a matching schema.
-	ErrTracepointAlreadyExists = errors.New("TracepointDeployment already exists")
-)
+// ErrTracepointAlreadyExists is produced if a tracepoint already exists with the given name
+// and does not have a matching schema.
+var ErrTracepointAlreadyExists = errors.New("TracepointDeployment already exists")
 
 // agentMessenger is a controller that lets us message all agents and all active agents.
 type agentMessenger interface {
@@ -446,7 +444,6 @@ func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.
 		}
 
 		err = m.agtMgr.MessageAgents(validAgentsForProgram.AgentIDs, msg)
-
 		if err != nil {
 			return err
 		}

@@ -462,7 +462,6 @@ func (c *HydraKratosClient) AcceptConsent(ctx context.Context, challenge string)
 		ConsentChallenge: challenge,
 		Context:          ctx,
 	})
-
 	if err != nil {
 		log.Debug("error on hydra.AcceptConsentRequest:")
 		return nil, err

@@ -274,7 +274,6 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 		OrgID:       utils.ProtoFromUUID(orgID),
 		ProjectName: DefaultProjectName,
 	})
-
 	if err != nil {
 		deleteErr := s.ods.DeleteOrgAndUsers(orgID)
 		if deleteErr != nil {
@@ -594,7 +593,6 @@ func (s *Server) AddOrgIDEConfig(ctx context.Context, req *profilepb.AddOrgIDECo
 		Name: req.Config.IDEName,
 		Path: req.Config.Path,
 	})
-
 	if err != nil {
 		return nil, err
 	}

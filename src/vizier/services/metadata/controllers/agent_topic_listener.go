@@ -103,7 +103,8 @@ type AgentHandler struct {
 
 // NewAgentTopicListener creates a new agent topic listener.
 func NewAgentTopicListener(agtMgr agent.Manager, tpMgr *tracepoint.Manager,
-	sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
+	sendMsgFn SendMessageFn,
+) (*AgentTopicListener, error) {
 	atl := &AgentTopicListener{
 		agtMgr:      agtMgr,
 		tpMgr:       tpMgr,

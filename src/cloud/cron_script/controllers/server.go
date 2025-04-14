@@ -350,7 +350,6 @@ func (s *Server) GetScripts(ctx context.Context, req *cronscriptpb.GetScriptsReq
 	cronErr := status.Error(codes.Internal, "Failed to get cron scripts")
 
 	query, args, err := sqlx.In(strQuery, s.dbKey, orgID, ids)
-
 	if err != nil {
 		log.WithError(err).Error("Failed to bind parameters for cron scripts query")
 		return nil, cronErr
@@ -358,7 +357,6 @@ func (s *Server) GetScripts(ctx context.Context, req *cronscriptpb.GetScriptsReq
 
 	query = s.db.Rebind(query)
 	rows, err := s.db.Queryx(query, args...)
-
 	if err != nil {
 		log.WithError(err).Error(fmt.Sprintf("Failed to run cron scripts query: %s", query))
 		return nil, cronErr

@@ -69,7 +69,8 @@ func NewMutationExecutor(
 	planner Planner,
 	mdtp metadatapb.MetadataTracepointServiceClient,
 	mdconf metadatapb.MetadataConfigServiceClient,
-	distributedState *distributedpb.DistributedState) MutationExecutor {
+	distributedState *distributedpb.DistributedState,
+) MutationExecutor {
 	return &MutationExecutorImpl{
 		planner:           planner,
 		mdtp:              mdtp,

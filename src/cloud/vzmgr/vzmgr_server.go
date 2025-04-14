@@ -23,8 +23,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"px.dev/pixie/src/cloud/shared/messages"
-
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +31,7 @@ import (
 	"google.golang.org/grpc"
 
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/cloud/vzmgr/controllers"

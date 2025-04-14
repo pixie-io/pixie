@@ -176,12 +176,14 @@ func createDeploymentObject() *storepb.K8SResource {
 	}
 }
 
-type ResourceStore map[int64]*storepb.K8SResourceUpdate
-type InMemoryStore struct {
-	ResourceStoreByTopic map[string]ResourceStore
-	RVStore              map[string]int64
-	FullResourceStore    map[int64]*storepb.K8SResource
-}
+type (
+	ResourceStore map[int64]*storepb.K8SResourceUpdate
+	InMemoryStore struct {
+		ResourceStoreByTopic map[string]ResourceStore
+		RVStore              map[string]int64
+		FullResourceStore    map[int64]*storepb.K8SResource
+	}
+)
 
 func (s *InMemoryStore) AddResourceUpdateForTopic(uv int64, topic string, r *storepb.K8SResourceUpdate) error {
 	if _, ok := s.ResourceStoreByTopic[topic]; !ok {

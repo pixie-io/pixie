@@ -33,14 +33,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	subj = pkix.Name{
-		Organization: []string{"Pixie Labs Inc."},
-		Country:      []string{"US"},
-		Province:     []string{"California"},
-		Locality:     []string{"San Francisco"},
-	}
-)
+var subj = pkix.Name{
+	Organization: []string{"Pixie Labs Inc."},
+	Country:      []string{"US"},
+	Province:     []string{"California"},
+	Locality:     []string{"San Francisco"},
+}
 
 // generateAndWriteCA generates a CA cert and writes it to the file pointed by the ca_crt flag.
 // It also returns the generated cert and privateKey so that they can be used to generate and sign
@@ -64,7 +62,7 @@ func generateAndWriteCA() (*x509.Certificate, *rsa.PrivateKey) {
 	if err != nil {
 		panic(err)
 	}
-	caCertOut, err := os.OpenFile(viper.GetString("ca_crt"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	caCertOut, err := os.OpenFile(viper.GetString("ca_crt"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +97,7 @@ func generateAndWriteCertPair(ca *x509.Certificate, caKey *rsa.PrivateKey, certP
 	if err != nil {
 		panic(err)
 	}
-	certOut, err := os.OpenFile(certPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	certOut, err := os.OpenFile(certPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
 		panic(err)
 	}
@@ -111,7 +109,7 @@ func generateAndWriteCertPair(ca *x509.Certificate, caKey *rsa.PrivateKey, certP
 	if err != nil {
 		panic(err)
 	}
-	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		panic(err)
 	}

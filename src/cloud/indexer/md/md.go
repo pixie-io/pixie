@@ -39,12 +39,10 @@ const (
 	defaultFlushInterval = time.Second * 10
 )
 
-var (
-	elasticFailuresCollector = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "elastic_index_failures",
-		Help: "The number of failures for the vizier_id index",
-	}, []string{"vizier_id"})
-)
+var elasticFailuresCollector = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name: "elastic_index_failures",
+	Help: "The number of failures for the vizier_id index",
+}, []string{"vizier_id"})
 
 func init() {
 	prometheus.MustRegister(elasticFailuresCollector)
@@ -70,7 +68,8 @@ type VizierIndexer struct {
 
 // NewVizierIndexerWithBulkSettings creates a new Vizier indexer with bulk settings.
 func NewVizierIndexerWithBulkSettings(vizierID uuid.UUID, orgID uuid.UUID, k8sUID, indexName string, st msgbus.Streamer,
-	es *elastic.Client, batchFlushInterval time.Duration) *VizierIndexer {
+	es *elastic.Client, batchFlushInterval time.Duration,
+) *VizierIndexer {
 	return &VizierIndexer{
 		st: st,
 		es: es,

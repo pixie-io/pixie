@@ -28,15 +28,13 @@ import (
 	"px.dev/pixie/src/api/go/pxapi/types"
 )
 
-var (
-	pxl = `
+var pxl = `
 import px
 df = px.DataFrame('http_events')
 df = df[['upid', 'req_path', 'remote_addr', 'req_method']]
 df = df.head(10)
 px.display(df, 'http')
 `
-)
 
 type tablePrinter struct{}
 
@@ -56,8 +54,7 @@ func (t *tablePrinter) HandleDone(ctx context.Context) error {
 	return nil
 }
 
-type tableMux struct {
-}
+type tableMux struct{}
 
 func (s *tableMux) AcceptTable(ctx context.Context, metadata types.TableMetadata) (pxapi.TableRecordHandler, error) {
 	return &tablePrinter{}, nil

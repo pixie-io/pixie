@@ -31,14 +31,16 @@ import (
 )
 
 // Flag strings.
-var flagSpecDuration string
-var flagSpecThreads string
-var flagSpecConnections string
-var flagSpecMessageSize string
-var flagSpecKIters string
-var flagWrkHost string
-var flagPrefix string
-var flagOutputDir string
+var (
+	flagSpecDuration    string
+	flagSpecThreads     string
+	flagSpecConnections string
+	flagSpecMessageSize string
+	flagSpecKIters      string
+	flagWrkHost         string
+	flagPrefix          string
+	flagOutputDir       string
+)
 
 func init() {
 	flag.StringVar(&flagSpecDuration, "d", "10", "The duration spec")
@@ -112,6 +114,7 @@ func parseOrDie(s string) int64 {
 	}
 	return val
 }
+
 func parseSpec(spec string) SequenceGenerator {
 	expRegex := regexp.MustCompile(`exp\((\d+), \s*(\d+),\s*(\d+)\)`)
 	linRegex := regexp.MustCompile(`lin\((\d+), \s*(\d+),\s*(\d+)\)`)
@@ -188,7 +191,7 @@ func main() {
 	flag.Parse()
 
 	if flagOutputDir != "" {
-		err := os.MkdirAll(flagOutputDir, 0755)
+		err := os.MkdirAll(flagOutputDir, 0o755)
 		if err != nil {
 			panic("failed to create output dir" + err.Error())
 		}

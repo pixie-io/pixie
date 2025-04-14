@@ -89,7 +89,7 @@ func main() {
 	if len(logFile) > 0 {
 		utils.Info(fmt.Sprintf("Logging to %s", logFile))
 
-		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 		if err != nil {
 			log.WithError(err).Error("Cannot open log file")
 		}

@@ -39,10 +39,8 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-var (
-	// ErrAPIKeyNotFound is used when the specified API key cannot be located.
-	ErrAPIKeyNotFound = errors.New("invalid API key")
-)
+// ErrAPIKeyNotFound is used when the specified API key cannot be located.
+var ErrAPIKeyNotFound = errors.New("invalid API key")
 
 const (
 	// apiKeyPrefix is applied to all api keys to make them easier to identify.

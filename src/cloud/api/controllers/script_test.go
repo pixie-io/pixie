@@ -45,7 +45,7 @@ func toAny(t *testing.T, msg proto.Message) *types.Any {
 }
 
 func TestScriptMgr(t *testing.T) {
-	var testVis = &vispb.Vis{
+	testVis := &vispb.Vis{
 		Widgets: []*vispb.Widget{
 			{
 				FuncOrRef: &vispb.Widget_Func_{

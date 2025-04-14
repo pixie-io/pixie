@@ -60,6 +60,7 @@ func init() {
 	pflag.Bool("disable_auto_update", false, "Whether auto-update should be disabled")
 	pflag.Duration("metrics_scrape_period", 15*time.Minute, "Period that the metrics scraper should run at.")
 }
+
 func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
@@ -132,7 +133,6 @@ func main() {
 		viper.GetDuration("renew_period"),
 		"cloud-conn-election",
 	)
-
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to leader election manager.")
 	}

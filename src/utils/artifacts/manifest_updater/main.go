@@ -29,14 +29,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/api/googleapi"
 
 	"px.dev/pixie/src/shared/artifacts/manifest"
-
-	"cloud.google.com/go/storage"
-	"google.golang.org/api/googleapi"
 )
 
 func init() {
@@ -171,14 +170,14 @@ func updateLocalManifest(updates *manifest.ArtifactManifest) error {
 	if err := newManifest.Write(manifestBuf); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, manifestBuf.Bytes(), 0664); err != nil {
+	if err := os.WriteFile(path, manifestBuf.Bytes(), 0o664); err != nil {
 		return err
 	}
 
 	sha256Bytes := sha256.Sum256(manifestBuf.Bytes())
 	sha256Str := fmt.Sprintf("%x", sha256Bytes)
 	shaPath := path + ".sha256"
-	if err := os.WriteFile(shaPath, []byte(sha256Str), 0664); err != nil {
+	if err := os.WriteFile(shaPath, []byte(sha256Str), 0o664); err != nil {
 		return err
 	}
 
@@ -186,7 +185,7 @@ func updateLocalManifest(updates *manifest.ArtifactManifest) error {
 }
 
 func createEmptyManifest(path string) (*os.File, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, err
 	}
 	f, err := os.Create(path)

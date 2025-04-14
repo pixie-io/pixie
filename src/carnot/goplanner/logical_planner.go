@@ -25,6 +25,7 @@ package goplanner
 // #include <stdlib.h>
 // #include "src/carnot/planner/cgo_export.h"
 import "C"
+
 import (
 	"errors"
 	"fmt"
@@ -32,7 +33,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-
 	// Blank Import required by package.
 	_ "github.com/ianlancetaylor/cgosymbolizer"
 

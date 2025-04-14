@@ -109,6 +109,7 @@ func (t *TableStreamWriter) Write(data []interface{}) error {
 	t.data = append(t.data, data)
 	return nil
 }
+
 func (t *TableStreamWriter) stringifyRow(row []interface{}) []string {
 	s := make([]string, len(row))
 

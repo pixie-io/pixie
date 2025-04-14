@@ -84,7 +84,8 @@ type Impl struct {
 func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient, oc profilepb.OrgServiceClient,
 	vk vzmgrpb.VZDeploymentKeyServiceClient, ak authpb.APIKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
 	at artifacttrackerpb.ArtifactTrackerClient, oa IdentityProviderClient,
-	cm configmanagerpb.ConfigManagerServiceClient, pm pluginpb.PluginServiceClient, rm pluginpb.DataRetentionPluginServiceClient) (APIEnv, error) {
+	cm configmanagerpb.ConfigManagerServiceClient, pm pluginpb.PluginServiceClient, rm pluginpb.DataRetentionPluginServiceClient,
+) (APIEnv, error) {
 	sessionKey := viper.GetString("session_key")
 	if len(sessionKey) == 0 {
 		return nil, errors.New("session_key is required for cookie store")

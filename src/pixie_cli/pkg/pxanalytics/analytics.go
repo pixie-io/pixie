@@ -43,6 +43,7 @@ type disabledAnalyticsClient struct{}
 func (c disabledAnalyticsClient) Enqueue(analytics.Message) error {
 	return nil
 }
+
 func (c disabledAnalyticsClient) Close() error {
 	return nil
 }

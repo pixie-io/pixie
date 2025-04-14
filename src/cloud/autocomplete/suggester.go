@@ -158,7 +158,6 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	}
 
 	resp, err := ms.Do(context.Background())
-
 	if err != nil {
 		return nil, err
 	}

@@ -41,11 +41,15 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
-const bundleBucket = "test-bucket"
-const bundlePath = "bundle.json"
+const (
+	bundleBucket = "test-bucket"
+	bundlePath   = "bundle.json"
+)
 
-type scriptDef = map[string]string
-type scriptsDef = map[string]scriptDef
+type (
+	scriptDef  = map[string]string
+	scriptsDef = map[string]scriptDef
+)
 
 var testLiveView = `{
  	"widgets": [{

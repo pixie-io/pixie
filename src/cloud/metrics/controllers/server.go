@@ -26,8 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"px.dev/pixie/src/shared/bq"
-
 	"cloud.google.com/go/bigquery"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -38,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/shared/bq"
 	"px.dev/pixie/src/shared/cvmsgs"
 	"px.dev/pixie/src/shared/cvmsgspb"
 )

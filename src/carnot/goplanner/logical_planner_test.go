@@ -142,7 +142,6 @@ func TestPlanner_Simple(t *testing.T) {
 		LogicalPlannerState: plannerStatePB,
 	}
 	plannerResultPB, err := c.Plan(queryRequestPB)
-
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
 		os.Exit(1)
@@ -197,7 +196,6 @@ func TestPlanner_MissingTable(t *testing.T) {
 		LogicalPlannerState: plannerStatePB,
 	}
 	plannerResultPB, err := c.Plan(queryRequestPB)
-
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
 		os.Exit(1)
@@ -234,7 +232,6 @@ func TestPlanner_EmptyString(t *testing.T) {
 		LogicalPlannerState: plannerStatePB,
 	}
 	plannerResultPB, err := c.Plan(queryRequestPB)
-
 	if err != nil {
 		t.Fatal("Failed to plan:", err)
 	}

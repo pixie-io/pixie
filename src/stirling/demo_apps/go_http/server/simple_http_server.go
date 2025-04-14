@@ -27,9 +27,11 @@ import (
 	"time"
 )
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var cachedRespData []string
-var mIterationsPerMs float64
+var (
+	letterRunes      = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	cachedRespData   []string
+	mIterationsPerMs float64
+)
 
 func init() {
 	// Compute the cached response data, generating randoms strings is slow

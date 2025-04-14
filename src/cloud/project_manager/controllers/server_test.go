@@ -35,8 +35,7 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-type fakeDatastore struct {
-}
+type fakeDatastore struct{}
 
 func (d *fakeDatastore) RegisterProject(orgID uuid.UUID, projectName string) error {
 	return nil

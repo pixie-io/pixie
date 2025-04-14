@@ -79,7 +79,6 @@ func mustConnectElastic() *elastic.Client {
 		Passwd:     viper.GetString("es_passwd"),
 		CaCertFile: viper.GetString("es_ca_cert"),
 	})
-
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to connect to elastic at url: %s", esURL)
 	}

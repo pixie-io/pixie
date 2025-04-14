@@ -20,7 +20,5 @@ package script
 
 import "errors"
 
-var (
-	// ErrScriptNotFound is returned when the requested script does not exist.
-	ErrScriptNotFound = errors.New("Script not found (run `px run -l` to list available scripts)")
-)
+// ErrScriptNotFound is returned when the requested script does not exist.
+var ErrScriptNotFound = errors.New("Script not found (run `px run -l` to list available scripts)")

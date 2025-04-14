@@ -58,7 +58,6 @@ func init() {
 func loadServiceAccountConfig() *jwt.Config {
 	saKeyFile := viper.GetString("sa_key_path")
 	saKey, err := os.ReadFile(saKeyFile)
-
 	if err != nil {
 		return nil
 	}

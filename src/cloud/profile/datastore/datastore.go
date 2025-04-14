@@ -566,7 +566,6 @@ func (d *Datastore) UpdateUserSettings(settings *UserSettings) error {
 		query = `UPDATE user_settings SET %s = %s WHERE user_id = :user_id`
 	}
 	_, err = d.db.NamedExec(fmt.Sprintf(query, strings.Join(cols, ","), strings.Join(params, ",")), settings)
-
 	if err != nil {
 		return err
 	}
@@ -583,7 +582,6 @@ func (d *Datastore) UpdateUserSettings(settings *UserSettings) error {
 func (d *Datastore) createUserSettingsUsingTxn(tx *sqlx.Tx, id uuid.UUID) error {
 	query := `INSERT INTO user_settings (user_id) VALUES ($1)`
 	_, err := tx.Exec(query, id)
-
 	if err != nil {
 		return err
 	}
@@ -636,7 +634,6 @@ func (d *Datastore) SetUserAttributes(attributes *UserAttributes) error {
 		query = `UPDATE user_attributes SET %s = %s WHERE user_id = :user_id`
 	}
 	_, err = d.db.NamedExec(fmt.Sprintf(query, strings.Join(cols, ","), strings.Join(params, ",")), attributes)
-
 	if err != nil {
 		return err
 	}
@@ -653,7 +650,6 @@ func (d *Datastore) SetUserAttributes(attributes *UserAttributes) error {
 func (d *Datastore) createUserAttributesUsingTxn(tx *sqlx.Tx, id uuid.UUID) error {
 	query := `INSERT INTO user_attributes (user_id) VALUES ($1)`
 	_, err := tx.Exec(query, id)
-
 	if err != nil {
 		return err
 	}

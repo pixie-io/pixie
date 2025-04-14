@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -44,8 +43,10 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
-var queryExecTimeSummary *prometheus.SummaryVec
-var queryExecNumPEMSummary *prometheus.SummaryVec
+var (
+	queryExecTimeSummary   *prometheus.SummaryVec
+	queryExecNumPEMSummary *prometheus.SummaryVec
+)
 
 func init() {
 	queryExecTimeSummary = promauto.NewSummaryVec(

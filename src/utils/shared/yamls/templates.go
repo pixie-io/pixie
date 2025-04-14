@@ -39,8 +39,10 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-var nonNamespacedKinds = []string{"Namespace", "ClusterRoleBinding", "ClusterRole"}
-var templateKinds = []string{"DaemonSet", "Deployment", "StatefulSet"}
+var (
+	nonNamespacedKinds = []string{"Namespace", "ClusterRoleBinding", "ClusterRole"}
+	templateKinds      = []string{"DaemonSet", "Deployment", "StatefulSet"}
+)
 
 // YAMLTmplArguments is a wrapper around YAMLTmplValues.
 type YAMLTmplArguments struct {

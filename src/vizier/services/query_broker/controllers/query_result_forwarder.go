@@ -38,8 +38,10 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-var queryExecRecordsSummary *prometheus.SummaryVec
-var queryExecBytesSummary *prometheus.SummaryVec
+var (
+	queryExecRecordsSummary *prometheus.SummaryVec
+	queryExecBytesSummary   *prometheus.SummaryVec
+)
 
 func init() {
 	queryExecRecordsSummary = promauto.NewSummaryVec(
@@ -169,7 +171,8 @@ type activeQuery struct {
 
 func newActiveQuery(producerCtx context.Context, tableIDMap map[string]string,
 	compilationTimeNs int64,
-	queryPlanOpts *QueryPlanOpts, watchdogCancel context.CancelFunc, queryName string) *activeQuery {
+	queryPlanOpts *QueryPlanOpts, watchdogCancel context.CancelFunc, queryName string,
+) *activeQuery {
 	aq := &activeQuery{
 		queryResultCh: make(chan *carnotpb.TransferResultChunkRequest, activeQueryBufferSize),
 		tableIDMap:    tableIDMap,
@@ -330,7 +333,6 @@ func (a *activeQuery) handleRequest(ctx context.Context, queryID uuid.UUID, msg 
 		if a.queryPlanOpts != nil {
 			qpResps, err := QueryPlanResponse(queryID, a.queryPlanOpts.Plan, a.queryPlanOpts.PlanMap,
 				a.agentExecStats, a.queryPlanOpts.TableID, maxQueryPlanStringSize)
-
 			if err != nil {
 				return err
 			}
@@ -472,7 +474,8 @@ func NewQueryResultForwarderWithOptions(opts ...QueryResultForwarderOption) Quer
 func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
 	compilationTimeNs int64,
 	queryPlanOpts *QueryPlanOpts,
-	queryName string) error {
+	queryName string,
+) error {
 	f.activeQueriesMutex.Lock()
 	defer f.activeQueriesMutex.Unlock()
 
@@ -495,12 +498,15 @@ func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap m
 }
 
 // The max size of the query plan string, including a buffer for the rest of the message.
-const maxQueryPlanBufferSize int = 64 * 1024
-const maxQueryPlanStringSize = 1024*1024 - maxQueryPlanBufferSize
+const (
+	maxQueryPlanBufferSize int = 64 * 1024
+	maxQueryPlanStringSize     = 1024*1024 - maxQueryPlanBufferSize
+)
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan<- *vizierpb.ExecuteScriptResponse) error {
+	resultCh chan<- *vizierpb.ExecuteScriptResponse,
+) error {
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()

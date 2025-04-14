@@ -272,7 +272,6 @@ func main() {
 
 	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr,
 		mdh, &isLeader)
-
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
 	}

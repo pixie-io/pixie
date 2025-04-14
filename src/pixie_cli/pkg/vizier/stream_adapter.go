@@ -93,7 +93,8 @@ const FormatInMemory string = "inmemory"
 // NewStreamOutputAdapterWithFactory creates a new vizier output adapter factory.
 func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecData, format string,
 	decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions,
-	factoryFunc func(*vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *StreamOutputAdapter {
+	factoryFunc func(*vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter,
+) *StreamOutputAdapter {
 	enableFormat := format != "json" && format != FormatInMemory
 
 	adapter := &StreamOutputAdapter{

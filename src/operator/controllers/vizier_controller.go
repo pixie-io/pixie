@@ -810,7 +810,8 @@ func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceLi
 // generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
 // Pixie Cloud.
 func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
-	error) {
+	error,
+) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
 	req := &cloudpb.ConfigForVizierRequest{

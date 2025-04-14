@@ -218,7 +218,6 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", managementToken))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}

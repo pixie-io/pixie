@@ -84,7 +84,8 @@ func nodeExecTiming(nodeID int64, execStats *map[int64]*queryresultspb.OperatorE
 
 // GetQueryPlanAsDotString converts the plan into a dotstring that can be rendered by GraphViz.
 func GetQueryPlanAsDotString(distributedPlan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan,
-	planExecStats *[]*queryresultspb.AgentExecutionStats) (string, error) {
+	planExecStats *[]*queryresultspb.AgentExecutionStats,
+) (string, error) {
 	g := dot.NewGraph(dot.Directed)
 	execDetails := make(map[uuid.UUID]*queryresultspb.AgentExecutionStats)
 	if planExecStats != nil {

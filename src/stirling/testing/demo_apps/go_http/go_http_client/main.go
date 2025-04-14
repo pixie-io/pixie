@@ -33,8 +33,10 @@ import (
 	"time"
 )
 
-var r = rand.New(rand.NewSource(1))
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var (
+	r           = rand.New(rand.NewSource(1))
+	letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+)
 
 func randStringRunes(n int) string {
 	b := make([]rune, n)

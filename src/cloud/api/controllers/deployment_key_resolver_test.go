@@ -55,7 +55,7 @@ func TestDeploymentKey(t *testing.T) {
 			defer cleanup()
 			ctx := test.ctx
 
-			createTime := time.Date(2020, 03, 9, 17, 46, 100, 1232409, time.UTC)
+			createTime := time.Date(2020, 0o3, 9, 17, 46, 100, 1232409, time.UTC)
 			createTimePb, err := types.TimestampProto(createTime)
 			if err != nil {
 				t.Fatalf("could not write time %+v as protobuf", createTime)
@@ -130,7 +130,7 @@ func TestDeploymentKeys(t *testing.T) {
 			defer cleanup()
 			ctx := test.ctx
 
-			createTime1 := time.Date(2020, 03, 9, 17, 46, 100, 1232409, time.UTC)
+			createTime1 := time.Date(2020, 0o3, 9, 17, 46, 100, 1232409, time.UTC)
 			createTime1Pb, err := types.TimestampProto(createTime1)
 			if err != nil {
 				t.Fatalf("could not write time %+v as protobuf", createTime1)
@@ -231,7 +231,7 @@ func TestCreateDeploymentKey(t *testing.T) {
 			defer cleanup()
 			ctx := test.ctx
 
-			createTime := time.Date(2020, 03, 9, 17, 46, 100, 1232409, time.UTC)
+			createTime := time.Date(2020, 0o3, 9, 17, 46, 100, 1232409, time.UTC)
 			createTimePb, err := types.TimestampProto(createTime)
 			if err != nil {
 				t.Fatalf("could not write time %+v as protobuf", createTime)
