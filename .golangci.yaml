@@ -58,7 +58,6 @@ issues:
 formatters:
   enable:
   - gci
-  - gofmt
   - gofumpt
   settings:
     gci:
