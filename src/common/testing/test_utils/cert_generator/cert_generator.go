@@ -115,12 +115,14 @@ func generateAndWriteCertPair(ca *x509.Certificate, caKey *rsa.PrivateKey, certP
 	}
 
 	keyType := viper.GetString("secret_key_type")
-	if keyType == "pkcs1" {
+	switch keyType {
+	case "pkcs1":
+
 		err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 		if err != nil {
 			panic(err)
 		}
-	} else if keyType == "pkcs8" {
+	case "pkcs8":
 		b, err := x509.MarshalPKCS8PrivateKey(privateKey)
 		if err != nil {
 			panic(err)
@@ -130,7 +132,7 @@ func generateAndWriteCertPair(ca *x509.Certificate, caKey *rsa.PrivateKey, certP
 		if err != nil {
 			panic(err)
 		}
-	} else {
+	default:
 		panic(fmt.Sprintf("Unsupported private key type: %s", keyType))
 	}
 	err = keyOut.Close()

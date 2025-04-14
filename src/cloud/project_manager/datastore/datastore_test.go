@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
-	_ "github.com/golang-migrate/migrate/source/go_bindata"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	_ "github.com/golang-migrate/migrate/source/go_bindata"       //nolint:staticcheck
+	bindata "github.com/golang-migrate/migrate/source/go_bindata" //nolint:staticcheck
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"

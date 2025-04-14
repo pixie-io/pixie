@@ -257,7 +257,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 			}
 		} else {
 			// Chunk up the data so we don't overwhelm the query broker with a lot of data at once.
-			for !(finishedUpdates && finishedSchema) {
+			for !finishedUpdates || !finishedSchema {
 				select {
 				case <-srv.Context().Done():
 					log.Infof("Client closed context for GetAgentUpdates")

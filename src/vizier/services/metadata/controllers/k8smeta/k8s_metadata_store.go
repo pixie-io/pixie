@@ -137,11 +137,7 @@ func (m *Datastore) FetchResourceUpdates(topic string, from int64, to int64) ([]
 	// Merge the topic-specific and unscoped updates in order.
 	tIdx := 0
 	uIdx := 0
-	for {
-		if tIdx == len(tKeys) && uIdx == len(uKeys) {
-			break
-		}
-
+	for tIdx == len(tKeys) && uIdx == len(uKeys) {
 		var uVersion int64 = -1
 		var tVersion int64 = -1
 		var err error

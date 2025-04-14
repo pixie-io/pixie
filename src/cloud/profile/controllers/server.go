@@ -167,12 +167,14 @@ func orgInfoToProto(o *datastore.OrgInfo) *profilepb.OrgInfo {
 }
 
 func toExternalError(err error) error {
-	if err == datastore.ErrOrgNotFound {
+	switch err {
+	case datastore.ErrOrgNotFound:
 		return status.Error(codes.NotFound, "no such org")
-	} else if err == datastore.ErrUserNotFound {
+	case datastore.ErrUserNotFound:
 		return status.Error(codes.NotFound, "no such user")
+	default:
+		return err
 	}
-	return err
 }
 
 // CreateUser is the GRPC method to create  new user.

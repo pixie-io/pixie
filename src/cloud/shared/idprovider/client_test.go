@@ -94,7 +94,7 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 		assert.Equal(t, "abcd", r.Header.Get("ory_hydra_session"))
 		// The actual endpoint sets a cookie, so we want do forward that as well.
 		w.Header().Set("Set-Cookie", p.hydraPublicHostCookie)
-		http.Redirect(w, r, consentURL.String(), 302)
+		http.Redirect(w, r, consentURL.String(), http.StatusFound)
 	}))
 
 	acceptConsentRequestFn := func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {

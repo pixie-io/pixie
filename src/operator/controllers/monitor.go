@@ -46,8 +46,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
-	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"               //nolint:staticcheck
+	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1" //nolint:staticcheck
 	"px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
@@ -415,7 +415,7 @@ func getStatefulMetadataPendingState(pods *concurrentPodMap, vz *v1alpha1.Vizier
 	}
 	for _, metadataPod := range labelMap {
 		for _, ownerRef := range metadataPod.pod.OwnerReferences {
-			if !(ownerRef.Kind == "StatefulSet") {
+			if ownerRef.Kind != "StatefulSet" {
 				continue
 			}
 			if metadataPod.pod.Status.Phase != v1.PodPending {
@@ -672,7 +672,7 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 	}
 
 	// Delete pod if nats pod failed
-	if state.Reason == status.NATSPodFailed {
+	if state.Reason == status.NATSPodFailed { //nolint:staticcheck
 		err := m.clientset.CoreV1().Pods(m.namespace).Delete(m.ctx, natsPodName, metav1.DeleteOptions{})
 		if err != nil {
 			log.WithError(err).Error("Failed to delete NATS pod")

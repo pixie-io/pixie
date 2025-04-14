@@ -72,7 +72,7 @@ func main() {
 	fmt.Print("Starting to send requests...\n")
 
 	for i := 0; i < *count || *count == 0; i++ {
-		if *reqType == "get" || *reqType == "mix" {
+		if *reqType == "get" || *reqType == "mix" { //nolint:staticcheck
 			resp, err := http.Get("http://" + *address + "/sayhello?name=" + url.QueryEscape(*name))
 			if err != nil {
 				panic(err)

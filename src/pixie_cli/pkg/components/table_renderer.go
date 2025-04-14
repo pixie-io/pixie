@@ -165,7 +165,7 @@ func (ms MapSlice) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		buf.WriteString(fmt.Sprintf("%q:", fmt.Sprintf("%v", mi.Key)))
+		buf.WriteString(fmt.Sprintf("%q:", fmt.Sprintf("%v", mi.Key))) //nolint:staticcheck
 		buf.Write(b)
 		if i < len(ms)-1 {
 			buf.Write([]byte{','})
@@ -329,7 +329,7 @@ func (c *CSVStreamWriter) Write(data []interface{}) error {
 		// Add surrounding quotes to any fields that contain commas or newlines.
 		if strings.Contains(dataStr, ",") || strings.Contains(dataStr, "\n") {
 			// CSV escapes quotes by double quoting.
-			dataStr = strings.Replace(dataStr, "\"", "\"\"", -1)
+			dataStr = strings.ReplaceAll(dataStr, "\"", "\"\"")
 			dataStr = "\"" + dataStr + "\""
 		}
 		buf.WriteString(dataStr)

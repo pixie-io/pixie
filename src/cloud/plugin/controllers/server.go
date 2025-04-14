@@ -560,7 +560,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	if req.Version != nil {
 		version = req.Version.Value
 	}
-	if req.Configurations != nil && len(req.Configurations) > 0 {
+	if len(req.Configurations) > 0 {
 		configurations, _ = json.Marshal(req.Configurations)
 	}
 
