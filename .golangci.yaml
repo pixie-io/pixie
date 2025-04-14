@@ -5,6 +5,9 @@ run:
 linters:
   enable:
   - asciicheck
+  - errcheck
+  - govet
+  - ineffassign
   - makezero
   - misspell
   - nakedret
@@ -12,8 +15,9 @@ linters:
   - nonamedreturns
   - predeclared
   - revive
+  - staticcheck
+  - unused
   - whitespace
-  - errcheck
   settings:
     errcheck:
       exclude-functions:
@@ -54,6 +58,7 @@ issues:
 formatters:
   enable:
   - gci
+  - gofmt
   - gofumpt
   settings:
     gci:
