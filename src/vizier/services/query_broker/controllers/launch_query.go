@@ -21,10 +21,9 @@ package controllers
 import (
 	"fmt"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
+	"golang.org/x/sync/errgroup"
 
 	"px.dev/pixie/src/carnot/planpb"
 	"px.dev/pixie/src/utils"

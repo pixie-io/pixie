@@ -121,7 +121,7 @@ func (c *CLIOutputEntry) Infof(format string, args ...interface{}) {
 
 // Info prints the input string to stdout.
 func (c *CLIOutputEntry) Info(str string) {
-	c.Infof(str)
+	c.Infof("%s", str)
 }
 
 // Errorf prints the input string to stderr formatted with the input args.
@@ -131,7 +131,7 @@ func (c *CLIOutputEntry) Errorf(format string, args ...interface{}) {
 
 // Error prints the input string to stderr.
 func (c *CLIOutputEntry) Error(str string) {
-	c.write(os.Stderr, str)
+	c.write(os.Stderr, "%s", str)
 }
 
 // Fatalf prints the input string to stderr formatted with the input args.
@@ -142,6 +142,6 @@ func (c *CLIOutputEntry) Fatalf(format string, args ...interface{}) {
 
 // Fatal prints the input string to stderr.
 func (c *CLIOutputEntry) Fatal(str string) {
-	c.write(os.Stderr, str)
+	c.write(os.Stderr, "%s", str)
 	os.Exit(1)
 }

@@ -246,6 +246,7 @@ func (bo *maxRetryBackoff) NextBackOff() time.Duration {
 	}
 	return time.Duration(0)
 }
+
 func (bo *maxRetryBackoff) Reset() {
 	bo.retries = 0
 }

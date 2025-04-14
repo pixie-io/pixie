@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
-
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"

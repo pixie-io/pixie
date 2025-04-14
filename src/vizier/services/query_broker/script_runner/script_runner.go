@@ -25,19 +25,17 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/status"
-
-	"px.dev/pixie/src/carnot/planner/compilerpb"
-	"px.dev/pixie/src/common/base/statuspb"
-
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v2"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/carnot/planner/compilerpb"
+	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/cvmsgs"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/scripts"

@@ -92,11 +92,11 @@ func (s *server) SayHelloBidirStreaming(stream pb.StreamingGreeter_SayHelloBidir
 }
 
 func main() {
-	var port = flag.Int("port", 50051, "The port to listen.")
-	var https = flag.Bool("https", false, "Whether or not to use https")
-	var cert = flag.String("cert", "", "Path to the .crt file.")
-	var key = flag.String("key", "", "Path to the .key file.")
-	var streaming = flag.Bool("streaming", false, "Whether or not to call streaming RPC")
+	port := flag.Int("port", 50051, "The port to listen.")
+	https := flag.Bool("https", false, "Whether or not to use https")
+	cert := flag.String("cert", "", "Path to the .crt file.")
+	key := flag.String("key", "", "Path to the .key file.")
+	streaming := flag.Bool("streaming", false, "Whether or not to call streaming RPC")
 
 	const keyPairBase = "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server"
 

@@ -1,34 +1,11 @@
 ---
+version: "2"
 run:
-  # Tell golangci-lint to not acquire a lock because
-  # arcanist will run multiple instances in parallel.
   allow-parallel-runners: true
-  # arcanist runs many of these in parallel causing
-  # CPU contention and longer runtimes.
-  timeout: 3m
-
-output:
-  sort-results: true
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  # TODO(ddelnano): Remove once typecheck is upgraded in next golangci-lint upgrade
-  # This error originates from the stdlib due to generics usage
-  exclude-rules:
-  - path: .*slices\/sort.go
-    linters:
-    - typecheck
-    text: "^(undefined: (min|max))"
-
 linters:
   enable:
   - asciicheck
   - errcheck
-  # Although goimports includes gofmt, it doesn't support the simplify option.
-  # So we include gofmt here.
-  - gofmt
-  - gosimple
   - govet
   - ineffassign
   - makezero
@@ -39,24 +16,62 @@ linters:
   - predeclared
   - revive
   - staticcheck
-  # https://github.com/golangci/golangci-lint/issues/2649
-  # - structcheck
-  - typecheck
   - unused
-  # https://github.com/golangci/golangci-lint/issues/2649
-  # - wastedassign
   - whitespace
-  disable:
-  # The following linters are run separately by arcanist at the moment.
-  # This is because we have autofix hooks for these linters.
-  - goimports
-  disable-all: false
-
-linters-settings:
-  errcheck:
-    # yamllint disable-line rule:line-length
-    ignore: io:Close,github.com/fatih/color,github.com/spf13/pflag:MarkHidden,github.com/spf13/viper:(BindEnv|BindPFlag),github.com/spf13/cobra:(Help|MarkFlagRequired|Usage),github.com/segmentio/analytics-go/v3:Enqueue,database/sql:Rollback,github.com/nats-io/nats.go:Unsubscribe
-  goimports:
-    local-prefixes: px.dev
-  nakedret:
-    max-func-lines: 0
+  settings:
+    errcheck:
+      exclude-functions:
+      - io.Close
+      - (*github.com/spf13/pflag.FlagSet).MarkHidden
+      - github.com/spf13/viper.BindEnv
+      - github.com/spf13/viper.BindPFlag
+      - github.com/spf13/viper.BindPFlags
+      - (*github.com/spf13/cobra.Command).Help
+      - (*github.com/spf13/cobra.Command).MarkFlagRequired
+      - (*github.com/spf13/cobra.Command).Usage
+      - (github.com/segmentio/analytics-go/v3.Client).Enqueue
+      - (*database/sql.Tx).Rollback
+      - (*github.com/nats-io/nats.go.Subscription).Unsubscribe
+    revive:
+      rules:
+      - name: unused-parameter
+        disabled: true
+    staticcheck:
+      checks:
+      - all
+      - "-ST1005"  # ignore the "ST1005: error strings should not be capitalized" check
+      - "-QF1008"  # ignore omit embedded fields from selector expression
+  exclusions:
+    generated: lax
+    presets:
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
+    paths:
+    - third_party$
+    - builtin$
+    - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+  - gci
+  - gofumpt
+  settings:
+    gci:
+      sections:
+      - standard
+      - default
+      - prefix(px.dev)
+      custom-order: true
+    goimports:
+      local-prefixes:
+      - px.dev
+  exclusions:
+    generated: lax
+    paths:
+    - third_party$
+    - builtin$
+    - examples$

@@ -253,7 +253,6 @@ func (o *ObjectDeleter) deleteResource(info *resource.Info, deleteOptions *metav
 	deleteResponse, err := resource.
 		NewHelper(info.Client, info.Mapping).
 		DeleteWithOptions(info.Namespace, info.Name, deleteOptions)
-
 	if err != nil {
 		return nil, cmdutil.AddSourceToErr("deleting", info.Source, err)
 	}

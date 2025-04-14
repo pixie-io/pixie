@@ -34,8 +34,10 @@ func init() {
 	pflag.String("segment_write_key", "", "The key to use for segment")
 }
 
-var client analytics.Client
-var once sync.Once
+var (
+	client analytics.Client
+	once   sync.Once
+)
 
 type dummyClient struct{}
 

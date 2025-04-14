@@ -238,8 +238,10 @@ func cleanup(tmp *os.File) {
 	}
 }
 
-var sudoPass string
-var sudoPassRead bool = false
+var (
+	sudoPass     string
+	sudoPassRead bool = false
+)
 
 func promptForSudoPass() error {
 	u, err := user.Current()

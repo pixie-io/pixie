@@ -31,14 +31,16 @@ import (
 )
 
 // Flag strings.
-var flagSpecDuration string
-var flagSpecThreads string
-var flagSpecConnections string
-var flagSpecMessageSize string
-var flagSpecKIters string
-var flagWrkHost string
-var flagPrefix string
-var flagOutputDir string
+var (
+	flagSpecDuration    string
+	flagSpecThreads     string
+	flagSpecConnections string
+	flagSpecMessageSize string
+	flagSpecKIters      string
+	flagWrkHost         string
+	flagPrefix          string
+	flagOutputDir       string
+)
 
 func init() {
 	flag.StringVar(&flagSpecDuration, "d", "10", "The duration spec")
@@ -112,29 +114,30 @@ func parseOrDie(s string) int64 {
 	}
 	return val
 }
+
 func parseSpec(spec string) SequenceGenerator {
 	expRegex := regexp.MustCompile(`exp\((\d+), \s*(\d+),\s*(\d+)\)`)
 	linRegex := regexp.MustCompile(`lin\((\d+), \s*(\d+),\s*(\d+)\)`)
 	expMatches := expRegex.FindStringSubmatch(spec)
 	if len(expMatches) == 4 {
-		min := parseOrDie(expMatches[1])
-		max := parseOrDie(expMatches[2])
+		minSeq := parseOrDie(expMatches[1])
+		maxSeq := parseOrDie(expMatches[2])
 		base := parseOrDie(expMatches[3])
 		return &expSequenceGenerator{
-			Min:  min,
-			Max:  max,
+			Min:  minSeq,
+			Max:  maxSeq,
 			Base: base,
 		}
 	}
 
 	linMatches := linRegex.FindStringSubmatch(spec)
 	if len(linMatches) == 4 {
-		min := parseOrDie(linMatches[1])
-		max := parseOrDie(linMatches[2])
+		minSeq := parseOrDie(linMatches[1])
+		maxSeq := parseOrDie(linMatches[2])
 		step := parseOrDie(linMatches[3])
 		return &linSequenceGenerator{
-			Min:  min,
-			Max:  max,
+			Min:  minSeq,
+			Max:  maxSeq,
 			Step: step,
 		}
 	}
@@ -188,7 +191,7 @@ func main() {
 	flag.Parse()
 
 	if flagOutputDir != "" {
-		err := os.MkdirAll(flagOutputDir, 0755)
+		err := os.MkdirAll(flagOutputDir, 0o755)
 		if err != nil {
 			panic("failed to create output dir" + err.Error())
 		}

@@ -491,6 +491,7 @@ const pxClusterJSON = `
   ]
 }
 `
+
 const pxPodPxl = `
 '''Pod Overview
 
@@ -1290,7 +1291,6 @@ func setupPlanner() (*goplanner.GoPlanner, error) {
 
 func benchmarkPlannerInnerLoop(c *goplanner.GoPlanner, queryRequestPB *plannerpb.QueryRequest) {
 	plannerResultPB, err := c.Plan(queryRequestPB)
-
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
 		os.Exit(1)
@@ -1302,6 +1302,7 @@ func benchmarkPlannerInnerLoop(c *goplanner.GoPlanner, queryRequestPB *plannerpb
 		os.Exit(1)
 	}
 }
+
 func benchmarkPlanner(b *testing.B, queryRequestPB *plannerpb.QueryRequest, numAgents int) {
 	// Create the compiler.
 	c, err := setupPlanner()

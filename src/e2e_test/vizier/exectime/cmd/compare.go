@@ -61,21 +61,21 @@ func (t *TimeDistribution) Diff(other Distribution) (DistributionDiff, error) {
 }
 
 // Diff computes the difference between this distribution and another bytes distribution.
-func (t *BytesDistribution) Diff(other Distribution) (DistributionDiff, error) {
+func (d *BytesDistribution) Diff(other Distribution) (DistributionDiff, error) {
 	otherBytesDist, ok := other.(*BytesDistribution)
 	if !ok {
 		return nil, errors.New("BytesDistribution.Diff must be called with another BytesDistribution as argument")
 	}
-	return &bytesDistributionDiff{t, otherBytesDist}, nil
+	return &bytesDistributionDiff{d, otherBytesDist}, nil
 }
 
 // Diff computes the difference between this distribution and another error distribution.
-func (t *ErrorDistribution) Diff(other Distribution) (DistributionDiff, error) {
+func (d *ErrorDistribution) Diff(other Distribution) (DistributionDiff, error) {
 	otherErrorDist, ok := other.(*ErrorDistribution)
 	if !ok {
 		return nil, errors.New("ErrorDistribution.Diff must be called with another ErrorDistribution as argument")
 	}
-	return &errorDistributionDiff{t, otherErrorDist}, nil
+	return &errorDistributionDiff{d, otherErrorDist}, nil
 }
 
 type timeDistributionDiff struct {

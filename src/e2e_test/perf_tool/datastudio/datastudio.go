@@ -34,11 +34,11 @@ import (
 // GenerateViews generates all of the datastudio charts/queries from templates.
 func GenerateViews(outPath string, project string, dataset string, reportID string, expPageID string) error {
 	queryOutPath := path.Join(outPath, "queries")
-	if err := os.MkdirAll(queryOutPath, 0775); err != nil {
+	if err := os.MkdirAll(queryOutPath, 0o775); err != nil {
 		return err
 	}
 	chartOutPath := path.Join(outPath, "charts")
-	if err := os.MkdirAll(chartOutPath, 0775); err != nil {
+	if err := os.MkdirAll(chartOutPath, 0o775); err != nil {
 		return err
 	}
 

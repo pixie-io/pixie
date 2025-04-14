@@ -27,7 +27,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
 	// Enables gzip encoding for GRPC.
 	_ "google.golang.org/grpc/encoding/gzip"
 
@@ -35,8 +34,7 @@ import (
 	"px.dev/pixie/src/e2e_test/util"
 )
 
-type loadTestServer struct {
-}
+type loadTestServer struct{}
 
 // Implements the Unary loadtest endpoint.
 func (lt *loadTestServer) Unary(ctx context.Context, req *loadtestpb.UnaryRequest) (*loadtestpb.UnaryReply, error) {

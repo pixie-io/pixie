@@ -45,7 +45,7 @@ func (ea *ErrorAccumulator) Merge() error {
 	if len(ea.errorStrs) == 0 {
 		return nil
 	}
-	return fmt.Errorf(indent(strings.Join(ea.errorStrs, "\n")))
+	return fmt.Errorf("%s", indent(strings.Join(ea.errorStrs, "\n")))
 }
 
 // MakeErrorAccumulator constructs the ErrorAccumulator.

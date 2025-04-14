@@ -34,8 +34,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-const retryAttempts = 5
-const retryDelay = 1 * time.Second
+const (
+	retryAttempts = 5
+	retryDelay    = 1 * time.Second
+)
 
 func init() {
 	pflag.Uint32("postgres_port", 5432, "The port for postgres database")

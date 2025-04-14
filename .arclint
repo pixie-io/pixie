@@ -127,12 +127,6 @@
       "script-and-regex.script": "./tools/linters/gazelle.sh",
       "script-and-regex.regex": "/^(?P<severity>[[:alpha:]]+)\n(?P<file>[^\n]+)\n(?P<message>[^\n]+)\n((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s"
     },
-    "goimports": {
-      "type": "goimports",
-      "include": [
-        "(\\.go$)"
-      ]
-    },
     "golangci-lint": {
       "type": "golangci-lint",
       "include": [
@@ -140,7 +134,7 @@
       ],
       "flags": [
         "--timeout=5m0s",
-        "--out-format=checkstyle"
+        "--output.checkstyle.path=stdout"
       ]
     },
     "jshint-ui": {

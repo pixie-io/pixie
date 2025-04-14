@@ -32,11 +32,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
-	"px.dev/pixie/src/utils"
-
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/scripts"
 	svcutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 

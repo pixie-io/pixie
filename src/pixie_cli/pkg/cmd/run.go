@@ -198,7 +198,6 @@ func createNewCobraCommand() *cobra.Command {
 			ctx, cleanup := utils.WithSignalCancellable(context.Background())
 			defer cleanup()
 			err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format, useEncryption)
-
 			if err != nil {
 				vzErr, ok := err.(*vizier.ScriptExecutionError)
 				switch {

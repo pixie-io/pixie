@@ -142,8 +142,10 @@ var ListDeployKeyCmd = &cobra.Command{
 		defer w.Finish()
 		w.SetHeader("deployment-keys", []string{"ID", "Key", "CreatedAt", "Description"})
 		for _, k := range keys {
-			_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
-				k.Desc})
+			_ = w.Write([]interface{}{
+				utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
+				k.Desc,
+			})
 		}
 	},
 }
@@ -176,8 +178,10 @@ var LookupDeployKeyCmd = &cobra.Command{
 		w := components.CreateStreamWriter(format, os.Stdout)
 		defer w.Finish()
 		w.SetHeader("api-keys", []string{"ID", "Key", "CreatedAt", "Description"})
-		_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
-			k.Desc})
+		_ = w.Write([]interface{}{
+			utils2.UUIDFromProtoOrNil(k.ID), "<hidden>", k.CreatedAt,
+			k.Desc,
+		})
 	},
 }
 
@@ -207,8 +211,10 @@ var GetDeployKeyCmd = &cobra.Command{
 		w := components.CreateStreamWriter(format, os.Stdout)
 		defer w.Finish()
 		w.SetHeader("deployment-keys", []string{"ID", "Key", "CreatedAt", "Description"})
-		_ = w.Write([]interface{}{utils2.UUIDFromProtoOrNil(k.ID), k.Key, k.CreatedAt,
-			k.Desc})
+		_ = w.Write([]interface{}{
+			utils2.UUIDFromProtoOrNil(k.ID), k.Key, k.CreatedAt,
+			k.Desc,
+		})
 	},
 }
 

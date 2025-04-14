@@ -47,13 +47,15 @@ import (
 	apiutils "px.dev/pixie/src/utils"
 )
 
-var errUserChallengeTimeout = errors.New("timeout waiting for user")
-var errBrowserFailed = errors.New("browser failed to open")
-var errServerListenerFailed = errors.New("failed to start up local server")
-var errUserNotRegistered = errors.New("user is not registered. Please sign up")
-var localServerRedirectURL = "http://localhost:8085/auth_complete"
-var localServerPort = int32(8085)
-var sentSegmentAlias = false
+var (
+	errUserChallengeTimeout = errors.New("timeout waiting for user")
+	errBrowserFailed        = errors.New("browser failed to open")
+	errServerListenerFailed = errors.New("failed to start up local server")
+	errUserNotRegistered    = errors.New("user is not registered. Please sign up")
+	localServerRedirectURL  = "http://localhost:8085/auth_complete"
+	localServerPort         = int32(8085)
+	sentSegmentAlias        = false
+)
 
 // SaveRefreshToken saves the refresh token in default spot.
 func SaveRefreshToken(token *RefreshToken) error {
@@ -62,7 +64,7 @@ func SaveRefreshToken(token *RefreshToken) error {
 		return err
 	}
 
-	f, err := os.OpenFile(pixieAuthFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(pixieAuthFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
@@ -287,7 +289,6 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		}
 
 		refreshToken, err := p.getRefreshToken(accessToken, "")
-
 		if err != nil {
 			sendError(w, err)
 			results <- result{nil, err}

@@ -238,7 +238,6 @@ func (u *Updater) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UU
 	topic = vzshard.C2VTopic(topic, vizierID)
 	log.WithField("topic", topic).Info("Sending message")
 	err = u.nc.Publish(topic, b)
-
 	if err != nil {
 		log.WithError(err).Error("Could not publish message to nats")
 	}

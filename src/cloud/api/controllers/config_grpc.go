@@ -34,7 +34,8 @@ type ConfigServiceServer struct {
 // GetConfigForVizier fetches vizier templates and sets up yaml maps by calling
 // Config Manager service.
 func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
-	req *cloudpb.ConfigForVizierRequest) (*cloudpb.ConfigForVizierResponse, error) {
+	req *cloudpb.ConfigForVizierRequest,
+) (*cloudpb.ConfigForVizierResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -76,7 +77,8 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 
 // GetConfigForOperator provides the key for the operator that is used to send errors and stacktraces to Sentry
 func (c *ConfigServiceServer) GetConfigForOperator(ctx context.Context,
-	req *cloudpb.ConfigForOperatorRequest) (*cloudpb.ConfigForOperatorResponse, error) {
+	req *cloudpb.ConfigForOperatorRequest,
+) (*cloudpb.ConfigForOperatorResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err

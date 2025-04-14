@@ -57,11 +57,11 @@ func ShardMax() string {
 
 // GenerateShardRange shard range produces the hex values 00-ff for the shards as configured.
 func GenerateShardRange() []string {
-	min := minShard()
-	max := maxShard()
-	r := make([]string, max-min+1)
-	for i := min; i <= max; i++ {
-		r[i-min] = shardIntToHex(i)
+	minS := minShard()
+	maxS := maxShard()
+	r := make([]string, maxS-minS+1)
+	for i := minS; i <= maxS; i++ {
+		r[i-minS] = shardIntToHex(i)
 	}
 	return r
 }

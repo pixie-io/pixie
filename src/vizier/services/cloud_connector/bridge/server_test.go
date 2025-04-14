@@ -79,7 +79,7 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 		return nil
 	}
 	if msg.Topic == "randomtopicNeedsResponse" {
-		var unmarshal = &cvmsgspb.VLogMessage{}
+		unmarshal := &cvmsgspb.VLogMessage{}
 		err := types.UnmarshalAny(msg.Msg, unmarshal)
 		if err != nil {
 			return err

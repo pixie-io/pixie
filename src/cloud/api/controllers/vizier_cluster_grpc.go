@@ -169,7 +169,6 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 	vzInfoResp, err := v.VzMgr.GetVizierInfos(ctx, &vzmgrpb.GetVizierInfosRequest{
 		VizierIDs: ids,
 	})
-
 	if err != nil {
 		return nil, err
 	}

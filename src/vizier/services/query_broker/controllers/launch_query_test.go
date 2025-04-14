@@ -36,9 +36,11 @@ import (
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
-const queryIDStr = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-const agent1ID = "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-const agent2ID = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+const (
+	queryIDStr = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	agent1ID   = "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	agent2ID   = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+)
 
 func TestLaunchQuery(t *testing.T) {
 	// Check that the query is broadcasted to all agents.

@@ -36,13 +36,11 @@ import (
 	"px.dev/pixie/src/shared/services"
 )
 
-var (
-	pxl = `
+var pxl = `
 import px
 px.display(px.GetTables(), 'table_desc')
 px.display(px.GetSchemas(), 'table_schemas')
 `
-)
 
 func init() {
 	pflag.String("cluster_id", "", "The cluster_id of the cluster to query")

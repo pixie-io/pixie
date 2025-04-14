@@ -49,7 +49,7 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
   }
 
   protected function getDefaultFlags() {
-    return array('--out-format=checkstyle');
+    return array('--output.text.path=stdout');
   }
 
   protected function getPathArgumentForLinterFuture($path) {
@@ -95,6 +95,10 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
       return [$message];
     }
 
+    $lines = explode("\n", $stdout);
+    // golangci-lint outputs a summary at the end of the output. This is the only
+    // non XML output. Remove it to parse the XML correctly.
+    $stdout = preg_replace('/\d+ issue(?:s)?\./', '', $stdout);
     $ok = @$report_dom->loadXML($stdout);
 
     if (!$ok) {

@@ -385,7 +385,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	if !utils.IsNilUUIDProto(inviteOrgID) {
 		orgInfoPb, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if orgInfoPb == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "misformatted invite link")
@@ -524,7 +524,8 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *authpb.GetA
 // GetAugmentedToken produces augmented tokens for the user based on passed in credentials.
 func (s *Server) GetAugmentedToken(
 	ctx context.Context, in *authpb.GetAugmentedAuthTokenRequest) (
-	*authpb.GetAugmentedAuthTokenResponse, error) {
+	*authpb.GetAugmentedAuthTokenResponse, error,
+) {
 	// Check the incoming token and make sure it's valid.
 	aCtx := authcontext.New()
 
@@ -600,7 +601,6 @@ func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRe
 		IdentityProvider: ident.IdentityProvider,
 		AuthProviderID:   ident.AuthProviderID,
 	}, req.OrgID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -673,7 +673,6 @@ func (s *Server) CreateOrgAndInviteUser(ctx context.Context, req *authpb.CreateO
 		IdentityProvider: ident.IdentityProvider,
 		AuthProviderID:   ident.AuthProviderID,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to create org and user: %v", err)
 	}

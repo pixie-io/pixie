@@ -46,7 +46,6 @@ import (
 	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/bloomfilterpb"
-
 	sharedmetadatapb "px.dev/pixie/src/shared/metadatapb"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/server"

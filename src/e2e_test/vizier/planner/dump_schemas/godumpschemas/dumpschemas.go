@@ -25,6 +25,7 @@ package godumpschemas
 // #include <stdlib.h>
 // #include "src/e2e_test/vizier/planner/dump_schemas/dump_schemas.h"
 import "C"
+
 import (
 	"errors"
 	"fmt"
@@ -37,7 +38,6 @@ import (
 
 // DumpSchemas dumps all the table schemas from stirling.
 func DumpSchemas() (*schemapb.Schema, error) {
-
 	var resLen C.int
 	res := C.DumpSchemas(&resLen)
 	defer C.SchemaStrFree(res)

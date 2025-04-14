@@ -170,7 +170,7 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 
 	// If the header "X-Use-Bearer is true we force the use of Bearer auth and ignore sessions.
 	// This is needed to prevent logged in pixie sessions to show up in embedded versions.
-	forceBearer := false
+	forceBearer := false //nolint:staticcheck
 	if strings.ToLower(r.Header.Get("X-Use-Bearer")) == "true" {
 		forceBearer = true
 	}

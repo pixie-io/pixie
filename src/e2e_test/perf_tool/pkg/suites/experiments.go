@@ -25,7 +25,6 @@ import (
 	"github.com/gogo/protobuf/types"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
-	pb "px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 )
 
 // HTTPLoadTestExperiment is an experiment that runs a simple client/server http loadtest.
@@ -35,19 +34,19 @@ func HTTPLoadTestExperiment(
 	metricPeriod time.Duration,
 	predeployDur time.Duration,
 	dur time.Duration,
-) *pb.ExperimentSpec {
-	e := &pb.ExperimentSpec{
+) *experimentpb.ExperimentSpec {
+	e := &experimentpb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
-		WorkloadSpecs: []*pb.WorkloadSpec{
+		WorkloadSpecs: []*experimentpb.WorkloadSpec{
 			HTTPLoadTestWorkload(numConnections, targetRPS, true),
 		},
-		MetricSpecs: []*pb.MetricSpec{
+		MetricSpecs: []*experimentpb.MetricSpec{
 			ProcessStatsMetrics(metricPeriod),
 			// Stagger the second query a little bit because of query stability issues.
 			HeapMetrics(metricPeriod + (2 * time.Second)),
 			HTTPDataLossMetric(metricPeriod),
 		},
-		RunSpec: &pb.RunSpec{
+		RunSpec: &experimentpb.RunSpec{
 			Actions: []*experimentpb.ActionSpec{
 				{
 					Type: experimentpb.START_VIZIER,
@@ -87,18 +86,18 @@ func K8ssandraExperiment(
 	metricPeriod time.Duration,
 	predeployDur time.Duration,
 	dur time.Duration,
-) *pb.ExperimentSpec {
-	e := &pb.ExperimentSpec{
+) *experimentpb.ExperimentSpec {
+	e := &experimentpb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
-		WorkloadSpecs: []*pb.WorkloadSpec{
+		WorkloadSpecs: []*experimentpb.WorkloadSpec{
 			K8ssandraWorkload(),
 		},
-		MetricSpecs: []*pb.MetricSpec{
+		MetricSpecs: []*experimentpb.MetricSpec{
 			ProcessStatsMetrics(metricPeriod),
 			// Stagger the second query a little bit because of query stability issues.
 			HeapMetrics(metricPeriod + (2 * time.Second)),
 		},
-		RunSpec: &pb.RunSpec{
+		RunSpec: &experimentpb.RunSpec{
 			Actions: []*experimentpb.ActionSpec{
 				{
 					Type: experimentpb.START_VIZIER,
@@ -137,18 +136,18 @@ func SockShopExperiment(
 	metricPeriod time.Duration,
 	predeployDur time.Duration,
 	dur time.Duration,
-) *pb.ExperimentSpec {
-	e := &pb.ExperimentSpec{
+) *experimentpb.ExperimentSpec {
+	e := &experimentpb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
-		WorkloadSpecs: []*pb.WorkloadSpec{
+		WorkloadSpecs: []*experimentpb.WorkloadSpec{
 			SockShopWorkload(),
 		},
-		MetricSpecs: []*pb.MetricSpec{
+		MetricSpecs: []*experimentpb.MetricSpec{
 			ProcessStatsMetrics(metricPeriod),
 			// Stagger the second query a little bit because of query stability issues.
 			HeapMetrics(metricPeriod + (2 * time.Second)),
 		},
-		RunSpec: &pb.RunSpec{
+		RunSpec: &experimentpb.RunSpec{
 			Actions: []*experimentpb.ActionSpec{
 				{
 					Type: experimentpb.START_VIZIER,
@@ -187,18 +186,18 @@ func OnlineBoutiqueExperiment(
 	metricPeriod time.Duration,
 	predeployDur time.Duration,
 	dur time.Duration,
-) *pb.ExperimentSpec {
-	e := &pb.ExperimentSpec{
+) *experimentpb.ExperimentSpec {
+	e := &experimentpb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
-		WorkloadSpecs: []*pb.WorkloadSpec{
+		WorkloadSpecs: []*experimentpb.WorkloadSpec{
 			OnlineBoutiqueWorkload(),
 		},
-		MetricSpecs: []*pb.MetricSpec{
+		MetricSpecs: []*experimentpb.MetricSpec{
 			ProcessStatsMetrics(metricPeriod),
 			// Stagger the second query a little bit because of query stability issues.
 			HeapMetrics(metricPeriod + (2 * time.Second)),
 		},
-		RunSpec: &pb.RunSpec{
+		RunSpec: &experimentpb.RunSpec{
 			Actions: []*experimentpb.ActionSpec{
 				{
 					Type: experimentpb.START_VIZIER,
@@ -237,18 +236,18 @@ func KafkaExperiment(
 	metricPeriod time.Duration,
 	predeployDur time.Duration,
 	dur time.Duration,
-) *pb.ExperimentSpec {
-	e := &pb.ExperimentSpec{
+) *experimentpb.ExperimentSpec {
+	e := &experimentpb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
-		WorkloadSpecs: []*pb.WorkloadSpec{
+		WorkloadSpecs: []*experimentpb.WorkloadSpec{
 			KafkaWorkload(),
 		},
-		MetricSpecs: []*pb.MetricSpec{
+		MetricSpecs: []*experimentpb.MetricSpec{
 			ProcessStatsMetrics(metricPeriod),
 			// Stagger the second query a little bit because of query stability issues.
 			HeapMetrics(metricPeriod + (2 * time.Second)),
 		},
-		RunSpec: &pb.RunSpec{
+		RunSpec: &experimentpb.RunSpec{
 			Actions: []*experimentpb.ActionSpec{
 				{
 					Type: experimentpb.START_VIZIER,
@@ -288,19 +287,19 @@ func HTTPLoadApplicationOverheadExperiment(
 	numConnections int,
 	targetRPS int,
 	metricPeriod time.Duration,
-) *pb.ExperimentSpec {
+) *experimentpb.ExperimentSpec {
 	burninDur := 5 * time.Minute
 	vizierDur := 10 * time.Minute
 	noVizierDur := vizierDur
-	e := &pb.ExperimentSpec{
+	e := &experimentpb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
-		WorkloadSpecs: []*pb.WorkloadSpec{
+		WorkloadSpecs: []*experimentpb.WorkloadSpec{
 			HTTPLoadTestWorkload(numConnections, targetRPS, false),
 		},
-		MetricSpecs: []*pb.MetricSpec{
+		MetricSpecs: []*experimentpb.MetricSpec{
 			addActionSelector(ProtocolLoadtestPromMetrics(metricPeriod), "no_vizier"),
 		},
-		RunSpec: &pb.RunSpec{
+		RunSpec: &experimentpb.RunSpec{
 			Actions: []*experimentpb.ActionSpec{
 				{
 					Type: experimentpb.START_WORKLOADS,
@@ -348,7 +347,7 @@ func HTTPLoadApplicationOverheadExperiment(
 	return e
 }
 
-func addTags(e *pb.ExperimentSpec, tags ...string) *pb.ExperimentSpec {
+func addTags(e *experimentpb.ExperimentSpec, tags ...string) *experimentpb.ExperimentSpec {
 	if e.Tags == nil {
 		e.Tags = []string{}
 	}
@@ -356,7 +355,7 @@ func addTags(e *pb.ExperimentSpec, tags ...string) *pb.ExperimentSpec {
 	return e
 }
 
-func addActionSelector(m *pb.MetricSpec, selector string) *pb.MetricSpec {
+func addActionSelector(m *experimentpb.MetricSpec, selector string) *experimentpb.MetricSpec {
 	m.ActionSelector = selector
 	return m
 }

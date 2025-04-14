@@ -462,7 +462,6 @@ func (c *HydraKratosClient) AcceptConsent(ctx context.Context, challenge string)
 		ConsentChallenge: challenge,
 		Context:          ctx,
 	})
-
 	if err != nil {
 		log.Debug("error on hydra.AcceptConsentRequest:")
 		return nil, err
@@ -532,7 +531,7 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	// Copy the header because the header contains a necessary Set-Cookie from the OAuth server.
 	for k, vv := range respHeader {
 		// We only want to cookie and Location headers, otherwise Firefox and Safari complain.
-		if !(k == "Set-Cookie" || k == "Location") {
+		if k != "Set-Cookie" && k != "Location" {
 			continue
 		}
 		for _, v := range vv {

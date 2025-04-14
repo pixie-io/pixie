@@ -130,7 +130,6 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 		log.WithError(err).Warnf("failed to get cluster ID")
 	}
 	outputCh, err := RunSimpleHealthCheckScript(c.br, c.cloudAddr, clusterID)
-
 	if err != nil {
 		entry := log.WithError(err)
 		if _, ok := err.(*HealthCheckWarning); ok {

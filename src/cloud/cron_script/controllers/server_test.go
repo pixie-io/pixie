@@ -574,7 +574,8 @@ func TestServer_HandleChecksumRequest(t *testing.T) {
 	orgID := "223e4567-e89b-12d3-a456-426655440001"
 
 	mockVZMgr.EXPECT().GetOrgFromVizier(gomock.Any(), utils.ProtoFromUUIDStrOrNil(vzID)).Return(&vzmgrpb.GetOrgFromVizierResponse{
-		OrgID: utils.ProtoFromUUIDStrOrNil(orgID)}, nil)
+		OrgID: utils.ProtoFromUUIDStrOrNil(orgID),
+	}, nil)
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
@@ -633,7 +634,8 @@ func TestServer_HandleGetScriptsRequest(t *testing.T) {
 	orgID := "223e4567-e89b-12d3-a456-426655440001"
 
 	mockVZMgr.EXPECT().GetOrgFromVizier(gomock.Any(), utils.ProtoFromUUIDStrOrNil(vzID)).Return(&vzmgrpb.GetOrgFromVizierResponse{
-		OrgID: utils.ProtoFromUUIDStrOrNil(orgID)}, nil)
+		OrgID: utils.ProtoFromUUIDStrOrNil(orgID),
+	}, nil)
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()

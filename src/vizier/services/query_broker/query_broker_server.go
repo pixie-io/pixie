@@ -133,7 +133,6 @@ func main() {
 		}
 		return err
 	}, bOpts)
-
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Metadata Service.")
 	}

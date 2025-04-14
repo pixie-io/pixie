@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/carnot/planner/distributedpb"
-
 	pixie "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 )
 

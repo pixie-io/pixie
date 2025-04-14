@@ -40,9 +40,7 @@ import (
 	utils2 "px.dev/pixie/src/utils"
 )
 
-var (
-	bridgeMetricsCollector = &natsBridgeMetricCollector{}
-)
+var bridgeMetricsCollector = &natsBridgeMetricCollector{}
 
 func init() {
 	prometheus.MustRegister(bridgeMetricsCollector)

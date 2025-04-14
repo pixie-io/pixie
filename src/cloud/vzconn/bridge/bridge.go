@@ -92,7 +92,6 @@ func (s *NATSBridgeController) Run() error {
 	log.WithField("ClusterID:", s.clusterID).Info("Subscribing to cluster IDs")
 	topics := vzshard.C2VTopic("*", s.clusterID)
 	natsSub, err := s.nc.ChanSubscribe(topics, s.subCh)
-
 	if err != nil {
 		s.l.WithError(err).Error("error with ChanQueueSubscribe")
 		return err

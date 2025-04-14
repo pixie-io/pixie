@@ -27,9 +27,11 @@ import (
 	"time"
 )
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var cachedRespData []string
-var mIterationsPerMs float64
+var (
+	letterRunes      = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	cachedRespData   []string
+	mIterationsPerMs float64
+)
 
 func init() {
 	// Compute the cached response data, generating randoms strings is slow
@@ -66,13 +68,6 @@ func randStringRunes(n int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
-}
-
-func min(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
 }
 
 func fakeLoad(w *http.ResponseWriter, latency float64, mIters, respSize int64) float64 {
