@@ -42,13 +42,6 @@ pl_go_proto_library(
     ],
 )
 
-# pl_py_grpc_library(
-#     name = "gogo_python_pl_py_grpc",
-#     # imports = [""],
-#     proto = "//third_party/gogo/protobuf/gogoproto:gogo_python_proto",
-#     visibility = ["//src:__subpackages__"],
-# )
-
 pl_py_grpc_library(
     name = "cloudapi_pl_py_grpc",
     imports = ["../../../../"],
