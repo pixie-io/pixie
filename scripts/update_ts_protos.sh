@@ -48,7 +48,7 @@ function copy() {
     # VizierapiServiceClient.ts has a relative import; we're copying elsewhere. We fix this with perl string substitution.
     regexRelativeImport="s|import \* as ([^ ]+) from '([^ /]+/)+vizierapi_pb'\;|import * as \1 from './vizierapi_pb';|m"
     # vizierapi_pb.d.ts incorrectly includes an unused (and non-existent) relative import related to Go protos. Remove it.
-    regexExtraneousImport="s|^import \* as github_com_gogo_protobuf_gogoproto_gogo_pb.*$||m"
+    regexExtraneousImport="s|^import \* as github_gogo_protobuf_gogoproto_gogo_pb.*$||m"
 
     for abs_path in $abs_paths; do
       echo "Propagating ${abs_path} ..."

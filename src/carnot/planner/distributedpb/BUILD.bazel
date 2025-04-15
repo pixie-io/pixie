@@ -33,7 +33,7 @@ pl_proto_library(
         "//src/shared/bloomfilterpb:bloomfilter_pl_proto",
         "//src/shared/metadatapb:metadata_pl_proto",
         "//src/table_store/schemapb:schema_pl_proto",
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -47,7 +47,7 @@ pl_cc_proto_library(
         "//src/shared/bloomfilterpb:bloomfilter_pl_cc_proto",
         "//src/shared/metadatapb:metadata_pl_cc_proto",
         "//src/table_store/schemapb:schema_pl_cc_proto",
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 

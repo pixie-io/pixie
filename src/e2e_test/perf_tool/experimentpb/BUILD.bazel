@@ -21,7 +21,7 @@ pl_proto_library(
     srcs = ["experiment.proto"],
     visibility = ["//src/e2e_test/perf_tool:__subpackages__"],
     deps = [
-        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "@gogo_special_proto//github/gogo/protobuf/gogoproto",
     ],
 )
 
