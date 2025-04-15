@@ -1,6 +1,6 @@
 import * as jspb from 'google-protobuf'
 
-import * as github_gogo_protobuf_gogoproto_gogo_pb from '../../../../github/gogo/protobuf/gogoproto/gogo_pb';
+
 
 
 export class UInt128 extends jspb.Message {
