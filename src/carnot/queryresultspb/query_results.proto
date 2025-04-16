@@ -22,7 +22,7 @@ package px.carnot.queryresultspb;
 
 option go_package = "queryresultspb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 

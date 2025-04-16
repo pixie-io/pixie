@@ -22,7 +22,7 @@ package px.common;
 
 option go_package = "ping";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 
 message PingRequest {
   string req = 1;

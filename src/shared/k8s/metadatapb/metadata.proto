@@ -22,7 +22,7 @@ package px.shared.k8s.metadatapb;
 
 option go_package = "metadatapb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "src/shared/types/typespb/types.proto";
 

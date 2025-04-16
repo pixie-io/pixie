@@ -22,7 +22,7 @@ package px.table_store.schemapb;
 
 option go_package = "schemapb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "src/shared/types/typespb/types.proto";
 
 // PX_CARNOT_UPDATE_FOR_NEW_TYPES.

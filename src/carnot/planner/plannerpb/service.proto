@@ -24,7 +24,7 @@ option go_package = "plannerpb";
 
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/statuspb/status.proto";
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 
 // FuncToExecute specifies the name and arguments of a function to execute.
