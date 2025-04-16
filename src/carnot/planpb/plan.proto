@@ -22,7 +22,7 @@ package px.carnot.planpb;
 
 option go_package = "planpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/shared/types/typespb/types.proto";

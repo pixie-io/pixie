@@ -22,7 +22,7 @@ package px.vizier.services.metadata;
 
 option go_package = "metadatapb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "src/api/proto/uuidpb/uuid.proto";

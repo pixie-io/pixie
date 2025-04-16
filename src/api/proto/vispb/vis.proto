@@ -27,7 +27,7 @@ import "google/protobuf/wrappers.proto";
 
 // Keep this below the google imports. Apparently protobufjs cli doesn't like
 // it when this is loaded before the google imports. :(
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 
 // PXType represents the data type of an argument that a pxl script can take.
 // For example, with a func like def my_func(arg1: px.Service, arg2: int),

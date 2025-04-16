@@ -33,7 +33,7 @@
     "(^src/ui/src/types/generated/)",
     "(^src/ui/src/types/schema\\.ts$)",
     "(^third_party/cpplint/cpplint.py$)",
-    "(^third_party/github.com/gogo/protobuf/gogoproto/gogo.proto$)",
+    "(^third_party/github/gogo/protobuf/gogoproto/gogo.proto$)",
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
     "(go\\.sum$)"

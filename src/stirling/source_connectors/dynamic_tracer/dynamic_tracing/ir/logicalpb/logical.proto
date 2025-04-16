@@ -22,7 +22,7 @@ package px.stirling.dynamic_tracing.ir.logical;
 
 option go_package = "logicalpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.proto";
 

@@ -32,7 +32,7 @@ pl_proto_library(
         "//src/common/base/statuspb:status_pl_proto",
         "//src/shared/types/typespb:types_pl_proto",
         "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_proto",
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -45,7 +45,7 @@ pl_cc_proto_library(
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/common/base/statuspb:status_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 
