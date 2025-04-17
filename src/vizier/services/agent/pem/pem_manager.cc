@@ -21,6 +21,7 @@
 #include "src/common/system/config.h"
 #include "src/vizier/services/agent/shared/manager/exec.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
+#include "src/vizier/services/agent/shared/tetragonreader/tetragon_reader.h"
 
 DEFINE_int32(
     table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
@@ -78,12 +79,17 @@ Status PEMManager::PostRegisterHookImpl() {
                                           stirling_.get(), table_store(), relation_info_manager());
   PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
                                             tracepoint_manager_));
+ 
+  tetragon_reader_ = std::make_unique<px::vizier::services::tetragonreader::TetragonReader>(table_store());
+  tetragon_reader_->Start();
+ 
   return Status::OK();
 }
 
 Status PEMManager::StopImpl(std::chrono::milliseconds) {
   stirling_->Stop();
   stirling_.reset();
+  tetragon_reader_.reset();
   return Status::OK();
 }
 
