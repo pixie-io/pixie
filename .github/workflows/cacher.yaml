@@ -12,7 +12,7 @@ jobs:
     with:
       image-base-name: "dev_image"
   populate-caches:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: oracle-8cpu-32gb-x86-64
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
