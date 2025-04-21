@@ -1,6 +1,6 @@
 module px.dev/pixie
 
-go 1.24
+go 1.24.0
 
 require (
 	cloud.google.com/go v0.81.0
