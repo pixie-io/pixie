@@ -36,7 +36,7 @@ jobs:
       image-base-name: "dev_image_with_extras"
       ref: ${{ needs.env-protect-setup.outputs.ref }}
   clang-tidy:
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     needs: [authorize, env-protect-setup, get-dev-image]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -64,7 +64,7 @@ jobs:
   code-coverage:
     if: github.event_name == 'push'
     needs: [authorize, env-protect-setup, get-dev-image]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     steps:
@@ -88,7 +88,7 @@ jobs:
         ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
   generate-matrix:
     needs: [authorize, env-protect-setup, get-dev-image]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     outputs:
@@ -120,7 +120,7 @@ jobs:
           bazel_tests_*
   build-and-test:
     needs: [authorize, env-protect-setup, get-dev-image, generate-matrix]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     permissions:
       contents: read
       actions: read
