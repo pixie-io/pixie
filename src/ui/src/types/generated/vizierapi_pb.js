@@ -21,6 +21,8 @@ var global =
     (function () { return this; }).call(null) ||
     Function('return this')();
 
+var gogoproto_gogo_pb = require('../../../../gogoproto/gogo_pb.js');
+goog.object.extend(proto, gogoproto_gogo_pb);
 goog.exportSymbol('proto.px.api.vizierpb.BooleanColumn', null, global);
 goog.exportSymbol('proto.px.api.vizierpb.Column', null, global);
 goog.exportSymbol('proto.px.api.vizierpb.Column.ColDataCase', null, global);

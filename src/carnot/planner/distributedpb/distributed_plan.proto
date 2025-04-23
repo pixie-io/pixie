@@ -22,7 +22,7 @@ package px.carnot.planner.distributedpb;
 
 option go_package = "distributedpb";
 
-import "github/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/planpb/plan.proto";
 import "src/common/base/statuspb/status.proto";

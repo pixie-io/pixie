@@ -22,7 +22,7 @@ package px.versions;
 
 option go_package = "versionspb";
 
-import "github/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
 // ArtifactType is the type of artifact that was released.

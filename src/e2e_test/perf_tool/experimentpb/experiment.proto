@@ -23,7 +23,7 @@ package px.perf_tool;
 option go_package = "experimentpb";
 
 import "google/protobuf/duration.proto";
-import "github/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 
 // ExperimentSpec fully specifies how to run a single perf experiment.
 // An Experiment is fully specified by specifying all of the following:

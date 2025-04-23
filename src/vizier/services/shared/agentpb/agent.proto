@@ -22,7 +22,7 @@ package px.vizier.services.shared.agent;
 
 option go_package = "agentpb";
 
-import "github/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 
 // AgentCapabilities describes functions that the agent has available.

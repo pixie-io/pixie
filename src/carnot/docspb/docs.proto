@@ -22,7 +22,7 @@ package px.carnot.docspb;
 
 option go_package = "docspb";
 
-import "github/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "src/carnot/udfspb/udfs.proto";
 
 message IdentDoc {
