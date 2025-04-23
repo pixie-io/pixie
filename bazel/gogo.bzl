@@ -23,7 +23,7 @@ def _gogo_grpc_proto_impl(ctx):
     ctx.file("WORKSPACE", 'workspace(name = "{}")'.format(ctx.name))
     ctx.file("BUILD.bazel", "")
     ctx.symlink(
-        ctx.path(Label("@com_github_gogo_protobuf//gogoproto:gogo.proto")),
+        ctx.path(Label("//third_party/gogoproto:gogo.proto")),
         "gogoproto/gogo.proto",
     )
     ctx.file("gogoproto/BUILD.bazel", """

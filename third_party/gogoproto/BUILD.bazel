@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +15,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+=======
+>>>>>>> 5c7876bef (Use third_party provided gogo proto file)
 # Create filegroup with a name bazel
 filegoup = filegroup(
     name = "bazel",
