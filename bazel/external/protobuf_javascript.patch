@@ -6,7 +6,7 @@ index 97b5844..1351a54 100644
  
      for (int i = 0; i < file->dependency_count(); i++) {
        const std::string& name = file->dependency(i)->name();
-+      if (ModuleAlias(name) == "github_com_gogo_protobuf_gogoproto_gogo_pb") {
++      if (ModuleAlias(name) == "gogoproto_gogo_pb") {
 +        continue;
 +      }
        printer->Print(
