@@ -22,7 +22,7 @@ pl_proto_library(
     srcs = ["vizierapi.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
-        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_proto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -31,7 +31,7 @@ pl_cc_proto_library(
     proto = ":vizier_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 
@@ -53,7 +53,4 @@ pl_py_grpc_library(
     imports = ["../../../"],
     proto = ":vizier_pl_proto",
     visibility = ["//src:__subpackages__"],
-    deps = [
-        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_py_proto",
-    ],
 )

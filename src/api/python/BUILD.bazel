@@ -49,7 +49,7 @@ py_wheel(
     deps = [
         "//src/api/python/pxapi:pxapi_library",
         "//src/api/python/pxapi/proto:pxapi_py_proto_library",
-        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_py_proto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_py_proto",
     ],
 )
 

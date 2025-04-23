@@ -30,7 +30,7 @@ py_library(
     visibility = ["//src/api/python:__subpackages__"],
     deps = [
         "//src/api/python/pxapi/proto:pxapi_py_proto_library",
-        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_py_proto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_py_proto",
         requirement("grpcio"),
         requirement("grpcio-tools"),
         requirement("protobuf"),

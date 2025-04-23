@@ -22,7 +22,7 @@ package px.api.vizierpb;
 
 option go_package = "vizierpb";
 
-import "github/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 
 // The list of data types supported by our execution engine.
 // Each type corresponds to a Column type below.

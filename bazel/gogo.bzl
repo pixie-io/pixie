@@ -24,9 +24,9 @@ def _gogo_grpc_proto_impl(ctx):
     ctx.file("BUILD.bazel", "")
     ctx.symlink(
         ctx.path(Label("@com_github_gogo_protobuf//gogoproto:gogo.proto")),
-        "github/gogo/protobuf/gogoproto/gogo.proto",
+        "gogoproto/gogo.proto",
     )
-    ctx.file("github/gogo/protobuf/gogoproto/BUILD.bazel", """
+    ctx.file("gogoproto/BUILD.bazel", """
 
 load("@px//bazel:proto_compile.bzl", "pl_proto_library", "pl_cc_proto_library", "pl_py_proto_library")
 

@@ -22,7 +22,7 @@ colocate_python_files(
     srcs = [
         "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
         "//src/api/proto/vizierpb:vizier_pl_py_grpc",
-        "@gogo_grpc_proto//github/gogo/protobuf/gogoproto:gogo_pl_py_proto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_py_proto",
     ],
     protos_include_dir = "src/api/proto/",
     visibility = ["//src/api/python/pxapi:__subpackages__"],
