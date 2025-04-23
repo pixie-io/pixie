@@ -21,7 +21,7 @@ pl_proto_library(
     srcs = ["ping.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
-        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_proto",
     ],
 )
 

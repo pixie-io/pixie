@@ -22,7 +22,7 @@ package px.services;
 
 option go_package = "profilepb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";

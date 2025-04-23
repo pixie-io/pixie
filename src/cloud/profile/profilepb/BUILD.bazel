@@ -22,7 +22,7 @@ pl_proto_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_proto",
-        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_proto",
     ],
 )
 

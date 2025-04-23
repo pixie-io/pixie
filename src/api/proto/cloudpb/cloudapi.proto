@@ -28,7 +28,7 @@ option go_package = "cloudpb";
 // * Please do not include dependencies that are outside of src/api
 // * and only include protobufs that are useful to external-facing users.
 //
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
