@@ -20,6 +20,7 @@ build --remote_download_minimal
 test --remote_download_minimal
 run --remote_download_outputs=all
 coverage --build_runfile_links
+coverage --nocache_test_results
 
 # Needed by rules_meta.
 # Follow https://github.com/fmeum/rules_meta/issues/1#issuecomment-1255828109
@@ -269,3 +270,4 @@ build:remote --build_metadata=VISIBILITY=PUBLIC
 coverage:remote --strategy=CoverageReport=local,remote
 coverage:remote --experimental_fetch_all_coverage_outputs
 coverage:remote --experimental_split_coverage_postprocessing
+coverage:remote --experimental_remote_download_regex=.*/(coverage.dat$|_coverage/_coverage_report.dat$)

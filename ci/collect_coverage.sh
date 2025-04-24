@@ -138,12 +138,13 @@ check_config
 # Print config parameters.
 print_config
 
-lcov_opts=(--rc lcov_branch_coverage=1)
+# TODO: Try to track down the negative coverage issue.
+lcov_opts=(--rc branch_coverage=1 --ignore-errors negative)
 
 cd $(bazel info workspace)
 
 # Get coverage from bazel targets.
-bazel coverage --remote_download_outputs=all --combined_report=lcov //src/...
+bazel coverage --combined_report=lcov //src/...
 
 # Copy the output file
 cp --no-preserve=mode "$(bazel info output_path)/_coverage/_coverage_report.dat" ${COVERAGE_FILE}
@@ -153,13 +154,11 @@ lcov "${lcov_opts[@]}" --summary ${COVERAGE_FILE}
 
 # Remove test files from the coverage files.
 lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*_test.cc' -o ${COVERAGE_FILE}
-lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*_mock.cc' -o ${COVERAGE_FILE}
 lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*_mock.h' -o ${COVERAGE_FILE}
 lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*_test.go' -o ${COVERAGE_FILE}
 lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*.gen.go' -o ${COVERAGE_FILE}
 lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*-mock.tsx' -o ${COVERAGE_FILE}
 lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} '**/*-mock.ts' -o ${COVERAGE_FILE}
-lcov "${lcov_opts[@]}" -r ${COVERAGE_FILE} 'src/ui/src/types/generated/**' -o ${COVERAGE_FILE}
 
 # Print out the final summary.
 lcov "${lcov_opts[@]}" --summary ${COVERAGE_FILE}
