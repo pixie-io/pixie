@@ -32,7 +32,7 @@ pl_proto_library(
         "//src/shared/types/typespb:types_pl_proto",
         "//src/vizier/services/metadata/storepb:store_pl_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_proto",
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -52,7 +52,7 @@ pl_cc_proto_library(
         "//src/shared/types/typespb/wrapper:cc_library",
         "//src/vizier/services/metadata/storepb:store_pl_cc_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_cc_proto",
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+        "@gogo_grpc_proto//gogoproto:gogo_pl_cc_proto",
     ],
 )
 

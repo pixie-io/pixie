@@ -22,7 +22,7 @@ package px.carnotpb;
 
 option go_package = "carnotpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/queryresultspb/query_results.proto";
 import "src/table_store/schemapb/schema.proto";

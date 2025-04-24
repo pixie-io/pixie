@@ -23,12 +23,12 @@ def _gogo_grpc_proto_impl(ctx):
     ctx.file("WORKSPACE", 'workspace(name = "{}")'.format(ctx.name))
     ctx.file("BUILD.bazel", "")
     ctx.symlink(
-        ctx.path(Label("@com_github_gogo_protobuf//gogoproto:gogo.proto")),
-        "github.com/gogo/protobuf/gogoproto/gogo.proto",
+        ctx.path(Label("//third_party/gogoproto:gogo.proto")),
+        "gogoproto/gogo.proto",
     )
-    ctx.file("github.com/gogo/protobuf/gogoproto/BUILD.bazel", """
+    ctx.file("gogoproto/BUILD.bazel", """
 
-load("@px//bazel:proto_compile.bzl", "pl_proto_library", "pl_cc_proto_library")
+load("@px//bazel:proto_compile.bzl", "pl_proto_library", "pl_cc_proto_library", "pl_py_proto_library")
 
 pl_proto_library(
     name = "gogo_pl_proto",
@@ -39,6 +39,13 @@ pl_proto_library(
 
 pl_cc_proto_library(
     name = "gogo_pl_cc_proto",
+    proto = ":gogo_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+pl_py_proto_library(
+    name = "gogo_pl_py_proto",
     proto = ":gogo_pl_proto",
     visibility = ["//visibility:public"],
     deps = [],

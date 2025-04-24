@@ -14,24 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library")
-
-pl_proto_library(
-    name = "versions_pl_proto",
-    srcs = ["versions.proto"],
-    visibility = ["//src:__subpackages__"],
-    deps = [
-        "//src/api/proto/uuidpb:uuid_pl_proto",
-        "@gogo_grpc_proto//gogoproto:gogo_pl_proto",
-    ],
-)
-
-pl_go_proto_library(
-    name = "versions_pl_go_proto",
-    importpath = "px.dev/pixie/src/shared/artifacts/versionspb",
-    proto = ":versions_pl_proto",
-    visibility = ["//src:__subpackages__"],
-    deps = [
-        "//src/api/proto/uuidpb:uuid_pl_go_proto",
-    ],
+filegoup = filegroup(
+    name = "bazel",
+    srcs = ["gogo.proto"],
+    visibility = ["//visibility:public"],
 )
