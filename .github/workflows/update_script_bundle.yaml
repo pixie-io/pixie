@@ -50,7 +50,7 @@ jobs:
       with:
         fetch-depth: 0
         ref: gh-pages
-    - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806  # v4.1.9
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
     - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
