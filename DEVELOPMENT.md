@@ -34,6 +34,7 @@ advancedMachineFeatures:
 ```
 sudo apt update sudo apt install -y git coreutils mkcert libnss3-tools screen libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
 curl -L https://chefdownload-community.chef.io/install.sh | sudo bash
+```
 Now, on this VM, clone pixie (or your fork of it)
 
 ```
