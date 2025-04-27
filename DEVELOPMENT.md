@@ -55,7 +55,7 @@ cp .bazelrc ~/.
 ```
 
 Create a cache dir under <directory-path> like /tmp/bazel
-```
+```sh
 sudo groupadd bazelcache
 sudo usermod -aG bazelcache $USER
 sudo mkdir -p <directory-path>
@@ -65,26 +65,33 @@ sudo chmod 2775 <directory-path>
 
 2) Create/Use a registry you control and login
    
-```
-docker login `myregistry`
+```sh
+docker login ghcr.io/myregistry
 ```
 
 3) Make Minikube run and deploy a vanilla pixie
 
 If you added your user to the libvirt group, this will now work:
-```
+```sh
 make dev-env-start
 ```
-
-4) run skaffold build to deploy (after you have the vanilla setup working on minikube)
-check your docke login token is still valid
-
+Deploy vanilla pixie (remote cloud)
+```sh
+sudo bash -c "$(curl -fsSL https://getcosmic.ai/install.sh)"
+export PX_CLOUD_ADDR=getcosmic.ai
+px auth
+px deploy -p=1Gi
 ```
+4) Skaffold to deploy (after you have the vanilla setup working on minikube)
+ 
+your docker login token must still be valid
+
+```sh
 skaffold run -f skaffold/skaffold_vizier.yaml  -p x86_64_sysroot --default-repo=ghcr.io/k8sstormcenter
 ```
 
-5) golden image
-if you get this all working, bake an image at this point 
+5) Golden image
+Once all the above is working and the first cache has been build, bake an image of your VM for safekeeping.
 
 
 
