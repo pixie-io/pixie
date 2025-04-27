@@ -10,6 +10,17 @@ This document outlines the process for setting up the development environment fo
 
 ## Setting up the Environment
 
+Decide first if you d like a full buildsystem (chef-vm) or a containerized dev environment.
+### VM as buildsystem
+Uses a Ubuntu 24.04 as base to run chef to setup all dependencies.
+The initial compilation is CPU intense and 16vcpu are recommended.
+on GCP a balanced disk of 500 GB and a vm type that supports nested virtualization should be chosen
+N2... works well. 
+1) Install chef and some deps
+
+2) Make Minikube run and deploy a vanilla pixie
+
+### Containerized Devenv
 To set up the developer environment required to start building Pixie's components, run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
 
 1. Since this script runs a Docker container, you must have Docker installed. To install it follow these instructions [here](https://docs.docker.com/get-docker/).
