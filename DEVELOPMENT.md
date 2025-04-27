@@ -21,32 +21,62 @@ warning : the first build takes several hours and at least 160 Gb of space
 
 1) Install chef and some deps
  
-apt install 
-curl getchef
-echo source /optpx >.bashrc
-edit bazelrc and cooy to homedit 
-create a cache dir 
+```
+sudo apt update sudo apt install -y git coreutils mkcert libnss3-tools screen libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
+curl -L https://chefdownload-community.chef.io/install.sh | sudo bash
+Now, on this VM, clone pixie (or your fork of it)
 
-2) create a registry and authn 
+```
+git clone https://github.com/pixie-io/pixie.git
+cd pixie/tools/chef
+sudo chef-solo -c solo.rb -j node_workstation.json
+sudo usermod -aG libvirt $USER
+```
+
+Make permanent the env loading via your bashrc
+```sh
+echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
+```
+
+Put the baselrc into your homedir:
+```sh
+cp .bazelrc ~/.
+```
+
+Create a cache dir under <directory-path> like /tmp/bazel
+```
+sudo groupadd bazelcache
+sudo usermod -aG bazelcache $USER
+sudo mkdir -p <directory-path>
+sudo chown :bazelcache <directory-path>
+sudo chmod 2775 <directory-path>
+```
+
+2) Create/Use a registry you control and login
+   
+```
+docker login `myregistry`
+```
 
 3) Make Minikube run and deploy a vanilla pixie
 
-libvirt group
-mkcert
+If you added your user to the libvirt group, this will now work:
+```
+make dev-env-start
+```
 
+4) run skaffold build to deploy (after you have the vanilla setup working on minikube)
+check your docke login token is still valid
 
-4) edit skaffold build 
-check compilerflags 
+```
+skaffold run -f skaffold/skaffold_vizier.yaml  -p x86_64_sysroot --default-repo=ghcr.io/k8sstormcenter
+```
 
 5) golden image
 if you get this all working, bake an image at this point 
 
-notes kn cache sharing 
-if building in a multi user env : as long as the cache dir belongs to s group that yoir ysers are part of, the build can reuse the cache across different users
 
 
-notes on debugging symbols :
-if you anticipate needing gdb compile with gdb , else opt 
 
 ### Containerized Devenv
 To set up the developer environment required to start building Pixie's components, run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
