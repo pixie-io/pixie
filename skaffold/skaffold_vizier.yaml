@@ -144,3 +144,4 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --config=x86_64_sysroot
+    - --compilation_mode=opt
