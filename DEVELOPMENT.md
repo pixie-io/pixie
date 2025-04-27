@@ -91,6 +91,7 @@ skaffold run -f skaffold/skaffold_vizier.yaml  -p x86_64_sysroot --default-repo=
 ```
 
 5) Golden image
+
 Once all the above is working and the first cache has been build, bake an image of your VM for safekeeping.
 
 
