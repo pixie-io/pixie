@@ -10,14 +10,24 @@ This document outlines the process for setting up the development environment fo
 
 ## Setting up the Environment
 
-Decide first if you d like a full buildsystem (chef-vm) or a containerized dev environment.
-### VM as buildsystem
-Uses a Ubuntu 24.04 as base to run chef to setup all dependencies.
-The initial compilation is CPU intense and 16vcpu are recommended.
-on GCP a balanced disk of 500 GB and a vm type that supports nested virtualization should be chosen
-N2... works well. 
+Decide first if you'd like a full buildsystem (on a VM) or a containerized dev environment.
 
-warning : the first build takes several hours and at least 160 Gb of space
+### VM as buildsystem
+Uses a Ubuntu 24.04 as base to run `chef` to setup all dependencies.
+The initial compilation is CPU intense and `16vcpu` are recommended.
+On GCP: a balanced disk of 500 GB and a VM type that supports nested virtualization should be chosen
+`n2-standard-16` works well. 
+
+> [!Warning]
+>  The first build takes several hours and at least 160 Gb of space
+
+Turn on nested virtualization and dont use `spot` VMs for the first build as you do not want your very long first
+build to interrupt. If you create the VMs as templates from an image, you can later switch to more cost-effective `spot` instances.
+
+```yaml
+advancedMachineFeatures:
+  enableNestedVirtualization: true
+```
 
 1) Install chef and some deps
  
