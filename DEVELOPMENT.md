@@ -16,9 +16,37 @@ Uses a Ubuntu 24.04 as base to run chef to setup all dependencies.
 The initial compilation is CPU intense and 16vcpu are recommended.
 on GCP a balanced disk of 500 GB and a vm type that supports nested virtualization should be chosen
 N2... works well. 
-1) Install chef and some deps
 
-2) Make Minikube run and deploy a vanilla pixie
+warning : the first build takes several hours and at least 160 Gb of space
+
+1) Install chef and some deps
+ 
+apt install 
+curl getchef
+echo source /optpx >.bashrc
+edit bazelrc and cooy to homedit 
+create a cache dir 
+
+2) create a registry and authn 
+
+3) Make Minikube run and deploy a vanilla pixie
+
+libvirt group
+mkcert
+
+
+4) edit skaffold build 
+check compilerflags 
+
+5) golden image
+if you get this all working, bake an image at this point 
+
+notes kn cache sharing 
+if building in a multi user env : as long as the cache dir belongs to s group that yoir ysers are part of, the build can reuse the cache across different users
+
+
+notes on debugging symbols :
+if you anticipate needing gdb compile with gdb , else opt 
 
 ### Containerized Devenv
 To set up the developer environment required to start building Pixie's components, run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
