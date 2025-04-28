@@ -375,6 +375,7 @@ class OTelExportSinkOperator : public Operator {
   // TODO(philkuz) temporary measure.
   const planpb::OTelExportSinkOperator& pb() const { return pb_; }
 
+  const ::google::protobuf::RepeatedPtrField<planpb::OTelLog>& logs() const { return pb_.logs(); }
   const ::google::protobuf::RepeatedPtrField<planpb::OTelMetric>& metrics() const {
     return pb_.metrics();
   }

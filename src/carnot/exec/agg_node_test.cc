@@ -476,7 +476,7 @@ std::unique_ptr<ExecState> MakeTestExecState(udf::Registry* registry) {
   auto table_store = std::make_shared<table_store::TableStore>();
   return std::make_unique<ExecState>(registry, table_store, MockResultSinkStubGenerator,
                                      MockMetricsStubGenerator, MockTraceStubGenerator,
-                                     sole::uuid4(), nullptr);
+                                     MockLogStubGenerator, sole::uuid4(), nullptr);
 }
 
 std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {
