@@ -122,7 +122,7 @@ platform(
     ],
     exec_properties = {
         "OSFamily": "Linux",
-        "Pool": "202305312341",
+        "Pool": "202504142133",
     },
 )
 

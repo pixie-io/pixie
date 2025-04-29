@@ -1,5 +1,6 @@
 ---
-replicas: 48
+replicas: 32
+
 resources:
   limits:
     memory: 8Gi
@@ -10,7 +11,10 @@ config:
   executor:
     app_target: "grpcs://remote.buildbuddy.io:443"
     api_key: $BB_EXECUTOR_API_KEY
+    default_isolation_type: none
     docker_socket: ""
+    enable_podman: false
+    enable_oci: false
     enable_bare_runner: true
     local_cache_size_bytes: 375000000000  # 375GB
     millicpu: 4000
@@ -21,23 +25,23 @@ extraInitContainers:
   image: ghcr.io/pixie-io/pixie-oss-pixie-dev-public-curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
   # yamllint disable rule:line-length
   command: ['sh', '-c', 'set -e;
-    curl -fsSL https://github.com/buildbuddy-io/buildbuddy/releases/download/v2.12.42/executor-enterprise-linux-amd64 > /bb-executor/executor;
-    chmod +x /bb-executor/executor']
+    curl -fsSL https://github.com/buildbuddy-io/buildbuddy/releases/download/v2.154.0/executor-enterprise-linux-amd64 > /bb-executor/executor;
+    chmod +x /bb-executor/executor'
+  ]
   # yamllint enable rule:line-length
   volumeMounts:
   - name: bb-executor
     mountPath: /bb-executor
 
 image:
-  repository: gcr.io/pixie-oss/pixie-dev-public/dev_image
+  repository: ghcr.io/pixie-io/dev_image
   tag: '$IMAGE_TAG'
 
 # Some clusters don't have ipv6 enabled, but we need it for some tests.
 customExecutorCommand:
 - /bin/sh
 - -c
-- 'sysctl -w net.ipv6.conf.lo.disable_ipv6=0 &&
-   /bb-executor/executor --server_type=buildbuddy-executor'
+- 'sysctl -w net.ipv6.conf.lo.disable_ipv6=0 && /bb-executor/executor --server_type=buildbuddy-executor'
 
 poolName: '"$IMAGE_TAG"'
 
