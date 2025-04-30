@@ -1,22 +1,37 @@
 ---
-replicas: 32
+replicas: 16
+
+autoscaler:
+  enabled: true
+  minReplicas: 8
+  maxReplicas: 48
+  metrics:
+  - type: ContainerResource
+    containerResource:
+      name: cpu
+      container: buildbuddy-executor
+      target:
+        # These executors idle at a very low CPU usage, so any utilization should trigger some scaling.
+        type: Utilization
+        averageUtilization: 20
 
 resources:
   limits:
     memory: 8Gi
     cpu: null
   requests:
-    cpu: null
+    cpu: 4
 config:
+  server_type: buildbuddy-executor
   executor:
     app_target: "grpcs://remote.buildbuddy.io:443"
-    api_key: $BB_EXECUTOR_API_KEY
+    api_key: "${API_KEY}"
     default_isolation_type: none
     docker_socket: ""
     enable_podman: false
     enable_oci: false
     enable_bare_runner: true
-    local_cache_size_bytes: 375000000000  # 375GB
+    local_cache_size_bytes: 20000000000  # 20GB
     millicpu: 4000
 
 extraInitContainers:
@@ -41,7 +56,7 @@ image:
 customExecutorCommand:
 - /bin/sh
 - -c
-- 'sysctl -w net.ipv6.conf.lo.disable_ipv6=0 && /bb-executor/executor --server_type=buildbuddy-executor'
+- 'sysctl -w net.ipv6.conf.lo.disable_ipv6=0 && /bb-executor/executor'
 
 poolName: '"$IMAGE_TAG"'
 
@@ -59,6 +74,12 @@ extraVolumes:
   emptyDir: {}
 - name: tmp
   emptyDir: {}
+extraEnvVars:
+- name: API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: buildbuddy-executor-api-key
+      key: api-key
 
 containerSecurityContext:
   privileged: true
