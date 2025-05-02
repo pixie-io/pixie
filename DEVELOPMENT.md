@@ -66,7 +66,7 @@ sudo chmod 2775 <directory-path>
 2) Create/Use a registry you control and login
    
 ```sh
-docker login ghcr.io/myregistry
+docker login ghcr.io/<myregistry>
 ```
 
 3) Make Minikube run and deploy a vanilla pixie
@@ -82,12 +82,20 @@ export PX_CLOUD_ADDR=getcosmic.ai
 px auth
 px deploy -p=1Gi
 ```
-4) Skaffold to deploy (after you have the vanilla setup working on minikube)
+For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
+
+4) Once you make changes on source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
  
 your docker login token must still be valid
 
 ```sh
-skaffold run -f skaffold/skaffold_vizier.yaml  -p x86_64_sysroot --default-repo=ghcr.io/k8sstormcenter
+> skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot --default-repo=ghcr.io/<myregistry>
+```
+
+Optional: you can set default-repo on config, so that you don't need to pass it as an argument everytime
+```sh
+> skaffold config set default-repo ghcr.io/<myregistry> 
+> skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot
 ```
 
 5) Golden image
