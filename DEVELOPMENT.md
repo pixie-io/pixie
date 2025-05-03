@@ -15,21 +15,23 @@ Decide first if you'd like a full buildsystem (on a VM) or a containerized dev e
 ### VM as buildsystem
 Uses a Ubuntu 24.04 as base to run `chef` to setup all dependencies.
 The initial compilation is CPU intense and `16vcpu` are recommended.
-On GCP: a balanced disk of 500 GB and a VM type that supports nested virtualization should be chosen
+This was tested on GCP: a balanced disk of 500 GB and a VM type that supports nested virtualization should be chosen, as of writing (May 2025)
 `n2-standard-16` works well. 
 
 > [!Warning]
 >  The first build takes several hours and at least 160 Gb of space
 
-Turn on nested virtualization and dont use `spot` VMs for the first build as you do not want your very long first
-build to interrupt. If you create the VMs as templates from an image, you can later switch to more cost-effective `spot` instances.
+Turn on nested virtualization and avoid the use of `spot` VMs for the first build to avoid the very long first
+build interrupting. If you create the VMs as templates from an image, you can later switch to more cost-effective `spot` instances.
+
+
 
 ```yaml
 advancedMachineFeatures:
   enableNestedVirtualization: true
 ```
 
-1) Install chef and some deps
+1) Install chef and some dependencies
  
 ```
 sudo apt update sudo apt install -y git coreutils mkcert libnss3-tools screen libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
@@ -53,7 +55,7 @@ Put the baselrc into your homedir:
 ```sh
 cp .bazelrc ~/.
 ```
-
+In order to very significantly speed up your work, you may opt for a local cache directory. This can be shared between users of the VM, if both are part of the same group.
 Create a cache dir under <directory-path> like /tmp/bazel
 ```sh
 sudo groupadd bazelcache
@@ -71,7 +73,7 @@ docker login ghcr.io/<myregistry>
 
 3) Make Minikube run and deploy a vanilla pixie
 
-If you added your user to the libvirt group, this will now work:
+If you added your user to the libvirt group (`sudo usermod -aG libvirt $USER`), this will now work (if you did this interactively: you need to refresh your group membership, e.g. by logout/login)
 ```sh
 make dev-env-start
 ```
@@ -84,9 +86,9 @@ px deploy -p=1Gi
 ```
 For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
 
-4) Once you make changes on source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
+4) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
  
-your docker login token must still be valid
+Check, that your docker login token is still valid:
 
 ```sh
 > skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot --default-repo=ghcr.io/<myregistry>
