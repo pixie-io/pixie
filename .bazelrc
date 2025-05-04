@@ -1,6 +1,8 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
-# on Chef VM Use a local cache dir that belongs to the bazelcache group
-build --disk_cache=/tmp/bazel/
+
+# Use local Cache directory if building on a VM:
+# On Chef VM, create a directory and comment in the following line:
+# build --disk_cache=</tmp/bazel/> # Optional for multi-user cache: Make this directory owned by a group name e.g. "bazelcache"
 
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
