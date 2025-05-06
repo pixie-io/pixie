@@ -15,12 +15,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # debhelper-compat (= 12) needed for kernels >= 6.3
-FROM ubuntu:20.04@sha256:6d8d9799fe6ab3221965efac00b4c34a2bcc102c086a58dff9e19a08b913c7ef
+FROM ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
 
 # Install required packages
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get upgrade -y -q
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -q build-essential \
+RUN apt-get install -y -q build-essential \
   bc \
   libelf-dev \
   libssl-dev \
