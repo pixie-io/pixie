@@ -73,41 +73,36 @@ SYSROOT_CREATOR_IMAGE_TAG := sysroot-creator-$(SYSROOT_REV)
 ## Linux image parameters
 LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
 LINUX_HEADER_ASSETS_BUILD_DIR := $(LINUX_HEADER_BUILD_DIR)/assets
-LINUX_KERNEL_VERSIONS := 4.14.304 \
+LINUX_KERNEL_VERSIONS := 4.14.309 \
 	4.15.18 \
 	4.16.18 \
 	4.17.19 \
 	4.18.20 \
-	4.19.271 \
+	4.19.325 \
 	4.20.17 \
 	5.0.21 \
 	5.1.21 \
 	5.2.21 \
 	5.3.18 \
-	5.4.230 \
+	5.4.293 \
 	5.5.19 \
 	5.6.19 \
 	5.7.19 \
 	5.8.18 \
 	5.9.16 \
-	5.10.165 \
+	5.10.237 \
 	5.11.22 \
 	5.12.19 \
 	5.13.19 \
 	5.14.21 \
-	5.15.90 \
+	5.15.181 \
 	5.16.20 \
 	5.17.15 \
 	5.18.19 \
 	5.19.17 \
 	6.0.19 \
-	6.1.8 \
-	6.2.16 \
-	6.3.13 \
-	6.6.53 \
-	6.8.12 \
-	6.10.12 \
-	6.11.1
+	6.1.137 \
+	6.6.89
 
 LINUX_HEADER_X86_64_TEMPLATE := linux-headers-x86_64-%.tar.gz
 LINUX_HEADER_ARM64_TEMPLATE := linux-headers-arm64-%.tar.gz
