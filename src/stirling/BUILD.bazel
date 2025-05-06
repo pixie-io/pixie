@@ -68,8 +68,8 @@ pl_cc_library(
 # Used by stirling runtime to install linux headers on hosts having no Linux headers pre-installed.
 #
 # Note that each linux header tarball is ~15MB compressed and ~230MB uncompressed.
-# Trimmed versions are ~8-11MB (9MB avg) compressed and ~45MB uncompressed.
-# These are all trimmed versions, so we have 9MB * 35 = ~315 MB of headers.
+# Trimmed versions are ~8-11MB (8.6 MB avg) compressed and ~45MB uncompressed.
+# These are all trimmed versions, so we have 9MB * 29 = ~250 MB of headers.
 stirling_linux_headers_tarballs = select({
     "@platforms//cpu:aarch64": ["@linux_headers_merged_arm64_tar_gz//file:file"],
     "@platforms//cpu:x86_64": ["@linux_headers_merged_x86_64_tar_gz//file:file"],
