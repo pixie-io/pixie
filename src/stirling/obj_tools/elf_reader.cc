@@ -32,6 +32,10 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/init.h"
 
+DEFINE_int64(elf_reader_max_file_size, 0,
+             "Maximum file size in bytes for ELF files. Default value of 0 means all files will "
+             "be parsed regardless of size.");
+
 namespace px {
 namespace stirling {
 namespace obj_tools {
@@ -45,6 +49,41 @@ struct LowercaseHex {
   static inline constexpr bool kKeepPrintableChars = false;
 };
 }  // namespace
+
+StatusOr<std::unique_ptr<ElfReader>> ElfReader::CreateImpl(
+    const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
+  VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
+                              debug_file_dir.string());
+
+  auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
+  elf_reader->binary_path_ = binary_path;
+
+  if (!elf_reader->elf_reader_.load_header_and_sections(binary_path)) {
+    return error::Internal("Can't find or process ELF file $0", binary_path);
+  }
+
+  // Check for external debug symbols.
+  Status s = elf_reader->LocateDebugSymbols(debug_file_dir);
+  if (s.ok()) {
+    std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
+
+    bool internal_debug_symbols =
+        fs::Equivalent(elf_reader->debug_symbols_path_, binary_path).ConsumeValueOr(true);
+
+    // If external debug symbols were found, load that ELF info instead.
+    if (!internal_debug_symbols) {
+      std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
+      LOG(INFO) << absl::Substitute("Found debug symbols file $0 for binary $1", debug_symbols_path,
+                                    binary_path);
+      elf_reader->elf_reader_.load_header_and_sections(debug_symbols_path);
+      return elf_reader;
+    }
+  }
+
+  // Debug symbols were either in the binary, or no debug symbols were found,
+  // so return original elf_reader.
+  return elf_reader;
+}
 
 Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir) {
   std::string build_id;
@@ -158,40 +197,26 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
   return error::Internal("Could not find debug symbols for $0", binary_path_);
 }
 
-// TODO(oazizi): Consider changing binary_path to std::filesystem::path.
 StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
     const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
-  VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
-                              debug_file_dir.string());
-  auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
-
-  elf_reader->binary_path_ = binary_path;
-
-  if (!elf_reader->elf_reader_.load_header_and_sections(binary_path)) {
-    return error::Internal("Can't find or process ELF file $0", binary_path);
-  }
-
-  // Check for external debug symbols.
-  Status s = elf_reader->LocateDebugSymbols(debug_file_dir);
-  if (s.ok()) {
-    std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
-
-    bool internal_debug_symbols =
-        fs::Equivalent(elf_reader->debug_symbols_path_, binary_path).ConsumeValueOr(true);
-
-    // If external debug symbols were found, load that ELF info instead.
-    if (!internal_debug_symbols) {
-      std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
-      LOG(INFO) << absl::Substitute("Found debug symbols file $0 for binary $1", debug_symbols_path,
-                                    binary_path);
-      elf_reader->elf_reader_.load_header_and_sections(debug_symbols_path);
-      return elf_reader;
+  if (FLAGS_elf_reader_max_file_size != 0) {
+    PX_ASSIGN_OR_RETURN(const auto stat, fs::Stat(binary_path));
+    int64_t file_size = stat.st_size;
+    if (file_size > FLAGS_elf_reader_max_file_size) {
+      return error::Internal(
+          "File size $0 exceeds ElfReader's max file size $1. Refusing to process file", file_size,
+          FLAGS_elf_reader_max_file_size);
+    } else if (file_size < 0) {
+      return error::Internal("stat() returned negative file size $0 for file $1", file_size,
+                             binary_path);
     }
   }
+  return CreateImpl(binary_path, debug_file_dir);
+}
 
-  // Debug symbols were either in the binary, or no debug symbols were found,
-  // so return original elf_reader.
-  return elf_reader;
+StatusOr<std::unique_ptr<ElfReader>> ElfReader::CreateUncapped(
+    const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
+  return CreateImpl(binary_path, debug_file_dir);
 }
 
 StatusOr<ELFIO::section*> ElfReader::SymtabSection() {

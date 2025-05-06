@@ -37,6 +37,8 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
+constexpr std::string_view kDebugFileDir = "/usr/lib/debug";
+
 class ElfReader {
  public:
   /**
@@ -50,8 +52,14 @@ class ElfReader {
    * @return error if could not setup elf reader.
    */
   static StatusOr<std::unique_ptr<ElfReader>> Create(
-      const std::string& binary_path,
-      const std::filesystem::path& debug_file_dir = "/usr/lib/debug");
+      const std::string& binary_path, const std::filesystem::path& debug_file_dir = kDebugFileDir);
+
+  /**
+   * Creates an ElfReader that does not enforce the max file size limit. This is useful for cases
+   * where the binary size is known in advance or the binary must be loaded regardless of size.
+   */
+  static StatusOr<std::unique_ptr<ElfReader>> CreateUncapped(
+      const std::string& binary_path, const std::filesystem::path& debug_file_dir = kDebugFileDir);
 
   std::filesystem::path& debug_symbols_path() { return debug_symbols_path_; }
 
@@ -207,6 +215,9 @@ class ElfReader {
   }
 
  private:
+  static StatusOr<std::unique_ptr<ElfReader>> CreateImpl(
+      const std::string& binary_path, const std::filesystem::path& debug_file_dir);
+
   ElfReader() = default;
 
   StatusOr<ELFIO::section*> SymtabSection();
