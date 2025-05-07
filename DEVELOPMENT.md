@@ -69,6 +69,8 @@ echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
 
 
 2) If using Cache, tell bazel about it
+
+   
 Edit the `<directory-path>` into the .bazelrc and put it into your homedir:
 ```
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
