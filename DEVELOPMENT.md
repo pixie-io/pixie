@@ -32,13 +32,7 @@ advancedMachineFeatures:
 
 1) Install chef and some dependencies
 
-WIP: this needs to be retested after moving it into `chef` rather than doing by hand or via init-script:
-While we re-test, you may run the following install manually 
-```bash
-sudo apt update 
-sudo apt install -y git coreutils mkcert libnss3-tools libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
-```
-
+First, install `chef` to cook your `recipies`:
 
 ```bash
 curl -L https://chefdownload-community.chef.io/install.sh | sudo bash
@@ -61,21 +55,31 @@ Make permanent the env loading via your bashrc
 echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
 ```
 
-Put the baselrc into your homedir:
-```sh
-cp .bazelrc ~/.
-```
+
 In order to very significantly speed up your work, you may opt for a local cache directory. This can be shared between users of the VM, if both are part of the same group.
 Create a cache dir under <directory-path> like /tmp/bazel
 ```sh
 sudo groupadd bazelcache
 sudo usermod -aG bazelcache $USER
 sudo mkdir -p <directory-path>
-sudo chown :bazelcache <directory-path>
+sudo chown -R :bazelcache <directory-path>
 sudo chmod 2775 <directory-path>
 ```
 
-2) Create/Use a registry you control and login
+Edit the <directory-path> into the .bazelrc and put the it into your homedir:
+```
+# Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
+
+# Use local Cache directory if building on a VM:
+# On Chef VM, create a directory and comment in the following line:
+ build --disk_cache=/tmp/bazel/ # Optional for multi-user cache: Make this directory owned by a group name e.g. "bazelcache"
+```
+
+```sh
+cp .bazelrc ~/.
+```
+
+1) Create/Use a registry you control and login
    
 ```sh
 docker login ghcr.io/<myregistry>
@@ -100,6 +104,11 @@ px deploy -p=1Gi
 For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
 
 4) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
+
+Now, ensure that you have commented in the bazelcache-directory into the bazel config.
+```
+
+```
  
 Check that your docker login token is still valid, then
 
@@ -113,7 +122,7 @@ Optional: you can set default-repo on config, so that you don't need to pass it 
 > skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot
 ```
 
-5) Golden image
+1) Golden image
 
 Once all the above is working and the first cache has been built, bake an image of your VM for safekeeping.
 
@@ -249,3 +258,5 @@ You will be able to run any of the CLI commands using `bazel run`.
 
 - `bazel run //src/pixie_cli:px -- deploy` will be equivalent to `px deploy`
 - `bazel run //src/pixie_cli:px -- run px/cluster` is the same as `px run px/cluster`
+
+
