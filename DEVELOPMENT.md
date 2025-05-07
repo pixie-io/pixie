@@ -13,16 +13,15 @@ This document outlines the process for setting up the development environment fo
 Decide first if you'd like a full buildsystem (on a VM) or a containerized dev environment.
 
 ### VM as buildsystem
-Uses a Ubuntu 24.04 as base to run `chef` to setup all dependencies.
-The initial compilation is CPU intense and `16vcpu` are recommended.
-This was tested on GCP: a balanced disk of 500 GB and a VM type that supports nested virtualization should be chosen, as of writing (May 2025)
-`n2-standard-16` works well. 
+
+This utilizes `chef` to setup all dependencies and is based on `ubuntu`. The VM type must support nested virtualization for `minikube` to work.
+
+
+The following specifics were tested on GCP on a Ubuntu 24.04 (May 2025): The initial compilation is CPU intense and `16vcpu` were a good trade-off, a balanced disk of 500 GB seems convienent and overall `n2-standard-16` works well. 
 
 > [!Warning]
 >  The first build takes several hours and at least 160 Gb of space
-
-Turn on nested virtualization and avoid the use of `spot` VMs for the first build to avoid the very long first
-build interrupting. If you create the VMs as templates from an image, you can later switch to more cost-effective `spot` instances.
+> Turn on nested virtualization during provisioning and avoid the use of `spot` VMs for the first build to avoid the very long first build interrupting. If you create the VMs as templates from an image, you can later switch to more cost-effective `spot` instances.
 
 
 
