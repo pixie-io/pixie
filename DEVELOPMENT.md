@@ -31,10 +31,21 @@ advancedMachineFeatures:
 ```
 
 1) Install chef and some dependencies
- 
+
+WIP: this needs to be retested after moving it into `chef` rather than doing by hand or via init-script:
+While we re-test, you may run the following install manually 
+```bash
+sudo apt update 
+sudo apt install -y git coreutils mkcert libnss3-tools libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
 ```
-sudo apt update sudo apt install -y git coreutils mkcert libnss3-tools screen libvirt-daemon-system libvirt-clients qemu-kvm virt-manager
+
+
+```bash
 curl -L https://chefdownload-community.chef.io/install.sh | sudo bash
+```
+You may find it helpful to use a terminal manager like `screen` or `tmux`, esp to detach the builds.
+```bash
+sudo apt install -y screen
 ```
 Now, on this VM, clone pixie (or your fork of it)
 
