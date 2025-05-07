@@ -83,20 +83,23 @@ docker login ghcr.io/<myregistry>
 
 3) Make Minikube run and deploy a vanilla pixie
 
-If you added your user to the libvirt group (`sudo usermod -aG libvirt $USER`), this will now work (if you did this interactively: you need to refresh your group membership, e.g. by logout/login)
+If you added your user to the libvirt group (`sudo usermod -aG libvirt $USER`), starting the development environment on this VM will now work (if you did this interactively: you need to refresh your group membership, e.g. by logout/login). The following command will, amongst other things, start minikube
 ```sh
 make dev-env-start
 ```
-Deploy vanilla pixie (remote cloud)
+
+Onto this minikube, we first deploy the upstream pixie (`vizier`, `kelvin` and `pem`) using the remote cloud  `export PX_CLOUD_ADDR=getcosmic.ai` . Follow https://docs.px.dev/installing-pixie/install-schemes/cli , to install the  `px` command line interface and login:
 ```sh
-sudo bash -c "$(curl -fsSL https://getcosmic.ai/install.sh)"
-export PX_CLOUD_ADDR=getcosmic.ai
-px auth
+px auth login
+```
+
+Once, logged in, we found that limiting the memory is useful, thus after login, set the deploy option like so:
+```sh
 px deploy -p=1Gi
 ```
 For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
 
-4) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
+1) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
  
 Check, that your docker login token is still valid:
 
