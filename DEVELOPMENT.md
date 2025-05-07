@@ -49,7 +49,7 @@ sudo groupadd bazelcache
 sudo usermod -aG bazelcache $USER
 sudo mkdir -p <directory-path>
 sudo chown -R :bazelcache <directory-path>
-sudo chmod 2775 <directory-path>
+sudo chmod -R 2775 <directory-path>
 ```
 
 
