@@ -93,15 +93,15 @@ Onto this minikube, we first deploy the upstream pixie (`vizier`, `kelvin` and `
 px auth login
 ```
 
-Once, logged in, we found that limiting the memory is useful, thus after login, set the deploy option like so:
+Once logged in to pixie, we found that limiting the memory is useful, thus after login, set the deploy option like so:
 ```sh
 px deploy -p=1Gi
 ```
 For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
 
-1) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
+4) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
  
-Check, that your docker login token is still valid:
+Check that your docker login token is still valid, then
 
 ```sh
 > skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot --default-repo=ghcr.io/<myregistry>
@@ -115,7 +115,7 @@ Optional: you can set default-repo on config, so that you don't need to pass it 
 
 5) Golden image
 
-Once all the above is working and the first cache has been build, bake an image of your VM for safekeeping.
+Once all the above is working and the first cache has been built, bake an image of your VM for safekeeping.
 
 
 
