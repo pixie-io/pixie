@@ -106,7 +106,12 @@ Once logged in to pixie, we found that limiting the memory is useful, thus after
 ```sh
 px deploy -p=1Gi
 ```
-For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
+For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud.
+
+You may encounter the following WARNING, which is related to the kernel headers missing on the minikube node (this is not your VM node). Usually, for development purposes this is safe to ignore. Please see [pixie-issue2051](https://github.com/pixie-io/pixie/issues/2051) for further details.
+```
+ERR: Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please install kernel headers on all nodes.
+```
 
 5) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
 
