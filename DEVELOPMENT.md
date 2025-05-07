@@ -41,6 +41,18 @@ You may find it helpful to use a terminal manager like `screen` or `tmux`, esp t
 ```bash
 sudo apt install -y screen
 ```
+
+In order to very significantly speed up your work, you may opt for a local cache directory. This can be shared between users of the VM, if both are part of the same group.
+Create a cache dir under <directory-path> like /tmp/bazel
+```sh
+sudo groupadd bazelcache
+sudo usermod -aG bazelcache $USER
+sudo mkdir -p <directory-path>
+sudo chown -R :bazelcache <directory-path>
+sudo chmod 2775 <directory-path>
+```
+
+
 Now, on this VM, clone pixie (or your fork of it)
 
 ```bash
@@ -56,17 +68,8 @@ echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
 ```
 
 
-In order to very significantly speed up your work, you may opt for a local cache directory. This can be shared between users of the VM, if both are part of the same group.
-Create a cache dir under <directory-path> like /tmp/bazel
-```sh
-sudo groupadd bazelcache
-sudo usermod -aG bazelcache $USER
-sudo mkdir -p <directory-path>
-sudo chown -R :bazelcache <directory-path>
-sudo chmod 2775 <directory-path>
-```
 
-Edit the <directory-path> into the .bazelrc and put the it into your homedir:
+Edit the `<directory-path>` into the .bazelrc and put the it into your homedir:
 ```
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
