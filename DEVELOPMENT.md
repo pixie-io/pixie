@@ -68,7 +68,7 @@ echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
 ```
 
 
-
+2) If using Cache, tell bazel about it
 Edit the `<directory-path>` into the .bazelrc and put it into your homedir:
 ```
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
@@ -82,13 +82,13 @@ Edit the `<directory-path>` into the .bazelrc and put it into your homedir:
 cp .bazelrc ~/.
 ```
 
-1) Create/Use a registry you control and login
+3) Create/Use a registry you control and login
    
 ```sh
 docker login ghcr.io/<myregistry>
 ```
 
-3) Make Minikube run and deploy a vanilla pixie
+4) Make Minikube run and deploy a vanilla pixie
 
 If you added your user to the libvirt group (`sudo usermod -aG libvirt $USER`), starting the development environment on this VM will now work (if you did this interactively: you need to refresh your group membership, e.g. by logout/login). The following command will, amongst other things, start minikube
 ```sh
@@ -106,12 +106,9 @@ px deploy -p=1Gi
 ```
 For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud
 
-4) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
+5) Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
 
-Now, ensure that you have commented in the bazelcache-directory into the bazel config.
-```
-
-```
+Ensure that you have commented in the bazelcache-directory into the bazel config (see Step 2)
  
 Check that your docker login token is still valid, then
 
@@ -125,7 +122,7 @@ Optional: you can set default-repo on config, so that you don't need to pass it 
 > skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot
 ```
 
-1) Golden image
+6) Golden image
 
 Once all the above is working and the first cache has been built, bake an image of your VM for safekeeping.
 
