@@ -69,7 +69,7 @@ echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
 
 
 
-Edit the `<directory-path>` into the .bazelrc and put the it into your homedir:
+Edit the `<directory-path>` into the .bazelrc and put it into your homedir:
 ```
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
