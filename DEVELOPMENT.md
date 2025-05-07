@@ -49,7 +49,7 @@ sudo apt install -y screen
 ```
 Now, on this VM, clone pixie (or your fork of it)
 
-```
+```bash
 git clone https://github.com/pixie-io/pixie.git
 cd pixie/tools/chef
 sudo chef-solo -c solo.rb -j node_workstation.json
