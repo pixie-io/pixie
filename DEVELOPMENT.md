@@ -14,7 +14,7 @@ Decide first if you'd like a full buildsystem (on a VM) or a containerized dev e
 
 ### VM as buildsystem
 
-This utilizes `chef` to setup all dependencies and is based on `ubuntu`. 
+This utilizes `chef` to setup all dependencies and is based on `ubuntu`.
 > [!Important]
 >  The below description defaults to using a `minikube` on this VM for the developer to have an `all-in-one` setup. The VM type must support nested virtualization for `minikube` to work. Please confirm that the nested virtualization really is turned on before you continue, not all VM-types support it.
 >  If you `bring-your-own-k8s`, you may disregard this.
@@ -24,7 +24,7 @@ advancedMachineFeatures:
   enableNestedVirtualization: true
 ```
 
-The following specifics were tested on GCP on a Ubuntu 24.04 (May 2025). Please see the latest [packer file](https://github.com/pixie-io/pixie/blob/main/tools/chef/Makefile#L56) for the current supported Ubuntu version: The initial compilation is CPU intense and `16vcpu` were a good trade-off, a balanced disk of 500 GB seems convenient and overall `n2-standard-16` works well. 
+The following specifics were tested on GCP on a Ubuntu 24.04 (May 2025). Please see the latest [packer file](https://github.com/pixie-io/pixie/blob/main/tools/chef/Makefile#L56) for the current supported Ubuntu version: The initial compilation is CPU intense and `16vcpu` were a good trade-off, a balanced disk of 500 GB seems convenient and overall `n2-standard-16` works well.
 
 > [!Warning]
 >  The first `full build` takes several hours and at least 160 Gb of space
@@ -74,7 +74,6 @@ echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
 
 #### 2) If using cache, tell bazel about it
 
-   
 Edit the `<directory-path>` into the .bazelrc and put it into your homedir:
 ```
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
@@ -89,15 +88,15 @@ cp .bazelrc ~/.
 ```
 
 #### 3) Create/Use a registry you control and login
-   
+
 ```sh
 docker login ghcr.io/<myregistry>
 ```
 
-#### 4) Prepare your kubernetes 
+#### 4) Prepare your kubernetes
 
 > [!Important]
->  The below description defaults to using a `minikube` on this VM for the developer to have an `all-in-one` setup. 
+>  The below description defaults to using a `minikube` on this VM for the developer to have an `all-in-one` setup.
 >  If you `bring-your-own-k8s`, please prepare your preferred setup and go to Step 5
 
 If you added your user to the libvirt group (`sudo usermod -aG libvirt $USER`), starting the development environment on this VM will now work (if you did this interactively: you need to refresh your group membership, e.g. by logout/login). The following command will, amongst other things, start minikube
@@ -118,7 +117,7 @@ px deploy -p=1Gi
 ```
 For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud.
 
-Optional on `minikube`: 
+Optional on `minikube`:
 
 You may encounter the following WARNING, which is related to the kernel headers missing on the minikube node (this is not your VM node). This is safe to ignore if Pixie starts up properly and your cluster is queryable from Pixie's [Live UI](https://docs.px.dev/using-pixie/using-live-ui). Please see [pixie-issue2051](https://github.com/pixie-io/pixie/issues/2051) for further details.
 ```
@@ -136,7 +135,7 @@ Review the compilation-mode suits your purposes:
 ```
 cat skaffold/skaffold_vizier.yaml
 # Note: You will want to stick with a sysroot based build (-p x86_64_sysroot or -p aarch64_sysroot),
-# but you may want to change the --complication_mode setting based on your needs. 
+# but you may want to change the --complication_mode setting based on your needs.
 # opt builds remove assert/debug checks, while dbg builds work with debuggers (gdb).
 # See the bazel docs for more details https://bazel.build/docs/user-manual#compilation-mode
 - name: x86_64_sysroot
@@ -151,10 +150,10 @@ cat skaffold/skaffold_vizier.yaml
 
 Optional: you can make permanent your <default-repo> in the skaffold config:
 ```sh
-skaffold config set default-repo <myregistry> 
+skaffold config set default-repo <myregistry>
 skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot
 ```
- 
+
 Check that your docker login token is still valid, then
 
 ```sh
@@ -299,5 +298,3 @@ You will be able to run any of the CLI commands using `bazel run`.
 
 - `bazel run //src/pixie_cli:px -- deploy` will be equivalent to `px deploy`
 - `bazel run //src/pixie_cli:px -- run px/cluster` is the same as `px run px/cluster`
-
-
