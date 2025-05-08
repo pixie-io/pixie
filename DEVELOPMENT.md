@@ -24,7 +24,7 @@ advancedMachineFeatures:
   enableNestedVirtualization: true
 ```
 
-The following specifics were tested on GCP on a Ubuntu 24.04 (May 2025): The initial compilation is CPU intense and `16vcpu` were a good trade-off, a balanced disk of 500 GB seems convienent and overall `n2-standard-16` works well. 
+The following specifics were tested on GCP on a Ubuntu 24.04 (May 2025). Please see the latest [packer file](https://github.com/pixie-io/pixie/blob/main/tools/chef/Makefile#L56) for the current supported Ubuntu version: The initial compilation is CPU intense and `16vcpu` were a good trade-off, a balanced disk of 500 GB seems convenient and overall `n2-standard-16` works well. 
 
 > [!Warning]
 >  The first `full build` takes several hours and at least 160 Gb of space
