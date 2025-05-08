@@ -66,7 +66,6 @@ apt_pkg_list = [
 
   # Pixie dependencies
   'mkcert',
-  #'coreutils' not sure about that one, need to test
 ]
 
 apt_package apt_pkg_list do
