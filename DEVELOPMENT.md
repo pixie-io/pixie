@@ -120,7 +120,7 @@ For reference and further information https://docs.px.dev/installing-pixie/insta
 
 Optional on `minikube`: 
 
-You may encounter the following WARNING, which is related to the kernel headers missing on the minikube node (this is not your VM node). Usually, for development purposes this is safe to ignore. Please see [pixie-issue2051](https://github.com/pixie-io/pixie/issues/2051) for further details.
+You may encounter the following WARNING, which is related to the kernel headers missing on the minikube node (this is not your VM node). This is safe to ignore if Pixie starts up properly and your cluster is queryable from Pixie's [Live UI](https://docs.px.dev/using-pixie/using-live-ui). Please see [pixie-issue2051](https://github.com/pixie-io/pixie/issues/2051) for further details.
 ```
 ERR: Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please install kernel headers on all nodes.
 ```
