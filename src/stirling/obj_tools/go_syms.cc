@@ -171,6 +171,8 @@ StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reade
   PX_ASSIGN_OR_RETURN(uint8_t endianness, binary_decoder.ExtractBEInt<uint8_t>());
 
   BuildInfo build_info;
+  std::string go_version;
+  std::string mod_info;
   // If the endianness has its second bit set, then the go version immediately follows the 32 bit
   // header specified by the varint encoded string data
   if ((endianness & 0x2) != 0) {
@@ -178,75 +180,79 @@ StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reade
     PX_CHECK_OK(binary_decoder.ExtractBufIgnore(16));
 
     PX_ASSIGN_OR_RETURN(uint64_t size, binary_decoder.ExtractUVarInt());
-    PX_ASSIGN_OR_RETURN(std::string_view go_version, binary_decoder.ExtractString(size));
+    PX_ASSIGN_OR_RETURN(go_version, binary_decoder.ExtractString(size));
 
     PX_ASSIGN_OR_RETURN(uint64_t mod_size, binary_decoder.ExtractUVarInt());
-    PX_ASSIGN_OR_RETURN(std::string_view mod, binary_decoder.ExtractString(mod_size));
-    if (mod_size >= 33 && mod.at(mod_size - 17) == '\n') {
-      mod.remove_prefix(16);
-      PX_ASSIGN_OR_RETURN(build_info, ReadModInfo(std::string(mod)));
-    }
-
-    PX_ASSIGN_OR_RETURN(auto s, ExtractSemVer(std::string(go_version)));
-    return std::make_pair(s, std::move(build_info));
-  }
-
-  read_ptr_func_t read_ptr;
-  switch (endianness) {
-    case 0x0: {
-      if (ptr_size == 4) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::LEndianBytesToInt<uint32_t, 4>(str_view);
-        };
-      } else if (ptr_size == 8) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::LEndianBytesToInt<uint64_t, 8>(str_view);
-        };
-      } else {
-        return error::NotFound(absl::Substitute(
-            "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
-      }
-      break;
-    }
-    case 0x1:
-      if (ptr_size == 4) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::BEndianBytesToInt<uint64_t, 4>(str_view);
-        };
-      } else if (ptr_size == 8) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::BEndianBytesToInt<uint64_t, 8>(str_view);
-        };
-      } else {
-        return error::NotFound(absl::Substitute(
-            "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
-      }
-      break;
-    default: {
-      auto msg =
-          absl::Substitute("Invalid endianness=$0, refusing to parse non go binary", endianness);
-      DCHECK(false) << msg;
-      return error::NotFound(msg);
-    }
-  }
-
-  // Reads the virtual address location of the runtime.buildVersion symbol.
-  PX_ASSIGN_OR_RETURN(auto runtime_version_vaddr,
-                      binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
-  PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
-                      elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
-
-  PX_ASSIGN_OR_RETURN(auto version, ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr));
-
-  PX_ASSIGN_OR_RETURN(uint64_t mod_ptr_addr, elf_reader->VirtualAddrToBinaryAddr(
-                                                 read_ptr(runtime_version_vaddr) + ptr_size));
-  auto mod_status = ReadGoString(elf_reader, ptr_size, mod_ptr_addr, read_ptr);
-  if (mod_status.ok()) {
-    std::string mod = mod_status.ValueOrDie();
+    PX_ASSIGN_OR_RETURN(mod_info, binary_decoder.ExtractString(mod_size));
   } else {
-    LOG(WARNING) << "Failed to read mod status";
+    read_ptr_func_t read_ptr;
+    switch (endianness) {
+      case 0x0: {
+        if (ptr_size == 4) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::LEndianBytesToInt<uint32_t, 4>(str_view);
+          };
+        } else if (ptr_size == 8) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::LEndianBytesToInt<uint64_t, 8>(str_view);
+          };
+        } else {
+          return error::NotFound(absl::Substitute(
+              "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
+        }
+        break;
+      }
+      case 0x1:
+        if (ptr_size == 4) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::BEndianBytesToInt<uint64_t, 4>(str_view);
+          };
+        } else if (ptr_size == 8) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::BEndianBytesToInt<uint64_t, 8>(str_view);
+          };
+        } else {
+          return error::NotFound(absl::Substitute(
+              "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
+        }
+        break;
+      default: {
+        auto msg =
+            absl::Substitute("Invalid endianness=$0, refusing to parse non go binary", endianness);
+        DCHECK(false) << msg;
+        return error::NotFound(msg);
+      }
+    }
+
+    // Reads the virtual address location of the runtime.buildVersion symbol.
+    PX_ASSIGN_OR_RETURN(auto runtime_version_vaddr,
+                        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
+    PX_ASSIGN_OR_RETURN(auto mod_info_vaddr,
+                        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
+    PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
+                        elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
+
+    PX_ASSIGN_OR_RETURN(go_version, ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr));
+
+    auto mod_ptr_addr_s = elf_reader->VirtualAddrToBinaryAddr(read_ptr(mod_info_vaddr));
+    if (mod_ptr_addr_s.ok()) {
+      PX_ASSIGN_OR_RETURN(mod_info, ReadGoString(elf_reader, ptr_size,
+                                                 mod_ptr_addr_s.ConsumeValueOrDie(), read_ptr));
+    }
   }
-  PX_ASSIGN_OR_RETURN(auto s, ExtractSemVer(std::string(version)));
+
+  auto mod_size = mod_info.size();
+  if (mod_size > 0) {
+    // The module info string is delimited by the sentinel strings cmd/go/internal/modload.infoStart
+    // and infoEnd. These strings are 16 characters long, so first check that the module info
+    // contains more than the sentinel strings. This check reflects upstream's implementation
+    // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L214-L215
+    if (mod_size >= 33 && mod_info.at(mod_size - 17) == '\n') {
+      mod_info.erase(0, 16);
+      PX_ASSIGN_OR_RETURN(build_info, ReadModInfo(mod_info));
+    }
+  }
+  PX_ASSIGN_OR_RETURN(auto s, ExtractSemVer(go_version));
   return std::make_pair(s, std::move(build_info));
 }
 

@@ -176,8 +176,14 @@ TEST(ReadGoBuildInfoTest, BuildinfoLittleEndiani386) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoLittleEndiani386BinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(auto pair, ReadGoBuildInfo(elf_reader.get()));
+
   auto version = pair.first;
   EXPECT_THAT(version, StrEq("1.13.15"));
+
+  auto& buildinfo = pair.second;
+  EXPECT_THAT(buildinfo.path, StrEq("command-line-arguments"));
+  EXPECT_THAT(buildinfo.main.path, StrEq("px.dev/pixie"));
+  EXPECT_THAT(buildinfo.main.version, StrEq("(devel)"));
 }
 
 TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
