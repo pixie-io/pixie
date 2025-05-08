@@ -132,6 +132,23 @@ Once you make changes to the source code, or switch to another source code versi
 Ensure that you have commented in the bazelcache-directory into the bazel config (see Step 2).
 
 
+Review the compilation-mode suits your purposes:
+```
+cat skaffold/skaffold_vizier.yaml
+# Note: You will want to stick with a sysroot based build (-p x86_64_sysroot or -p aarch64_sysroot),
+# but you may want to change the --complication_mode setting based on your needs. 
+# opt builds remove assert/debug checks, while dbg builds work with debuggers (gdb).
+# See the bazel docs for more details https://bazel.build/docs/user-manual#compilation-mode
+- name: x86_64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=x86_64_sysroot
+    - --compilation_mode=dbg
+#    - --compilation_mode=opt
+```
+
 Optional: you can make permanent your <default-repo> in the skaffold config:
 ```sh
 skaffold config set default-repo <myregistry> 
@@ -146,7 +163,7 @@ skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot --default-repo=<
 
 
 
-#### 7) Skaffold deploy your changes
+#### 7) Golden Image
 
 Once all the above is working and the first cache has been built, bake an image of your VM for safekeeping.
 
