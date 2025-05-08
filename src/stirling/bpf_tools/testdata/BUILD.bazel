@@ -27,6 +27,15 @@ pl_bpf_cc_resource(
     ],
 )
 
+pl_bpf_cc_resource(
+    name = "get_current_cgroup_id",
+    src = "get_current_cgroup_id.c",
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    ],
+)
+
 pl_cc_resource(
     name = "test_txt_cc_resource",
     src = "test.txt",
