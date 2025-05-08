@@ -61,7 +61,7 @@ apt_pkg_list = [
   'libnss3-tools',
   'libvirt-daemon-system',
   'libvirt-clients',
-  'qemu-kvm', 
+  'qemu-kvm',
   'virt-manager',
 
   # Pixie dependencies
