@@ -218,7 +218,7 @@ size_t FindFrameBoundary<redis::Message>(message_type_t /*type*/, std::string_vi
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, redis::Message* msg,
-                      NoState* /*state*/) {
+                      NoState* /*state*/, bool /*lazy_parsing_enabled*/) {
   return redis::ParseMessage(type, buf, msg);
 }
 
