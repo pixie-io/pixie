@@ -107,7 +107,7 @@ make dev-env-start
 
 #### 5) Deploy a vanilla pixie
 
-We first deploy the upstream pixie (`vizier`, `kelvin` and `pem`) using the remote cloud  `export PX_CLOUD_ADDR=getcosmic.ai` . Follow https://docs.px.dev/installing-pixie/install-schemes/cli , to install the  `px` command line interface and login:
+First deploy the upstream pixie (`vizier`, `kelvin` and `pem`) using the hosted cloud. Follow [these instructions](https://docs.px.dev/installing-pixie/install-schemes/cli) to install the `px` command line interface and Pixie:
 ```sh
 px auth login
 ```
