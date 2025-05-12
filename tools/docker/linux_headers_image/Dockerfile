@@ -61,7 +61,8 @@ RUN make ARCH=${ARCH} -j $(nproc) bindeb-pkg LOCALVERSION=-pl
 
 # Extract headers into a tarball
 WORKDIR /px
-# Linux 6.3 and later name the resulting package differently (there is no additional -pl suffix)
+# Unlike the bionic container build, Linux 6.3 and later name the resulting package without the additional -pl suffix.
+# This difference stems from changes in the Linux build process itself, not from any modifications on our end.
 RUN DEB_ARCH=$(echo ${ARCH} | sed 's/x86_64/amd64/g'); dpkg -x src/linux-headers-${KERN_VERSION}-pl_${KERN_VERSION}-1_${DEB_ARCH}.deb .
 
 # Remove broken symlinks
