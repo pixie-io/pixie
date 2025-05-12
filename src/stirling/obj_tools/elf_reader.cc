@@ -200,15 +200,11 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
 StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
     const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
   if (FLAGS_elf_reader_max_file_size != 0) {
-    PX_ASSIGN_OR_RETURN(const auto stat, fs::Stat(binary_path));
-    int64_t file_size = stat.st_size;
+    PX_ASSIGN_OR_RETURN(int64_t file_size, fs::GetFileSize(binary_path));
     if (file_size > FLAGS_elf_reader_max_file_size) {
       return error::Internal(
           "File size $0 exceeds ElfReader's max file size $1. Refusing to process file", file_size,
           FLAGS_elf_reader_max_file_size);
-    } else if (file_size < 0) {
-      return error::Internal("stat() returned negative file size $0 for file $1", file_size,
-                             binary_path);
     }
   }
   return CreateImpl(binary_path, debug_file_dir);

@@ -69,6 +69,8 @@ Status Chown(const std::filesystem::path& path, const uid_t uid, const gid_t gid
 StatusOr<struct stat> Stat(const std::filesystem::path& path);
 StatusOr<int64_t> SpaceAvailableInBytes(const std::filesystem::path& path);
 
+StatusOr<std::uintmax_t> GetFileSize(const std::string& binary_path);
+
 StatusOr<bool> IsEmpty(const std::filesystem::path& path);
 
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path);
