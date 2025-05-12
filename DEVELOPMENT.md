@@ -135,7 +135,7 @@ Review the compilation-mode suits your purposes:
 ```
 cat skaffold/skaffold_vizier.yaml
 # Note: You will want to stick with a sysroot based build (-p x86_64_sysroot or -p aarch64_sysroot),
-# but you may want to change the --complication_mode setting based on your needs.
+# but you may want to change the --compilation_mode setting based on your needs.
 # opt builds remove assert/debug checks, while dbg builds work with debuggers (gdb).
 # See the bazel docs for more details https://bazel.build/docs/user-manual#compilation-mode
 - name: x86_64_sysroot
