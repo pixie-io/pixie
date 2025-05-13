@@ -17,10 +17,6 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-ARG KERN_VERSION
-ARG ARCH
-ARG CROSS_COMPILE="false"
-
 # Install required packages
 ENV DEBIAN_FRONTEND=noninteractive
 ENV KERN_VERSION=${KERN_VERSION}
@@ -56,4 +52,4 @@ ADD build_linux_headers.sh /px/build_linux_headers.sh
 RUN chmod +x /px/build_linux_headers.sh
 
 VOLUME /output
-CMD ["sh", "-c", "/px/build_linux_headers.sh /px ${KERN_VERSION} ${ARCH} ${CROSS_COMPILE} /output"]
+CMD ["sh", "-c", "/px/build_linux_headers.sh /px ${KERN_VERSION} ${ARCH} /output"]
