@@ -206,6 +206,8 @@ upload_graalvm_archive: build_graalvm_archive_image
 ##############################################
 # Linux Headers Build
 ##############################################
+LINUX_HEADERS_BASE_PRE_v6_3 := ubuntu:18.04@sha256:152dc042452c496007f07ca9127571cb9c29697f42acbfad72324b2bb2e43c98
+LINUX_HEADERS_BASE_POST_v6_3 := ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
 $(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-x86_64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/x86_64_config
 ifndef LINUX_HEADERS_REV
 	$(error set LINUX_HEADERS_REV to a valid value)
@@ -215,15 +217,15 @@ endif
 	# We need to use a different Dockerfile for these versions.
 	KERN_MAJ=$$(echo $* | cut -d. -f1); \
 	KERN_MIN=$$(echo $* | cut -d. -f2); \
-	HEADERS_DOCKERFILE_SUFFIX=""; \
+	BASE_IMAGE=$$(echo $(LINUX_HEADERS_BASE_POST_v6_3)); \
 	if [ $${KERN_MAJ} -lt 6 ] || { [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; }; then \
-		HEADERS_DOCKERFILE_SUFFIX=".bionic"; \
+		BASE_IMAGE=$$(echo $(LINUX_HEADERS_BASE_PRE_v6_3)); \
 	fi; \
 	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
 	$(DOCKER) build --build-arg KERN_VERSION=$* \
 	        --build-arg ARCH=x86_64 linux_headers_image \
-		-t "$${linux_headers_image_tag}" \
-		-f linux_headers_image/Dockerfile$${HEADERS_DOCKERFILE_SUFFIX} && \
+		--build-arg BASE_IMAGE=$${BASE_IMAGE} \
+		-t "$${linux_headers_image_tag}" && \
 	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
 
 $(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-arm64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/arm64_config
