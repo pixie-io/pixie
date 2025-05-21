@@ -23,6 +23,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"strings"
@@ -283,6 +284,8 @@ func main() {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 	metrics.MustRegisterMetricsHandlerNoDefaultMetrics(mux)
 
