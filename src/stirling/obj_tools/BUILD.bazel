@@ -135,6 +135,7 @@ pl_cc_test(
     srcs = ["go_syms_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata/go:test_binaries",
+        "//src/stirling/obj_tools/testdata/go:test_buildinfo_with_mods",
         "//src/stirling/obj_tools/testdata/go:test_go_1_17_binary",
         "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
         "//src/stirling/obj_tools/testdata/go:test_go_1_21_binary",

@@ -75,6 +75,9 @@ filegroup(
         # (https://github.com/golang/go/blob/1dbbafc70fd3e2c284469ab3e0936c1bb56129f6/src/debug/buildinfo/buildinfo.go#L189-L190)
         # and so it cannot be tested without compiling against an older Go version.
         "test_go_1_17_binary",
+        # TODO(ddelnano): rules_go doesn't support populating .buildinfo with dependency information (https://github.com/bazel-contrib/rules_go/issues/3090).
+        # Once this is supported, test_buildinfo_with_mods should be replaced with a bazel built binary.
+        "test_buildinfo_with_mods",
         ":test_go_1_18_binary",
         ":test_go_1_19_binary",
         ":test_go_1_20_binary",
