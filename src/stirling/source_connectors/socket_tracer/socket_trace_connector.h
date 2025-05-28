@@ -213,7 +213,7 @@ class SocketTraceConnector : public BCCSourceConnector {
       /* OUT */ struct go_grpc_http2_header_event_t* header_event_data_go_style);
 
   template <typename TProtocolTraits>
-  void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
+  size_t TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
   void TransferConnStats(ConnectorContext* ctx, DataTable* data_table);
 
   void set_iteration_time(std::chrono::time_point<std::chrono::steady_clock> time) {
@@ -256,7 +256,7 @@ class SocketTraceConnector : public BCCSourceConnector {
     int32_t trace_mode = TraceMode::Off;
     uint32_t table_num = 0;
     std::vector<endpoint_role_t> trace_roles;
-    std::function<void(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
+    std::function<size_t(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
         transfer_fn = nullptr;
     bool enabled = false;
   };
@@ -300,6 +300,8 @@ class SocketTraceConnector : public BCCSourceConnector {
 
   UProbeManager uprobe_mgr_;
 
+  size_t total_conn_tracker_mem_usage_ = 0;
+
   enum class StatKey {
     kLossSocketDataEvent,
     kLossSocketControlEvent,
@@ -314,6 +316,8 @@ class SocketTraceConnector : public BCCSourceConnector {
     kPollSocketDataEventAttrSize,
     kPollSocketDataEventDataSize,
     kPollSocketDataEventSize,
+
+    kDroppedSocketDataEvent,
   };
 
   utils::StatCounter<StatKey> stats_;
