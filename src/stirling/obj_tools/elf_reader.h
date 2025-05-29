@@ -175,7 +175,7 @@ class ElfReader {
    * ElfAddressConverter::VirtualAddrToBinaryAddr is a more appropriate utility to use.
    *
    * Certain use cases may require this function, such as cases where the Go toolchain
-   * embeds virtual addresses within a binary and must be parsed (See ReadGoBuildVersion and
+   * embeds virtual addresses within a binary and must be parsed (See ReadGoBuildInfo and
    * ReadGoString in go_syms.cc).
    */
   StatusOr<uint64_t> VirtualAddrToBinaryAddr(uint64_t virtual_addr);
