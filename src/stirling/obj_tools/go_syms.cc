@@ -68,6 +68,8 @@ StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uin
   return std::string(go_version_bytecode);
 }
 
+// Extracts the semantic version from a Go version string (e.g., "go1.20.3").
+// This is how the version is formatted in the buildinfo header.
 StatusOr<std::string> ExtractSemVer(const std::string& input) {
   size_t go_pos = input.find("go");  // Find "go"
   if (go_pos == std::string::npos) {
