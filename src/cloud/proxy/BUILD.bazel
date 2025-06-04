@@ -30,6 +30,7 @@ container_layer(
     directory = "/installer",
     files = [
         "//src/pixie_cli:installer_script",
+        "//src/pxl_scripts:script_bundle",
     ],
 )
 

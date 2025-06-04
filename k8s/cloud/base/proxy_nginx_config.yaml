@@ -267,6 +267,11 @@ data:
               try_files "/install.sh" =404;
             }
 
+            location /bundle-oss.json {
+              root /installer;
+              try_files "/bundle-oss.json" =404;
+            }
+
             location / {
               return 307 https://work.$domain_name$request_uri;
             }
@@ -332,6 +337,11 @@ data:
             location /install.sh {
               root /installer;
               try_files "/install.sh" =404;
+            }
+
+            location /bundle-oss.json {
+              root /installer;
+              try_files "/bundle-oss.json" =404;
             }
 
             location / {

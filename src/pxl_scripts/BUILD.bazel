@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@rules_foreign_cc//foreign_cc:make.bzl", "make")
+
 package(default_visibility = ["//src:__subpackages__"])
 
 filegroup(
@@ -21,6 +23,24 @@ filegroup(
     srcs = glob([
         "**/*.pxl",
         "**/*.json",
+        "**/*.yaml",
     ]),
+    visibility = ["//src:__subpackages__"],
+)
+
+filegroup(
+    name = "makefile",
+    srcs = [
+        "Makefile",
+        ":preset_queries",
+    ],
+    visibility = ["//src:__subpackages__"],
+)
+
+genrule(
+    name = "script_bundle",
+    srcs = [":makefile"],
+    outs = ["bundle-oss.json"],
+    cmd = "make -C src/pxl_scripts bundle-oss.json; cp bundle-oss.json $(@D)/bundle-oss.json",
     visibility = ["//src:__subpackages__"],
 )
