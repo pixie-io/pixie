@@ -493,7 +493,7 @@ class UProbeManager {
    *
    * @param binary The path to the binary on which to deploy Go HTTP2 probes.
    * @param elf_reader ELF reader for the binary.
-   * @param dwarf_reader DWARF reader for the binary.
+   * @param offset_locator DWARF reader for the binary.
    * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
    *             addresses.
    * @return The number of uprobes deployed, or error. It is not considered an error if the binary
@@ -501,7 +501,7 @@ class UProbeManager {
    *         zero.
    */
   StatusOr<int> AttachGoHTTP2UProbes(const std::string& binary, obj_tools::ElfReader* elf_reader,
-                                     obj_tools::DwarfReader* dwarf_reader,
+                                     GoOffsetLocator* offset_locator,
                                      const std::vector<int32_t>& pids);
 
   /**
@@ -510,14 +510,14 @@ class UProbeManager {
    *
    * @param binary The path to the binary on which to deploy Go HTTP2 probes.
    * @param elf_reader ELF reader for the binary.
-   * @param dwarf_reader DWARF reader for the binary.
+   * @param offset_locator DWARF reader for the binary.
    * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
    *             addresses.
    * @return The number of uprobes deployed, or error. It is not an error if the binary
    *         is not a Go binary or doesn't use Go TLS; instead the return value will be zero.
    */
   StatusOr<int> AttachGoTLSUProbes(const std::string& binary, obj_tools::ElfReader* elf_reader,
-                                   obj_tools::DwarfReader* dwarf_reader,
+                                   GoOffsetLocator* offset_locator,
                                    const std::vector<int32_t>& new_pids);
 
   /**
@@ -579,13 +579,11 @@ class UProbeManager {
 
   Status UpdateOpenSSLSymAddrs(px::stirling::obj_tools::RawFptrManager* fptrManager,
                                std::filesystem::path container_lib, uint32_t pid);
-  Status UpdateGoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
-                                obj_tools::DwarfReader* dwarf_reader,
+  Status UpdateGoCommonSymAddrs(obj_tools::ElfReader* elf_reader, GoOffsetLocator* offset_locator,
                                 const std::vector<int32_t>& pids);
-  Status UpdateGoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader,
-                               obj_tools::DwarfReader* dwarf_reader,
+  Status UpdateGoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader, GoOffsetLocator* offset_locator,
                                const std::vector<int32_t>& pids);
-  Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
+  Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, GoOffsetLocator* offset_locator,
                              const std::vector<int32_t>& pids);
   Status UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& node_exe,
                                    const SemVer& ver);
