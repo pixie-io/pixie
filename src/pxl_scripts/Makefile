@@ -26,6 +26,7 @@ all: bundle-oss.json.gz
 
 bundle-oss.json: $(script_files)
 	px create-bundle --search_path $(PWD) $(foreach dir,$(dirs),--base $(dir)) -o $(PWD)/bundle-oss.json
+	# px create-bundle --search_path $(PWD) $(foreach dir,$(dirs),--base $(dir)) -o $(OUTPUT)
 
 bundle-oss.json.gz: bundle-oss.json
 	gzip -c $< > $@
