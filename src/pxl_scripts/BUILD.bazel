@@ -28,25 +28,12 @@ filegroup(
     visibility = ["//src:__subpackages__"],
 )
 
-filegroup(
-    name = "makefile",
+genrule(
+    name = "script_bundle",
     srcs = [
-        "Makefile",
         ":preset_queries",
     ],
+    outs = ["bundle-oss.json"],
+    cmd = "px create-bundle --search_path src/pxl_scripts -o $@ --base px --base bpftrace --base pxbeta --base sotw",
     visibility = ["//src:__subpackages__"],
-)
-
-# TODO(ddelnano): Figure out issues with bazel's make variables
-# genrule(
-#     name = "script_bundle",
-#     srcs = [":makefile"],
-#     outs = ["bundle-oss.json"],
-#     cmd = "cd src/pxl_scripts; echo $@; touch $@; OUTPUT=$@ make bundle-oss.json",
-#     visibility = ["//src:__subpackages__"],
-# )
-
-filegroup(
-    name = "script_bundle",
-    srcs = ["bundle-oss.json"],
 )
