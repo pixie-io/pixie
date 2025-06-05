@@ -40,8 +40,8 @@ class UprobeSymaddrsTest : public ::testing::Test {
   void SetUp() {
     std::filesystem::path p = px::testing::BazelRunfilePath(kGoGRPCServer);
     ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::CreateIndexingAll(p));
-    offset_locator_ = std::make_unique<GoOffsetLocator>(
-        GoOffsetLocator(dwarf_reader_.get(), {}, {}, {}, "1.19.0"));
+    offset_locator_ = std::make_unique<GoOffsetLocator>(GoOffsetLocator(
+        dwarf_reader_.get(), struct_offsets_, function_args_, build_info_, "1.19.0"));
     ASSERT_OK_AND_ASSIGN(elf_reader_, ElfReader::Create(p));
   }
 
@@ -50,6 +50,9 @@ class UprobeSymaddrsTest : public ::testing::Test {
 
   std::unique_ptr<DwarfReader> dwarf_reader_;
   std::unique_ptr<GoOffsetLocator> offset_locator_;
+  StructOffsetMap struct_offsets_;
+  FunctionArgMap function_args_;
+  obj_tools::BuildInfo build_info_;
   std::unique_ptr<ElfReader> elf_reader_;
 };
 
@@ -112,59 +115,98 @@ TEST(UprobeSymaddrsNodeTest, TLSWrapSymAddrsFromDwarfInfo) {
   EXPECT_EQ(symaddrs.uv__io_s_fd_offset, 0x04);
 }
 
+StructOffsetMap empty_struct_map;
+FunctionArgMap empty_fn_arg_map;
+obj_tools::BuildInfo empty_build_info;
+
 TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFMissingStruct) {
-  auto offset_locator = GoOffsetLocator(nullptr, {}, {}, {}, "");
+  auto offset_locator =
+      GoOffsetLocator(nullptr, empty_struct_map, empty_fn_arg_map, empty_build_info, "");
   auto status = offset_locator.GetStructMemberOffset("runtime.g", "goid");
   EXPECT_FALSE(status.ok());
 }
 
 // NOLINTNEXTLINE: runtime/string
 std::string go_version = "1.19.0";
-auto struct_map = StructOffsetMap{{"runtime.g", {{"goid", {{go_version, 152}}}}}};
+// NOLINTNEXTLINE: runtime/string
+std::string golang_x_net_version = "v1.0.0";
+
+auto struct_map = StructOffsetMap{
+    {
+        "runtime.g",
+        {"std", {{"goid", {{go_version, 152}}}}},
+    },
+    {
+        "golang.org/x/net/http2.DataFrame",
+        {"golang.org/x/net", {{"data", {{golang_x_net_version.substr(1), 16}}}}},
+    },
+};
 
 TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFMissingMember) {
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, {}, {}, go_version);
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, empty_fn_arg_map, empty_build_info, go_version);
   EXPECT_FALSE(offset_locator.GetStructMemberOffset("runtime.g", "missing_member").ok());
 }
 
 TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFMissingVersion) {
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, {}, {}, "1.18.0");
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, empty_fn_arg_map, empty_build_info, "1.18.0");
   EXPECT_FALSE(offset_locator.GetStructMemberOffset("runtime.g", "goid").ok());
 }
 
-TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFSuccessfulLookup) {
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, {}, {}, go_version);
+TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFSuccessfulLookupStdlib) {
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, empty_fn_arg_map, empty_build_info, go_version);
 
   ASSERT_OK_AND_ASSIGN(uint64_t offset, offset_locator.GetStructMemberOffset("runtime.g", "goid"));
   EXPECT_EQ(offset, 152);
 }
 
+TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFSuccessfulLookupGolangXNet) {
+  obj_tools::BuildInfo build_info;
+  build_info.deps.push_back(
+      obj_tools::Module{"golang.org/x/net", golang_x_net_version, "", nullptr});
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, empty_fn_arg_map, build_info, go_version);
+
+  ASSERT_OK_AND_ASSIGN(uint64_t offset, offset_locator.GetStructMemberOffset(
+                                            "golang.org/x/net/http2.DataFrame", "data"));
+  EXPECT_EQ(offset, 16);
+}
+
 TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFMissingFunction) {
-  auto offset_locator = GoOffsetLocator(nullptr, {}, {}, {}, "");
+  auto offset_locator =
+      GoOffsetLocator(nullptr, empty_struct_map, empty_fn_arg_map, empty_build_info, go_version);
   auto status = offset_locator.GetFunctionArgInfo("missing_func");
   EXPECT_FALSE(status.ok());
 }
 
-TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFMissingVersion) {
-  FunctionArgMap fn_arg_map;
+FunctionArgMap GetFunctionArgMap() {
   auto var_location = obj_tools::VarLocation{obj_tools::LocationType::kRegister, 8};
-  fn_arg_map["crypto/tls.(*Conn).Read"]["b"][go_version] =
+  FunctionArgMap fn_arg_map;
+  fn_arg_map["crypto/tls.(*Conn).Read"] = std::make_pair("std", FuncVersionMap{});
+  fn_arg_map["crypto/tls.(*Conn).Read"].second["b"][go_version] =
       std::make_unique<obj_tools::VarLocation>(var_location);
+  return fn_arg_map;
+}
 
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, fn_arg_map, {}, "1.18.0");
+TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFMissingVersion) {
+  FunctionArgMap fn_arg_map = GetFunctionArgMap();
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, fn_arg_map, empty_build_info, "1.18.0");
   auto status = offset_locator.GetFunctionArgInfo("crypto/tls.(*Conn).Write");
   EXPECT_FALSE(status.ok());
 }
 
 TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFUnknownLocation) {
-  FunctionArgMap fn_arg_map;
   auto var_location = obj_tools::VarLocation{obj_tools::LocationType::kUnknown, -1};
-  fn_arg_map["crypto/tls.(*Conn).Read"]["b"][go_version] =
+  auto fn_arg_map = GetFunctionArgMap();
+  fn_arg_map["crypto/tls.(*Conn).Read"].second["b"][go_version] =
       std::make_unique<obj_tools::VarLocation>(var_location);
 
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, fn_arg_map, {}, go_version);
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, fn_arg_map, empty_build_info, go_version);
 
-  auto status = offset_locator.GetFunctionArgInfo("crypto/tls.(*Conn).Read");
   ASSERT_OK_AND_ASSIGN(auto args, offset_locator.GetFunctionArgInfo("crypto/tls.(*Conn).Read"));
   EXPECT_NE(args.find("b"), args.end());
   auto& arg_info = args["b"];
@@ -173,22 +215,20 @@ TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFUnknownLocation) {
 }
 
 TEST(GoOffsetLocator, GetStructMemberOffsetNoDWARFNullLocation) {
-  FunctionArgMap fn_arg_map;
-  fn_arg_map["crypto/tls.(*Conn).Read"]["b"][go_version] = nullptr;
+  FunctionArgMap fn_arg_map = GetFunctionArgMap();
+  fn_arg_map["crypto/tls.(*Conn).Read"].second["b"][go_version] = nullptr;
 
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, fn_arg_map, {}, go_version);
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, fn_arg_map, empty_build_info, go_version);
 
   auto status = offset_locator.GetFunctionArgInfo("crypto/tls.(*Conn).Read");
   EXPECT_FALSE(status.ok());
 }
 
 TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFSuccessfulLookup) {
-  FunctionArgMap fn_arg_map;
-  auto var_location = obj_tools::VarLocation{obj_tools::LocationType::kRegister, 8};
-  fn_arg_map["crypto/tls.(*Conn).Read"]["b"][go_version] =
-      std::make_unique<obj_tools::VarLocation>(var_location);
-
-  auto offset_locator = GoOffsetLocator(nullptr, struct_map, fn_arg_map, {}, go_version);
+  FunctionArgMap fn_arg_map = GetFunctionArgMap();
+  auto offset_locator =
+      GoOffsetLocator(nullptr, struct_map, fn_arg_map, empty_build_info, go_version);
 
   ASSERT_OK_AND_ASSIGN(auto args, offset_locator.GetFunctionArgInfo("crypto/tls.(*Conn).Read"));
   EXPECT_NE(args.find("b"), args.end());
