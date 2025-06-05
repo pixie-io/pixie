@@ -198,9 +198,9 @@ Status UProbeManager::UpdateGoHTTP2SymAddrs(ElfReader* elf_reader, GoOffsetLocat
   return Status::OK();
 }
 
-Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, GoOffsetLocator* offset_locator,
+Status UProbeManager::UpdateGoTLSSymAddrs(GoOffsetLocator* offset_locator,
                                           const std::vector<int32_t>& pids) {
-  PX_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(elf_reader, offset_locator));
+  PX_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(offset_locator));
 
   for (auto& pid : pids) {
     PX_RETURN_IF_ERROR(go_tls_symaddrs_map_->SetValue(pid, symaddrs));
@@ -527,7 +527,7 @@ StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
                                                 GoOffsetLocator* offset_locator,
                                                 const std::vector<int32_t>& pids) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  Status s = UpdateGoTLSSymAddrs(elf_reader, offset_locator, pids);
+  Status s = UpdateGoTLSSymAddrs(offset_locator, pids);
   if (!s.ok()) {
     // Doesn't appear to be a binary with the mandatory symbols.
     // Might not even be a golang binary.

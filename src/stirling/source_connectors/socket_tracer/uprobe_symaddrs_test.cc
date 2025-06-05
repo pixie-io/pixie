@@ -87,8 +87,7 @@ TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
 }
 
 TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
-  ASSERT_OK_AND_ASSIGN(struct go_tls_symaddrs_t symaddrs,
-                       GoTLSSymAddrs(elf_reader_.get(), offset_locator_.get()));
+  ASSERT_OK_AND_ASSIGN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(offset_locator_.get()));
 
   // Check some member offsets.
   // The values may change when golang version is updated.

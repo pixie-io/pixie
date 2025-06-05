@@ -466,10 +466,9 @@ Status PopulateHTTP2DebugSymbols(GoOffsetLocator* offset_locator, std::string_vi
 
 }  // namespace
 
-Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, GoOffsetLocator* offset_locator,
+Status PopulateGoTLSDebugSymbols(GoOffsetLocator* offset_locator,
                                  struct go_tls_symaddrs_t* symaddrs) {
-  PX_ASSIGN_OR_RETURN(auto build_info, ReadGoBuildInfo(elf_reader));
-  PX_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(build_info.first, false));
+  PX_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(offset_locator->go_version(), false));
   std::string retval0_arg = "~r1";
   std::string retval1_arg = "~r2";
 
@@ -536,11 +535,10 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
   return symaddrs;
 }
 
-StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader,
-                                                 GoOffsetLocator* offset_locator) {
+StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(GoOffsetLocator* offset_locator) {
   struct go_tls_symaddrs_t symaddrs;
 
-  PX_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(elf_reader, offset_locator, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(offset_locator, &symaddrs));
 
   return symaddrs;
 }

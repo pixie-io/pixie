@@ -87,6 +87,8 @@ class GoOffsetLocator {
     return GetStructMemberOffsetFromOffsets(struct_name, member_name);
   }
 
+  const std::string& go_version() const { return go_version_; }
+
  private:
   StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfoFromOffsets(
       std::string_view function_symbol_name) {
@@ -175,8 +177,7 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(obj_tools::ElfReader* elf_r
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go TLS
  * uprobe deployment.
  */
-StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reader,
-                                                 GoOffsetLocator* offset_locator);
+StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(GoOffsetLocator* offset_locator);
 
 /**
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
@@ -194,8 +195,7 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(obj_tools::RawFptrManager* f
 StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs(const std::filesystem::path& node_exe,
                                                              const SemVer& ver);
 
-px::Status PopulateGoTLSDebugSymbols(obj_tools::ElfReader* elf_reader,
-                                     GoOffsetLocator* offset_locator,
+px::Status PopulateGoTLSDebugSymbols(GoOffsetLocator* offset_locator,
                                      struct go_tls_symaddrs_t* symaddrs);
 
 }  // namespace stirling

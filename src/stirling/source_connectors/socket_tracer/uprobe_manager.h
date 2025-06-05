@@ -583,8 +583,7 @@ class UProbeManager {
                                 const std::vector<int32_t>& pids);
   Status UpdateGoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader, GoOffsetLocator* offset_locator,
                                const std::vector<int32_t>& pids);
-  Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, GoOffsetLocator* offset_locator,
-                             const std::vector<int32_t>& pids);
+  Status UpdateGoTLSSymAddrs(GoOffsetLocator* offset_locator, const std::vector<int32_t>& pids);
   Status UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& node_exe,
                                    const SemVer& ver);
 
