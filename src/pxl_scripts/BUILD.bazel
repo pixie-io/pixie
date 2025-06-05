@@ -34,6 +34,9 @@ genrule(
         ":preset_queries",
     ],
     outs = ["bundle-oss.json"],
-    cmd = "px create-bundle --search_path src/pxl_scripts -o $@ --base px --base bpftrace --base pxbeta --base sotw",
+    cmd = "$(location //src/pixie_cli:px) create-bundle --search_path src/pxl_scripts -o $@ --base px --base bpftrace --base pxbeta --base sotw",
+    tools = [
+        "//src/pixie_cli:px",
+    ],
     visibility = ["//src:__subpackages__"],
 )

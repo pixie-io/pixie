@@ -30,6 +30,13 @@ container_layer(
     directory = "/installer",
     files = [
         "//src/pixie_cli:installer_script",
+    ],
+)
+
+container_layer(
+    name = "bundles",
+    directory = "/bundles",
+    files = [
         "//src/pxl_scripts:script_bundle",
     ],
 )
@@ -49,6 +56,7 @@ container_image(
     layers = [
         ":ui_assets",
         ":installer",
+        ":bundles",
         ":entrypoint",
     ],
     visibility = [

@@ -268,7 +268,7 @@ data:
             }
 
             location /bundle-oss.json {
-              root /installer;
+              root /bundles;
               try_files "/bundle-oss.json" =404;
             }
 
@@ -340,7 +340,7 @@ data:
             }
 
             location /bundle-oss.json {
-              root /installer;
+              root /bundles;
               try_files "/bundle-oss.json" =404;
             }
 
