@@ -48,10 +48,13 @@ This will then unblock the security feature for this domain. Please ensure to re
 
 ## For a remote VM 
 ### openSSH client
+```
 ssh -i privkey user@IP -D 8080
-
+```
 ### gcloud
+```
 export instancename="instance-pixie-dev"
 export project="gcp-project-uuid"
 export zone="europe-west1-d"
 gcloud compute ssh $instancename --zone $zone --project $project -- -NL 8080:localhost:8080
+```
