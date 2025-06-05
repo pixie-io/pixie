@@ -888,14 +888,19 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     }
 
     auto build_info_s = ReadGoBuildInfo(elf_reader.get());
-    if (!build_info_s.ok()) {
+    obj_tools::BuildInfo build_info;
+    std::string go_version;
+    if (build_info_s.ok()) {
+      auto& build_info_pair = build_info_s.ValueOrDie();
+      go_version = build_info_pair.first;
+      build_info = std::move(build_info_pair.second);
+    } else {
       VLOG(1) << absl::Substitute(
-          "Failed to read build info from binary $0. Cannot deploy uprobes. "
+          "Failed to read build info from binary $0. Likely a Go binary built with an older "
+          "version of Go without module support (pre 1.12)."
           "Message = $1",
           binary, build_info_s.status().msg());
-      continue;
     }
-    auto& [go_version, build_info] = build_info_s.ValueOrDie();
 
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
     std::unique_ptr<GoOffsetLocator> offset_locator =
