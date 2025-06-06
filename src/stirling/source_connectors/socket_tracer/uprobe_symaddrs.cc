@@ -144,7 +144,7 @@ void ParseGoStructsObject(const rapidjson::Value& structs_val) {
 
     auto& offset_map = GetGoStructOffsets();
 
-    std::string pkg = std::string(FindMatchingPkgPrefix(struct_name, kGoPackagePrefixes).first);
+    std::string_view pkg = FindMatchingPkgPrefix(struct_name, kGoPackagePrefixes).first;
     offset_map[struct_name].first = pkg;
 
     for (auto field_it = field_map_obj.MemberBegin(); field_it != field_map_obj.MemberEnd();
@@ -178,7 +178,7 @@ void ParseGoFuncsObject(const rapidjson::Value& funcsVal) {
 
     auto& location_map = GetGoFunctionArgOffsets();
 
-    std::string pkg = std::string(FindMatchingPkgPrefix(func_name, kGoPackagePrefixes).first);
+    std::string_view pkg = FindMatchingPkgPrefix(func_name, kGoPackagePrefixes).first;
     location_map[func_name].first = pkg;
     for (auto arg_it = arg_map_obj.MemberBegin(); arg_it != arg_map_obj.MemberEnd(); ++arg_it) {
       std::string arg_name = arg_it->name.GetString();

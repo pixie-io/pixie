@@ -44,10 +44,10 @@ constexpr std::string_view kLibNettyTcnativePrefix = "libnetty_tcnative_linux_x8
 constexpr std::string_view kGoStdlibPackageName = "std";
 
 using StructVersionMap = std::map<std::string, std::map<std::string, int32_t>>;
-using StructOffsetMap = std::map<std::string, std::pair<std::string, StructVersionMap>>;
+using StructOffsetMap = std::map<std::string, std::pair<std::string_view, StructVersionMap>>;
 using FuncVersionMap =
     std::map<std::string, std::map<std::string, std::unique_ptr<obj_tools::VarLocation>>>;
-using FunctionArgMap = std::map<std::string, std::pair<std::string, FuncVersionMap>>;
+using FunctionArgMap = std::map<std::string, std::pair<std::string_view, FuncVersionMap>>;
 
 class GoOffsetLocator {
  public:
@@ -94,7 +94,7 @@ class GoOffsetLocator {
       return error::Internal("Unable to find function location for $0", function_symbol_name);
     }
     auto& [pkg_name, fn_map] = fn_map_pair->second;
-    std::string version_key = pkg_version_map_[pkg_name];
+    std::string version_key = pkg_version_map_[std::string(pkg_name)];
     std::map<std::string, obj_tools::ArgInfo> result;
 
     for (const auto& [arg_name, version_info_map] : fn_map) {
@@ -126,7 +126,7 @@ class GoOffsetLocator {
                              member_name);
     }
 
-    std::string version_key = pkg_version_map_[pkg_name];
+    std::string version_key = pkg_version_map_[std::string(pkg_name)];
     auto version_map = member_map->second.find(version_key);
     if (version_map == member_map->second.end()) {
       return error::Internal("Unable to find offsets for struct member=$0.$1 for version $2",
