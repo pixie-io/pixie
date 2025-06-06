@@ -659,8 +659,10 @@ FunctionArgMap& GetGoFunctionArgOffsets() { return g_function_arg_offsets; }
 
 void ParseGoOffsetgenFile(const std::string& offsetgen_file) {
   std::ifstream file(offsetgen_file, std::ios::binary);
+  std::string warning = "Uprobes will exclusively use DWARF to determine offsets.";
   if (!file) {
-    LOG(ERROR) << absl::Substitute("Failed to open offsetgen file: $0", offsetgen_file);
+    LOG(WARNING) << absl::Substitute("Unable to open offsetgen file=$0 error=$1. $2",
+                                     offsetgen_file, strerror(errno), warning);
     return;
   }
 
@@ -672,7 +674,8 @@ void ParseGoOffsetgenFile(const std::string& offsetgen_file) {
   buffer.resize(f_size);
 
   if (!file.read(buffer.data(), f_size)) {
-    LOG(ERROR) << absl::Substitute("Failed to read offsetgen file: $0", offsetgen_file);
+    LOG(WARNING) << absl::Substitute("Unable to read offsetgen file=$0 error=$1. $2",
+                                     offsetgen_file, strerror(errno), warning);
     return;
   }
 

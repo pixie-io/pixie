@@ -237,43 +237,6 @@ TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFSuccessfulLookup) {
   EXPECT_EQ(arg_info.location.offset, 8);
 }
 
-/* class ParseGoOffsetgenFileTest : public ::testing::Test { */
-/*  protected: */
-/*   void SetUp() { */
-/*     std::filesystem::path p = px::testing::BazelRunfilePath(kGoOffsetgenFile); */
-
-/*     std::ifstream file(p, std::ios::binary); */
-/*     ASSERT_TRUE(file.is_open()) << absl::Substitute("Failed to open offsetgen file: $0",
- * p.string()); */
-
-/*     file.seekg(0, std::ios::end); */
-/*     size_t f_size = file.tellg(); */
-/*     file.seekg(0); */
-
-/*     buffer_.resize(f_size); */
-
-/*     EXPECT_TRUE(file.read(buffer_.data(), f_size)) */
-/*         << absl::Substitute("Failed to read offsetgen file: $0", p.string()); */
-
-/*     rapidjson::MemoryStream ms(buffer_.data(), f_size); */
-
-/*     rapidjson::ParseResult parse_res = doc_.ParseStream(ms); */
-/*     EXPECT_TRUE(parse_res) << absl::Substitute( */
-/*         "JSON parse error at offset=$0: $1 ", parse_res.Offset(), */
-/*         rapidjson::GetParseError_En(parse_res.Code())); */
-
-/*     EXPECT_TRUE(doc_.HasMember("structs")); */
-/*     EXPECT_TRUE(doc_["structs"].IsObject()); */
-/*     EXPECT_TRUE(doc_.HasMember("funcs")); */
-/*     EXPECT_TRUE(doc_["funcs"].IsObject()); */
-/*   } */
-
-/*   static inline constexpr std::string_view kGoOffsetgenFile = */
-/*       "src/stirling/source_connectors/socket_tracer/testdata/go_offsetgen.json"; */
-
-/*   std::vector<char> buffer_; */
-/*   rapidjson::Document doc_; */
-/* }; */
 static inline constexpr std::string_view kGoOffsetgenFile =
     "src/stirling/source_connectors/socket_tracer/testdata/go_offsetgen.json";
 
