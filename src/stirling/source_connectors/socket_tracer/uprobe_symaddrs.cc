@@ -56,6 +56,148 @@ namespace {
 // since an array is a pretty stable type.
 constexpr int kGoArrayPtrOffset = 0;
 constexpr int kGoArrayLenOffset = 8;
+
+constexpr const std::array<std::string_view, 2> kGoPackagePrefixes =
+    MakeArray<std::string_view>("google.golang.org/grpc", "golang.org/x/net");
+
+template <std::size_t N>
+std::pair<std::string_view, bool> FindMatchingPkgPrefix(
+    const std::string_view& str, const std::array<std::string_view, N>& prefixes) {
+  for (std::size_t i = 0; i < N; ++i) {
+    if (absl::StartsWith(str, prefixes[i])) {
+      return {prefixes[i], true};
+    }
+  }
+  return {kGoStdlibPackageName, false};
+}
+
+StructOffsetMap g_struct_offsets;
+
+FunctionArgMap g_function_arg_offsets;
+
+// ParseLocationType turns the opentelemetry-go-instrumentation offsetgen encoded
+// JSON location into Pixie's native obj_tools::LocationType.
+obj_tools::LocationType ParseLocationType(const std::string& loc) {
+  if (loc == "stack") {
+    return obj_tools::LocationType::kStack;
+  } else if (loc == "registers") {
+    return obj_tools::LocationType::kRegister;
+  }
+  return obj_tools::LocationType::kUnknown;
+}
+
+/**
+ * ParseOffsetOnly:
+ *   - For a JSON leaf representing a struct's offset:
+ *     - If a bare integer, return that
+ *     - Otherwise, return -1
+ */
+int32_t ParseOffsetOnly(const rapidjson::Value& val) {
+  int32_t offset = -1;
+  if (val.IsNumber()) {
+    int64_t bigVal = val.GetInt64();
+    offset = static_cast<int32_t>(bigVal);
+  }
+  return offset;
+}
+
+/**
+ * ParseOffsetAndLocation:
+ *   - For a JSON leaf representing a func's offset & location:
+ *     - offset_out => -1 if null; store the integer or the object's "offset" otherwise
+ *     - loc_out => nullptr if null, otherwise a valid obj_tools::LocationType pointer
+ */
+// ParseOffsetAndLocation parses the function JSON object contained in the
+// opentelemetry-go-instrumentation offsetgen JSON file. Each JSON object is expected to have a
+// "location" and an "offset" field.
+std::unique_ptr<obj_tools::VarLocation> ParseOffsetAndLocation(const rapidjson::Value& val) {
+  std::unique_ptr<obj_tools::VarLocation> loc = std::make_unique<obj_tools::VarLocation>();
+  loc->loc_type = obj_tools::LocationType::kUnknown;
+  loc->offset = -1;
+
+  // e.g. { "location":"stack", "offset": 42 }
+  if (val.IsObject()) {
+    const auto& obj = val.GetObject();
+
+    if (obj.HasMember("offset") && obj["offset"].IsNumber()) {
+      int64_t bigVal = obj["offset"].GetInt64();
+      loc->offset = static_cast<int32_t>(bigVal);
+    }
+    if (obj.HasMember("location") && obj["location"].IsString()) {
+      loc->loc_type = ParseLocationType(obj["location"].GetString());
+    }
+  }
+  return loc;
+}
+
+// ParseGoStructsObject parses the structs object from the opentelemetry-go-instrumentation
+// offsetgen JSON file. Each struct is represented as a key-value pair where the key is the
+// struct name and the value is an object containing field names and their corresponding
+// offsets for different versions.
+void ParseGoStructsObject(const rapidjson::Value& structs_val) {
+  for (auto itr = structs_val.MemberBegin(); itr != structs_val.MemberEnd(); ++itr) {
+    std::string struct_name = itr->name.GetString();
+    if (!itr->value.IsObject()) {
+      continue;
+    }
+    const auto& field_map_obj = itr->value.GetObject();
+
+    auto& offset_map = GetGoStructOffsets();
+
+    std::string pkg = std::string(FindMatchingPkgPrefix(struct_name, kGoPackagePrefixes).first);
+    offset_map[struct_name].first = pkg;
+
+    for (auto field_it = field_map_obj.MemberBegin(); field_it != field_map_obj.MemberEnd();
+         ++field_it) {
+      std::string field_name = field_it->name.GetString();
+      if (!field_it->value.IsObject()) {
+        continue;
+      }
+      const auto& versions_obj = field_it->value.GetObject();
+
+      for (auto ver_it = versions_obj.MemberBegin(); ver_it != versions_obj.MemberEnd(); ++ver_it) {
+        std::string version_key = ver_it->name.GetString();
+        int32_t off = ParseOffsetOnly(ver_it->value);
+        offset_map[struct_name].second[field_name][version_key] = off;
+      }
+    }
+  }
+}
+
+// ParseGoFuncsObject parses the funcs object from the opentelemetry-go-instrumentation
+// offsetgen JSON file. Each function is represented as a key-value pair where the key is the
+// function name and the value is an object containing argument names and their corresponding
+// locations for different versions.
+void ParseGoFuncsObject(const rapidjson::Value& funcsVal) {
+  for (auto itr = funcsVal.MemberBegin(); itr != funcsVal.MemberEnd(); ++itr) {
+    std::string func_name = itr->name.GetString();
+    if (!itr->value.IsObject()) {
+      continue;
+    }
+    const auto& arg_map_obj = itr->value.GetObject();  // e.g. "data", "Flags", etc.
+
+    auto& location_map = GetGoFunctionArgOffsets();
+
+    std::string pkg = std::string(FindMatchingPkgPrefix(func_name, kGoPackagePrefixes).first);
+    location_map[func_name].first = pkg;
+    for (auto arg_it = arg_map_obj.MemberBegin(); arg_it != arg_map_obj.MemberEnd(); ++arg_it) {
+      std::string arg_name = arg_it->name.GetString();
+
+      if (!arg_it->value.IsObject()) {
+        continue;
+      }
+      const auto& versions_obj = arg_it->value.GetObject();
+
+      for (auto ver_it = versions_obj.MemberBegin(); ver_it != versions_obj.MemberEnd(); ++ver_it) {
+        std::string version_key = ver_it->name.GetString();
+
+        location_map[func_name].second[arg_name][version_key] =
+            ParseOffsetAndLocation(ver_it->value);
+      }
+    }
+  }
+}
+
 }  // namespace
 
 //-----------------------------------------------------------------------------
@@ -514,6 +656,48 @@ Status PopulateGoTLSDebugSymbols(GoOffsetLocator* offset_locator,
   }
 
   return Status::OK();
+}
+
+StructOffsetMap& GetGoStructOffsets() { return g_struct_offsets; }
+
+FunctionArgMap& GetGoFunctionArgOffsets() { return g_function_arg_offsets; }
+
+void ParseGoOffsetgenFile(const std::string& offsetgen_file) {
+  std::ifstream file(offsetgen_file, std::ios::binary);
+  if (!file) {
+    LOG(ERROR) << absl::Substitute("Failed to open offsetgen file: $0", offsetgen_file);
+    return;
+  }
+
+  file.seekg(0, std::ios::end);
+  size_t f_size = file.tellg();
+  file.seekg(0);
+
+  std::vector<char> buffer;
+  buffer.resize(f_size);
+
+  if (!file.read(buffer.data(), f_size)) {
+    LOG(ERROR) << absl::Substitute("Failed to read offsetgen file: $0", offsetgen_file);
+    return;
+  }
+
+  rapidjson::MemoryStream ms(buffer.data(), f_size);
+
+  rapidjson::Document doc;
+  rapidjson::ParseResult parse_res = doc.ParseStream(ms);
+  if (!parse_res) {
+    LOG(ERROR) << absl::Substitute("JSON parse error at offset=$0: $1 ", parse_res.Offset(),
+                                   rapidjson::GetParseError_En(parse_res.Code()));
+    return;
+  }
+
+  // There are two top-level objects in the JSON file:
+  if (doc.HasMember("structs") && doc["structs"].IsObject()) {
+    ParseGoStructsObject(doc["structs"]);
+  }
+  if (doc.HasMember("funcs") && doc["funcs"].IsObject()) {
+    ParseGoFuncsObject(doc["funcs"]);
+  }
 }
 
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,

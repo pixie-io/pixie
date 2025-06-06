@@ -238,5 +238,96 @@ TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFSuccessfulLookup) {
   EXPECT_EQ(arg_info.location.offset, 8);
 }
 
+/* class ParseGoOffsetgenFileTest : public ::testing::Test { */
+/*  protected: */
+/*   void SetUp() { */
+/*     std::filesystem::path p = px::testing::BazelRunfilePath(kGoOffsetgenFile); */
+
+/*     std::ifstream file(p, std::ios::binary); */
+/*     ASSERT_TRUE(file.is_open()) << absl::Substitute("Failed to open offsetgen file: $0",
+ * p.string()); */
+
+/*     file.seekg(0, std::ios::end); */
+/*     size_t f_size = file.tellg(); */
+/*     file.seekg(0); */
+
+/*     buffer_.resize(f_size); */
+
+/*     EXPECT_TRUE(file.read(buffer_.data(), f_size)) */
+/*         << absl::Substitute("Failed to read offsetgen file: $0", p.string()); */
+
+/*     rapidjson::MemoryStream ms(buffer_.data(), f_size); */
+
+/*     rapidjson::ParseResult parse_res = doc_.ParseStream(ms); */
+/*     EXPECT_TRUE(parse_res) << absl::Substitute( */
+/*         "JSON parse error at offset=$0: $1 ", parse_res.Offset(), */
+/*         rapidjson::GetParseError_En(parse_res.Code())); */
+
+/*     EXPECT_TRUE(doc_.HasMember("structs")); */
+/*     EXPECT_TRUE(doc_["structs"].IsObject()); */
+/*     EXPECT_TRUE(doc_.HasMember("funcs")); */
+/*     EXPECT_TRUE(doc_["funcs"].IsObject()); */
+/*   } */
+
+/*   static inline constexpr std::string_view kGoOffsetgenFile = */
+/*       "src/stirling/source_connectors/socket_tracer/testdata/go_offsetgen.json"; */
+
+/*   std::vector<char> buffer_; */
+/*   rapidjson::Document doc_; */
+/* }; */
+static inline constexpr std::string_view kGoOffsetgenFile =
+    "src/stirling/source_connectors/socket_tracer/testdata/go_offsetgen.json";
+
+TEST(ParseGoOffsetgenFileTest, ParseGoStructsObject) {
+  ParseGoOffsetgenFile(std::string(kGoOffsetgenFile));
+  auto& struct_offsets = GetGoStructOffsets();
+  EXPECT_GT(struct_offsets.size(), 0);
+
+  // Assert offsets for std package
+  EXPECT_EQ(struct_offsets["runtime.g"].first, "std");
+  EXPECT_EQ(struct_offsets["runtime.g"].second["goid"]["1.19.0"], 152);
+  EXPECT_EQ(struct_offsets["runtime.g"].second["goid"]["1.24.1"], 160);
+
+  EXPECT_EQ(struct_offsets["runtime.hmap"].first, "std");
+  EXPECT_EQ(struct_offsets["runtime.hmap"].second["buckets"]["1.19.0"], 16);
+  // Check that null offsets are handled correctly.
+  EXPECT_EQ(struct_offsets["runtime.hmap"].second["buckets"]["1.24.1"], -1);
+
+  // Check non std packages are handled correctly.
+  EXPECT_EQ(struct_offsets["google.golang.org/grpc/internal/transport.http2Client"].first,
+            "google.golang.org/grpc");
+  EXPECT_EQ(struct_offsets["google.golang.org/grpc/internal/transport.http2Client"]
+                .second["conn"]["1.0.0"],
+            -1);
+  EXPECT_EQ(struct_offsets["google.golang.org/grpc/internal/transport.http2Client"]
+                .second["conn"]["1.57.2"],
+            136);
+}
+
+TEST(ParseGoOffsetgenFileTest, ParseGoFuncsObject) {
+  ParseGoOffsetgenFile(std::string(kGoOffsetgenFile));
+  auto& function_args = GetGoFunctionArgOffsets();
+  EXPECT_GT(function_args.size(), 0);
+
+  EXPECT_EQ(function_args["crypto/tls.(*Conn).Read"].first, "std");
+
+  EXPECT_EQ(function_args["google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders"]
+                .first,
+            "google.golang.org/grpc");
+  auto null_loc = std::move(
+      function_args["google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders"]
+          .second["frame"]["1.0.0"]);
+  EXPECT_TRUE(null_loc != nullptr);
+  EXPECT_EQ(null_loc->loc_type, obj_tools::LocationType::kUnknown);
+  EXPECT_EQ(null_loc->offset, -1);
+
+  auto loc = std::move(
+      function_args["google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders"]
+          .second["frame"]["1.40.0"]);
+  EXPECT_TRUE(loc != nullptr);
+  EXPECT_EQ(loc->loc_type, obj_tools::LocationType::kRegister);
+  EXPECT_EQ(loc->offset, 8);
+}
+
 }  // namespace stirling
 }  // namespace px
