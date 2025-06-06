@@ -47,6 +47,10 @@ DEFINE_bool(openssl_raw_fptrs_enabled, false,
             "If true, allows the openssl tracing implementation to fall back to function pointers "
             "if dlopen/dlsym is unable to find symbols");
 
+DEFINE_bool(disable_dwarf_parsing, false,
+            "If true, disables parsing of DWARF information. This is useful for using lower memory "
+            "uprobe instrumentation.");
+
 namespace px {
 namespace stirling {
 
@@ -708,6 +712,7 @@ StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,
   struct go_common_symaddrs_t symaddrs;
 
   PX_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+  offset_locator->set_vendor_prefix(vendor_prefix);
 
   PX_RETURN_IF_ERROR(PopulateCommonTypeAddrs(elf_reader, vendor_prefix, &symaddrs));
   PX_RETURN_IF_ERROR(PopulateCommonDebugSymbols(offset_locator, vendor_prefix, &symaddrs));
@@ -720,6 +725,7 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
   struct go_http2_symaddrs_t symaddrs;
 
   PX_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+  offset_locator->set_vendor_prefix(vendor_prefix);
 
   PX_RETURN_IF_ERROR(PopulateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
   PX_RETURN_IF_ERROR(PopulateHTTP2DebugSymbols(offset_locator, vendor_prefix, &symaddrs));

@@ -95,6 +95,14 @@ stirling_ctrl = [
 
 stirling_collateral = [":stirling_linux_timeconst_files"] + stirling_ctrl + stirling_java_profiling_tools
 
+filegroup(
+    name = "offsetgen_offsets",
+    srcs = [
+        "offsetgen_offsets.json",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 container_layer(
     name = "bpf_layer",
     directory = "/px",
