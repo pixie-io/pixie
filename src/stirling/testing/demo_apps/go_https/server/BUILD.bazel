@@ -27,6 +27,7 @@ go_library(
     deps = [
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
+        "@org_golang_x_net//http2",
     ],
 )
 

@@ -29,13 +29,14 @@ namespace testing {
 
 class GoBoringCryptoTLSServerContainer : public ContainerRunner {
  public:
-  GoBoringCryptoTLSServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+  GoBoringCryptoTLSServerContainer(std::string image_tar)
+      : ContainerRunner(::px::testing::BazelRunfilePath(image_tar), kContainerNamePrefix,
                         kReadyMessage) {}
 
- private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_https/server/golang_boringcrypto_https_server.tar";
+
+ private:
   static constexpr std::string_view kContainerNamePrefix = "https_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
 };

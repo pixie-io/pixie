@@ -36,6 +36,7 @@
 
 DECLARE_bool(openssl_force_raw_fptrs);
 DECLARE_bool(openssl_raw_fptrs_enabled);
+DECLARE_bool(disable_dwarf_parsing);
 
 namespace px {
 namespace stirling {
@@ -63,10 +64,13 @@ class GoOffsetLocator {
 
   StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfo(
       std::string_view function_symbol_name) {
-    if (dwarf_reader_ != nullptr) {
+    if (dwarf_reader_ != nullptr && !FLAGS_disable_dwarf_parsing) {
       return dwarf_reader_->GetFunctionArgInfo(function_symbol_name);
     }
-    return GetFunctionArgInfoFromOffsets(function_symbol_name);
+    auto has_vendor_prefix =
+        absl::StartsWith(function_symbol_name, vendor_prefix_);
+    return GetFunctionArgInfoFromOffsets(function_symbol_name.substr(
+        has_vendor_prefix ? vendor_prefix_.size() : 0, has_vendor_prefix ? function_symbol_name.size() - vendor_prefix_.size() : function_symbol_name.size()));
   }
 
   StatusOr<obj_tools::VarLocation> GetArgumentLocation(std::string_view /*function_symbol_name*/,
@@ -78,13 +82,22 @@ class GoOffsetLocator {
 
   StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
                                            std::string_view member_name) {
-    if (dwarf_reader_ != nullptr) {
+    if (dwarf_reader_ != nullptr && !FLAGS_disable_dwarf_parsing) {
       return dwarf_reader_->GetStructMemberOffset(struct_name, member_name);
     }
-    return GetStructMemberOffsetFromOffsets(struct_name, member_name);
+    auto has_vendor_prefix =
+        absl::StartsWith(struct_name, vendor_prefix_);
+    return GetStructMemberOffsetFromOffsets(
+      struct_name.substr(has_vendor_prefix ? vendor_prefix_.size() : 0,
+                          has_vendor_prefix ? struct_name.size() - vendor_prefix_.size() : struct_name.size()),
+      member_name);
   }
 
   std::string go_version() const { return go_version_; }
+
+  void set_vendor_prefix(std::string vendor_prefix) {
+    vendor_prefix_ = vendor_prefix;
+  }
 
  private:
   StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfoFromOffsets(
@@ -154,6 +167,8 @@ class GoOffsetLocator {
   const std::string& go_version_;
 
   std::map<std::string, std::string> pkg_version_map_;
+
+  std::string vendor_prefix_;
 };
 
 StructOffsetMap& GetGoStructOffsets();

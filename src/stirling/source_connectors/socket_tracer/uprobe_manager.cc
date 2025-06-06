@@ -923,11 +923,11 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
           binary, build_info_s.status().msg());
     }
 
+    LOG(INFO) << "Go version=" << go_version << " for binary " << binary;
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
-    StructOffsetMap struct_offsets;
     FunctionArgMap function_offsets;
     std::unique_ptr<GoOffsetLocator> offset_locator = std::make_unique<GoOffsetLocator>(
-        dwarf_reader.get(), struct_offsets, function_offsets, build_info, go_version);
+        dwarf_reader.get(), GetGoStructOffsets(), GetGoFunctionArgOffsets(), build_info, go_version);
     Status s = UpdateGoCommonSymAddrs(elf_reader.get(), offset_locator.get(), pid_vec);
     if (!s.ok()) {
       VLOG(1) << absl::Substitute(

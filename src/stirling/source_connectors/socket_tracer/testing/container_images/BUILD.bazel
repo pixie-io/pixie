@@ -106,6 +106,7 @@ pl_cc_test_library(
         hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_server_container.h", sdk_version)],
         data = [
             pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_https/server:golang_%s_https_server.tar", sdk_version),
+            "//src/stirling/source_connectors/socket_tracer/testing/containers:golang_1_23_0_https_server_with_buildinfo.tar",
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )

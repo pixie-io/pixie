@@ -29,13 +29,14 @@ namespace testing {
 
 class Go1_21_TLSServerContainer : public ContainerRunner {
  public:
-  Go1_21_TLSServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+  Go1_21_TLSServerContainer(std::string image_tar)
+      : ContainerRunner(::px::testing::BazelRunfilePath(image_tar), kContainerNamePrefix,
                         kReadyMessage) {}
 
- private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_https/server/golang_1_21_https_server.tar";
+
+ private:
   static constexpr std::string_view kContainerNamePrefix = "https_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
 };

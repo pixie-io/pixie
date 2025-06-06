@@ -287,3 +287,10 @@ def stirling_test_images():
         repository = "mongo",
         digest = "sha256:19b2e5c91f92c7b18113a1501c5a5fe52b71a6c6d2a5232eeebb4f2abacae04a",
     )
+
+    container_pull(
+        name = "golang_1_23_0_https_server_with_buildinfo",
+        digest = "sha256:84120192f05cc2d809360e8876eafafa9e08cc848c188e2be0112a8b3cd2ec19",
+        registry = "docker.io",
+        repository = "ddelnano/go_https_with_mod_info",
+    )
