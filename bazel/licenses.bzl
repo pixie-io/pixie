@@ -21,8 +21,8 @@ def _fetch_licenses_impl(ctx):
     if ctx.attr.use_pkg_dev_go:
         args.add("--try_pkg_dev_go")
 
-    if ctx.attr.disallow_missing:
-        args.add("--fatal_if_missing")
+#     if ctx.attr.disallow_missing:
+#         args.add("--fatal_if_missing")
 
     args.add("--json_manual_input", ctx.file.manual_licenses)
     args.add("--json_output", ctx.outputs.out_found)

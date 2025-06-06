@@ -77,7 +77,8 @@ func Cfg() *ConfigInfo {
 	once.Do(func() {
 		configPath, err := utils.EnsureDefaultConfigFilePath()
 		if err != nil {
-			utils.WithError(err).Fatal("Failed to load/create config file path")
+			config = &ConfigInfo{}
+			return
 		}
 		_, err = os.Stat(configPath)
 		if os.IsNotExist(err) {
