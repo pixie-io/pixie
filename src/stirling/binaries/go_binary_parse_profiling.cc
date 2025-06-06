@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
       std::make_unique<GoOffsetLocator>(dwarf_reader.get(), build_info, go_version);
 
   struct go_tls_symaddrs_t symaddrs;
-  auto status = PopulateGoTLSDebugSymbols(elf_reader.get(), go_offset_locator.get(), &symaddrs);
+  auto status = PopulateGoTLSDebugSymbols(go_offset_locator.get(), &symaddrs);
 
   if (!status.ok()) {
     LOG(ERROR) << absl::Substitute("debug symbol parsing failed with: $0", status.msg());
