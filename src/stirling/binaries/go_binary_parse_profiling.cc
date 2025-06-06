@@ -66,11 +66,13 @@ int main(int argc, char** argv) {
 
   auto build_info_s = ReadGoBuildInfo(elf_reader.get());
   const auto& [go_version, build_info] = build_info_s.ConsumeValueOrDie();
-  std::unique_ptr<GoOffsetLocator> go_offset_locator =
-      std::make_unique<GoOffsetLocator>(dwarf_reader.get(), build_info, go_version);
+  px::stirling::StructOffsetMap struct_offsets;
+  px::stirling::FunctionArgMap function_args;
+  std::unique_ptr<GoOffsetLocator> go_offset_locator = std::make_unique<GoOffsetLocator>(
+      dwarf_reader.get(), struct_offsets, function_args, build_info, go_version);
 
   struct go_tls_symaddrs_t symaddrs;
-  auto status = PopulateGoTLSDebugSymbols(elf_reader.get(), go_offset_locator.get(), &symaddrs);
+  auto status = PopulateGoTLSDebugSymbols(go_offset_locator.get(), &symaddrs);
 
   if (!status.ok()) {
     LOG(ERROR) << absl::Substitute("debug symbol parsing failed with: $0", status.msg());
