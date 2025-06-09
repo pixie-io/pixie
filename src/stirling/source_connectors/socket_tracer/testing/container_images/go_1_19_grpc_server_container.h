@@ -29,13 +29,14 @@ namespace testing {
 
 class Go1_19_GRPCServerContainer : public ContainerRunner {
  public:
-  Go1_19_GRPCServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+  explicit Go1_19_GRPCServerContainer(std::string image_tar)
+      : ContainerRunner(::px::testing::BazelRunfilePath(image_tar), kContainerNamePrefix,
                         kReadyMessage) {}
 
- private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server.tar";
+
+ private:
   static constexpr std::string_view kContainerNamePrefix = "grpc_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
 };

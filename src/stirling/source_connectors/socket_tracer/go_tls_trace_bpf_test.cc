@@ -38,6 +38,8 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
+DECLARE_string(offsetgen_filepath);
+
 namespace px {
 namespace stirling {
 
@@ -60,10 +62,15 @@ using ::testing::UnorderedElementsAre;
 template <typename TClientServerContainers>
 class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
-  GoTLSTraceTest() {
+  GoTLSTraceTest() : server_(std::string(TClientServerContainers::server_image_tar)), client_() {
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
+
+    FLAGS_disable_dwarf_parsing = TClientServerContainers::disable_dwarf;
+
+    auto f = ::px::testing::BazelRunfilePath("src/stirling/offsetgen_offsets.json");
+    FLAGS_offsetgen_filepath = f.string();
     PX_CHECK_OK(server_.Run(std::chrono::seconds{60}, {}));
   }
 
@@ -74,42 +81,73 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
 struct Go1_18TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_18_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_18_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_19TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_19_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_19_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_20TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_20_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_20_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_21TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_21_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_21_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_22TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_22_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_22_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_23TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_23_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_23_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
+};
+
+struct Go1_23TLSClientServerNoDWARFContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_23_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_23_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "golang_1_23_0_https_server_with_buildinfo.tar";
+  static const bool disable_dwarf = true;
 };
 
 struct GoBoringCryptoTLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::GoBoringCryptoTLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::GoBoringCryptoTLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 typedef ::testing::Types<GoBoringCryptoTLSClientServerContainers, Go1_18TLSClientServerContainers,
                          Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers,
                          Go1_21TLSClientServerContainers, Go1_22TLSClientServerContainers,
-                         Go1_23TLSClientServerContainers>
+                         Go1_23TLSClientServerContainers, Go1_23TLSClientServerNoDWARFContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
@@ -155,6 +193,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
 }
 
 TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
+  FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.

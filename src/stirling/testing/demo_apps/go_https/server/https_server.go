@@ -26,12 +26,17 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"golang.org/x/net/http2"
 )
 
 const (
 	httpPort  = 50100
 	httpsPort = 50101
 )
+
+// Import the http2 package to ensure golang.org/x/net exists within the binary's
+// buildinfo.
+var s http2.Server
 
 func basicHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")

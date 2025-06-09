@@ -41,6 +41,8 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
+DECLARE_string(offsetgen_filepath);
+
 namespace px {
 namespace stirling {
 
@@ -64,11 +66,15 @@ using ::testing::UnorderedElementsAre;
 template <typename TClientServerContainers>
 class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
-  HTTP2TraceTest() {
+  HTTP2TraceTest() : server_(std::string(TClientServerContainers::server_image_tar)) {
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+
+    auto f = ::px::testing::BazelRunfilePath("src/stirling/offsetgen_offsets.json");
+    FLAGS_offsetgen_filepath = f.string();
+    FLAGS_disable_dwarf_parsing = TClientServerContainers::disable_dwarf;
   }
 
   typename TClientServerContainers::ServerContainer server_;
@@ -78,46 +84,78 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
 struct Go1_18GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_18_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_18_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_19GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_19_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_19_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_20GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_20_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_20_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_21GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_21_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_21_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_22GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_22_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_22_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 struct Go1_23GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_23_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_23_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
+};
+
+struct Go1_23GRPCClientServerContainersNoDWARF {
+  using ServerContainer = ::px::stirling::testing::Go1_23_GRPCServerContainer;
+  using ClientContainer = ::px::stirling::testing::Go1_23_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "go_1_23_grpc_server_with_mod_info.tar";
+  static const bool disable_dwarf = true;
 };
 
 struct GoBoringCryptoGRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::GoBoringCryptoGRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::GoBoringCryptoGRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = false;
 };
 
 typedef ::testing::Types<GoBoringCryptoGRPCClientServerContainers, Go1_18GRPCClientServerContainers,
                          Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers,
                          Go1_21GRPCClientServerContainers, Go1_22GRPCClientServerContainers,
-                         Go1_23GRPCClientServerContainers>
+                         Go1_23GRPCClientServerContainers, Go1_23GRPCClientServerContainersNoDWARF>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
 TYPED_TEST(HTTP2TraceTest, Basic) {
+  FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.

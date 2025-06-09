@@ -21,9 +21,11 @@
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 
 using px::StatusOr;
+using px::stirling::GoOffsetLocator;
 using px::stirling::PopulateGoTLSDebugSymbols;
 using px::stirling::obj_tools::DwarfReader;
 using px::stirling::obj_tools::ElfReader;
+using px::stirling::obj_tools::ReadGoBuildInfo;
 
 //-----------------------------------------------------------------------------
 // This utility is designed to isolate parsing the debug symbols of a Go binary. This
@@ -62,8 +64,13 @@ int main(int argc, char** argv) {
   }
   std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
 
+  auto build_info_s = ReadGoBuildInfo(elf_reader.get());
+  const auto& [go_version, build_info] = build_info_s.ConsumeValueOrDie();
+  std::unique_ptr<GoOffsetLocator> go_offset_locator =
+      std::make_unique<GoOffsetLocator>(dwarf_reader.get(), build_info, go_version);
+
   struct go_tls_symaddrs_t symaddrs;
-  auto status = PopulateGoTLSDebugSymbols(elf_reader.get(), dwarf_reader.get(), &symaddrs);
+  auto status = PopulateGoTLSDebugSymbols(go_offset_locator.get(), &symaddrs);
 
   if (!status.ok()) {
     LOG(ERROR) << absl::Substitute("debug symbol parsing failed with: $0", status.msg());
