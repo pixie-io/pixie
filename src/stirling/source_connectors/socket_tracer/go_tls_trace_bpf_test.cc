@@ -62,10 +62,7 @@ using ::testing::UnorderedElementsAre;
 template <typename TClientServerContainers>
 class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
-  GoTLSTraceTest()
-    : server_(std::string(TClientServerContainers::server_image_tar)),
-      client_()
-  {
+  GoTLSTraceTest() : server_(std::string(TClientServerContainers::server_image_tar)), client_() {
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
@@ -133,7 +130,9 @@ struct Go1_23TLSClientServerNoDWARFContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_23_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_23_TLSClientContainer;
 
-  static constexpr std::string_view server_image_tar = "src/stirling/source_connectors/socket_tracer/testing/containers/golang_1_23_0_https_server_with_buildinfo.tar";
+  static constexpr std::string_view server_image_tar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "golang_1_23_0_https_server_with_buildinfo.tar";
   static const bool disable_dwarf = true;
 };
 

@@ -29,14 +29,15 @@ namespace testing {
 
 class GoBoringCryptoGRPCServerContainer : public ContainerRunner {
  public:
-  GoBoringCryptoGRPCServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+  explicit GoBoringCryptoGRPCServerContainer(std::string image_tar)
+      : ContainerRunner(::px::testing::BazelRunfilePath(image_tar), kContainerNamePrefix,
                         kReadyMessage) {}
 
- private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/"
       "golang_boringcrypto_grpc_tls_server.tar";
+
+ private:
   static constexpr std::string_view kContainerNamePrefix = "grpc_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
 };

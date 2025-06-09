@@ -349,6 +349,9 @@ pl_cc_bpf_test(
         "no_asan",
         "requires_bpf",
     ],
+    data = [
+        "//src/stirling:offsetgen_offsets",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

@@ -289,8 +289,14 @@ def stirling_test_images():
     )
 
     container_pull(
-        name = "golang_1_23_0_https_server_with_buildinfo",
+        name = "golang_1_23_https_server_with_buildinfo",
         digest = "sha256:84120192f05cc2d809360e8876eafafa9e08cc848c188e2be0112a8b3cd2ec19",
         registry = "docker.io",
         repository = "ddelnano/go_https_with_mod_info",
+    )
+    container_pull(
+        name = "go_1_23_grpc_server_with_mod_info",
+        digest = "sha256:a06b8f280a37e671f64a93d534ca35d0ac495f5f3b8adb6e623a765fc6e9a1f5",
+        registry = "docker.io",
+        repository = "ddelnano/go_1_23_grpc_server_with_mod_info",
     )

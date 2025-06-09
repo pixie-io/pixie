@@ -29,7 +29,7 @@ namespace testing {
 
 class Go1_20_TLSServerContainer : public ContainerRunner {
  public:
-  Go1_20_TLSServerContainer(std::string image_tar)
+  explicit Go1_20_TLSServerContainer(std::string image_tar)
       : ContainerRunner(::px::testing::BazelRunfilePath(image_tar), kContainerNamePrefix,
                         kReadyMessage) {}
 
