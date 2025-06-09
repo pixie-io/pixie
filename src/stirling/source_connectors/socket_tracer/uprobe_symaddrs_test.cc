@@ -41,7 +41,7 @@ class UprobeSymaddrsTest : public ::testing::Test {
     std::filesystem::path p = px::testing::BazelRunfilePath(kGoGRPCServer);
     ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::CreateIndexingAll(p));
     offset_locator_ = std::make_unique<GoOffsetLocator>(GoOffsetLocator(
-        dwarf_reader_.get(), struct_offsets_, function_args_, build_info_, "1.19.0"));
+        dwarf_reader_.get(), struct_offsets_, function_args_, build_info_, go_version_));
     ASSERT_OK_AND_ASSIGN(elf_reader_, ElfReader::Create(p));
   }
 
@@ -53,6 +53,7 @@ class UprobeSymaddrsTest : public ::testing::Test {
   StructOffsetMap struct_offsets_;
   FunctionArgMap function_args_;
   obj_tools::BuildInfo build_info_;
+  std::string go_version_ = "1.19.0";
   std::unique_ptr<ElfReader> elf_reader_;
 };
 
