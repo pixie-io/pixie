@@ -67,10 +67,11 @@ class GoOffsetLocator {
     if (dwarf_reader_ != nullptr && !FLAGS_disable_dwarf_parsing) {
       return dwarf_reader_->GetFunctionArgInfo(function_symbol_name);
     }
-    auto has_vendor_prefix =
-        absl::StartsWith(function_symbol_name, vendor_prefix_);
+    auto has_vendor_prefix = absl::StartsWith(function_symbol_name, vendor_prefix_);
     return GetFunctionArgInfoFromOffsets(function_symbol_name.substr(
-        has_vendor_prefix ? vendor_prefix_.size() : 0, has_vendor_prefix ? function_symbol_name.size() - vendor_prefix_.size() : function_symbol_name.size()));
+        has_vendor_prefix ? vendor_prefix_.size() : 0,
+        has_vendor_prefix ? function_symbol_name.size() - vendor_prefix_.size()
+                          : function_symbol_name.size()));
   }
 
   StatusOr<obj_tools::VarLocation> GetArgumentLocation(std::string_view /*function_symbol_name*/,
@@ -85,19 +86,17 @@ class GoOffsetLocator {
     if (dwarf_reader_ != nullptr && !FLAGS_disable_dwarf_parsing) {
       return dwarf_reader_->GetStructMemberOffset(struct_name, member_name);
     }
-    auto has_vendor_prefix =
-        absl::StartsWith(struct_name, vendor_prefix_);
+    auto has_vendor_prefix = absl::StartsWith(struct_name, vendor_prefix_);
     return GetStructMemberOffsetFromOffsets(
-      struct_name.substr(has_vendor_prefix ? vendor_prefix_.size() : 0,
-                          has_vendor_prefix ? struct_name.size() - vendor_prefix_.size() : struct_name.size()),
-      member_name);
+        struct_name.substr(
+            has_vendor_prefix ? vendor_prefix_.size() : 0,
+            has_vendor_prefix ? struct_name.size() - vendor_prefix_.size() : struct_name.size()),
+        member_name);
   }
 
   std::string go_version() const { return go_version_; }
 
-  void set_vendor_prefix(std::string vendor_prefix) {
-    vendor_prefix_ = vendor_prefix;
-  }
+  void set_vendor_prefix(std::string vendor_prefix) { vendor_prefix_ = vendor_prefix; }
 
  private:
   StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfoFromOffsets(
