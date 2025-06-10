@@ -19,19 +19,23 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
+	"golang.org/x/net/http2"
 )
 
 const (
 	httpPort  = 50100
 	httpsPort = 50101
 )
+
+// Import the http2 package to ensure golang.org/x/net exists within the binary's
+// buildinfo.
+var s http2.Server //nolint:unused
 
 func basicHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
@@ -58,14 +62,12 @@ func listenAndServe(port int) {
 }
 
 func main() {
-	pflag.String("cert", "", "Path to the .crt file.")
-	pflag.String("key", "", "Path to the .key file.")
-	pflag.Parse()
-
-	viper.BindPFlags(pflag.CommandLine)
+	certPath := flag.String("cert", "", "Path to the .crt file.")
+	keyPath := flag.String("key", "", "Path to the .key file.")
+	flag.Parse()
 
 	http.HandleFunc("/", basicHandler)
 
-	go listenAndServeTLS(httpsPort, viper.GetString("cert"), viper.GetString("key"))
+	go listenAndServeTLS(httpsPort, *certPath, *keyPath)
 	listenAndServe(httpPort)
 }

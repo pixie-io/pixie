@@ -22,6 +22,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -29,9 +31,6 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -52,21 +51,20 @@ func (s *Server) SayHello(ctx context.Context, in *greetpb.HelloRequest) (*greet
 }
 
 func main() {
-	pflag.String("server_tls_cert", "", "Path to server.crt")
-	pflag.String("server_tls_key", "", "Path to server.key")
-	pflag.String("tls_ca_cert", "", "Path to ca.crt")
-	pflag.Parse()
-	viper.BindPFlags(pflag.CommandLine)
+	serverCert := flag.String("server_tls_cert", "", "Path to server.crt")
+	serverKey := flag.String("server_tls_key", "", "Path to server.key")
+	caCert := flag.String("tls_ca_cert", "", "Path to ca.crt")
+	flag.Parse()
 
-	pair, err := tls.LoadX509KeyPair(viper.GetString("server_tls_cert"), viper.GetString("server_tls_key"))
+	pair, err := tls.LoadX509KeyPair(*serverCert, *serverKey)
 	if err != nil {
-		log.WithError(err).Fatal("failed to load keys")
+		log.Fatalf("failed to load keys: %v", err)
 	}
 
 	certPool := x509.NewCertPool()
-	ca, err := os.ReadFile(viper.GetString("tls_ca_cert"))
+	ca, err := os.ReadFile(*caCert)
 	if err != nil {
-		log.WithError(err).Fatal("failed to read CA cert")
+		log.Fatalf("failed to read CA cert: %v", err)
 	}
 
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
@@ -114,6 +112,6 @@ func main() {
 	defer cancel()
 	err = httpServer.Shutdown(ctx)
 	if err != nil {
-		log.WithError(err).Error("http2 server Shutdown() failed")
+		log.Fatal("http2 server Shutdown() failed")
 	}
 }
