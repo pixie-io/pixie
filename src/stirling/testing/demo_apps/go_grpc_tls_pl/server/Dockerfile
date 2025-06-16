@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-ARG GO_VERSION
+ARG GO_IMAGE_DIGEST
 FROM alpine:3.20@sha256:de4fe7064d8f98419ea6b49190df1abbf43450c1702eeb864fe9ced453c1cc5f AS certs
 
 RUN apk add --no-cache openssl
@@ -45,7 +45,7 @@ RUN echo "subjectAltName=IP:127.0.0.1" > server.ext && \
 RUN openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
         -out server.crt -days 365 -sha256 -extfile server.ext
 
-FROM golang:${GO_VERSION}-alpine as build
+FROM golang:${GO_IMAGE_DIGEST} as build
 
 ARG GOOGLE_GOLANG_GRPC
 

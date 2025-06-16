@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-ARG GO_VERSION
+ARG GO_IMAGE_DIGEST
 FROM alpine:3.20@sha256:de4fe7064d8f98419ea6b49190df1abbf43450c1702eeb864fe9ced453c1cc5f AS certs
 
 RUN apk add --no-cache openssl
@@ -30,7 +30,7 @@ RUN openssl ecparam -genkey -name secp384r1 -out server.key && \
         -days 365
 
 # Stage 2: Build Go app and include certs
-FROM golang:${GO_VERSION}-alpine as build
+FROM golang:${GO_IMAGE_DIGEST} as build
 
 ARG GOLANG_X_NET
 
