@@ -24,10 +24,6 @@ go_library(
     name = "server_lib",
     srcs = ["https_server.go"],
     importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/server",
-    deps = [
-        "@com_github_spf13_pflag//:pflag",
-        "@com_github_spf13_viper//:viper",
-    ],
 )
 
 genrule(
