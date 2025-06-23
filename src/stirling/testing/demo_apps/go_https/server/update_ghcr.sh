@@ -28,7 +28,8 @@ version=1.0
 IMAGES=()
 
 for go_image_digest in "${!GO_IMAGE_DIGEST_MAP[@]}"; do
-  tag="ghcr.io/pixie-io/golang_${go_image_digest//./_}_https_server_with_buildinfo:$version"
+  go_version=${go_image_digest%%-*}
+  tag="ghcr.io/pixie-io/golang_${go_version//./_}_https_server_with_buildinfo:$version"
   x_net_version=${GO_IMAGE_DIGEST_MAP[$go_image_digest]}
   echo "Building and pushing image: $tag"
   docker build . --build-arg GO_IMAGE_DIGEST="${go_image_digest}" --build-arg GOLANG_X_NET="${x_net_version}" -t "${tag}"
