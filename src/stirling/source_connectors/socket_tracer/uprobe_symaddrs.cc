@@ -47,6 +47,10 @@ DEFINE_bool(openssl_raw_fptrs_enabled, false,
             "If true, allows the openssl tracing implementation to fall back to function pointers "
             "if dlopen/dlsym is unable to find symbols");
 
+DEFINE_bool(disable_dwarf_parsing, false,
+            "If true, disables parsing of DWARF information. This is useful for using lower memory "
+            "uprobe instrumentation.");
+
 namespace px {
 namespace stirling {
 
@@ -56,6 +60,148 @@ namespace {
 // since an array is a pretty stable type.
 constexpr int kGoArrayPtrOffset = 0;
 constexpr int kGoArrayLenOffset = 8;
+
+constexpr const std::array<std::string_view, 2> kGoPackagePrefixes =
+    MakeArray<std::string_view>("google.golang.org/grpc", "golang.org/x/net");
+
+template <std::size_t N>
+std::pair<std::string_view, bool> FindMatchingPkgPrefix(
+    const std::string_view& str, const std::array<std::string_view, N>& prefixes) {
+  for (std::size_t i = 0; i < N; ++i) {
+    if (absl::StartsWith(str, prefixes[i])) {
+      return {prefixes[i], true};
+    }
+  }
+  return {kGoStdlibPackageName, false};
+}
+
+StructOffsetMap g_struct_offsets;
+
+FunctionArgMap g_function_arg_offsets;
+
+// ParseLocationType turns the opentelemetry-go-instrumentation offsetgen encoded
+// JSON location into Pixie's native obj_tools::LocationType.
+obj_tools::LocationType ParseLocationType(const std::string& loc) {
+  if (loc == "stack") {
+    return obj_tools::LocationType::kStack;
+  } else if (loc == "registers") {
+    return obj_tools::LocationType::kRegister;
+  }
+  return obj_tools::LocationType::kUnknown;
+}
+
+/**
+ * ParseOffsetOnly:
+ *   - For a JSON leaf representing a struct's offset:
+ *     - If a bare integer, return that
+ *     - Otherwise, return -1
+ */
+int32_t ParseOffsetOnly(const rapidjson::Value& val) {
+  int32_t offset = -1;
+  if (val.IsNumber()) {
+    int64_t bigVal = val.GetInt64();
+    offset = static_cast<int32_t>(bigVal);
+  }
+  return offset;
+}
+
+/**
+ * ParseOffsetAndLocation:
+ *   - For a JSON leaf representing a func's offset & location:
+ *     - offset_out => -1 if null; store the integer or the object's "offset" otherwise
+ *     - loc_out => nullptr if null, otherwise a valid obj_tools::LocationType pointer
+ */
+// ParseOffsetAndLocation parses the function JSON object contained in the
+// opentelemetry-go-instrumentation offsetgen JSON file. Each JSON object is expected to have a
+// "location" and an "offset" field.
+std::unique_ptr<obj_tools::VarLocation> ParseOffsetAndLocation(const rapidjson::Value& val) {
+  std::unique_ptr<obj_tools::VarLocation> loc = std::make_unique<obj_tools::VarLocation>();
+  loc->loc_type = obj_tools::LocationType::kUnknown;
+  loc->offset = -1;
+
+  // e.g. { "location":"stack", "offset": 42 }
+  if (val.IsObject()) {
+    const auto& obj = val.GetObject();
+
+    if (obj.HasMember("offset") && obj["offset"].IsNumber()) {
+      int64_t bigVal = obj["offset"].GetInt64();
+      loc->offset = static_cast<int32_t>(bigVal);
+    }
+    if (obj.HasMember("location") && obj["location"].IsString()) {
+      loc->loc_type = ParseLocationType(obj["location"].GetString());
+    }
+  }
+  return loc;
+}
+
+// ParseGoStructsObject parses the structs object from the opentelemetry-go-instrumentation
+// offsetgen JSON file. Each struct is represented as a key-value pair where the key is the
+// struct name and the value is an object containing field names and their corresponding
+// offsets for different versions.
+void ParseGoStructsObject(const rapidjson::Value& structs_val) {
+  for (auto itr = structs_val.MemberBegin(); itr != structs_val.MemberEnd(); ++itr) {
+    std::string struct_name = itr->name.GetString();
+    if (!itr->value.IsObject()) {
+      continue;
+    }
+    const auto& field_map_obj = itr->value.GetObject();
+
+    auto& offset_map = GetGoStructOffsets();
+
+    std::string_view pkg = FindMatchingPkgPrefix(struct_name, kGoPackagePrefixes).first;
+    offset_map[struct_name].first = pkg;
+
+    for (auto field_it = field_map_obj.MemberBegin(); field_it != field_map_obj.MemberEnd();
+         ++field_it) {
+      std::string field_name = field_it->name.GetString();
+      if (!field_it->value.IsObject()) {
+        continue;
+      }
+      const auto& versions_obj = field_it->value.GetObject();
+
+      for (auto ver_it = versions_obj.MemberBegin(); ver_it != versions_obj.MemberEnd(); ++ver_it) {
+        std::string version_key = ver_it->name.GetString();
+        int32_t off = ParseOffsetOnly(ver_it->value);
+        offset_map[struct_name].second[field_name][version_key] = off;
+      }
+    }
+  }
+}
+
+// ParseGoFuncsObject parses the funcs object from the opentelemetry-go-instrumentation
+// offsetgen JSON file. Each function is represented as a key-value pair where the key is the
+// function name and the value is an object containing argument names and their corresponding
+// locations for different versions.
+void ParseGoFuncsObject(const rapidjson::Value& funcsVal) {
+  for (auto itr = funcsVal.MemberBegin(); itr != funcsVal.MemberEnd(); ++itr) {
+    std::string func_name = itr->name.GetString();
+    if (!itr->value.IsObject()) {
+      continue;
+    }
+    const auto& arg_map_obj = itr->value.GetObject();  // e.g. "data", "Flags", etc.
+
+    auto& location_map = GetGoFunctionArgOffsets();
+
+    std::string_view pkg = FindMatchingPkgPrefix(func_name, kGoPackagePrefixes).first;
+    location_map[func_name].first = pkg;
+    for (auto arg_it = arg_map_obj.MemberBegin(); arg_it != arg_map_obj.MemberEnd(); ++arg_it) {
+      std::string arg_name = arg_it->name.GetString();
+
+      if (!arg_it->value.IsObject()) {
+        continue;
+      }
+      const auto& versions_obj = arg_it->value.GetObject();
+
+      for (auto ver_it = versions_obj.MemberBegin(); ver_it != versions_obj.MemberEnd(); ++ver_it) {
+        std::string version_key = ver_it->name.GetString();
+
+        location_map[func_name].second[arg_name][version_key] =
+            ParseOffsetAndLocation(ver_it->value);
+      }
+    }
+  }
+}
+
 }  // namespace
 
 //-----------------------------------------------------------------------------
@@ -186,20 +332,20 @@ Status PopulateCommonTypeAddrs(ElfReader* elf_reader, std::string_view vendor_pr
   return Status::OK();
 }
 
-Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view vendor_prefix,
+Status PopulateCommonDebugSymbols(GoOffsetLocator* offset_locator, std::string_view vendor_prefix,
                                   struct go_common_symaddrs_t* symaddrs) {
 #define VENDOR_SYMBOL(symbol) absl::StrCat(vendor_prefix, symbol)
 
   LOG_ASSIGN_STATUSOR(symaddrs->FD_Sysfd_offset,
-                      dwarf_reader->GetStructMemberOffset("internal/poll.FD", "Sysfd"));
+                      offset_locator->GetStructMemberOffset("internal/poll.FD", "Sysfd"));
   LOG_ASSIGN_STATUSOR(symaddrs->tlsConn_conn_offset,
-                      dwarf_reader->GetStructMemberOffset("crypto/tls.Conn", "conn"));
+                      offset_locator->GetStructMemberOffset("crypto/tls.Conn", "conn"));
   LOG_ASSIGN_STATUSOR(
       symaddrs->syscallConn_conn_offset,
-      dwarf_reader->GetStructMemberOffset(
+      offset_locator->GetStructMemberOffset(
           VENDOR_SYMBOL("google.golang.org/grpc/credentials/internal.syscallConn"), "conn"));
   LOG_ASSIGN_STATUSOR(symaddrs->g_goid_offset,
-                      dwarf_reader->GetStructMemberOffset("runtime.g", "goid"));
+                      offset_locator->GetStructMemberOffset("runtime.g", "goid"));
 #undef VENDOR_SYMBOL
 
   // List mandatory symaddrs here (symaddrs without which all probes become useless).
@@ -228,7 +374,7 @@ Status PopulateHTTP2TypeAddrs(ElfReader* elf_reader, std::string_view vendor_pre
   return Status::OK();
 }
 
-Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view vendor_prefix,
+Status PopulateHTTP2DebugSymbols(GoOffsetLocator* offset_locator, std::string_view vendor_prefix,
                                  struct go_http2_symaddrs_t* symaddrs) {
   // Note: we only return error if a *mandatory* symbol is missing. Currently none are mandatory,
   // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
@@ -238,111 +384,111 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
 
   // clang-format off
   LOG_ASSIGN_STATUSOR(symaddrs->HeaderField_Name_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2/hpack.HeaderField"),
                             "Name"));
   LOG_ASSIGN_STATUSOR(symaddrs->HeaderField_Value_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2/hpack.HeaderField"),
                             "Value"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2Server_conn_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.http2Server"),
                             "conn"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2Client_conn_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.http2Client"),
                             "conn"));
   LOG_ASSIGN_STATUSOR(symaddrs->loopyWriter_framer_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.loopyWriter"),
                             "framer"));
   LOG_ASSIGN_STATUSOR(symaddrs->Framer_w_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.Framer"),
                             "w"));
   LOG_ASSIGN_STATUSOR(symaddrs->MetaHeadersFrame_HeadersFrame_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.MetaHeadersFrame"),
                             "HeadersFrame"));
   LOG_ASSIGN_STATUSOR(symaddrs->MetaHeadersFrame_Fields_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.MetaHeadersFrame"),
                             "Fields"));
   LOG_ASSIGN_STATUSOR(symaddrs->HeadersFrame_FrameHeader_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.HeadersFrame"),
                             "FrameHeader"));
   LOG_ASSIGN_STATUSOR(symaddrs->FrameHeader_Type_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.FrameHeader"),
                             "Type"));
   LOG_ASSIGN_STATUSOR(symaddrs->FrameHeader_Flags_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.FrameHeader"),
                             "Flags"));
   LOG_ASSIGN_STATUSOR(symaddrs->FrameHeader_StreamID_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.FrameHeader"),
                             "StreamID"));
   LOG_ASSIGN_STATUSOR(symaddrs->DataFrame_data_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("golang.org/x/net/http2.DataFrame"),
                             "data"));
   LOG_ASSIGN_STATUSOR(symaddrs->bufWriter_conn_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.bufWriter"),
                             "conn"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2serverConn_conn_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2serverConn",
                             "conn"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2serverConn_hpackEncoder_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2serverConn",
                             "hpackEncoder"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2HeadersFrame_http2FrameHeader_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2HeadersFrame",
                             "http2FrameHeader"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2FrameHeader_Type_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2FrameHeader",
                             "Type"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2FrameHeader_Flags_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2FrameHeader",
                             "Flags"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2FrameHeader_StreamID_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2FrameHeader",
                             "StreamID"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2DataFrame_data_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2DataFrame",
                             "data"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2writeResHeaders_streamID_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2writeResHeaders",
                             "streamID"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2writeResHeaders_endStream_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2writeResHeaders",
                             "endStream"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2MetaHeadersFrame",
                             "http2HeadersFrame"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2MetaHeadersFrame_Fields_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2MetaHeadersFrame",
                             "Fields"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2Framer_w_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2Framer",
                             "w"));
   LOG_ASSIGN_STATUSOR(symaddrs->http2bufferedWriter_w_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2bufferedWriter",
                             "w"));
   // clang-format on
@@ -352,7 +498,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2Framer).WriteDataPadded.
   {
     std::string_view fn = "net/http.(*http2Framer).WriteDataPadded";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->http2Framer_WriteDataPadded_f_loc, GetArgOffset(args_map, "f"));
     LOG_ASSIGN(symaddrs->http2Framer_WriteDataPadded_streamID_loc,
                GetArgOffset(args_map, "streamID"));
@@ -369,7 +515,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
   {
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2.(*Framer).WriteDataPadded");
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->http2_WriteDataPadded_f_loc, GetArgOffset(args_map, "f"));
     LOG_ASSIGN(symaddrs->http2_WriteDataPadded_streamID_loc, GetArgOffset(args_map, "streamID"));
     LOG_ASSIGN(symaddrs->http2_WriteDataPadded_endStream_loc, GetArgOffset(args_map, "endStream"));
@@ -384,7 +530,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2Framer).checkFrameOrder.
   {
     std::string_view fn = "net/http.(*http2Framer).checkFrameOrder";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->http2Framer_checkFrameOrder_fr_loc, GetArgOffset(args_map, "fr"));
     LOG_ASSIGN(symaddrs->http2Framer_checkFrameOrder_f_loc, GetArgOffset(args_map, "f"));
   }
@@ -392,7 +538,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of golang.org/x/net/http2.(*Framer).checkFrameOrder.
   {
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2.(*Framer).checkFrameOrder");
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->http2_checkFrameOrder_fr_loc, GetArgOffset(args_map, "fr"));
     LOG_ASSIGN(symaddrs->http2_checkFrameOrder_f_loc, GetArgOffset(args_map, "f"));
   }
@@ -400,7 +546,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2writeResHeaders).writeFrame.
   {
     std::string_view fn = "net/http.(*http2writeResHeaders).writeFrame";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->writeFrame_w_loc, GetArgOffset(args_map, "w"));
     LOG_ASSIGN(symaddrs->writeFrame_ctx_loc, GetArgOffset(args_map, "ctx"));
   }
@@ -408,7 +554,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
   {
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2/hpack.(*Encoder).WriteField");
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->WriteField_e_loc, GetArgOffset(args_map, "e"));
     LOG_ASSIGN(symaddrs->WriteField_f_name_loc, GetArgOffset(args_map, "f"));
     symaddrs->WriteField_f_name_loc.offset += 0;
@@ -420,7 +566,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2serverConn).processHeaders.
   {
     std::string_view fn = "net/http.(*http2serverConn).processHeaders";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->processHeaders_sc_loc, GetArgOffset(args_map, "sc"));
     LOG_ASSIGN(symaddrs->processHeaders_f_loc, GetArgOffset(args_map, "f"));
   }
@@ -429,7 +575,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   {
     std::string fn =
         VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders");
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->http2Server_operateHeaders_t_loc, GetArgOffset(args_map, "t"));
     LOG_ASSIGN(symaddrs->http2Server_operateHeaders_frame_loc, GetArgOffset(args_map, "frame"));
   }
@@ -438,7 +584,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   {
     std::string fn =
         VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders");
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->http2Client_operateHeaders_t_loc, GetArgOffset(args_map, "t"));
     LOG_ASSIGN(symaddrs->http2Client_operateHeaders_frame_loc, GetArgOffset(args_map, "frame"));
   }
@@ -447,7 +593,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   {
     std::string fn =
         VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader");
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->writeHeader_l_loc, GetArgOffset(args_map, "l"));
     LOG_ASSIGN(symaddrs->writeHeader_streamID_loc, GetArgOffset(args_map, "streamID"));
     LOG_ASSIGN(symaddrs->writeHeader_endStream_loc, GetArgOffset(args_map, "endStream"));
@@ -466,10 +612,9 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
 
 }  // namespace
 
-Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reader,
+Status PopulateGoTLSDebugSymbols(GoOffsetLocator* offset_locator,
                                  struct go_tls_symaddrs_t* symaddrs) {
-  PX_ASSIGN_OR_RETURN(auto build_info, ReadGoBuildInfo(elf_reader));
-  PX_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(build_info.first, false));
+  PX_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(offset_locator->go_version(), false));
   std::string retval0_arg = "~r1";
   std::string retval1_arg = "~r2";
 
@@ -485,7 +630,7 @@ Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reade
   // Arguments of crypto/tls.(*Conn).Write.
   {
     std::string_view fn = "crypto/tls.(*Conn).Write";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->Write_c_loc, GetArgOffset(args_map, "c"));
     LOG_ASSIGN(symaddrs->Write_b_loc, GetArgOffset(args_map, "b"));
     LOG_ASSIGN(symaddrs->Write_retval0_loc, GetArgOffset(args_map, retval0_arg));
@@ -495,7 +640,7 @@ Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reade
   // Arguments of crypto/tls.(*Conn).Read.
   {
     std::string fn = "crypto/tls.(*Conn).Read";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
+    auto args_map = offset_locator->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     LOG_ASSIGN(symaddrs->Read_c_loc, GetArgOffset(args_map, "c"));
     LOG_ASSIGN(symaddrs->Read_b_loc, GetArgOffset(args_map, "b"));
     LOG_ASSIGN(symaddrs->Read_retval0_loc, GetArgOffset(args_map, retval0_arg));
@@ -512,34 +657,81 @@ Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reade
   return Status::OK();
 }
 
+StructOffsetMap& GetGoStructOffsets() { return g_struct_offsets; }
+
+FunctionArgMap& GetGoFunctionArgOffsets() { return g_function_arg_offsets; }
+
+void ParseGoOffsetgenFile(const std::string& offsetgen_file) {
+  std::ifstream file(offsetgen_file, std::ios::binary);
+  std::string warning = "Uprobes will exclusively use DWARF to determine offsets.";
+  if (!file) {
+    LOG(WARNING) << absl::Substitute("Unable to open offsetgen file=$0 error=$1. $2",
+                                     offsetgen_file, strerror(errno), warning);
+    return;
+  }
+
+  file.seekg(0, std::ios::end);
+  size_t f_size = file.tellg();
+  file.seekg(0);
+
+  std::vector<char> buffer;
+  buffer.resize(f_size);
+
+  if (!file.read(buffer.data(), f_size)) {
+    LOG(WARNING) << absl::Substitute("Unable to read offsetgen file=$0 error=$1. $2",
+                                     offsetgen_file, strerror(errno), warning);
+    return;
+  }
+
+  rapidjson::MemoryStream ms(buffer.data(), f_size);
+
+  rapidjson::Document doc;
+  rapidjson::ParseResult parse_res = doc.ParseStream(ms);
+  if (!parse_res) {
+    LOG(ERROR) << absl::Substitute("JSON parse error at offset=$0: $1 ", parse_res.Offset(),
+                                   rapidjson::GetParseError_En(parse_res.Code()));
+    return;
+  }
+
+  // There are two top-level objects in the JSON file:
+  if (doc.HasMember("structs") && doc["structs"].IsObject()) {
+    ParseGoStructsObject(doc["structs"]);
+  }
+  if (doc.HasMember("funcs") && doc["funcs"].IsObject()) {
+    ParseGoFuncsObject(doc["funcs"]);
+  }
+}
+
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,
-                                                       DwarfReader* dwarf_reader) {
+                                                       GoOffsetLocator* offset_locator) {
   struct go_common_symaddrs_t symaddrs;
 
   PX_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+  offset_locator->set_vendor_prefix(vendor_prefix);
 
   PX_RETURN_IF_ERROR(PopulateCommonTypeAddrs(elf_reader, vendor_prefix, &symaddrs));
-  PX_RETURN_IF_ERROR(PopulateCommonDebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateCommonDebugSymbols(offset_locator, vendor_prefix, &symaddrs));
 
   return symaddrs;
 }
 
 StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
-                                                     DwarfReader* dwarf_reader) {
+                                                     GoOffsetLocator* offset_locator) {
   struct go_http2_symaddrs_t symaddrs;
 
   PX_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+  offset_locator->set_vendor_prefix(vendor_prefix);
 
   PX_RETURN_IF_ERROR(PopulateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
-  PX_RETURN_IF_ERROR(PopulateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateHTTP2DebugSymbols(offset_locator, vendor_prefix, &symaddrs));
 
   return symaddrs;
 }
 
-StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader) {
+StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(GoOffsetLocator* offset_locator) {
   struct go_tls_symaddrs_t symaddrs;
 
-  PX_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(elf_reader, dwarf_reader, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(offset_locator, &symaddrs));
 
   return symaddrs;
 }
