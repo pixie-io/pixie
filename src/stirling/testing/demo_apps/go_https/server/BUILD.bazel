@@ -24,9 +24,6 @@ go_library(
     name = "server_lib",
     srcs = ["https_server.go"],
     importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/server",
-    deps = [
-        "@org_golang_x_net//http2",
-    ],
 )
 
 genrule(
