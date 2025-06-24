@@ -127,7 +127,7 @@ pl_cc_bpf_test(
     ],
     deps = [
         ":cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_19_grpc_client_container",
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_19_grpc_server_container",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_24_grpc_client_container",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_1_24_grpc_server_container",
     ],
 )

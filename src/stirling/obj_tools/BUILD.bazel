@@ -52,8 +52,8 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/cc:stripped_exe",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debuglink_target",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_19_nm_output",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_24_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_24_nm_output",
     ],
     deps = [
         ":cc_library",
@@ -89,7 +89,7 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
         "//src/stirling/obj_tools/testdata/go:test_binaries",
-        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_19_grpc_tls_server_binary",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_24_grpc_tls_server_binary",
     ],
     deps = [
         ":cc_library",
@@ -137,8 +137,7 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/go:test_binaries",
         "//src/stirling/obj_tools/testdata/go:test_buildinfo_with_mods",
         "//src/stirling/obj_tools/testdata/go:test_go_1_17_binary",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_21_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_24_binary",
     ],
     deps = [
         ":cc_library",
@@ -185,7 +184,7 @@ pl_cc_binary(
     name = "dwarf_reader_benchmark",
     testonly = 1,
     srcs = ["dwarf_reader_benchmark.cc"],
-    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_19_grpc_tls_server_binary"],
+    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_24_grpc_tls_server_binary"],
     deps = [
         ":cc_library",
         "//src/common/testing:cc_library",

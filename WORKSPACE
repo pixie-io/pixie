@@ -210,32 +210,6 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies(go_sdk = "go_sdk")
 
-# Download alternative go toolchains after all other dependencies, so that they aren't used by external dependencies.
-go_download_sdk(
-    name = "go_sdk_1_18",
-    version = "1.18.10",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_19",
-    version = "1.19.13",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_20",
-    version = "1.20.14",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_21",
-    version = "1.21.13",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_22",
-    version = "1.22.12",
-)
-
 go_download_sdk(
     name = "go_sdk_1_23",
     version = "1.23.10",

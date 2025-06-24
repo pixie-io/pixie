@@ -190,11 +190,6 @@ INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
                          ::testing::Values(
                              // Did not enumerate all combinations, as they are independent based on
                              // our knowledge, and to minimize test size to reduce flakiness.
-                             TestParams{"1_18", false, true}, TestParams{"1_18", true, false},
-                             TestParams{"1_19", false, false}, TestParams{"1_19", true, true},
-                             TestParams{"1_20", true, true}, TestParams{"1_20", true, false},
-                             TestParams{"1_21", true, true}, TestParams{"1_21", true, false},
-                             TestParams{"1_22", true, true}, TestParams{"1_22", true, false},
                              TestParams{"1_23", true, true}, TestParams{"1_23", true, false},
                              TestParams{"1_24", true, true}, TestParams{"1_24", true, false},
                              TestParams{"boringcrypto", true, true}));
