@@ -35,7 +35,7 @@ class Go1_22_GRPCServerContainer : public ContainerRunner {
 
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/"
-      "containers:golang_1_22_grpc_server_with_buildinfo.tar";
+      "containers/golang_1_22_grpc_server_with_buildinfo.tar";
 
  private:
   static constexpr std::string_view kContainerNamePrefix = "grpc_server";
