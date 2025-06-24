@@ -29,7 +29,7 @@ namespace testing {
 
 class Go1_24_TLSServerContainer : public ContainerRunner {
  public:
-  explicit Go1_24_TLSServerContainer()
+  Go1_24_TLSServerContainer()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 

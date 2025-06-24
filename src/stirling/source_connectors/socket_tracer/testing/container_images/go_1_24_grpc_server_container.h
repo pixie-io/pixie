@@ -29,7 +29,7 @@ namespace testing {
 
 class Go1_24_GRPCServerContainer : public ContainerRunner {
  public:
-  explicit Go1_24_GRPCServerContainer()
+  Go1_24_GRPCServerContainer()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
