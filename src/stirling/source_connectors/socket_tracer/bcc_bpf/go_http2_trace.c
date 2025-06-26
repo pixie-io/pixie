@@ -147,9 +147,9 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
   // moving forward it uses a conn member (net.Conn interface) instead.
   if (inner_intf_offset == -1) {
     inner_intf_offset = symaddrs->http2bufferedWriter_conn_offset;
-    REQUIRE_SYMADDR(inner_intf_offset, kInvalidFD);
     conn_intf = true;
   }
+  REQUIRE_SYMADDR(inner_intf_offset, kInvalidFD);
 
   struct go_interface io_writer_interface;
   BPF_PROBE_READ_VAR(io_writer_interface, framer_ptr + symaddrs->http2Framer_w_offset);

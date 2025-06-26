@@ -174,6 +174,10 @@ static __inline int32_t get_fd_from_conn_intf_core(struct go_interface conn_intf
   REQUIRE_SYMADDR(symaddrs->FD_Sysfd_offset, kInvalidFD);
 
   if (conn_intf.type == symaddrs->internal_syscallConn) {
+    // TODO(ddelnano): This can be dropped when 4.14 kernel support is dropped.
+    if (symaddrs->syscallConn_conn_offset < 0 || symaddrs->syscallConn_conn_offset > 1024) {
+      return kInvalidFD;
+    }
     REQUIRE_SYMADDR(symaddrs->syscallConn_conn_offset, kInvalidFD);
     const int kSyscallConnConnOffset = 0;
     bpf_probe_read(&conn_intf, sizeof(conn_intf),
@@ -181,6 +185,10 @@ static __inline int32_t get_fd_from_conn_intf_core(struct go_interface conn_intf
   }
 
   if (conn_intf.type == symaddrs->tls_Conn) {
+    // TODO(ddelnano): This can be dropped when 4.14 kernel support is dropped.
+    if (symaddrs->tlsConn_conn_offset < 0 || symaddrs->tlsConn_conn_offset > 1024) {
+      return kInvalidFD;
+    }
     REQUIRE_SYMADDR(symaddrs->tlsConn_conn_offset, kInvalidFD);
     bpf_probe_read(&conn_intf, sizeof(conn_intf), conn_intf.ptr + symaddrs->tlsConn_conn_offset);
   }
