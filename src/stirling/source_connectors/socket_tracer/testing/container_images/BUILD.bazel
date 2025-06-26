@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label", "pl_supported_go_sdk_versions", "pl_go_test_versions")
+load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label", "pl_go_test_versions", "pl_supported_go_sdk_versions")
 
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 
@@ -98,7 +98,6 @@ pl_cc_test_library(
     )
     for sdk_version in pl_go_test_versions
 ]
-
 
 [
     pl_cc_test_library(
