@@ -74,6 +74,7 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
                                     input_program->deployment_spec().path_list().paths(0));
 
     } else {
+      LOG(WARNING) << source_lang_s.msg();
       detected_language = ir::shared::Language::LANG_UNKNOWN;
     }
   } else {

@@ -184,7 +184,6 @@ DwarfReader::DetectSourceLanguageFromCUDIE(const llvm::DWARFDie& unit_die) {
 Status DwarfReader::DetectSourceLanguage() {
   is_multi_lang_ = false;
   std::optional<llvm::dwarf::SourceLanguage> prev_source_language;
-  std::optional<std::string> prev_compiler;
   for (size_t i = 0; i < dwarf_context_->getNumCompileUnits(); ++i) {
     const auto& unit_die = dwarf_context_->getUnitAtIndex(i)->getUnitDIE();
     auto lang_s = DetectSourceLanguageFromCUDIE(unit_die);
@@ -193,7 +192,6 @@ Status DwarfReader::DetectSourceLanguage() {
     }
     auto p = lang_s.ValueOrDie();
     auto source_language = p.first;
-    auto& compiler = p.second;
 
     if (!prev_source_language.has_value()) {
       prev_source_language = source_language;
@@ -201,14 +199,8 @@ Status DwarfReader::DetectSourceLanguage() {
                prev_source_language.value() != source_language) {
       is_multi_lang_ = true;
     }
-
-    if (!prev_compiler.has_value()) {
-      prev_compiler = compiler;
-    } else if (prev_compiler.has_value() && prev_compiler.value() != compiler) {
-      is_multi_lang_ = true;
-    }
   }
-  if (prev_source_language.has_value() && prev_compiler.has_value()) {
+  if (prev_source_language.has_value()) {
     source_language_ = prev_source_language.value();
     return Status::OK();
   }
