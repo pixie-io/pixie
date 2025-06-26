@@ -161,8 +161,7 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
   }
 
   struct go_interface inner_intf;
-  BPF_PROBE_READ_VAR(inner_intf,
-                     io_writer_interface.ptr + inner_intf_offset);
+  BPF_PROBE_READ_VAR(inner_intf, io_writer_interface.ptr + inner_intf_offset);
 
   if (conn_intf) {
     return get_fd_from_conn_intf(inner_intf);
