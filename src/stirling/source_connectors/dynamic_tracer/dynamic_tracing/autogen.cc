@@ -80,7 +80,7 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
     // Back-up detection policy looks for certain language-specific symbols
     if (IsGoExecutable(elf_reader)) {
       detected_language = ir::shared::Language::GOLANG;
-      LOG(INFO) << absl::Substitute("Using language GOLANG for object $1 and others",
+      LOG(INFO) << absl::Substitute("Using language GOLANG for object $0 and others",
                                     input_program->deployment_spec().path_list().paths(0));
     }
 
