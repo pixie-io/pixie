@@ -27,17 +27,18 @@ namespace px {
 namespace stirling {
 namespace testing {
 
-class Go1_21_TLSClientContainer : public ContainerRunner {
+class Go1_24_GRPCServerContainer : public ContainerRunner {
  public:
-  Go1_21_TLSClientContainer()
+  Go1_24_GRPCServerContainer()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
- private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_https/client/golang_1_21_https_client.tar";
-  static constexpr std::string_view kContainerNamePrefix = "https_client";
-  static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_24_grpc_tls_server.tar";
+
+ private:
+  static constexpr std::string_view kContainerNamePrefix = "grpc_server";
+  static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
 };
 
 }  // namespace testing

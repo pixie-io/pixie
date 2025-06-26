@@ -287,3 +287,83 @@ def stirling_test_images():
         repository = "mongo",
         digest = "sha256:19b2e5c91f92c7b18113a1501c5a5fe52b71a6c6d2a5232eeebb4f2abacae04a",
     )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_18_https_server_with_buildinfo",
+        repository = "golang_1_18_https_server_with_buildinfo",
+        digest = "sha256:d4468289a2a4f2520effc48dd8894c998867b6638953302ef4156983dbf6e4e5",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_19_https_server_with_buildinfo",
+        repository = "golang_1_19_https_server_with_buildinfo",
+        digest = "sha256:8a35dab46ccd9af53704f8c83a8d3b28bf142f8e038696b2ba30b7df1c46df73",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_20_https_server_with_buildinfo",
+        repository = "golang_1_20_https_server_with_buildinfo",
+        digest = "sha256:c21f14e2213f4d9826926eeb3a0e7c7445789539561b43981bbca3efafcad8d7",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_21_https_server_with_buildinfo",
+        repository = "golang_1_21_https_server_with_buildinfo",
+        digest = "sha256:abb4573171c0a46afd4c704d8bbd6d123f022c5ad0448869311b026d0586106b",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_22_https_server_with_buildinfo",
+        repository = "golang_1_22_https_server_with_buildinfo",
+        digest = "sha256:0f14818a1046dfdb7d5ac27e173d99e071219897a1d9969c8d7604acbd0d9541",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_18_grpc_server_with_buildinfo",
+        repository = "golang_1_18_grpc_server_with_buildinfo",
+        digest = "sha256:e59a94abb2c505f680829951161a0a0209de0d02307da951c5a76d7b84a72034",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_19_grpc_server_with_buildinfo",
+        repository = "golang_1_19_grpc_server_with_buildinfo",
+        digest = "sha256:88b1ae2096af629152a645f77b9c47dcac45dde95fb78376c6fdf1f7183a652b",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_20_grpc_server_with_buildinfo",
+        repository = "golang_1_20_grpc_server_with_buildinfo",
+        digest = "sha256:a35e24a44c53d6f984eb633bbb15e318374a61fa426ccc5e580d587ce7f6a788",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_21_grpc_server_with_buildinfo",
+        repository = "golang_1_21_grpc_server_with_buildinfo",
+        digest = "sha256:998654168565a7d4ed1c73edbafc48042879ac26581972a8ba23fe5a39e520f2",
+    )
+
+    # Tag: 1.0
+    # Arch: linux/amd64
+    _container_image(
+        name = "golang_1_22_grpc_server_with_buildinfo",
+        repository = "golang_1_22_grpc_server_with_buildinfo",
+        digest = "sha256:67adba5e8513670fa37bd042862e7844f26239e8d2997ed8c3b0aa527bc04cc3",
+    )

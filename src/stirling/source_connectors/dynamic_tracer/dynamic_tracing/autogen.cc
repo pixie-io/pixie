@@ -61,22 +61,34 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
 
   // Primary detection mechanism is DWARF info, when available.
   if (dwarf_reader != nullptr) {
-    detected_language = TransformSourceLanguage(dwarf_reader->source_language())
-                            .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
+    // It's possible for DWARF to have DW_TAG_compile_unit's from multiple languages.
+    // We currently only support binaries with a single language, so we
+    // assert that this is the case.
+    auto source_lang_s = dwarf_reader->source_language();
+    if (source_lang_s.ok()) {
+      auto source_lang = source_lang_s.ValueOrDie();
+      detected_language =
+          TransformSourceLanguage(source_lang).ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
+      LOG(INFO) << absl::Substitute("Using language $0 for object $1 and others",
+                                    magic_enum::enum_name(source_lang),
+                                    input_program->deployment_spec().path_list().paths(0));
+
+    } else {
+      LOG(WARNING) << source_lang_s.msg();
+      detected_language = ir::shared::Language::LANG_UNKNOWN;
+    }
   } else {
     // Back-up detection policy looks for certain language-specific symbols
     if (IsGoExecutable(elf_reader)) {
       detected_language = ir::shared::Language::GOLANG;
+      LOG(INFO) << absl::Substitute("Using language GOLANG for object $0 and others",
+                                    input_program->deployment_spec().path_list().paths(0));
     }
 
     // TODO(oazizi): Make this stronger by adding more elf-based tests.
   }
 
   if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
-    LOG(INFO) << absl::Substitute("Using language $0 for object $1 and others",
-                                  magic_enum::enum_name(dwarf_reader->source_language()),
-                                  input_program->deployment_spec().path_list().paths(0));
-
     // Since we only support tracing of a single object, all tracepoints have the same language.
     for (auto& tracepoint : *input_program->mutable_tracepoints()) {
       tracepoint.mutable_program()->set_language(detected_language);
