@@ -33,6 +33,8 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_22_grpc_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_23_grpc_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_23_grpc_server_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_24_grpc_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_24_grpc_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_boringcrypto_grpc_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_boringcrypto_grpc_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/product_catalog_client_container.h"
@@ -105,6 +107,11 @@ struct Go1_23GRPCClientServerContainers {
   using ClientContainer = ::px::stirling::testing::Go1_23_GRPCClientContainer;
 };
 
+struct Go1_24GRPCClientServerContainers {
+  using ServerContainer = ::px::stirling::testing::Go1_24_GRPCServerContainer;
+  using ClientContainer = ::px::stirling::testing::Go1_24_GRPCClientContainer;
+};
+
 struct GoBoringCryptoGRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::GoBoringCryptoGRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::GoBoringCryptoGRPCClientContainer;
@@ -113,7 +120,7 @@ struct GoBoringCryptoGRPCClientServerContainers {
 typedef ::testing::Types<GoBoringCryptoGRPCClientServerContainers, Go1_18GRPCClientServerContainers,
                          Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers,
                          Go1_21GRPCClientServerContainers, Go1_22GRPCClientServerContainers,
-                         Go1_23GRPCClientServerContainers>
+                         Go1_23GRPCClientServerContainers, Go1_24GRPCClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
