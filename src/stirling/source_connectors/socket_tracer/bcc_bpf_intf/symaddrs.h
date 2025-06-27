@@ -235,6 +235,8 @@ struct go_http2_symaddrs_t {
 
   // Members of net/http.http2bufferedWriter
   int32_t http2bufferedWriter_w_offset;  // 0
+  // Go 1.24 switched from a w io.Writer member to a conn net.Conn one.
+  int32_t http2bufferedWriter_conn_offset;
 };
 
 struct go_tls_symaddrs_t {

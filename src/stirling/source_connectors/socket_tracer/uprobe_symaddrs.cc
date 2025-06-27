@@ -345,6 +345,11 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
                     dwarf_reader->GetStructMemberOffset(
                             "net/http.http2bufferedWriter",
                             "w"));
+
+  LOG_ASSIGN_STATUSOR(symaddrs->http2bufferedWriter_conn_offset,
+                    dwarf_reader->GetStructMemberOffset(
+                            "net/http.http2bufferedWriter",
+                            "conn"));
   // clang-format on
 
   const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
