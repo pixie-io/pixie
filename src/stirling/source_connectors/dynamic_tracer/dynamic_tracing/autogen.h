@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
@@ -32,17 +34,20 @@ namespace dynamic_tracing {
  * Uses ELF or DWARF information to detect the source language.
  * Populates the tracepoint program's language field in input_program.
  */
-void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
-                          ir::logical::TracepointDeployment* input_program);
+Status DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
+                            ir::logical::TracepointSpec* program, const std::string& symbol_name);
 
 /**
  * Uses ELF information to check if the provided symbol exists.
  * If it does not exist, it checks whether it is a short-hand (suffix) of a full symbol.
  * If it is a short-hand reference to a symbol, the symbol is replaced with the full-form.
- * Potentially modifies each tracepoint's symbol field in input_program.
+ * Also detects the source language for each resolved symbol using DWARF or ELF information.
+ * Potentially modifies each tracepoint's symbol field and program's language field in
+ * input_program.
  */
-Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
-                          ir::logical::TracepointDeployment* input_program);
+Status ResolveProbeSymbolAndLanguage(obj_tools::ElfReader* elf_reader,
+                                     obj_tools::DwarfReader* dwarf_reader,
+                                     ir::logical::TracepointDeployment* input_program);
 
 /**
  * If any tracepoint in input_program contains no fields to trace, this function uses DWARF info

@@ -42,6 +42,7 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
       return ir::shared::Language::GOLANG;
     case llvm::dwarf::DW_LANG_C:
     case llvm::dwarf::DW_LANG_C99:
+    case llvm::dwarf::DW_LANG_C11:
     case llvm::dwarf::DW_LANG_C_plus_plus:
     case llvm::dwarf::DW_LANG_C_plus_plus_03:
     case llvm::dwarf::DW_LANG_C_plus_plus_11:
@@ -55,41 +56,38 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
 
 }  // namespace
 
-void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
-                          ir::logical::TracepointDeployment* input_program) {
-  ir::shared::Language detected_language = ir::shared::Language::LANG_UNKNOWN;
-
+Status DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
+                            ir::logical::TracepointSpec* program, const std::string& symbol_name) {
   // Primary detection mechanism is DWARF info, when available.
   if (dwarf_reader != nullptr) {
-    detected_language = TransformSourceLanguage(dwarf_reader->source_language())
-                            .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
+    PX_ASSIGN_OR_RETURN(const auto& function_die,
+                        dwarf_reader->GetMatchingDIE(symbol_name, llvm::dwarf::DW_TAG_subprogram));
+    llvm::DWARFUnit* cu = function_die.getDwarfUnit();
+    llvm::DWARFDie unit_die = cu->getUnitDIE();
+
+    PX_ASSIGN_OR_RETURN(auto lang_pair, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
+    llvm::dwarf::SourceLanguage source_lang = lang_pair.first;
+    PX_ASSIGN_OR_RETURN(auto detected_language, TransformSourceLanguage(source_lang));
+
+    LOG(INFO) << absl::Substitute("Using language $0 for object $1 and others",
+                                  magic_enum::enum_name(source_lang), elf_reader->binary_path());
+
+    program->set_language(detected_language);
+    return Status::OK();
   } else {
     // Back-up detection policy looks for certain language-specific symbols
     if (IsGoExecutable(elf_reader)) {
-      detected_language = ir::shared::Language::GOLANG;
+      LOG(INFO) << absl::Substitute("Using language GOLANG for object $0 and others",
+                                    elf_reader->binary_path());
+      program->set_language(ir::shared::Language::GOLANG);
+      return Status::OK();
     }
 
     // TODO(oazizi): Make this stronger by adding more elf-based tests.
   }
 
-  if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
-    LOG(INFO) << absl::Substitute("Using language $0 for object $1 and others",
-                                  magic_enum::enum_name(dwarf_reader->source_language()),
-                                  input_program->deployment_spec().path_list().paths(0));
-
-    // Since we only support tracing of a single object, all tracepoints have the same language.
-    for (auto& tracepoint : *input_program->mutable_tracepoints()) {
-      tracepoint.mutable_program()->set_language(detected_language);
-    }
-  } else {
-    // For now, just print a warning, and let the probe proceed.
-    // This is so we can use things like function argument tracing even when other features may not
-    // work.
-    LOG(WARNING) << absl::Substitute(
-        "Language for object $0 and others is unknown or unsupported, so assuming C/C++ ABI. "
-        "Some dynamic tracing features may not work, or may produce unexpected results.",
-        input_program->deployment_spec().path_list().paths(0));
-  }
+  return error::InvalidArgument("Unable to detect source language for object $0.",
+                                elf_reader->binary_path());
 }
 namespace {
 
@@ -110,8 +108,9 @@ bool IsWholeWordSuffix(std::string_view name, std::string_view suffix) {
 
 }  // namespace
 
-Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
-                          ir::logical::TracepointDeployment* input_program) {
+Status ResolveProbeSymbolAndLanguage(obj_tools::ElfReader* elf_reader,
+                                     obj_tools::DwarfReader* dwarf_reader,
+                                     ir::logical::TracepointDeployment* input_program) {
   // Expand symbol
   for (auto& t : *input_program->mutable_tracepoints()) {
     for (auto& probe : *t.mutable_program()->mutable_probes()) {
@@ -156,7 +155,10 @@ Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
         return error::Internal("Could not find valid symbol match");
       }
 
-      *probe.mutable_tracepoint()->mutable_symbol() = *symbol_name;
+      auto tracepoint = probe.mutable_tracepoint();
+      *tracepoint->mutable_symbol() = *symbol_name;
+      PX_RETURN_IF_ERROR(
+          DetectSourceLanguage(elf_reader, dwarf_reader, t.mutable_program(), *symbol_name));
     }
   }
 

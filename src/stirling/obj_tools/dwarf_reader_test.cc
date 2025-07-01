@@ -125,23 +125,32 @@ TEST_P(CppDwarfReaderTest, NonExistentPath) {
 
 TEST_P(CppDwarfReaderTest, SourceLanguage) {
   {
+    // Check that source language detect for individual DIEs works.
+    ASSERT_OK_AND_ASSIGN(
+        auto die, dwarf_reader->GetMatchingDIE("CanYouFindThis", llvm::dwarf::DW_TAG_subprogram));
+    llvm::DWARFUnit* cu = die.getDwarfUnit();
+    llvm::DWARFDie unit_die = cu->getUnitDIE();
+    ASSERT_OK_AND_ASSIGN(auto p, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
     // We use C++17, but the dwarf shows 14.
-    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
-    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("clang"));
+    EXPECT_EQ(p.first, llvm::dwarf::DW_LANG_C_plus_plus_14);
+    EXPECT_THAT(p.second, ::testing::HasSubstr("clang"));
   }
 }
 
 TEST_P(GolangDwarfReaderTest, SourceLanguage) {
   {
-    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
-    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
-
+    // Check that source language detect for individual DIEs works.
     ASSERT_OK_AND_ASSIGN(const bool uses_regabi, UsesRegABI());
-
+    ASSERT_OK_AND_ASSIGN(auto die, dwarf_reader->GetMatchingDIE("main.(*Vertex).Scale",
+                                                                llvm::dwarf::DW_TAG_subprogram));
+    llvm::DWARFUnit* cu = die.getDwarfUnit();
+    llvm::DWARFDie unit_die = cu->getUnitDIE();
+    ASSERT_OK_AND_ASSIGN(auto p, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
+    EXPECT_EQ(p.first, llvm::dwarf::DW_LANG_Go);
     if (uses_regabi) {
-      EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
+      EXPECT_THAT(p.second, ::testing::HasSubstr("regabi"));
     } else {
-      EXPECT_THAT(dwarf_reader->compiler(), ::testing::Not(::testing::HasSubstr("regabi")));
+      EXPECT_THAT(p.second, ::testing::Not(::testing::HasSubstr("regabi")));
     }
   }
 }
