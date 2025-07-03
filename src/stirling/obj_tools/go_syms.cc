@@ -68,6 +68,40 @@ StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uin
   return std::string(go_version_bytecode);
 }
 
+// Reads the Go version from the runtime.buildVersion symbol in the binary's data section.
+// This function serves as a fallback for older Go binaries (Go 1.11 and earlier) that don't
+// have the .go.buildinfo section. It extracts the version string from the runtime.buildVersion
+// symbol and strips the "go" prefix to return just the semantic version (e.g., "1.11.13").
+// Note: This function does not work correctly with 32-bit binaries due to gostring structure 
+// size differences (see https://github.com/pixie-io/pixie/issues/1300).
+// See https://github.com/pixie-io/pixie/issues/1318 for context.
+StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_reader) {
+  BuildInfo build_info;
+  PX_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,
+                      elf_reader->SearchTheOnlySymbol(kGoBuildVersionSymbol));
+
+  // The address of this symbol points to a Golang string object.
+  // But the size is for the symbol table entry, not this string object.
+  symbol.size = sizeof(gostring);
+  PX_ASSIGN_OR_RETURN(utils::u8string version_code, elf_reader->SymbolByteCode(".data", symbol));
+
+  // We can't guarantee the alignment on version_string so we make a copy into an aligned address.
+  gostring version_string;
+  std::memcpy(&version_string, version_code.data(), sizeof(version_string));
+
+  ElfReader::SymbolInfo version_symbol;
+  version_symbol.address = reinterpret_cast<uint64_t>(version_string.ptr);
+  version_symbol.size = version_string.len;
+
+  PX_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
+  // Strip go prefix from the version string.
+  if (str.size() >= 2 && str.substr(0, 2) == utils::u8string(reinterpret_cast<const unsigned char*>("go"), 2)) {
+    str.erase(0, 2);  // Remove "go" from the beginning
+  }
+  return std::make_pair(std::string(reinterpret_cast<const char*>(str.data()), str.size()),
+                        std::move(build_info));
+}
+
 // Extracts the semantic version from a Go version string (e.g., "go1.20.3").
 // This is how the version is formatted in the buildinfo header.
 StatusOr<std::string> ExtractSemVer(const std::string& input) {
@@ -157,20 +191,32 @@ StatusOr<BuildInfo> ReadModInfo(const std::string& mod) {
   return build_info;
 }
 
+// Macro that calls ReadBuildVersion on failure before returning
+#define PX_ASSIGN_OR_RETURN_WITH_FALLBACK(lhs, rexpr, elf_reader_ptr)      \
+  PX_ASSIGN_OR(                                                            \
+      lhs, rexpr, auto fallback_result = ReadBuildVersion(elf_reader_ptr); \
+      if (fallback_result.ok()) {                                          \
+        return fallback_result.ConsumeValueOrDie();                        \
+      } return __s__.status())
+
 // Reads the buildinfo header embedded in the .go.buildinfo ELF section in order to determine the go
 // toolchain version. This function emulates what the go version cli performs as seen
 // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L151-L221
 StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reader) {
-  PX_ASSIGN_OR_RETURN(ELFIO::section * section, elf_reader->SectionWithName(kGoBuildInfoSection));
+  PX_ASSIGN_OR_RETURN_WITH_FALLBACK(ELFIO::section * section,
+                                    elf_reader->SectionWithName(kGoBuildInfoSection), elf_reader);
   int offset = section->get_offset();
-  PX_ASSIGN_OR_RETURN(std::string_view buildInfoByteCode,
-                      elf_reader->BinaryByteCode<char>(offset, 64 * 1024));
+  PX_ASSIGN_OR_RETURN_WITH_FALLBACK(std::string_view buildInfoByteCode,
+                                    elf_reader->BinaryByteCode<char>(offset, 64 * 1024),
+                                    elf_reader);
 
   BinaryDecoder binary_decoder(buildInfoByteCode);
 
   PX_CHECK_OK(binary_decoder.ExtractStringUntil(kGoBuildInfoMagic));
-  PX_ASSIGN_OR_RETURN(uint8_t ptr_size, binary_decoder.ExtractBEInt<uint8_t>());
-  PX_ASSIGN_OR_RETURN(uint8_t endianness, binary_decoder.ExtractBEInt<uint8_t>());
+  PX_ASSIGN_OR_RETURN_WITH_FALLBACK(uint8_t ptr_size, binary_decoder.ExtractBEInt<uint8_t>(),
+                                    elf_reader);
+  PX_ASSIGN_OR_RETURN_WITH_FALLBACK(uint8_t endianness, binary_decoder.ExtractBEInt<uint8_t>(),
+                                    elf_reader);
 
   BuildInfo build_info;
   std::string go_version;
@@ -181,11 +227,12 @@ StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reade
     // Skip the remaining 16 bytes of buildinfo header
     PX_CHECK_OK(binary_decoder.ExtractBufIgnore(16));
 
-    PX_ASSIGN_OR_RETURN(uint64_t size, binary_decoder.ExtractUVarInt());
-    PX_ASSIGN_OR_RETURN(go_version, binary_decoder.ExtractString(size));
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(uint64_t size, binary_decoder.ExtractUVarInt(), elf_reader);
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(go_version, binary_decoder.ExtractString(size), elf_reader);
 
-    PX_ASSIGN_OR_RETURN(uint64_t mod_size, binary_decoder.ExtractUVarInt());
-    PX_ASSIGN_OR_RETURN(mod_info, binary_decoder.ExtractString(mod_size));
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(uint64_t mod_size, binary_decoder.ExtractUVarInt(),
+                                      elf_reader);
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(mod_info, binary_decoder.ExtractString(mod_size), elf_reader);
   } else {
     read_ptr_func_t read_ptr;
     switch (endianness) {
@@ -227,19 +274,25 @@ StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reade
     }
 
     // Reads the virtual address location of the runtime.buildVersion symbol.
-    PX_ASSIGN_OR_RETURN(auto runtime_version_vaddr,
-                        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
-    PX_ASSIGN_OR_RETURN(auto mod_info_vaddr,
-                        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
-    PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
-                        elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(
+        auto runtime_version_vaddr,
+        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size), elf_reader);
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(
+        auto mod_info_vaddr, binary_decoder.ExtractString<u8string_view::value_type>(ptr_size),
+        elf_reader);
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(
+        uint64_t ptr_addr, elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)),
+        elf_reader);
 
-    PX_ASSIGN_OR_RETURN(go_version, ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr));
+    PX_ASSIGN_OR_RETURN_WITH_FALLBACK(
+        go_version, ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr), elf_reader);
 
     auto mod_ptr_addr_s = elf_reader->VirtualAddrToBinaryAddr(read_ptr(mod_info_vaddr));
     if (mod_ptr_addr_s.ok()) {
-      PX_ASSIGN_OR_RETURN(mod_info, ReadGoString(elf_reader, ptr_size,
-                                                 mod_ptr_addr_s.ConsumeValueOrDie(), read_ptr));
+      PX_ASSIGN_OR_RETURN_WITH_FALLBACK(
+          mod_info,
+          ReadGoString(elf_reader, ptr_size, mod_ptr_addr_s.ConsumeValueOrDie(), read_ptr),
+          elf_reader);
     }
   }
 
@@ -251,12 +304,14 @@ StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reade
     // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L214-L215
     if (mod_size >= 33 && mod_info.at(mod_size - 17) == '\n') {
       mod_info.erase(0, 16);
-      PX_ASSIGN_OR_RETURN(build_info, ReadModInfo(mod_info));
+      PX_ASSIGN_OR_RETURN_WITH_FALLBACK(build_info, ReadModInfo(mod_info), elf_reader);
     }
   }
-  PX_ASSIGN_OR_RETURN(auto s, ExtractSemVer(go_version));
+  PX_ASSIGN_OR_RETURN_WITH_FALLBACK(auto s, ExtractSemVer(go_version), elf_reader);
   return std::make_pair(s, std::move(build_info));
 }
+
+#undef PX_ASSIGN_OR_RETURN_WITH_FALLBACK
 
 // Prefixes used to search for itable symbols in the binary. Follows the format:
 // <prefix>.<type_name>,<interface_name>. i.e. go.itab.<type_name>,<interface_name>
