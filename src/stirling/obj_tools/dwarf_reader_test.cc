@@ -24,34 +24,19 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/utils/detect_application.h"
 
-constexpr std::string_view kTestGo1_17Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_17_binary";
-constexpr std::string_view kTestGo1_18Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_18_binary";
-constexpr std::string_view kTestGo1_19Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_19_binary";
-constexpr std::string_view kTestGo1_20Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_20_binary";
-constexpr std::string_view kTestGo1_21Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
-constexpr std::string_view kTestGo1_22Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_22_binary";
 constexpr std::string_view kTestGo1_23Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_23_binary";
+constexpr std::string_view kTestGo1_24Binary =
+    "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
 constexpr std::string_view kGoGRPCServer =
-    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server_binary";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_24_grpc_tls_server_binary";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
 constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/go/sockshop_payments_service";
 
 const auto kCPPBinaryPath = px::testing::BazelRunfilePath(kCppBinary);
-const auto kGo1_17BinaryPath = px::testing::BazelRunfilePath(kTestGo1_17Binary);
-const auto kGo1_18BinaryPath = px::testing::BazelRunfilePath(kTestGo1_18Binary);
-const auto kGo1_19BinaryPath = px::testing::BazelRunfilePath(kTestGo1_19Binary);
-const auto kGo1_20BinaryPath = px::testing::BazelRunfilePath(kTestGo1_20Binary);
-const auto kGo1_21BinaryPath = px::testing::BazelRunfilePath(kTestGo1_21Binary);
-const auto kGo1_22BinaryPath = px::testing::BazelRunfilePath(kTestGo1_22Binary);
 const auto kGo1_23BinaryPath = px::testing::BazelRunfilePath(kTestGo1_23Binary);
+const auto kGo1_24BinaryPath = px::testing::BazelRunfilePath(kTestGo1_24Binary);
 const auto kGoServerBinaryPath = px::testing::BazelRunfilePath(kGoGRPCServer);
 const auto kGoBinaryUnconventionalPath = px::testing::BazelRunfilePath(kGoBinaryUnconventional);
 
@@ -87,8 +72,10 @@ class CppDwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam>
   void SetUp() override {
     DwarfReaderTestParam p = GetParam();
     ASSERT_OK_AND_ASSIGN(dwarf_reader, CreateDwarfReader(p.binary_path, p.index));
+    indexed = p.index;
   }
   std::unique_ptr<DwarfReader> dwarf_reader;
+  bool indexed;
 };
 
 class GolangDwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
@@ -96,6 +83,7 @@ class GolangDwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestPar
   void SetUp() override {
     DwarfReaderTestParam p = GetParam();
     ASSERT_OK_AND_ASSIGN(dwarf_reader, CreateDwarfReader(p.binary_path, p.index));
+    indexed = p.index;
   }
 
   StatusOr<SemVer> GetGoVersion() const {
@@ -112,6 +100,7 @@ class GolangDwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestPar
   }
 
   std::unique_ptr<DwarfReader> dwarf_reader;
+  bool indexed;
 };
 
 class GolangDwarfReaderIndexTest : public ::testing::TestWithParam<bool> {
@@ -125,23 +114,54 @@ TEST_P(CppDwarfReaderTest, NonExistentPath) {
 
 TEST_P(CppDwarfReaderTest, SourceLanguage) {
   {
-    // We use C++17, but the dwarf shows 14.
-    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
-    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("clang"));
+    // Indexed DwarfReader's have source_language() populated, while non-indexed ones do not.
+    auto source_lang_s = dwarf_reader->source_language();
+    if (indexed) {
+      // We use C++17, but the dwarf shows 14.
+      EXPECT_EQ(source_lang_s.ValueOrDie(), llvm::dwarf::DW_LANG_C_plus_plus_14);
+    } else {
+      EXPECT_TRUE(!source_lang_s.ok());
+    }
+
+    // Check that source language detect for individual DIEs works.
+    ASSERT_OK_AND_ASSIGN(
+        auto die, dwarf_reader->GetMatchingDIE("CanYouFindThis", llvm::dwarf::DW_TAG_subprogram));
+    llvm::DWARFUnit* cu = die.getDwarfUnit();
+    llvm::DWARFDie unit_die = cu->getUnitDIE();
+    ASSERT_OK_AND_ASSIGN(auto p, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
+    EXPECT_EQ(p.first, llvm::dwarf::DW_LANG_C_plus_plus_14);
+    EXPECT_THAT(p.second, ::testing::HasSubstr("clang"));
   }
 }
 
 TEST_P(GolangDwarfReaderTest, SourceLanguage) {
   {
-    EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
-    EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
-
-    ASSERT_OK_AND_ASSIGN(const bool uses_regabi, UsesRegABI());
-
-    if (uses_regabi) {
-      EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
+    auto source_lang_s = dwarf_reader->source_language();
+    // Indexed DwarfReader's have source_language() populated, while non-indexed ones do not.
+    if (indexed) {
+      if (source_lang_s.ok()) {
+        EXPECT_EQ(source_lang_s.ValueOrDie(), llvm::dwarf::DW_LANG_Go);
+      } else {
+        ASSERT_THAT(std::string(source_lang_s.msg()),
+                    ::testing::HasSubstr("multi-language DWARF file"));
+      }
     } else {
-      EXPECT_THAT(dwarf_reader->compiler(), ::testing::Not(::testing::HasSubstr("regabi")));
+      EXPECT_TRUE(!source_lang_s.ok());
+    }
+
+    // Check that source language detect for individual DIEs works.
+    ASSERT_OK_AND_ASSIGN(const bool uses_regabi, UsesRegABI());
+    ASSERT_OK_AND_ASSIGN(auto die, dwarf_reader->GetMatchingDIE("main.(*Vertex).Scale",
+                                                                llvm::dwarf::DW_TAG_subprogram));
+    llvm::DWARFUnit* cu = die.getDwarfUnit();
+    llvm::DWARFDie unit_die = cu->getUnitDIE();
+    ASSERT_OK_AND_ASSIGN(auto p, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
+    if (uses_regabi) {
+      EXPECT_EQ(p.first, llvm::dwarf::DW_LANG_Go);
+      EXPECT_THAT(p.second, ::testing::HasSubstr("regabi"));
+    } else {
+      EXPECT_EQ(p.first, llvm::dwarf::DW_LANG_Go);
+      EXPECT_THAT(p.second, ::testing::Not(::testing::HasSubstr("regabi")));
     }
   }
 }
@@ -569,20 +589,10 @@ INSTANTIATE_TEST_SUITE_P(CppDwarfReaderParameterizedTest, CppDwarfReaderTest,
                                            DwarfReaderTestParam{kCPPBinaryPath, false}));
 
 INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedTest, GolangDwarfReaderTest,
-                         ::testing::Values(DwarfReaderTestParam{kGo1_17BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_17BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_18BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_18BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_19BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_19BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_20BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_20BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_21BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_21BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_22BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_22BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_23BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_23BinaryPath, false}));
+                         ::testing::Values(DwarfReaderTestParam{kGo1_23BinaryPath, true},
+                                           DwarfReaderTestParam{kGo1_23BinaryPath, false},
+                                           DwarfReaderTestParam{kGo1_24BinaryPath, true},
+                                           DwarfReaderTestParam{kGo1_24BinaryPath, false}));
 
 INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedIndexTest, GolangDwarfReaderIndexTest,
                          ::testing::Values(true, false));

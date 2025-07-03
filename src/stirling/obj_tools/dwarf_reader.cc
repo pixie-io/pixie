@@ -92,8 +92,6 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateWithoutIndexing(
   auto dwarf_reader = std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
 
-  PX_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
-
   return dwarf_reader;
 }
 
@@ -101,6 +99,7 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateIndexingAll(
     const std::filesystem::path& path) {
   PX_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
   dwarf_reader->IndexDIEs(std::nullopt);
+  PX_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
   return dwarf_reader;
 }
 
@@ -108,12 +107,15 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateWithSelectiveIndexing(
     const std::filesystem::path& path, const std::vector<SymbolSearchPattern>& symbol_patterns) {
   PX_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
   dwarf_reader->IndexDIEs(symbol_patterns);
+  PX_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
   return dwarf_reader;
 }
 
 DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
                          std::unique_ptr<llvm::DWARFContext> dwarf_context)
-    : memory_buffer_(std::move(buffer)), dwarf_context_(std::move(dwarf_context)) {
+    : is_multi_lang_(std::nullopt),
+      memory_buffer_(std::move(buffer)),
+      dwarf_context_(std::move(dwarf_context)) {
   // Only very first call will actually perform initialization.
   InitLLVMOnce();
 }
@@ -154,31 +156,52 @@ bool IsNamespace(llvm::dwarf::Tag tag) { return tag == llvm::dwarf::DW_TAG_names
 
 }  // namespace
 
+StatusOr<std::pair<llvm::dwarf::SourceLanguage, std::string>>
+DwarfReader::DetectSourceLanguageFromCUDIE(const llvm::DWARFDie& unit_die) {
+  if (unit_die.getTag() != llvm::dwarf::DW_TAG_compile_unit) {
+    // Skip over DW_TAG_partial_unit, and potentially other tags.
+    return error::NotFound("Expected DW_TAG_compile_unit, but got DW_TAG=$0 for unit DIE: $1",
+                           magic_enum::enum_name(unit_die.getTag()), Dump(unit_die));
+  }
+  const DWARFFormValue& producer_attr =
+      GetAttribute(unit_die, llvm::dwarf::DW_AT_producer).ValueOr({});
+  auto s = producer_attr.getAsCString();
+  std::string compiler;
+#if LLVM_VERSION_MAJOR >= 14
+  if (!s.takeError()) {
+    compiler = s.get();
+  }
+#else
+  compiler = s.getValueOr("");
+#endif
+  PX_ASSIGN_OR_RETURN(const DWARFFormValue& lang_attr,
+                      GetAttribute(unit_die, llvm::dwarf::DW_AT_language));
+  auto source_language =
+      static_cast<llvm::dwarf::SourceLanguage>(lang_attr.getAsUnsignedConstant().getValue());
+  return std::make_pair(source_language, compiler);
+}
+
 Status DwarfReader::DetectSourceLanguage() {
+  is_multi_lang_ = false;
+  std::optional<llvm::dwarf::SourceLanguage> prev_source_language;
   for (size_t i = 0; i < dwarf_context_->getNumCompileUnits(); ++i) {
     const auto& unit_die = dwarf_context_->getUnitAtIndex(i)->getUnitDIE();
-    if (unit_die.getTag() != llvm::dwarf::DW_TAG_compile_unit) {
-      // Skip over DW_TAG_partial_unit, and potentially other tags.
+    auto lang_s = DetectSourceLanguageFromCUDIE(unit_die);
+    if (!lang_s.ok()) {
       continue;
     }
+    auto p = lang_s.ValueOrDie();
+    auto source_language = p.first;
 
-    PX_ASSIGN_OR(const DWARFFormValue& lang_attr,
-                 GetAttribute(unit_die, llvm::dwarf::DW_AT_language), continue);
-    source_language_ =
-        static_cast<llvm::dwarf::SourceLanguage>(lang_attr.getAsUnsignedConstant().getValue());
-
-    const DWARFFormValue& producer_attr =
-        GetAttribute(unit_die, llvm::dwarf::DW_AT_producer).ValueOr({});
-
-    auto s = producer_attr.getAsCString();
-#if LLVM_VERSION_MAJOR >= 14
-    if (!s.takeError()) {
-      compiler_ = s.get();
+    if (!prev_source_language.has_value()) {
+      prev_source_language = source_language;
+    } else if (prev_source_language.has_value() &&
+               prev_source_language.value() != source_language) {
+      is_multi_lang_ = true;
     }
-#else
-    compiler_ = s.getValueOr("");
-#endif
-
+  }
+  if (prev_source_language.has_value()) {
+    source_language_ = prev_source_language.value();
     return Status::OK();
   }
   return error::Internal(
@@ -923,15 +946,19 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   // but DW_AT_location has been found to be blank in some cases, making it unreliable.
   // Instead, we use a FunctionArgTracker that tries to reverse engineer the calling convention.
 
-  ABI abi = LanguageToABI(source_language_, compiler_);
+  PX_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
+  // Certain binaries can have DW_TAG_compile_units with different source languages. When compiling
+  // programs with ASAN/TSAN enabled this is common.
+  llvm::DWARFUnit* cu = function_die.getDwarfUnit();
+  llvm::DWARFDie unit_die = cu->getUnitDIE();
+  PX_ASSIGN_OR_RETURN(auto p, DetectSourceLanguageFromCUDIE(unit_die));
+  ABI abi = LanguageToABI(p.first, p.second);
   if (abi == ABI::kUnknown) {
     return error::Unimplemented("Unable to determine ABI from language: $0",
                                 magic_enum::enum_name(source_language_));
   }
   std::unique_ptr<ABICallingConventionModel> arg_tracker = ABICallingConventionModel::Create(abi);
-
-  PX_ASSIGN_OR_RETURN(const DWARFDie& function_die,
-                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   // If function has a return value, process that first.
   // This is important, because in some ABIs (e.g. SystemV ABI),
@@ -968,7 +995,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     PX_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PX_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
 
-    if (source_language_ == llvm::dwarf::DW_LANG_Go) {
+    if (p.first == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);
     }
 

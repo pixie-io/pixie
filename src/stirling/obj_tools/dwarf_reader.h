@@ -179,6 +179,12 @@ class DwarfReader {
                                           std::optional<llvm::dwarf::Tag> type = {});
 
   /**
+   * Detects the source language and compiler from a DW_TAG_compile_unit's attributes.
+   */
+  StatusOr<std::pair<llvm::dwarf::SourceLanguage, std::string>> DetectSourceLanguageFromCUDIE(
+      const llvm::DWARFDie& die);
+
+  /**
    * Return the size of a struct.
    */
   StatusOr<uint64_t> GetStructByteSize(std::string_view struct_name);
@@ -291,8 +297,18 @@ class DwarfReader {
 
   bool IsValid() const { return dwarf_context_->getNumCompileUnits() != 0; }
 
-  const llvm::dwarf::SourceLanguage& source_language() const { return source_language_; }
-  const std::string& compiler() const { return compiler_; }
+  StatusOr<llvm::dwarf::SourceLanguage> source_language() const {
+    if (!is_multi_lang_.has_value()) {
+      return error::Internal(
+          "source_language() called before the source language was detected. "
+          "Call DetectSourceLanguage() first.");
+    } else if (is_multi_lang_.value()) {
+      return error::Internal(
+          "source_language() called on a multi-language DWARF file. "
+          "Use GetMatchingDIEs() to find the source language for a specific DIE.");
+    }
+    return source_language_;
+  }
 
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
@@ -320,8 +336,7 @@ class DwarfReader {
   // Records the source language of the DWARF information.
   llvm::dwarf::SourceLanguage source_language_;
 
-  // Records the name of the compiler that produces this file.
-  std::string compiler_;
+  std::optional<bool> is_multi_lang_;
 
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;

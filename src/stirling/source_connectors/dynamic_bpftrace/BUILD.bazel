@@ -38,8 +38,8 @@ pl_cc_bpf_test(
     name = "dynamic_bpftrace_connector_bpf_test",
     srcs = ["dynamic_bpftrace_connector_bpf_test.cc"],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_18_grpc_server_with_certs",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_19_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_23_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_24_grpc_server_with_certs",
     ],
     tags = [
         "cpu:16",

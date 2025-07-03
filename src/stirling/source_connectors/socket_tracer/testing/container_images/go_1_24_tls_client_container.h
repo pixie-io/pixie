@@ -27,15 +27,15 @@ namespace px {
 namespace stirling {
 namespace testing {
 
-class Go1_18_TLSClientContainer : public ContainerRunner {
+class Go1_24_TLSClientContainer : public ContainerRunner {
  public:
-  Go1_18_TLSClientContainer()
+  Go1_24_TLSClientContainer()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_https/client/golang_1_18_https_client.tar";
+      "src/stirling/testing/demo_apps/go_https/client/golang_1_24_https_client.tar";
   static constexpr std::string_view kContainerNamePrefix = "https_client";
   static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
 };
