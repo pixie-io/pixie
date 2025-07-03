@@ -36,6 +36,9 @@ using ::testing::UnorderedElementsAre;
 constexpr std::string_view kTestGoLittleEndiani386BinaryPath =
     "src/stirling/obj_tools/testdata/go/test_go1_13_i386_binary";
 
+constexpr std::string_view kTestGo1_11BinaryPath =
+    "src/stirling/obj_tools/testdata/go/test_go_1_11_binary";
+
 constexpr std::string_view kTestGoLittleEndianBinaryPath =
     "src/stirling/obj_tools/testdata/go/test_go_1_17_binary";
 
@@ -184,6 +187,24 @@ TEST(ReadGoBuildInfoTest, BuildinfoLittleEndiani386) {
   EXPECT_THAT(buildinfo.path, StrEq("command-line-arguments"));
   EXPECT_THAT(buildinfo.main.path, StrEq("px.dev/pixie"));
   EXPECT_THAT(buildinfo.main.version, StrEq("(devel)"));
+}
+
+TEST(ReadGoBuildInfoTest, BuildVersionLittleEndiani386) {
+  const std::string kPath = px::testing::BazelRunfilePath(kTestGoLittleEndiani386BinaryPath);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
+  auto result = ReadBuildVersion(elf_reader.get());
+
+  EXPECT_FALSE(result.ok());
+  EXPECT_THAT(result.msg(), ::testing::HasSubstr("Refusing to preallocate that much memory"));
+}
+
+TEST(ReadGoBuildInfoTest, BuildVersionGo1_11) {
+  const std::string kPath = px::testing::BazelRunfilePath(kTestGo1_11BinaryPath);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
+  ASSERT_OK_AND_ASSIGN(auto pair, ReadBuildVersion(elf_reader.get()));
+
+  auto version = pair.first;
+  EXPECT_THAT(version, StrEq("1.11.13"));
 }
 
 TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
