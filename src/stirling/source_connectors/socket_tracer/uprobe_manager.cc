@@ -895,6 +895,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       go_version = build_info_pair.first;
       build_info = std::move(build_info_pair.second);
     } else {
+      continue;
       VLOG(1) << absl::Substitute(
           "Failed to read build info from binary $0. Likely a Go binary built with an older "
           "version of Go without module support (pre 1.12)."
@@ -903,6 +904,9 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     }
 
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
+
+    // TODO(ddelnano): The struct and function offsets will be populated by the
+    // next set of changes.
     StructOffsetMap struct_offsets;
     FunctionArgMap function_offsets;
     std::unique_ptr<GoOffsetLocator> offset_locator = std::make_unique<GoOffsetLocator>(
