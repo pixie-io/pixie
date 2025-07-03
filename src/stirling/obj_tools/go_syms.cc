@@ -72,7 +72,7 @@ StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uin
 // This function serves as a fallback for older Go binaries (Go 1.11 and earlier) that don't
 // have the .go.buildinfo section. It extracts the version string from the runtime.buildVersion
 // symbol and strips the "go" prefix to return just the semantic version (e.g., "1.11.13").
-// Note: This function does not work correctly with 32-bit binaries due to gostring structure 
+// Note: This function does not work correctly with 32-bit binaries due to gostring structure
 // size differences (see https://github.com/pixie-io/pixie/issues/1300).
 // See https://github.com/pixie-io/pixie/issues/1318 for context.
 StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_reader) {
@@ -95,7 +95,8 @@ StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_read
 
   PX_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
   // Strip go prefix from the version string.
-  if (str.size() >= 2 && str.substr(0, 2) == utils::u8string(reinterpret_cast<const unsigned char*>("go"), 2)) {
+  if (str.size() >= 2 &&
+      str.substr(0, 2) == utils::u8string(reinterpret_cast<const unsigned char*>("go"), 2)) {
     str.erase(0, 2);  // Remove "go" from the beginning
   }
   return std::make_pair(std::string(reinterpret_cast<const char*>(str.data()), str.size()),
