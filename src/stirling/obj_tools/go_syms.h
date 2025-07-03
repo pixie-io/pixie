@@ -54,6 +54,12 @@ StatusOr<BuildInfo> ReadModInfo(const std::string& mod);
 // the input elf_reader.
 StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reader);
 
+// Returns the build version by reading the runtime.buildVersion symbol from a Golang executable.
+// This is a fallback method for older Go binaries (Go 1.11 and earlier) that don't have the 
+// .go.buildinfo section. The version string has the "go" prefix stripped (e.g., "1.11.13").
+// Note: This function does not work correctly with 32-bit binaries due to gostring structure size differences.
+StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_reader);
+
 // Describes a Golang type that implement an interface.
 struct IntfImplTypeInfo {
   // The name of the type that implements a given interface.
