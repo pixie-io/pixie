@@ -895,12 +895,10 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       go_version = build_info_pair.first;
       build_info = std::move(build_info_pair.second);
     } else {
+      VLOG(1) << absl::Substitute("Failed to read build info from binary $0. Message = $1", binary,
+                                  build_info_s.status().msg());
+
       continue;
-      VLOG(1) << absl::Substitute(
-          "Failed to read build info from binary $0. Likely a Go binary built with an older "
-          "version of Go without module support (pre 1.12)."
-          "Message = $1",
-          binary, build_info_s.status().msg());
     }
 
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();

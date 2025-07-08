@@ -347,7 +347,7 @@ Status PopulateHTTP2DebugSymbols(GoOffsetLocator* offset_locator, std::string_vi
                             "w"));
 
   LOG_ASSIGN_STATUSOR(symaddrs->http2bufferedWriter_conn_offset,
-                    dwarf_reader->GetStructMemberOffset(
+                    offset_locator->GetStructMemberOffset(
                             "net/http.http2bufferedWriter",
                             "conn"));
   // clang-format on
