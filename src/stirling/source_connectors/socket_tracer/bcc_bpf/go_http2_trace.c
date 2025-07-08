@@ -141,7 +141,19 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
 static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
                                                      const struct go_http2_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->http2Framer_w_offset, kInvalidFD);
-  REQUIRE_SYMADDR(symaddrs->http2bufferedWriter_w_offset, kInvalidFD);
+  int32_t inner_intf_offset = symaddrs->http2bufferedWriter_w_offset;
+  bool conn_intf = false;
+  // Go 1.24 dropped the io.Writer w member from http2bufferedWriter,
+  // in favor of a conn member (net.Conn interface).
+  // Go 1.23 struct:
+  // https://github.com/golang/go/blob/d375ae50633cdf1cd8536f2a199c382f9053b638/src/net/http/h2_bundle.go#L3552-L3556
+  // Go 1.24 struct:
+  // https://github.com/golang/go/blob/3901409b5d0fb7c85a3e6730a59943cc93b2835c/src/net/http/h2_bundle.go#L3733-L3739
+  if (inner_intf_offset == -1) {
+    inner_intf_offset = symaddrs->http2bufferedWriter_conn_offset;
+    conn_intf = true;
+  }
+  REQUIRE_SYMADDR(inner_intf_offset, kInvalidFD);
 
   struct go_interface io_writer_interface;
   BPF_PROBE_READ_VAR(io_writer_interface, framer_ptr + symaddrs->http2Framer_w_offset);
@@ -152,11 +164,13 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
     return kInvalidFD;
   }
 
-  struct go_interface inner_io_writer_interface;
-  BPF_PROBE_READ_VAR(inner_io_writer_interface,
-                     io_writer_interface.ptr + symaddrs->http2bufferedWriter_w_offset);
+  struct go_interface inner_intf;
+  BPF_PROBE_READ_VAR(inner_intf, io_writer_interface.ptr + inner_intf_offset);
 
-  return get_fd_from_io_writer_intf(inner_io_writer_interface.ptr);
+  if (conn_intf) {
+    return get_fd_from_conn_intf(inner_intf);
+  }
+  return get_fd_from_io_writer_intf(inner_intf.ptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -525,7 +539,7 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
 // Symbol:
 //   net/http.(*http2serverConn).processHeaders
 //
-// Verified to be stable from go1.?? to t go.1.13.
+// Verified to be stable from go1.?? to go.1.24..
 int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
@@ -629,7 +643,7 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
 // Symbol:
 //   golang.org/x/net/http2/hpack.(*Encoder).WriteField
 //
-// Verified to be stable from at least go1.6 to t go.1.13.
+// Verified to be stable from at least go1.6 to go.1.24.
 int probe_hpack_header_encoder(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
@@ -679,7 +693,7 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
 // Symbol:
 //   net/http.(*http2writeResHeaders).writeFrame
 //
-// Verified to be stable from go1.?? to t go.1.13.
+// Verified to be stable from go1.?? to go.1.24.
 int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
@@ -857,7 +871,7 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
 // Symbol:
 //   golang.org/x/net/http2.(*Framer).checkFrameOrder
 //
-// Verified to be stable from at least go1.6 to t go.1.13.
+// Verified to be stable from at least go1.6 to go.1.24.
 int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
@@ -962,7 +976,7 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
 // Symbol:
 //   net/http.(*http2Framer).checkFrameOrder
 //
-// Verified to be stable from at least go1.?? to go.1.13.
+// Verified to be stable from at least go1.?? to go.1.24.
 int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
@@ -1066,7 +1080,7 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
 // Symbol:
 //   golang.org/x/net/http2.(*Framer).WriteDataPadded
 //
-// Verified to be stable from go1.7 to t go.1.13.
+// Verified to be stable from go1.7 to go.1.24.
 int probe_http2_framer_write_data(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
@@ -1134,7 +1148,7 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
 // Symbol:
 //   net/http.(*http2Framer).WriteDataPadded
 //
-// Verified to be stable from go1.?? to t go.1.13.
+// Verified to be stable from go1.?? to go.1.24.
 int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
