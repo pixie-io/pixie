@@ -68,6 +68,41 @@ StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uin
   return std::string(go_version_bytecode);
 }
 
+// Reads the Go version from the runtime.buildVersion symbol in the binary's data section.
+// This function serves as a fallback for older Go binaries (Go 1.11 and earlier) that don't
+// have the .go.buildinfo section. It extracts the version string from the runtime.buildVersion
+// symbol and strips the "go" prefix to return just the semantic version (e.g., "1.11.13").
+// Note: This function does not work correctly with 32-bit binaries due to gostring structure
+// size differences (see https://github.com/pixie-io/pixie/issues/1300).
+// See https://github.com/pixie-io/pixie/issues/1318 for context.
+StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_reader) {
+  BuildInfo build_info;
+  PX_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,
+                      elf_reader->SearchTheOnlySymbol(kGoBuildVersionSymbol));
+
+  // The address of this symbol points to a Golang string object.
+  // But the size is for the symbol table entry, not this string object.
+  symbol.size = sizeof(gostring);
+  PX_ASSIGN_OR_RETURN(utils::u8string version_code, elf_reader->SymbolByteCode(".data", symbol));
+
+  // We can't guarantee the alignment on version_string so we make a copy into an aligned address.
+  gostring version_string;
+  std::memcpy(&version_string, version_code.data(), sizeof(version_string));
+
+  ElfReader::SymbolInfo version_symbol;
+  version_symbol.address = reinterpret_cast<uint64_t>(version_string.ptr);
+  version_symbol.size = version_string.len;
+
+  PX_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
+  // Strip go prefix from the version string.
+  if (str.size() >= 2 &&
+      str.substr(0, 2) == utils::u8string(reinterpret_cast<const unsigned char*>("go"), 2)) {
+    str.erase(0, 2);  // Remove "go" from the beginning
+  }
+  return std::make_pair(std::string(reinterpret_cast<const char*>(str.data()), str.size()),
+                        std::move(build_info));
+}
+
 // Extracts the semantic version from a Go version string (e.g., "go1.20.3").
 // This is how the version is formatted in the buildinfo header.
 StatusOr<std::string> ExtractSemVer(const std::string& input) {
@@ -161,7 +196,14 @@ StatusOr<BuildInfo> ReadModInfo(const std::string& mod) {
 // toolchain version. This function emulates what the go version cli performs as seen
 // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L151-L221
 StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reader) {
-  PX_ASSIGN_OR_RETURN(ELFIO::section * section, elf_reader->SectionWithName(kGoBuildInfoSection));
+  auto build_info_section_s = elf_reader->SectionWithName(kGoBuildInfoSection);
+
+  if (!build_info_section_s.ok()) {
+    // If the section is not found, it means that the binary is either not a Go binary or it was
+    // built with an older version of Go that does not include the .go.buildinfo section.
+    return ReadBuildVersion(elf_reader);
+  }
+  auto section = build_info_section_s.ConsumeValueOrDie();
   int offset = section->get_offset();
   PX_ASSIGN_OR_RETURN(std::string_view buildInfoByteCode,
                       elf_reader->BinaryByteCode<char>(offset, 64 * 1024));

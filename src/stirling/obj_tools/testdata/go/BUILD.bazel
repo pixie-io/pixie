@@ -69,6 +69,9 @@ filegroup(
         # These older 32 bit binaries have been the source of bugs, so this test case verifies we don't
         # introduce a regression (https://github.com/pixie-io/pixie/issues/1300).
         "test_go1_13_i386_binary",
+        # This binary was built with go 1.11. This ensures that ReadBuildVersion works for Go 1.11 and earlier
+        # binaries that don't have the .go.buildinfo section.
+        "test_go_1_11_binary",
         # This binary was built with go 1.17. This ensures that the 64 bit little endian case buildinfo logic is tested.
         # (https://github.com/golang/go/blob/1dbbafc70fd3e2c284469ab3e0936c1bb56129f6/src/debug/buildinfo/buildinfo.go#L192-L208).
         # Newer versions of go generate the endian agnostic buildinfo header
