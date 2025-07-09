@@ -18,11 +18,15 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/obj_tools/raw_fptr_manager.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
@@ -36,26 +40,138 @@ namespace stirling {
 
 constexpr std::string_view kLibNettyTcnativePrefix = "libnetty_tcnative_linux_x86";
 
+using StructVersionMap = std::map<std::string, std::map<std::string, int32_t>>;
+using StructOffsetMap = std::map<std::string, std::pair<std::string, StructVersionMap>>;
+using FuncVersionMap =
+    std::map<std::string, std::map<std::string, std::unique_ptr<obj_tools::VarLocation>>>;
+using FunctionArgMap = std::map<std::string, std::pair<std::string, FuncVersionMap>>;
+
+class GoOffsetLocator {
+ public:
+  GoOffsetLocator(obj_tools::DwarfReader* dwarf_reader, const StructOffsetMap& struct_offsets,
+                  const FunctionArgMap& function_args, const obj_tools::BuildInfo& build_info,
+                  const std::string& go_version)
+      : dwarf_reader_(dwarf_reader),
+        struct_offsets_(struct_offsets),
+        function_args_(function_args),
+        go_version_(go_version) {
+    PopulateModuleVersions(build_info);
+  }
+
+  StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfo(
+      std::string_view function_symbol_name) {
+    if (dwarf_reader_ != nullptr) {
+      return dwarf_reader_->GetFunctionArgInfo(function_symbol_name);
+    }
+    return GetFunctionArgInfoFromOffsets(function_symbol_name);
+  }
+
+  StatusOr<obj_tools::VarLocation> GetArgumentLocation(std::string_view /*function_symbol_name*/,
+                                                       std::string_view /*arg_name*/) {
+    return error::Internal(
+        "GetArgumentLocation is not implemented for GoOffsetLocator. Use GetFunctionArgInfo "
+        "instead.");
+  }
+
+  StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
+                                           std::string_view member_name) {
+    if (dwarf_reader_ != nullptr) {
+      return dwarf_reader_->GetStructMemberOffset(struct_name, member_name);
+    }
+    return GetStructMemberOffsetFromOffsets(struct_name, member_name);
+  }
+
+  std::string go_version() const { return go_version_; }
+
+ private:
+  StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfoFromOffsets(
+      std::string_view function_symbol_name) {
+    auto fn_map_pair = function_args_.find(std::string(function_symbol_name));
+    if (fn_map_pair == function_args_.end()) {
+      return error::Internal("Unable to find function location for $0", function_symbol_name);
+    }
+    auto& [mod_name, fn_map] = fn_map_pair->second;
+    std::string version_key = mod_version_map_[mod_name];
+    std::map<std::string, obj_tools::ArgInfo> result;
+
+    for (const auto& [arg_name, version_info_map] : fn_map) {
+      auto version_map = version_info_map.find(version_key);
+      if (version_map == version_info_map.end()) {
+        return error::Internal("Unable to find function location for arg=$0 version=$1", arg_name,
+                               version_key);
+      }
+      auto var_loc_ptr = version_map->second.get();
+      if (var_loc_ptr == nullptr) {
+        return error::Internal("Function location for arg=$0 version=$1 is missing", arg_name,
+                               version_key);
+      }
+      result.insert({arg_name, obj_tools::ArgInfo{obj_tools::TypeInfo{}, *var_loc_ptr}});
+    }
+    return result;
+  }
+
+  StatusOr<uint64_t> GetStructMemberOffsetFromOffsets(std::string_view struct_name,
+                                                      std::string_view member_name) {
+    auto struct_map_pair = struct_offsets_.find(std::string(struct_name));
+    if (struct_map_pair == struct_offsets_.end()) {
+      return error::Internal("Unable to find offsets for struct=$0", struct_name);
+    }
+    auto& [mod_name, struct_map] = struct_map_pair->second;
+    auto member_map = struct_map.find(std::string(member_name));
+    if (member_map == struct_map.end()) {
+      return error::Internal("Unable to find offsets for struct member=$0.$1", struct_name,
+                             member_name);
+    }
+
+    std::string version_key = mod_version_map_[mod_name];
+    auto version_map = member_map->second.find(version_key);
+    if (version_map == member_map->second.end()) {
+      return error::Internal("Unable to find offsets for struct member=$0.$1 for version $2",
+                             struct_name, member_name, version_key);
+    }
+    return version_map->second;
+  }
+
+  void PopulateModuleVersions(const obj_tools::BuildInfo& build_info) {
+    for (const auto& dep : build_info.deps) {
+      // Find the related dependencies and strip the "v" prefix
+      if (dep.path == "golang.org/x/net" || dep.path == "google.golang.org/grpc") {
+        VLOG(1) << absl::Substitute("Found dependency: $0, version: $1", dep.path, dep.version);
+        mod_version_map_[dep.path] = dep.version.substr(1);
+      }
+    }
+    mod_version_map_["std"] = go_version_;
+  }
+
+  obj_tools::DwarfReader* dwarf_reader_;
+
+  const StructOffsetMap& struct_offsets_;
+  const FunctionArgMap& function_args_;
+
+  const std::string& go_version_;
+
+  std::map<std::string, std::string> mod_version_map_;
+};
+
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for general Go
  * uprobe deployment.
  */
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
-                                                       obj_tools::DwarfReader* dwarf_reader);
+                                                       GoOffsetLocator* offset_locator);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go HTTP2
  * uprobe deployment.
  */
 StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader,
-                                                     obj_tools::DwarfReader* dwarf_reader);
+                                                     GoOffsetLocator* offset_locator);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go TLS
  * uprobe deployment.
  */
-StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reader,
-                                                 obj_tools::DwarfReader* dwarf_reader);
+StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(GoOffsetLocator* offset_locator);
 
 /**
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
@@ -73,8 +189,7 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(obj_tools::RawFptrManager* f
 StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrs(const std::filesystem::path& node_exe,
                                                              const SemVer& ver);
 
-px::Status PopulateGoTLSDebugSymbols(obj_tools::ElfReader* elf_reader,
-                                     obj_tools::DwarfReader* dwarf_reader,
+px::Status PopulateGoTLSDebugSymbols(GoOffsetLocator* offset_locator,
                                      struct go_tls_symaddrs_t* symaddrs);
 
 }  // namespace stirling
