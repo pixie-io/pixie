@@ -211,10 +211,9 @@ TEST_P(DetectSourceLanguageTest, Transform) {
 
   std::string expected_output = absl::Substitute(p.expected_output, binary_path_);
 
-  auto s = DetectSourceLanguage(elf_reader_.get(), dwarf_reader_.get(),
-                                program.mutable_tracepoints(0)->mutable_program(),
-                                program.tracepoints(0).program().probes(0).tracepoint().symbol());
-  ASSERT_OK(s);
+  DetectSourceLanguage(elf_reader_.get(), dwarf_reader_.get(),
+                       program.mutable_tracepoints(0)->mutable_program(),
+                       program.tracepoints(0).program().probes(0).tracepoint().symbol());
   ASSERT_THAT(program, EqualsProto(expected_output));
 }
 

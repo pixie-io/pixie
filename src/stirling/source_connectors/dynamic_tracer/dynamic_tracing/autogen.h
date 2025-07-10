@@ -33,9 +33,10 @@ namespace dynamic_tracing {
 /**
  * Uses ELF or DWARF information to detect the source language.
  * Populates the tracepoint program's language field in input_program.
+ * If the language cannot be determined, it assumes a C/C++ language ABI.
  */
-Status DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
-                            ir::logical::TracepointSpec* program, const std::string& symbol_name);
+void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
+                          ir::logical::TracepointSpec* program, const std::string& symbol_name);
 
 /**
  * Uses ELF information to check if the provided symbol exists.

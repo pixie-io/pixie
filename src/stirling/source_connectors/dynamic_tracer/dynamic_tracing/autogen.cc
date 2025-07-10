@@ -54,40 +54,50 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
   }
 }
 
+StatusOr<ir::shared::Language> TryDetectSourceLanguageFromDwarf(
+    obj_tools::DwarfReader* dwarf_reader, const std::string& symbol_name) {
+  PX_ASSIGN_OR_RETURN(const auto& function_die,
+                      dwarf_reader->GetMatchingDIE(symbol_name, llvm::dwarf::DW_TAG_subprogram));
+  llvm::DWARFUnit* cu = function_die.getDwarfUnit();
+  llvm::DWARFDie unit_die = cu->getUnitDIE();
+
+  PX_ASSIGN_OR_RETURN(auto lang_pair, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
+  llvm::dwarf::SourceLanguage source_lang = lang_pair.first;
+  PX_ASSIGN_OR_RETURN(auto detected_language, TransformSourceLanguage(source_lang));
+
+  return detected_language;
+}
+
 }  // namespace
 
-Status DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
-                            ir::logical::TracepointSpec* program, const std::string& symbol_name) {
+void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
+                          ir::logical::TracepointSpec* program, const std::string& symbol_name) {
+  ir::shared::Language detected_language = ir::shared::Language::LANG_UNKNOWN;
   // Primary detection mechanism is DWARF info, when available.
   if (dwarf_reader != nullptr) {
-    PX_ASSIGN_OR_RETURN(const auto& function_die,
-                        dwarf_reader->GetMatchingDIE(symbol_name, llvm::dwarf::DW_TAG_subprogram));
-    llvm::DWARFUnit* cu = function_die.getDwarfUnit();
-    llvm::DWARFDie unit_die = cu->getUnitDIE();
-
-    PX_ASSIGN_OR_RETURN(auto lang_pair, dwarf_reader->DetectSourceLanguageFromCUDIE(unit_die));
-    llvm::dwarf::SourceLanguage source_lang = lang_pair.first;
-    PX_ASSIGN_OR_RETURN(auto detected_language, TransformSourceLanguage(source_lang));
-
-    LOG(INFO) << absl::Substitute("Using language $0 for object $1 and others",
-                                  magic_enum::enum_name(source_lang), elf_reader->binary_path());
-
-    program->set_language(detected_language);
-    return Status::OK();
+    auto result = TryDetectSourceLanguageFromDwarf(dwarf_reader, symbol_name);
+    if (result.ok()) {
+      detected_language = result.ConsumeValueOrDie();
+    }
   } else {
     // Back-up detection policy looks for certain language-specific symbols
     if (IsGoExecutable(elf_reader)) {
-      LOG(INFO) << absl::Substitute("Using language GOLANG for object $0 and others",
-                                    elf_reader->binary_path());
-      program->set_language(ir::shared::Language::GOLANG);
-      return Status::OK();
+      detected_language = ir::shared::Language::GOLANG;
     }
-
-    // TODO(oazizi): Make this stronger by adding more elf-based tests.
   }
 
-  return error::InvalidArgument("Unable to detect source language for object $0.",
-                                elf_reader->binary_path());
+  if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
+    program->set_language(detected_language);
+    LOG(INFO) << absl::Substitute("Using language $0 for object $1 and symbol $2",
+                                  magic_enum::enum_name(detected_language),
+                                  elf_reader->binary_path(), symbol_name);
+  } else {
+    // Fall back to warning and assume C/C++ ABI
+    LOG(WARNING) << absl::Substitute(
+        "Language for object $0 and others is unknown or unsupported, so assuming C/C++ ABI. "
+        "Some dynamic tracing features may not work, or may produce unexpected results.",
+        elf_reader->binary_path());
+  }
 }
 namespace {
 
@@ -157,8 +167,7 @@ Status ResolveProbeSymbolAndLanguage(obj_tools::ElfReader* elf_reader,
 
       auto tracepoint = probe.mutable_tracepoint();
       *tracepoint->mutable_symbol() = *symbol_name;
-      PX_RETURN_IF_ERROR(
-          DetectSourceLanguage(elf_reader, dwarf_reader, t.mutable_program(), *symbol_name));
+      DetectSourceLanguage(elf_reader, dwarf_reader, t.mutable_program(), *symbol_name);
     }
   }
 
