@@ -21,11 +21,11 @@ package(default_visibility = ["//visibility:public"])
 kustomize_build(
     name = "public",
     srcs = glob(
-    [
-        "base/**/*.yaml",
-        "dev/**/*.yaml",
-        "public/**/*.yaml",
-    ],
+        [
+            "base/**/*.yaml",
+            "dev/**/*.yaml",
+            "public/**/*.yaml",
+        ],
         exclude = ["public/kustomization.yaml"],
     ),
     kustomization = "public/kustomization.yaml",
