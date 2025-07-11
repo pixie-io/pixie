@@ -48,6 +48,21 @@ jobs:
       run: |
         mkdir -p sarif/${{ matrix.artifact }}
         ./bazel-bin/k8s/${{ matrix.artifact }}/list_image_bundle | xargs -I{} sh -c 'trivy image {} --format=sarif --output=sarif/${{ matrix.artifact }}/$(basename {} | cut -d":" -f1).sarif'
+
+        # TODO(ddelnano): Remove this check once the operator dependency images are supported. This requires rendering helm templates
+        # and requires some additional work.
+        ./scripts/bazel_ignore_codes.sh query //k8s/${{ matrix.artifact }}:${{ matrix.artifact }}_image_list
+        if [ $? -neq 0 ]; then
+          echo "Bazel built images comprise all images for ${{ matrix.artifact }}."
+          exit 0
+        fi
+
+        echo "Found non bazel images for ${{ matrix.artifact }}."
+        ./scripts/bazel_ignore_codes.sh build \
+          //k8s/${{ matrix.artifact }}:${{ matrix.artifact }}_image_list
+
+        # Ignore images whose basename is "/${{ matrix.artifact }}" to avoid scanning the bazel built images (e.g. /vizier-, /cloud-)
+        cat ./bazel-bin/k8s/$${ matrix.artifact }}/${{ matrix.artifact }}_image_list.txt | grep -v "\/${{ matrix.artifact }}" | xargs -I{} sh -c 'trivy image {} --format=sarif --output=sarif/${{ matrix.artifact }}/$(basename {} | cut -d":" -f1).sarif'
       # yamllint enable rule:line-length
     - run: |
         for f in "sarif/${{ matrix.artifact }}/"*; do

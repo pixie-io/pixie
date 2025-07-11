@@ -79,6 +79,26 @@ kustomize_build(
     ],
 )
 
+kustomize_build(
+    name = "pixie_oss_cloud",
+    srcs = glob(
+        [
+            "base/**/*.yaml",
+            "overlays/**/*.yaml",
+            "public/**/*.yaml",
+        ],
+        exclude = ["public/kustomization.yaml"],
+    ),
+    kustomization = "public/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = CLOUD_IMAGE_TO_LABEL,
+    ),
+    toolchains = [
+        "//k8s:image_prefix",
+        "//k8s:bundle_version",
+    ],
+)
+
 container_bundle(
     name = "image_bundle",
     images = CLOUD_IMAGE_TO_LABEL,
@@ -101,4 +121,17 @@ container_push(
     name = "cloud_images_push",
     bundle = ":image_bundle",
     format = "Docker",
+)
+
+genrule(
+    name = "cloud_image_list",
+    srcs = [
+        ":pixie_oss_cloud",
+        "//k8s/cloud_deps:public",
+    ],
+    outs = ["cloud_image_list.txt"],
+    cmd = """
+    $(location @com_github_mikefarah_yq_v4//:v4) '..|.image?|select(.|type == "!!str")' -o json $(SRCS) | sort | uniq > $@
+    """,
+    tools = ["@com_github_mikefarah_yq_v4//:v4"],
 )
