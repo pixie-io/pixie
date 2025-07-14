@@ -94,6 +94,14 @@ jobs:
         merge-multiple: true
     - id: combine-sarifs
       run: |
+        # Debug: Show what was downloaded
+        echo "Current directory structure"
+        ls -la
+        echo "Looking for sarif directory"
+        ls -la sarif/ || echo "No sarif directory found"
+        echo "All .sarif files"
+        find . -name "*.sarif" -type f || echo "No SARIF files found anywhere"
+
         # With merge-multiple: true, all artifacts are in the same directory
         # Find all SARIF files regardless of subdirectory structure
         all_files=()
