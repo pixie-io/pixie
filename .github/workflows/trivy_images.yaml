@@ -21,9 +21,6 @@ jobs:
         artifact: [cloud, operator, vizier]
     runs-on: oracle-8cpu-32gb-x86-64
     needs: get-dev-image
-    outputs:
-      matrix: ${{ steps.list-sarifs.outputs.matrix }}
-      has-sarifs: ${{ steps.list-sarifs.outputs.has-sarifs }}
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     permissions:
@@ -78,37 +75,59 @@ jobs:
         name: sarif-${{ matrix.artifact }}
         path: sarif/
         retention-days: 1
-    - id: list-sarifs
-      run: |
-        # Use jq to build the matrix JSON dynamically
-        # --jsonargs passes each SARIF file as a separate input to jq
-        # For each input file, create an object with file, category, and artifact fields
-        sarif_files=$(find sarif/${{ matrix.artifact }}/ -name "*.sarif" -type f 2>/dev/null || true)
 
-        if [ -z "$sarif_files" ]; then
+  collect-sarifs:
+    # GitHub Actions matrix job outputs cannot be directly used as job outputs
+    # because matrix jobs create multiple output values (one per matrix combination).
+    # We need a separate job to collect all SARIF files from all artifacts
+    # and create a single unified matrix for the upload job.
+    needs: generate-sarif
+    runs-on: oracle-8cpu-32gb-x86-64
+    outputs:
+      matrix: ${{ steps.combine-sarifs.outputs.matrix }}
+      has-sarifs: ${{ steps.combine-sarifs.outputs.has-sarifs }}
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: sarif-*
+        merge-multiple: true
+    - id: combine-sarifs
+      run: |
+        # Combine all SARIF files from all artifacts into a single matrix
+        all_files=()
+        for artifact in cloud operator vizier; do
+          if [ -d "sarif/$artifact" ]; then
+            for f in sarif/$artifact/*.sarif; do
+              if [ -f "$f" ]; then
+                all_files+=("$f")
+              fi
+            done
+          fi
+        done
+
+        if [ ${#all_files[@]} -eq 0 ]; then
           echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
           echo "has-sarifs=false" >> $GITHUB_OUTPUT
         else
-          matrix_json=$(jq -n --arg artifact "${{ matrix.artifact }}" '
-            {
-              include: [
-                inputs as $f | {
-                  file: $f,
-                  category: ("trivy-images-" + $artifact + "-" + ($f | split("/")[-1] | split(".")[0])),
-                  artifact: ("sarif-" + $artifact)
-                }
-              ]
-            }' --jsonargs $sarif_files | jq -c '.')
+          matrix_json=$(printf '%s\n' "${all_files[@]}" | jq -R -s '
+            split("\n") | map(select(length > 0)) | {
+              include: map({
+                file: .,
+                category: ("trivy-images-" + (split("/")[1]) + "-" + (split("/")[-1] | split(".")[0])),
+                artifact: ("sarif-" + (split("/")[1]))
+              })
+            }' | jq -c '.')
 
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
           echo "has-sarifs=true" >> $GITHUB_OUTPUT
         fi
 
   upload-sarif:
-    needs: generate-sarif
-    if: needs.generate-sarif.outputs.has-sarifs == 'true'
+    needs: collect-sarifs
+    if: needs.collect-sarifs.outputs.has-sarifs == 'true'
     strategy:
-      matrix: ${{ fromJson(needs.generate-sarif.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.collect-sarifs.outputs.matrix) }}
     runs-on: oracle-8cpu-32gb-x86-64
     permissions:
       actions: read
