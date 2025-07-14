@@ -94,17 +94,15 @@ jobs:
         merge-multiple: true
     - id: combine-sarifs
       run: |
-        # Combine all SARIF files from all artifacts into a single matrix
+        # With merge-multiple: true, all artifacts are in the same directory
+        # Find all SARIF files regardless of subdirectory structure
         all_files=()
-        for artifact in cloud operator vizier; do
-          if [ -d "sarif/$artifact" ]; then
-            for f in sarif/$artifact/*.sarif; do
-              if [ -f "$f" ]; then
-                all_files+=("$f")
-              fi
-            done
-          fi
-        done
+        while IFS= read -r -d '' file; do
+          echo "Found file: $file"
+          all_files+=("$file")
+        done < <(find . -name "*.sarif" -type f -print0)
+
+        echo "Total files found: ${#all_files[@]}"
 
         if [ ${#all_files[@]} -eq 0 ]; then
           echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
