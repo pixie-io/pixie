@@ -14,13 +14,16 @@ jobs:
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
-  image-scan:
+  generate-sarif:
     strategy:
       fail-fast: false
       matrix:
         artifact: [cloud, operator, vizier]
     runs-on: oracle-8cpu-32gb-x86-64
     needs: get-dev-image
+    outputs:
+      matrix: ${{ steps.list-sarifs.outputs.matrix }}
+      has-sarifs: ${{ steps.list-sarifs.outputs.has-sarifs }}
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     permissions:
@@ -69,7 +72,55 @@ jobs:
           jq '.runs[].tool.driver.name = "trivy-images"' < "$f" > tmp
           mv tmp "$f"
         done
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: sarif-${{ matrix.artifact }}
+        path: sarif/
+        retention-days: 1
+    - id: list-sarifs
+      run: |
+        # Use jq to build the matrix JSON dynamically
+        # --jsonargs passes each SARIF file as a separate input to jq
+        # For each input file, create an object with file, category, and artifact fields
+        sarif_files=$(find sarif/${{ matrix.artifact }}/ -name "*.sarif" -type f 2>/dev/null || true)
+
+        if [ -z "$sarif_files" ]; then
+          echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          echo "has-sarifs=false" >> $GITHUB_OUTPUT
+        else
+          matrix_json=$(jq -n --arg artifact "${{ matrix.artifact }}" '
+            {
+              include: [
+                inputs as $f | {
+                  file: $f,
+                  category: ("trivy-images-" + $artifact + "-" + ($f | split("/")[-1] | split(".")[0])),
+                  artifact: ("sarif-" + $artifact)
+                }
+              ]
+            }' --jsonargs $sarif_files | jq -c '.')
+
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          echo "has-sarifs=true" >> $GITHUB_OUTPUT
+        fi
+
+  upload-sarif:
+    needs: generate-sarif
+    if: needs.generate-sarif.outputs.has-sarifs == 'true'
+    strategy:
+      matrix: ${{ fromJson(needs.generate-sarif.outputs.matrix) }}
+    runs-on: oracle-8cpu-32gb-x86-64
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ matrix.artifact }}
     - uses: github/codeql-action/upload-sarif@1b549b9259bda1cb5ddde3b41741a82a2d15a841  # v3.28.13
       with:
-        sarif_file: sarif/${{ matrix.artifact }}
-        category: trivy-images
+        sarif_file: ${{ matrix.file }}
+        category: ${{ matrix.category }}
