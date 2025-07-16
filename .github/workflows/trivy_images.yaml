@@ -70,7 +70,7 @@ jobs:
           # The runAutomationDetails's object must contain a unique category as required by the CodeQL SARIF uploader
           # The id value will be interpreted like so: "${category}/${run_id}"
           filename=$(basename "$f")/
-          jq --arg id "$filename" '.automationDetails.id = $id' < tmp > "$f"
+          jq --arg id "$filename" '.runs[].automationDetails.id = $id' < tmp > "$f"
         done
     - uses: github/codeql-action/upload-sarif@1b549b9259bda1cb5ddde3b41741a82a2d15a841  # v3.28.13
       with:
