@@ -920,11 +920,12 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   // programs with ASAN/TSAN enabled this is common.
   llvm::DWARFUnit* cu = function_die.getDwarfUnit();
   llvm::DWARFDie unit_die = cu->getUnitDIE();
-  PX_ASSIGN_OR_RETURN(auto p, DetectSourceLanguageFromCUDIE(unit_die));
-  ABI abi = LanguageToABI(p.first, p.second);
+  PX_ASSIGN_OR_RETURN(auto source_lang_info, DetectSourceLanguageFromCUDIE(unit_die));
+  auto [source_lang, compiler] = source_lang_info;
+  ABI abi = LanguageToABI(source_lang, compiler);
   if (abi == ABI::kUnknown) {
     return error::Unimplemented("Unable to determine ABI from language: $0",
-                                magic_enum::enum_name(p.first));
+                                magic_enum::enum_name(source_lang));
   }
   std::unique_ptr<ABICallingConventionModel> arg_tracker = ABICallingConventionModel::Create(abi);
 
@@ -963,7 +964,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     PX_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
     PX_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
 
-    if (p.first == llvm::dwarf::DW_LANG_Go) {
+    if (source_lang == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);
     }
 
