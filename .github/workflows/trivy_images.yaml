@@ -63,6 +63,7 @@ jobs:
 
         # Ignore images whose basename is "/${{ matrix.artifact }}" to avoid scanning the bazel built images (e.g. /vizier-, /cloud-)
         deps_output_dir=sarif/${{ matrix.artifact }}_deps
+        mkdir -p ${deps_output_dir}
         cat ./bazel-bin/k8s/${{ matrix.artifact }}/${{ matrix.artifact }}_image_list.txt | grep -v "\/${{ matrix.artifact }}" | xargs -I{} sh -c 'trivy image {} --format=sarif --output=${deps_output_dir}/$(basename {} | cut -d":" -f1).sarif'
       # yamllint enable rule:line-length
     - run: |
