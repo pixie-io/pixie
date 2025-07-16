@@ -141,11 +141,9 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   // Pre-processing pipeline
   // --------------------------
 
-  // Populate source language.
-  DetectSourceLanguage(obj_info.elf_reader.get(), obj_info.dwarf_reader.get(), input_program);
-
-  // Expand symbol.
-  PX_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program));
+  // Expand symbols and populate source language.
+  PX_RETURN_IF_ERROR(ResolveProbeSymbolAndLanguage(obj_info.elf_reader.get(),
+                                                   obj_info.dwarf_reader.get(), input_program));
 
   LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
 

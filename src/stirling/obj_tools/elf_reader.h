@@ -62,6 +62,7 @@ class ElfReader {
       const std::string& binary_path, const std::filesystem::path& debug_file_dir = kDebugFileDir);
 
   std::filesystem::path& debug_symbols_path() { return debug_symbols_path_; }
+  const std::string& binary_path() const { return binary_path_; }
 
   struct SymbolInfo {
     std::string name;

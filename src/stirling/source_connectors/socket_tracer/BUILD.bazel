@@ -70,7 +70,7 @@ pl_cc_test(
     name = "uprobe_symaddrs_test",
     srcs = ["uprobe_symaddrs_test.cc"],
     data = [
-        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_19_grpc_tls_server_binary",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_24_grpc_tls_server_binary",
         "//src/stirling/testing/demo_apps/node:node_debug",
     ],
     deps = [
