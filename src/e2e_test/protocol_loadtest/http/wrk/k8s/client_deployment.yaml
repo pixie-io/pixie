@@ -29,7 +29,7 @@ spec:
       initContainers:
       - name: server-wait
         # yamllint disable-line rule:line-length
-        image: ghcr.io/pixie-io/pixie-oss-pixie-dev-public-curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
+        image: alpine/curl:8.14.1@sha256:fe395e422d73daaf0ea6cf39b1ea50c999255b38d719856322cd11806c6b7286
         # yamllint disable rule:line-length
         command: ['sh', '-c', 'set -xe;
           URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
