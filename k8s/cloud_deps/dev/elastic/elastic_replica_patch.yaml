@@ -5,12 +5,8 @@
   value: 2
 
 - op: replace
-  path: /spec/nodeSets/0/config/node.data
-  value: true
-
-- op: replace
-  path: /spec/nodeSets/0/config/node.ingest
-  value: true
+  path: /spec/nodeSets/0/config/node.roles
+  value: ["master", "data", "ingest"]
 
 # Data node.
 - op: replace
