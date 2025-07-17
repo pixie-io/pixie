@@ -21,9 +21,3 @@ patches:
     kind: Elasticsearch
     name: pl-elastic
     version: v1
-- path: elastic_gcs_plugin.yaml
-  target:
-    group: elasticsearch.k8s.elastic.co
-    kind: Elasticsearch
-    name: pl-elastic
-    version: v1

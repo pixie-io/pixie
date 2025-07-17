@@ -1,56 +1,66 @@
 ---
+# Note: The elastic-internal-suspend container is automatically injected by ECK.
+# To control its resources, you may need to use ECK-specific configuration or
+# modify the ECK operator deployment settings.
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
   name: pl-elastic
 spec:
-  # yamllint disable-line rule:line-length
-  image: gcr.io/pixie-oss/pixie-dev-public/elasticsearch:7.6.0-patched1@sha256:f734909115be9dba66736c4b7356fd52da58b1ffdb895ba74cb5c2fca2b133dd
-  version: 7.6.0
+  version: 9.0.4
   nodeSets:
   - name: master
     count: 3
     config:
-      node.master: true
-      node.data: false
-      node.ingest: false
+      node.roles: ["master"]
       node.store.allow_mmap: true
     podTemplate:
+      metadata:
+        annotations:
+          co.elastic.logs/module: elasticsearch
       spec:
         containers:
         - name: elasticsearch
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              add:
-              - SYS_CHROOT
-              - SETUID
               drop:
               - ALL
-            runAsUser: 0
+            runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
         initContainers:
-        - name: install-plugins
-          command:
-          - sh
-          - -c
-          - |
-              bin/elasticsearch-plugin install --batch repository-gcs
         - name: sysctl
           securityContext:
             allowPrivilegeEscalation: true
             privileged: true
-            seccompProfile:
-              type: RuntimeDefault
-          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
-        - name: elastic-internal-init-filesystem
-          securityContext:
-            allowPrivilegeEscalation: false
             runAsUser: 0
             seccompProfile:
               type: RuntimeDefault
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+          resources:
+            limits:
+              memory: 128Mi
+              cpu: 100m
+            requests:
+              memory: 64Mi
+              cpu: 50m
+        - name: elastic-internal-init-filesystem
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: 200m
+            requests:
+              memory: 128Mi
+              cpu: 100m
         securityContext:
+          fsGroup: 1000
+          runAsUser: 1000
           seccompProfile:
             type: RuntimeDefault
     volumeClaimTemplates:
@@ -67,25 +77,23 @@ spec:
     # pods can be disrupted for nodepool upgrades.
     count: 5
     config:
-      node.master: false
-      node.data: true
-      node.ingest: true
+      node.roles: ["data", "ingest"]
       node.store.allow_mmap: true
       node.attr.data: hot
     podTemplate:
+      metadata:
+        annotations:
+          co.elastic.logs/module: elasticsearch
       spec:
         containers:
-        - env:
-          - name: ES_JAVA_OPTS
-            value: -Xms2g -Xmx2g -Dlog4j2.formatMsgNoLookups=True
-          name: elasticsearch
+        - name: elasticsearch
           resources:
             limits:
               cpu: 2
-              memory: 4Gi
+              memory: 2Gi
             requests:
               cpu: 0.5
-              memory: 4Gi
+              memory: 2Gi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -94,30 +102,41 @@ spec:
               - SETUID
               drop:
               - ALL
-            runAsUser: 0
+            runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
         initContainers:
-        - name: install-plugins
-          command:
-          - sh
-          - -c
-          - |
-              bin/elasticsearch-plugin install --batch repository-gcs
         - name: sysctl
           securityContext:
             allowPrivilegeEscalation: true
             privileged: true
-            seccompProfile:
-              type: RuntimeDefault
-          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
-        - name: elastic-internal-init-filesystem
-          securityContext:
-            allowPrivilegeEscalation: false
             runAsUser: 0
             seccompProfile:
               type: RuntimeDefault
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+          resources:
+            limits:
+              memory: 128Mi
+              cpu: 100m
+            requests:
+              memory: 64Mi
+              cpu: 50m
+        - name: elastic-internal-init-filesystem
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: 200m
+            requests:
+              memory: 128Mi
+              cpu: 100m
         securityContext:
+          fsGroup: 1000
+          runAsUser: 1000
           seccompProfile:
             type: RuntimeDefault
     volumeClaimTemplates:
