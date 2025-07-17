@@ -21,8 +21,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_grpc_client_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_grpc_server_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_24_grpc_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_24_grpc_server_container.h"
 
 namespace px {
 namespace stirling {
@@ -55,10 +55,10 @@ TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
   BCCWrapperImpl bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
-  ::px::stirling::testing::Go1_19_GRPCServerContainer server1;
-  ::px::stirling::testing::Go1_19_GRPCServerContainer server2;
-  ::px::stirling::testing::Go1_19_GRPCClientContainer client1;
-  ::px::stirling::testing::Go1_19_GRPCClientContainer client2;
+  ::px::stirling::testing::Go1_24_GRPCServerContainer server1;
+  ::px::stirling::testing::Go1_24_GRPCServerContainer server2;
+  ::px::stirling::testing::Go1_24_GRPCClientContainer client1;
+  ::px::stirling::testing::Go1_24_GRPCClientContainer client2;
 
   // A Uprobe template for the GRPCServerContainer.
   // Binary path is set later.
@@ -70,7 +70,7 @@ TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
   };
 
   // A templated path to the server. We will replace $0 with the pid of the server instance.
-  const std::string kServerPath = "/proc/$0/root/golang_1_19_grpc_tls_server_binary";
+  const std::string kServerPath = "/proc/$0/root/golang_1_24_grpc_tls_server_binary";
 
   // Run server 1 and attach uprobes to it.
   ASSERT_OK(server1.Run(std::chrono::seconds{60}));

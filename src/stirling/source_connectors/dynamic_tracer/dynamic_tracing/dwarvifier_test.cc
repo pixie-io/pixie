@@ -22,7 +22,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
 constexpr std::string_view kCPPBinaryPath = "src/stirling/obj_tools/testdata/cc/test_exe/test_exe";
 
 namespace px {
@@ -1722,6 +1722,19 @@ structs {
       }
     }
     blob_decoders {
+      entries {
+        size: 8
+        type: VOID_POINTER
+        path: "/str"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: INT
+        path: "/len"
+      }
+    }
+    blob_decoders {
     }
   }
 }
@@ -1807,21 +1820,28 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "4989632"
+      constant: "5103904"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "4989824"
+      constant: "5104192"
     }
   }
   vars {
     scalar_var {
-      name: "internal___poll__errNetClosing_sym_addr3"
+      name: "runtime__plainError_sym_addr3"
       type: UINT64
-      constant: "4989856"
+      constant: "5104224"
+    }
+  }
+  vars {
+    scalar_var {
+      name: "internal___poll__errNetClosing_sym_addr4"
+      type: UINT64
+      constant: "5104256"
     }
   }
   vars {
@@ -1896,7 +1916,7 @@ probes {
     cond {
       op: EQUAL
       vars: "retval_intf_tab"
-      vars: "internal___poll__errNetClosing_sym_addr3"
+      vars: "runtime__plainError_sym_addr3"
     }
     vars {
       scalar_var {
@@ -1906,6 +1926,25 @@ probes {
           base: "retval_intf_data"
           size: 16
           decoder_idx: 3
+          op: ASSIGN_ONLY
+        }
+      }
+    }
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "retval_intf_tab"
+      vars: "internal___poll__errNetClosing_sym_addr4"
+    }
+    vars {
+      scalar_var {
+        name: "retval"
+        type: STRUCT_BLOB
+        memory {
+          base: "retval_intf_data"
+          size: 16
+          decoder_idx: 4
           op: ASSIGN_ONLY
         }
       }

@@ -48,10 +48,10 @@ pl_go_binary(
 ]
 
 genrule(
-    name = "test_go_1_19_nm_output_target",
-    srcs = [":test_go_1_19_binary"],
-    outs = ["test_go_1_19_nm_output"],
-    cmd = "$(NM) $(location :test_go_1_19_binary) > $(location test_go_1_19_nm_output)",
+    name = "test_go_1_24_nm_output_target",
+    srcs = [":test_go_1_24_binary"],
+    outs = ["test_go_1_24_nm_output"],
+    cmd = "$(NM) $(location :test_go_1_24_binary) > $(location test_go_1_24_nm_output)",
     toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
 )
 
@@ -81,11 +81,7 @@ filegroup(
         # TODO(ddelnano): rules_go doesn't support populating .buildinfo with dependency information (https://github.com/bazel-contrib/rules_go/issues/3090).
         # Once this is supported, test_buildinfo_with_mods should be replaced with a bazel built binary.
         "test_buildinfo_with_mods",
-        ":test_go_1_18_binary",
-        ":test_go_1_19_binary",
-        ":test_go_1_20_binary",
-        ":test_go_1_21_binary",
-        ":test_go_1_22_binary",
         ":test_go_1_23_binary",
+        ":test_go_1_24_binary",
     ],
 )

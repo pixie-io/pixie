@@ -20,15 +20,10 @@
 #include <gtest/gtest.h>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_18_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_18_tls_server_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_tls_server_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_20_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_20_tls_server_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_21_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_21_tls_server_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_22_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_22_tls_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_23_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_23_tls_server_container.h"
@@ -75,27 +70,27 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
 
 struct Go1_18TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_18_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_18_TLSClientContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
 };
 
 struct Go1_19TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_19_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_19_TLSClientContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
 };
 
 struct Go1_20TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_20_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_20_TLSClientContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
 };
 
 struct Go1_21TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_21_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_21_TLSClientContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
 };
 
 struct Go1_22TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_22_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_22_TLSClientContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
 };
 
 struct Go1_23TLSClientServerContainers {
@@ -162,6 +157,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
 }
 
 TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
+  FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.

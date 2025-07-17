@@ -46,9 +46,9 @@ constexpr std::string_view kTestGoWithModulesBinaryPath =
     "src/stirling/obj_tools/testdata/go/test_buildinfo_with_mods";
 
 constexpr std::string_view kTestGoBinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_1_19_binary";
-constexpr std::string_view kTestGo1_21BinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
+constexpr std::string_view kTestGo1_24BinaryPath =
+    "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
 
 // The "endian agnostic" case refers to where the Go version data is varint encoded
 // directly within the buildinfo header. See the following reference for more details.
@@ -58,7 +58,7 @@ TEST(ReadGoBuildInfoTest, BuildinfoEndianAgnostic) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(auto pair, ReadGoBuildInfo(elf_reader.get()));
   auto version = pair.first;
-  EXPECT_THAT(version, StrEq("1.19.13"));
+  EXPECT_THAT(version, StrEq("1.24.4"));
 }
 
 TEST(ReadGoBuildInfoTest, BuildinfoLittleEndian) {
@@ -222,7 +222,7 @@ INSTANTIATE_TEST_SUITE_P(
     ElfGolangItableTestSuite, ElfGolangItableTest,
     ::testing::Values(
         std::make_tuple(
-            kTestGo1_21BinaryPath,
+            kTestGo1_24BinaryPath,
             UnorderedElementsAre(
                 Pair("fmt.State",
                      UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*fmt.pp"))),
@@ -238,23 +238,23 @@ INSTANTIATE_TEST_SUITE_P(
                          Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
                          Field(&IntfImplTypeInfo::type_name, "syscall.Errno"),
                          Field(&IntfImplTypeInfo::type_name, "*io/fs.PathError"),
+                         Field(&IntfImplTypeInfo::type_name, "*os.SyscallError"),
                          Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
+                         Field(&IntfImplTypeInfo::type_name, "runtime.plainError"),
                          Field(&IntfImplTypeInfo::type_name, "internal/poll.errNetClosing"),
                          Field(&IntfImplTypeInfo::type_name,
                                "*internal/poll.DeadlineExceededError"),
                          Field(&IntfImplTypeInfo::type_name, "*internal/bisect.parseError"))),
                 Pair("io.Writer",
                      UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*os.File"))),
-                Pair("sort.Interface", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                                  "*internal/fmtsort.SortedMap"))),
                 Pair("reflect.Type",
                      UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*reflect.rtype"))),
                 Pair("math/rand.Source64", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                                      "*math/rand.fastSource"))),
+                                                                      "*math/rand.runtimeSource"))),
                 Pair("math/rand.Source", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
                                                                     "*math/rand.lockedSource"),
                                                               Field(&IntfImplTypeInfo::type_name,
-                                                                    "*math/rand.fastSource"))))),
+                                                                    "*math/rand.runtimeSource"))))),
         std::make_tuple(
             kTestGoBinaryPath,
             UnorderedElementsAre(
@@ -263,20 +263,28 @@ INSTANTIATE_TEST_SUITE_P(
                          Field(&IntfImplTypeInfo::type_name, "main.IntStruct"),
                          Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
                          Field(&IntfImplTypeInfo::type_name, "*io/fs.PathError"),
+                         Field(&IntfImplTypeInfo::type_name, "*os.SyscallError"),
+                         Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
+                         Field(&IntfImplTypeInfo::type_name, "runtime.plainError"),
+                         Field(&IntfImplTypeInfo::type_name, "syscall.Errno"),
+                         Field(&IntfImplTypeInfo::type_name, "internal/poll.errNetClosing"),
                          Field(&IntfImplTypeInfo::type_name,
                                "*internal/poll.DeadlineExceededError"),
-                         Field(&IntfImplTypeInfo::type_name, "internal/poll.errNetClosing"),
-                         Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
-                         Field(&IntfImplTypeInfo::type_name, "syscall.Errno"))),
-                Pair("sort.Interface", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                                  "*internal/fmtsort.SortedMap"))),
+                         Field(&IntfImplTypeInfo::type_name, "*internal/bisect.parseError"))),
                 Pair("math/rand.Source", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                                    "*math/rand.lockedSource"))),
+                                                                    "*math/rand.lockedSource"),
+                                                              Field(&IntfImplTypeInfo::type_name,
+                                                                    "*math/rand.runtimeSource"))),
+                Pair("math/rand.Source64", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
+                                                                      "*math/rand.runtimeSource"))),
+                Pair("internal/bisect.Writer",
+                     UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
+                                                "*internal/godebug.runtimeStderr"))),
                 Pair("io.Writer",
                      UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*os.File"))),
                 Pair("internal/reflectlite.Type",
                      UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
-                                                "*internal/reflectlite.rtype"))),
+                                                "internal/reflectlite.rtype"))),
                 Pair("reflect.Type",
                      UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*reflect.rtype"))),
                 Pair("fmt.State",

@@ -26,8 +26,8 @@ using px::stirling::obj_tools::DwarfReader;
 using px::testing::BazelRunfilePath;
 
 constexpr std::string_view kBinary =
-    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server_binary_/"
-    "golang_1_19_grpc_tls_server_binary";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_24_grpc_tls_server_binary_/"
+    "golang_1_24_grpc_tls_server_binary";
 
 struct SymAddrs {
   // Members of net/http.http2serverConn.

@@ -26,7 +26,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
 
 namespace px {
 namespace stirling {
@@ -45,7 +45,7 @@ using ::testing::SizeIs;
 
 constexpr char kClientPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_21_grpc_client";
+    "golang_1_24_grpc_client";
 
 constexpr char kClientPathExpected[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
@@ -53,7 +53,7 @@ constexpr char kClientPathExpected[] =
 
 constexpr char kServerPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_21_grpc_server";
+    "golang_1_24_grpc_server";
 
 constexpr char kServerPathExpected[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
@@ -389,7 +389,7 @@ const std::vector<std::string> kExpectedBCC = {
     "void* goid_X_;",
     "bpf_probe_read(&goid_X_, sizeof(void*), parm__ + 0);",
     "uint64_t goid;",
-    "bpf_probe_read(&goid, sizeof(uint64_t), goid_X_ + 152);",
+    "bpf_probe_read(&goid, sizeof(uint64_t), goid_X_ + 160);",
     "uint32_t newval;",
     "bpf_probe_read(&newval, sizeof(uint32_t), parm__ + 16);",
     "struct pid_goid_map_value_t pid_goid_map_value = {};",
@@ -476,7 +476,7 @@ TEST(DynamicTracerTest, Compile) {
 
   const auto& spec = bcc_program.uprobe_specs[0];
 
-  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("test_go_1_21_binary")));
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("test_go_1_24_binary")));
   EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "runtime.casgstatus"));
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry_runtime_casgstatus"));

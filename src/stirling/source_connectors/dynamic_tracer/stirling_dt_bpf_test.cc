@@ -274,10 +274,8 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
 // Dynamic Trace Golang tests
 //-----------------------------------------------------------------------------
 
-constexpr std::string_view kGo1_21BinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
-const std::string_view kGo1_22BinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_22_binary";
 const std::string_view kGo1_23BinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_23_binary";
+const std::string_view kGo1_24BinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
 
 struct DynamicTraceGolangTestCase {
   const std::filesystem::path binary_path;
@@ -294,9 +292,8 @@ class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest,
 };
 
 INSTANTIATE_TEST_SUITE_P(DynamicTraceGolangTestInstances, DynamicTraceGolangTest,
-                         ::testing::Values(DynamicTraceGolangTestCase{kGo1_21BinaryPath},
-                                           DynamicTraceGolangTestCase{kGo1_22BinaryPath},
-                                           DynamicTraceGolangTestCase{kGo1_23BinaryPath}));
+                         ::testing::Values(DynamicTraceGolangTestCase{kGo1_23BinaryPath},
+                                           DynamicTraceGolangTestCase{kGo1_24BinaryPath}));
 
 TEST_P(DynamicTraceGolangTest, TraceLatencyOnly) {
   BinaryRunner trace_target;
@@ -581,22 +578,16 @@ tracepoints {
 INSTANTIATE_TEST_SUITE_P(
     NilAndNonNilError, ReturnedErrorInterfaceTest,
     ::testing::Values(
-        ReturnedErrorInterfaceTestCase{kGo1_21BinaryPath,
-                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
-                                       "{\"X\":3,\"Y\":4}"},
-        ReturnedErrorInterfaceTestCase{kGo1_21BinaryPath,
-                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
-                                       "{\"tab\":0,\"data\":0}"},
-        ReturnedErrorInterfaceTestCase{kGo1_22BinaryPath,
-                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
-                                       "{\"X\":3,\"Y\":4}"},
-        ReturnedErrorInterfaceTestCase{kGo1_22BinaryPath,
-                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
-                                       "{\"tab\":0,\"data\":0}"},
         ReturnedErrorInterfaceTestCase{kGo1_23BinaryPath,
                                        absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
                                        "{\"X\":3,\"Y\":4}"},
         ReturnedErrorInterfaceTestCase{kGo1_23BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
+                                       "{\"tab\":0,\"data\":0}"},
+        ReturnedErrorInterfaceTestCase{kGo1_24BinaryPath,
+                                       absl::Substitute(kProgramTxtPBTmpl, "main.ReturnError"),
+                                       "{\"X\":3,\"Y\":4}"},
+        ReturnedErrorInterfaceTestCase{kGo1_24BinaryPath,
                                        absl::Substitute(kProgramTxtPBTmpl, "main.ReturnNilError"),
                                        "{\"tab\":0,\"data\":0}"}));
 
@@ -681,12 +672,10 @@ TEST_P(DynamicTraceGolangTestWithParam, TraceByteArray) {
 
 INSTANTIATE_TEST_SUITE_P(
     GolangByteArrayTests, DynamicTraceGolangTestWithParam,
-    ::testing::Values(TestParam{kGo1_21BinaryPath, "main.BytesToHex", "Bytes"},
-                      TestParam{kGo1_21BinaryPath, "main.Uint8ArrayToHex", "Uint8"},
-                      TestParam{kGo1_22BinaryPath, "main.BytesToHex", "Bytes"},
-                      TestParam{kGo1_22BinaryPath, "main.Uint8ArrayToHex", "Uint8"},
-                      TestParam{kGo1_23BinaryPath, "main.BytesToHex", "Bytes"},
-                      TestParam{kGo1_23BinaryPath, "main.Uint8ArrayToHex", "Uint8"}));
+    ::testing::Values(TestParam{kGo1_23BinaryPath, "main.BytesToHex", "Bytes"},
+                      TestParam{kGo1_23BinaryPath, "main.Uint8ArrayToHex", "Uint8"},
+                      TestParam{kGo1_24BinaryPath, "main.BytesToHex", "Bytes"},
+                      TestParam{kGo1_24BinaryPath, "main.Uint8ArrayToHex", "Uint8"}));
 
 //-----------------------------------------------------------------------------
 // Dynamic Trace C++ tests

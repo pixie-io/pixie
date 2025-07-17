@@ -132,6 +132,56 @@ container_image(
 ]
 
 container_image(
+    name = "golang_1_18_https_server_with_buildinfo",
+    base = "@golang_1_18_https_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_19_https_server_with_buildinfo",
+    base = "@golang_1_19_https_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_20_https_server_with_buildinfo",
+    base = "@golang_1_20_https_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_21_https_server_with_buildinfo",
+    base = "@golang_1_21_https_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_22_https_server_with_buildinfo",
+    base = "@golang_1_22_https_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_18_grpc_server_with_buildinfo",
+    base = "@golang_1_18_grpc_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_19_grpc_server_with_buildinfo",
+    base = "@golang_1_19_grpc_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_20_grpc_server_with_buildinfo",
+    base = "@golang_1_20_grpc_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_21_grpc_server_with_buildinfo",
+    base = "@golang_1_21_grpc_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_22_grpc_server_with_buildinfo",
+    base = "@golang_1_22_grpc_server_with_buildinfo//image",
+)
+
+container_image(
     name = "amqp_image",
     base = "@rabbitmq_3_management//image",
 )
