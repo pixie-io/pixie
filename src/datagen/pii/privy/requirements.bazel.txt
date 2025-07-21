@@ -2033,9 +2033,9 @@ stanza==1.5.0 \
     # via
     #   privy-presidio-utils
     #   spacy-stanza
-starlette==0.28.0 \
-    --hash=sha256:7bf3da5e997e796cc202cef2bd3f96a7d9b1e1943203c2fe2b42e020bc658482 \
-    --hash=sha256:e58b9fc402c579950260fbb6d57173395c4e62804c40d3ede7e9ef1074f0c579
+starlette==0.47.2 \
+    --hash=sha256:6ae9aa5db235e4846decc1e7b79c4f346adf41e9777aebeb49dfd09bbd7023d8 \
+    --hash=sha256:c5847e96134e5c5371ee9fac6fdf1a67336d5815e09eb2a01fdb57a351ef915b
     # via
     #   schemathesis
     #   starlette-testclient
@@ -2183,20 +2183,20 @@ transformers[sentencepiece,torch]==4.30.0 \
     # via
     #   flair
     #   transformer-smaller-training-vocab
-    #   transformers
 typer==0.7.0 \
     --hash=sha256:b5e704f4e48ec263de1c0b3a2387cd405a13767d2f907f44c1a08cbad96f606d \
     --hash=sha256:ff797846578a9f2a201b53442aedeb543319466870fbe1c701eab66dd7681165
     # via
     #   pathy
     #   spacy
-typing-extensions==4.6.3 \
-    --hash=sha256:88a4153d8505aabbb4e13aacb7c486c2b4a33ca3b3f807914a9b4c844c471c26 \
-    --hash=sha256:d91d5919357fe7f681a9f2b5b4cb2a5f1ef0a1e9f59c4d8ff0d3491e05c0ffd5
+typing-extensions==4.14.1 \
+    --hash=sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36 \
+    --hash=sha256:d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76
     # via
     #   huggingface-hub
     #   pydantic
     #   schemathesis
+    #   starlette
     #   torch
 tzdata==2023.3 \
     --hash=sha256:11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a \
