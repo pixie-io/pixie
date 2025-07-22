@@ -49,7 +49,7 @@ spec:
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/kratos:v1.3.1-go1.23@sha256:a5ab59f4a42d6b6b7add92c174ecd1af58f581b0d8b768d91d400df624f7c933
+        image: docker.io/ddelnano/kratos:v1.3.1-go1.23@sha256:66540a7f62864e4555a744ed0db2294331a500ddb634846ec2cde1064ce459da
         resources: {}
         securityContext:
           allowPrivilegeEscalation: false
@@ -135,7 +135,7 @@ spec:
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/kratos:v1.3.1-go1.23@sha256:a5ab59f4a42d6b6b7add92c174ecd1af58f581b0d8b768d91d400df624f7c933
+        image: docker.io/ddelnano/kratos:v1.3.1-go1.23@sha256:66540a7f62864e4555a744ed0db2294331a500ddb634846ec2cde1064ce459da
         ports:
         - containerPort: 4433
         - containerPort: 4434
