@@ -61,7 +61,7 @@ spec:
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/hydra:v1.9.2-go1.20@sha256:d2827dfcdcb37886041e9d7220b80a9207799446f5eeef3569ea077777d11990
+        image: docker.io/ddelnano/hydra:v2.3.0-go1.23@sha256:9382a850d54ff48f1f6b3bfa277a2ec430285bcaf500d09ee7ea7a7cca18e246
         volumeMounts:
         - mountPath: /etc/config/hydra
           name: config
@@ -77,7 +77,7 @@ spec:
       containers:
       - name: server
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/hydra:v1.9.2-go1.20@sha256:d2827dfcdcb37886041e9d7220b80a9207799446f5eeef3569ea077777d11990
+        image: docker.io/ddelnano/hydra:v2.3.0-go1.23@sha256:9382a850d54ff48f1f6b3bfa277a2ec430285bcaf500d09ee7ea7a7cca18e246
         args:
         - serve
         - -c
@@ -112,10 +112,6 @@ spec:
         - name: DSN
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
-        - name: SERVE_TLS_CERT_PATH
-          value: /certs/server.crt
-        - name: SERVE_TLS_KEY_PATH
-          value: /certs/server.key
         - name: PL_WORK_DOMAIN
           value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
@@ -153,8 +149,9 @@ spec:
             type: RuntimeDefault
       - name: client-create-or-update
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/hydra:v1.9.2-go1.20@sha256:d2827dfcdcb37886041e9d7220b80a9207799446f5eeef3569ea077777d11990
+        image: docker.io/ddelnano/hydra:v2.3.0-alpine-go1.23@sha256:371daf5cc7477ae607d1011440da784c366b74c7cc8acea2322826b82c789fe1
         command: ['sh', '-c', 'set -x;
+          echo "Waiting for hydra to be ready";
           URL="https://localhost:4445/health/ready";
           until [
             $(wget --no-check-certificate --spider --quiet --server-response ${URL} 2>&1 |
@@ -163,23 +160,39 @@ spec:
             echo "waiting for ${URL}";
             sleep 2;
           done;
-          CMD="hydra clients update auth-code-client";
-          hydra clients get auth-code-client
-            --endpoint=https://localhost:4445
-            --skip-tls-verify;
-          if [ $? -ne 0 ]; then
-            echo "Creating client";
-            CMD="hydra clients create --id auth-code-client";
+
+          count=$(hydra list oauth2-clients -e https://localhost:4445 --skip-tls-verify --format json | jq ".items | length");
+          success=$?;
+          if [ $success -ne 0 ]; then
+            echo "Error checking for existing client";
+            exit 1;
           fi;
-          ${CMD}
-            --endpoint https://localhost:4445
-            --secret "${HYDRA_CLIENT_SECRET}"
-            --grant-types authorization_code,refresh_token,implicit
-            --response-types code,id_token,token
-            --scope openid,offline,notifications,gist,vizier
-            --callbacks "https://${PL_DOMAIN_NAME}/oauth/auth/callback"
-            --callbacks "https://work.${PL_DOMAIN_NAME}/auth/callback"
-            --skip-tls-verify;
+
+          if [ $count -gt 0 ]; then
+            echo "Client already created";
+            sleep infinity;
+          fi;
+
+          echo "Creating OAuth2 client";
+          hydra create oauth2-client
+             --endpoint https://localhost:4445
+             --secret "${HYDRA_CLIENT_SECRET}"
+             --format json
+             --skip-tls-verify
+             --grant-type authorization_code
+             --grant-type refresh_token
+             --grant-type implicit
+             --response-type code
+             --response-type id_token
+             --response-type token
+             --scope openid
+             --scope offline
+             --scope notifications
+             --scope gist
+             --scope vizier
+             --redirect-uri "https://${PL_DOMAIN_NAME}/oauth/auth/callback"
+             --redirect-uri "https://work.${PL_DOMAIN_NAME}/auth/callback"
+             --name "pixie-auth-client";
           sleep infinity;
         ']
         envFrom:
