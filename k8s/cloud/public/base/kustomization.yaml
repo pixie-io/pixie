@@ -31,3 +31,11 @@ patches:
 - path: domain_config.yaml
 - path: script_bundles_config.yaml
 - path: proxy_envoy.yaml
+- path: deployment_image_pull_secrets_patch.yaml
+  target:
+    kind: Deployment
+    name: ".*"
+- path: statefulset_image_pull_secrets_patch.yaml
+  target:
+    kind: StatefulSet
+    name: ".*"
