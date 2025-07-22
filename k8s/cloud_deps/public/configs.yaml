@@ -27,7 +27,7 @@ data:
   # Hydra is the easiest option to get started with.
   PL_OAUTH_PROVIDER: hydra
   PL_AUTH_URI: /oauth/hydra
-  PL_AUTH_CLIENT_ID: auth-code-client
+  PL_AUTH_CLIENT_ID: 5d8827bd-a958-415b-a541-3f68ab06e9b5
   PL_AUTH_EMAIL_PASSWORD_CONN: ""
 ---
 apiVersion: v1
