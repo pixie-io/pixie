@@ -114,6 +114,13 @@ struct Go1_22TLSClientServerContainers {
   static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
   static const bool disable_dwarf = false;
 };
+struct Go1_22TLSClientServerContainersNoDWARFContainers {
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_22_TLSClientContainer;
+
+  static constexpr std::string_view server_image_tar = GoTLSServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = true;
+};
 
 struct Go1_23TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_23_TLSServerContainer;
@@ -123,19 +130,10 @@ struct Go1_23TLSClientServerContainers {
   static const bool disable_dwarf = false;
 };
 
-struct Go1_23TLSClientServerNoDWARFContainers {
-  using GoTLSServerContainer = ::px::stirling::testing::Go1_23_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_23_TLSClientContainer;
-
-  static constexpr std::string_view server_image_tar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "golang_1_23_0_https_server_with_buildinfo.tar";
-  static const bool disable_dwarf = true;
-};
-
 struct Go1_24TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_24_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
+  static const bool disable_dwarf = false;
 };
 
 struct GoBoringCryptoTLSClientServerContainers {
@@ -149,7 +147,7 @@ struct GoBoringCryptoTLSClientServerContainers {
 typedef ::testing::Types<GoBoringCryptoTLSClientServerContainers, Go1_18TLSClientServerContainers,
                          Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers,
                          Go1_21TLSClientServerContainers, Go1_22TLSClientServerContainers,
-                         Go1_23TLSClientServerContainers, Go1_23TLSClientServerNoDWARFContainers,
+                         Go1_23TLSClientServerContainers, Go1_22TLSClientServerNoDWARFContainers,
                          Go1_24TLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);

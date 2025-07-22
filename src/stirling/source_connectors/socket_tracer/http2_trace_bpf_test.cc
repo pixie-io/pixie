@@ -118,6 +118,14 @@ struct Go1_22GRPCClientServerContainers {
   static const bool disable_dwarf = false;
 };
 
+struct Go1_22GRPCClientServerContainersNoDWARF {
+  using ServerContainer = ::px::stirling::testing::Go1_22_GRPCServerContainer;
+  using ClientContainer = ::px::stirling::testing::Go1_24_GRPCClientContainer;
+
+  static constexpr std::string_view server_image_tar = ServerContainer::kBazelImageTar;
+  static const bool disable_dwarf = true;
+};
+
 struct Go1_23GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_23_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_23_GRPCClientContainer;
@@ -126,19 +134,10 @@ struct Go1_23GRPCClientServerContainers {
   static const bool disable_dwarf = false;
 };
 
-struct Go1_23GRPCClientServerContainersNoDWARF {
-  using ServerContainer = ::px::stirling::testing::Go1_23_GRPCServerContainer;
-  using ClientContainer = ::px::stirling::testing::Go1_23_GRPCClientContainer;
-
-  static constexpr std::string_view server_image_tar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "go_1_23_grpc_server_with_mod_info.tar";
-  static const bool disable_dwarf = true;
-};
-
 struct Go1_24GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_24_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_24_GRPCClientContainer;
+  static const bool disable_dwarf = false;
 };
 
 struct GoBoringCryptoGRPCClientServerContainers {
@@ -152,12 +151,8 @@ struct GoBoringCryptoGRPCClientServerContainers {
 typedef ::testing::Types<GoBoringCryptoGRPCClientServerContainers, Go1_18GRPCClientServerContainers,
                          Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers,
                          Go1_21GRPCClientServerContainers, Go1_22GRPCClientServerContainers,
-<<<<<<< HEAD
                          Go1_23GRPCClientServerContainers, Go1_24GRPCClientServerContainers>
-=======
-                         Go1_23GRPCClientServerContainers, Go1_23GRPCClientServerContainersNoDWARF>
->>>>>>> 345dddc7b (Include offsetgen case in http2_trace_bpf_test)
-    GoVersions;
+    Go1_23GRPCClientServerContainers, Go1_22GRPCClientServerContainersNoDWARF > GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
 TYPED_TEST(HTTP2TraceTest, Basic) {
