@@ -34,6 +34,8 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-db-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -87,6 +89,8 @@ spec:
         - configMapRef:
             name: pl-db-config
         - configMapRef:
+            name: pl-ory-service-config
+        - configMapRef:
             name: pl-domain-config
         env:
         - name: PL_POSTGRES_USERNAME
@@ -112,6 +116,12 @@ spec:
         - name: DSN
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        - name: SERVE_TLS_ENABLED
+          value: "true"
+        - name: SERVE_TLS_CERT_PATH
+          value: /certs/server.crt
+        - name: SERVE_TLS_KEY_PATH
+          value: /certs/server.key
         - name: PL_WORK_DOMAIN
           value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
@@ -128,6 +138,10 @@ spec:
           value: $(HYDRA_URL)
         - name: URLS_SELF_ISSUER
           value: $(HYDRA_URL)
+        # admin is not exposed to Pixie clients. Requests to this endpoint originate
+        # from Pixie services.
+        - name: URLS_SELF_ADMIN
+          value: $(PL_HYDRA_ADMIN_HOST)
         ports:
         - containerPort: 4444
         - containerPort: 4445
@@ -152,7 +166,7 @@ spec:
         image: docker.io/ddelnano/hydra:v2.3.0-alpine-go1.23@sha256:371daf5cc7477ae607d1011440da784c366b74c7cc8acea2322826b82c789fe1
         command: ['sh', '-c', 'set -x;
           echo "Waiting for hydra to be ready";
-          URL="https://localhost:4445/health/ready";
+          URL="${PL_HYDRA_ADMIN_HOST}/health/ready";
           until [
             $(wget --no-check-certificate --spider --quiet --server-response ${URL} 2>&1 |
               awk ''NR==1{print $2}'') -eq 200
@@ -161,7 +175,7 @@ spec:
             sleep 2;
           done;
 
-          count=$(hydra list oauth2-clients -e https://localhost:4445 --skip-tls-verify --format json | jq ".items | length");
+          count=$(hydra list oauth2-clients -e ${PL_HYDRA_ADMIN_HOST} --skip-tls-verify --format json | jq ".items | length");
           success=$?;
           if [ $success -ne 0 ]; then
             echo "Error checking for existing client";
@@ -175,7 +189,7 @@ spec:
 
           echo "Creating OAuth2 client";
           hydra create oauth2-client
-             --endpoint https://localhost:4445
+             --endpoint ${PL_HYDRA_ADMIN_HOST}
              --secret "${HYDRA_CLIENT_SECRET}"
              --format json
              --skip-tls-verify
@@ -198,6 +212,8 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: HYDRA_CLIENT_SECRET
           valueFrom:

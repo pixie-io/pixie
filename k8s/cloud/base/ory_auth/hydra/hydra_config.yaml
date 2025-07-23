@@ -9,17 +9,7 @@ data:
     serve:
       cookies:
         same_site_mode: Strict
-      tls:
-        enabled: true
-        cert:
-          path: /certs/server.crt
-        key:
-          path: /certs/server.key
-    urls:
-      self:
-        issuer: https://hydra.plc.svc.cluster.local:4444
-        public: https://hydra.plc.svc.cluster.local:4444
-        admin: https://hydra.plc.svc.cluster.local:4445
+
     oidc:
       subject_identifiers:
         supported_types:
