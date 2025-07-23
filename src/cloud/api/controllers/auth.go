@@ -62,7 +62,7 @@ func AuthOAuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Req
 	oa := apiEnv.IdentityProviderClient()
 	session, err := apiEnv.CookieStore().Get(r, oa.SessionKey())
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: errors.New("failed to get session cookie: " + err.Error())}
 	}
 	return oa.HandleLogin(session, w, r)
 }

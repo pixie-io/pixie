@@ -213,18 +213,18 @@ func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient,
 
 // NewHydraKratosClient creates a new client with the default config.
 func NewHydraKratosClient() (*HydraKratosClient, error) {
-	return NewHydraKratosClientFromConfig(
-		&HydraKratosConfig{
-			HydraPublicHost:  viper.GetString("hydra_public_host"),
-			HydraAdminHost:   viper.GetString("hydra_admin_host"),
-			HydraBrowserURL:  viper.GetString("hydra_browser_url"),
-			KratosPublicHost: viper.GetString("kratos_public_host"),
-			KratosAdminHost:  viper.GetString("kratos_admin_host"),
-			KratosBrowserURL: viper.GetString("kratos_browser_url"),
-			HydraConsentPath: viper.GetString("hydra_consent_path"),
-			HydraClientID:    viper.GetString("hydra_client_id"),
-		},
-	)
+	config := &HydraKratosConfig{
+		HydraPublicHost:  viper.GetString("hydra_public_host"),
+		HydraAdminHost:   viper.GetString("hydra_admin_host"),
+		HydraBrowserURL:  viper.GetString("hydra_browser_url"),
+		KratosPublicHost: viper.GetString("kratos_public_host"),
+		KratosAdminHost:  viper.GetString("kratos_admin_host"),
+		KratosBrowserURL: viper.GetString("kratos_browser_url"),
+		HydraConsentPath: viper.GetString("hydra_consent_path"),
+		HydraClientID:    viper.GetString("hydra_client_id"),
+	}
+	fmt.Printf("Using hydra kratos config: %+v\n", config)
+	return NewHydraKratosClientFromConfig(config)
 }
 
 func (c *HydraKratosClient) convertExternalHydraURLToInternal(externalHydraURL string) (string, error) {
@@ -450,9 +450,11 @@ func (c *HydraKratosClient) AcceptConsent(ctx context.Context, challenge string)
 
 	// We only trust the client that's passed in as a config here. In the future we might want to support other clients
 	// at which point we will want to actually ask for permission from the user.
-	if consentRequest.Client.ClientID != c.Config.HydraClientID {
-		return nil, fmt.Errorf("'%s' not an allowed client", consentRequest.Client.ClientID)
-	}
+
+	// TODO(ddelnano): This needs cannot be hard coded to auth-code-client, but should be set in the config.
+	// if consentRequest.Client.ClientID != c.Config.HydraClientID {
+	// 	return nil, fmt.Errorf("'%s' not an allowed client", consentRequest.Client.ClientID)
+	// }
 
 	acceptResp, err := c.hydraAdminClient.AcceptConsentRequest(&hydraAdmin.AcceptConsentRequestParams{
 		Body: &hydraModels.AcceptConsentRequest{
@@ -505,12 +507,15 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	ctx := context.Background()
 	whoami, err := c.Whoami(ctx, r)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not get whoami: %w", err)}
 	}
 
+	if whoami != nil && whoami.kratosSession != nil {
+		fmt.Printf("session: %+v\n", *whoami.kratosSession)
+	}
 	redirectResp, err := c.AcceptHydraLogin(ctx, challenge, whoami)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not accept hydra login: %w", err)}
 	}
 
 	if redirectResp.RedirectTo == nil {
@@ -520,12 +525,12 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	// We expect the response to redirect to the consent endpoint. We will just intercept the consent endpoint
 	respHeader, consentChallenge, err := c.InterceptHydraUserConsent(*redirectResp.RedirectTo, r.Header)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not intercept hydra user consent: %w", err)}
 	}
 
 	consentResp, err := c.AcceptConsent(ctx, consentChallenge)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not accept hydra consent: %w", err)}
 	}
 
 	// Copy the header because the header contains a necessary Set-Cookie from the OAuth server.
