@@ -152,3 +152,7 @@ profiles:
     path: /manifests/kustomize/paths
     value:
     - k8s/cloud/public/base
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+      *common_bazel_args
