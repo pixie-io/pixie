@@ -127,7 +127,7 @@ spec:
         - name: SERVE_PUBLIC_CORS_ALLOWED_ORIGINS_1
           value: https://work.$(PL_DOMAIN_NAME)
         - name: PL_WORK_DOMAIN
-          value: work.$(PL_DOMAIN_NAME):8080
+          value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
           value: $(PL_WORK_DOMAIN)/oauth
         - name: HYDRA_URL

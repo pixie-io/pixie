@@ -101,8 +101,8 @@ interface DynamicClientRegistrationResponse extends OAuth2Client {
   registration_access_token?: string;
 }
 
-// Cache for the dynamically registered client ID
-let cachedClientId: string | null = null;
+// Cache key for storing the dynamic client ID in session storage
+const DYNAMIC_CLIENT_ID_KEY = 'hydra-dynamic-client-id';
 
 async function getDynamicClientId(): Promise<string> {
   // Only use dynamic registration for hydra provider
@@ -110,9 +110,11 @@ async function getDynamicClientId(): Promise<string> {
     return AUTH_CLIENT_ID;
   }
 
-  // Return cached client ID if available
-  if (cachedClientId) {
-    return cachedClientId;
+  // Check session storage for existing client ID
+  const storedClientId = sessionStorage.getItem(DYNAMIC_CLIENT_ID_KEY);
+  if (storedClientId) {
+    console.log('Using cached dynamic client ID from session storage:', storedClientId);
+    return storedClientId;
   }
 
   // Use /oauth/hydra prefix which will be stripped by the proxy
@@ -155,8 +157,8 @@ async function getDynamicClientId(): Promise<string> {
       throw new Error('No client_id returned from dynamic registration');
     }
 
-    // Cache the client ID for future use
-    cachedClientId = data.client_id;
+    // Store the client ID in session storage for use across page loads
+    sessionStorage.setItem(DYNAMIC_CLIENT_ID_KEY, data.client_id);
     
     console.log('Successfully registered dynamic OAuth2 client:', data.client_id);
     return data.client_id;
