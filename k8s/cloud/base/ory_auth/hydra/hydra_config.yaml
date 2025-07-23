@@ -9,9 +9,33 @@ data:
     serve:
       cookies:
         same_site_mode: Strict
+      public:
+        cors:
+          enabled: true
+          allowed_origins:
+            - https://*.${PL_DOMAIN_NAME}
+          allowed_methods:
+            - POST
+            - GET
+            - PUT
+            - PATCH
+            - DELETE
+          allowed_headers:
+            - Authorization
+            - Content-Type
+          exposed_headers:
+            - Content-Type
 
     oidc:
       subject_identifiers:
         supported_types:
           - pairwise
           - public
+      dynamic_client_registration:
+        enabled: true
+        default_scope:
+          - openid
+          - offline
+          - notifications
+          - gist
+          - vizier
