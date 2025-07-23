@@ -116,7 +116,7 @@ LINUX_HEADERS_ARM64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merge
 LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV)
 
 ## NATS image parameters.
-NATS_IMAGE_VERSION := 2.9.19
+NATS_IMAGE_VERSION := 2.9.25
 nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch"
 
 ## Copybara image parameters.
