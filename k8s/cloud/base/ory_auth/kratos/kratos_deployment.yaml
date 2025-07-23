@@ -100,7 +100,7 @@ spec:
         - name: LOG_LEVEL
           value: trace
         - name: PL_WORK_DOMAIN
-          value: work.$(PL_DOMAIN_NAME):8080
+          value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
           value: $(PL_WORK_DOMAIN)/oauth
         - name: FRONTEND_URL
