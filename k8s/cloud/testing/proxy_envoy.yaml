@@ -44,7 +44,7 @@ data:
                     allow_origin_string_match:
                     - suffix: "testing.withpixie.dev"
                     allow_methods: GET, PUT, DELETE, POST, OPTIONS
-                    allow_headers: "content-type,x-grpc-web,x-user-agent"
+                    allow_headers: content-type,x-grpc-web,x-user-agent
                     max_age: "1728000"
                     expose_headers: grpc-status,grpc-message,grpc-timeout
                     allow_credentials: true
