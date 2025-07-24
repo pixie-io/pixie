@@ -26,10 +26,11 @@ spec:
       - name: migrate
         args:
         - migrate
+        - sql
+        - up
+        - -e
         - -c
         - /etc/config/hydra/hydra.yml
-        - sql
-        - -e
         - --yes
         envFrom:
         - configMapRef:
