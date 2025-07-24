@@ -144,7 +144,7 @@ func main() {
 	}
 	es, err := esutils.NewEsClient(esConfig)
 	if err != nil {
-		log.WithError(err).Fatal("Could not connect to elastic")
+		log.WithError(err).Error("Could not connect to elastic. Autocompletion will not work")
 	}
 
 	mux := http.NewServeMux()
