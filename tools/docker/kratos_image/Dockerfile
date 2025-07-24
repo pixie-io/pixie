@@ -1,3 +1,19 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:9fadeb603e14f1f3e08bdbec6681fa14446053c498a554f3e57260bf892c487e AS build
 
 ARG TARGETOS TARGETARCH
