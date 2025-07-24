@@ -15,6 +15,13 @@ RUN git clone --depth 1 https://github.com/ory/kratos.git
 WORKDIR /src/kratos
 RUN git fetch --tags && git checkout $KRATOS_VERSION
 
+# The hydra and kratos migrations attempt to create the same table.
+# Kratos's migration only creates the table while hydra's migration creates the table
+# and inserts a row. Therefore, we replace kratos's problematic version with empty placeholders
+# to avoid a conflict. Removing the problematic migration file prior to module initialization and
+# compilation did not work.
+RUN for file in persistence/sql/migrations/sql/20150100000001000000_networks.*.sql; do echo "-- Migration disabled to avoid conflict with hydra" > "$file"; done
+
 ENV GO111MODULE=on
 # kratos and hydra require CGO if sqlite is used, but we exclusively use postgres
 ENV CGO_ENABLED=0
