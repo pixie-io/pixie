@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +15,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+=======
+>>>>>>> 75010e004 (Build multi arch kratos image with patched vulns)
 FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:9fadeb603e14f1f3e08bdbec6681fa14446053c498a554f3e57260bf892c487e AS build
 
 ARG TARGETOS TARGETARCH
@@ -49,7 +52,11 @@ RUN go build \
   -ldflags="-X 'github.com/ory/kratos/driver/config.Version=${KRATOS_VERSION}' -X 'github.com/ory/kratos/driver/config.Date=${BUILD_DATE}' -X 'github.com/ory/kratos/driver/config.Commit=$(git rev-parse HEAD)'" \
   -o /usr/bin/kratos
 
+<<<<<<< HEAD
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:627d6c5a23ad24e6bdff827f16c7b60e0289029b0c79e9f7ccd54ae3279fb45f
+=======
+FROM gcr.io/distroless/static-debian12:nonroot
+>>>>>>> 75010e004 (Build multi arch kratos image with patched vulns)
 
 COPY --from=build /usr/bin/kratos /usr/bin/kratos
 EXPOSE 4433 4434
