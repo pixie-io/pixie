@@ -1,0 +1,3 @@
+---
+short: Collect Agent Heap Dumps
+long: Script useful for debugging kelvin and PEM memory footprint.
