@@ -2982,8 +2982,8 @@ def pl_go_dependencies():
         name = "com_github_ory_kratos_client_go",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/ory/kratos-client-go",
-        sum = "h1:kSRk+0leCJ1nPMS+FPho8b9WMzrKNpgszvta0Xo32QU=",
-        version = "v0.10.1",
+        sum = "h1:S4D5dAURq5C6LbOUU+DgE4ZXxp37IlJG2GngemdF9h0=",
+        version = "v1.3.8",
     )
     go_repository(
         name = "com_github_ovh_go_ovh",
@@ -3449,15 +3449,15 @@ def pl_go_dependencies():
         name = "com_github_stretchr_objx",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/stretchr/objx",
-        sum = "h1:1zr/of2m5FGMsad5YfcqgdqdWrIhu+EBEJRhR1U7z/c=",
-        version = "v0.5.0",
+        sum = "h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=",
+        version = "v0.5.2",
     )
     go_repository(
         name = "com_github_stretchr_testify",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/stretchr/testify",
-        sum = "h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=",
-        version = "v1.8.4",
+        sum = "h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=",
+        version = "v1.10.0",
     )
     go_repository(
         name = "com_github_subosito_gotenv",

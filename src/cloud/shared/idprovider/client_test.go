@@ -126,8 +126,15 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 func TestWhoami(t *testing.T) {
 	client := HydraKratosClient{}
 
+	// Create a real kratos client with fake HTTP transport
 	kratosPublicClient := &kratosFakeAPI{userID: "1234"}
 	client.kratosPublicClient = kratosPublicClient
+	client.kratosAdminClient = kratosPublicClient
+	// kratosConfig := kratos.NewConfiguration()
+	// kratosConfig.HTTPClient = fakeHTTPClient
+	// kratosConfig.Servers = []kratos.ServerConfiguration{{URL: "http://fake"}}
+	// kratosClient := kratos.NewAPIClient(kratosConfig)
+	// client.kratosPublicClient = kratosClient.FrontendAPI
 
 	r := &http.Request{}
 	r.Header = make(http.Header)
@@ -244,10 +251,11 @@ func TestAcceptHydraLogin(t *testing.T) {
 	defer cleanup()
 
 	// Fake whoami response.
+	userID := "user"
 	whoami := &Whoami{
 		kratosSession: &kratos.Session{
-			Identity: kratos.Identity{
-				Id: "user",
+			Identity: &kratos.Identity{
+				Id: userID,
 			},
 		},
 	}
