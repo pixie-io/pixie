@@ -63,7 +63,7 @@ spec:
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/hydra:v2.3.0-go1.23@sha256:9382a850d54ff48f1f6b3bfa277a2ec430285bcaf500d09ee7ea7a7cca18e246
+        image: ghcr.io/pixie-io/hydra:2.3.0-scratch@sha256:460d7738ec473cd5d74a725221cc629eb03b76f68593194496700c2d43e05b70
         volumeMounts:
         - mountPath: /etc/config/hydra
           name: config
@@ -79,7 +79,7 @@ spec:
       containers:
       - name: server
         imagePullPolicy: IfNotPresent
-        image: docker.io/ddelnano/hydra:v2.3.0-go1.23@sha256:9382a850d54ff48f1f6b3bfa277a2ec430285bcaf500d09ee7ea7a7cca18e246
+        image: ghcr.io/pixie-io/hydra:2.3.0-scratch@sha256:460d7738ec473cd5d74a725221cc629eb03b76f68593194496700c2d43e05b70
         args:
         - serve
         - -c
