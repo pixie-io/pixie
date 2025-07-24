@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,15 +15,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import px
+set -e
 
-df = px.GetAgentStatus()
-df.ip_address = px.pluck_array(px.split(df.ip_address, ":"), 0)
-df.hostname_by_ip = px.pod_id_to_node_name(px.ip_to_pod_id(df.ip_address))
-df.hostname = px.select(df.hostname_by_ip == "", df.hostname, df.hostname_by_ip)
-df = df[['asid', 'hostname']]
-heap_stats = px._HeapGrowthStacks()
-df = df.merge(heap_stats, how='inner', left_on='asid', right_on='asid')
-df.asid = df.asid_x
-df = df[['asid', 'hostname', 'heap']]
-px.display(df)
+BUNDLE_FILE="$1"
+YQ_BIN="$2"
+
+if [ ! -f "$BUNDLE_FILE" ]; then
+    echo "Error: Bundle file not found: $BUNDLE_FILE"
+    exit 1
+fi
+
+# Check that scripts object has keys
+NUM_SCRIPTS=$("$YQ_BIN" eval '.scripts | keys | length' "$BUNDLE_FILE")
+
+if [ "$NUM_SCRIPTS" -eq 0 ]; then
+    echo "Error: No scripts found in bundle"
+    exit 1
+fi
+
+echo "Success: Found $NUM_SCRIPTS scripts in bundle"
