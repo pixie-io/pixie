@@ -118,6 +118,15 @@
         "(\\.pxl$)"
       ]
     },
+    "mypy": {
+      "type": "script-and-regex",
+      "include": [
+        "(\\.py$)",
+        "(\\.pxl$)"
+      ],
+      "script-and-regex.script": "mypy --config-file=mypy.ini",
+      "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<severity>error|warning): (?P<message>.*)$/m"
+    },
     "gazelle": {
       "type": "script-and-regex",
       "include": [
