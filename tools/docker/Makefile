@@ -119,6 +119,10 @@ LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV
 NATS_IMAGE_VERSION := 2.9.25
 nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch"
 
+## Ory image parameters.
+KRATOS_IMAGE_VERSION := 1.3.1
+kratos_image_tag := "ghcr.io/pixie-io/kratos:$(KRATOS_IMAGE_VERSION)-scratch"
+
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
 copybara_image_tag := "gcr.io/pixie-oss/pixie-dev-public/copybara:$(COPYBARA_IMAGE_VERSION)"
@@ -274,6 +278,15 @@ build_and_upload_nats_image:
 		--platform linux/amd64,linux/arm64 \
 		--build-arg=NATS_VERSION="v$(NATS_IMAGE_VERSION)" \
 		-t $(nats_image_tag) \
+		--push
+
+.PHONY: build_and_upload_kratos_image
+build_and_upload_kratos_image:
+	$(DOCKER) buildx build kratos_image \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg=KRATOS_VERSION="v$(KRATOS_IMAGE_VERSION)" \
+		--build-arg=BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		-t $(kratos_image_tag) \
 		--push
 
 .PHONY: build_and_upload_copybara_image
