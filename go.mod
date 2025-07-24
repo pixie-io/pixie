@@ -22,8 +22,6 @@ require (
 	github.com/fatih/color v1.14.1
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.20.0
-	github.com/go-openapi/runtime v0.19.26
-	github.com/go-openapi/strfmt v0.21.3
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
@@ -50,7 +48,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.8.1
-	github.com/ory/hydra-client-go v1.9.2
+	github.com/ory/hydra-client-go/v2 v2.2.0
 	github.com/ory/kratos-client-go v1.3.8
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
 	github.com/prometheus/client_golang v1.14.0
@@ -80,7 +78,7 @@ require (
 	golang.org/x/exp v0.0.0-20230307190834-24139beb5833
 	golang.org/x/mod v0.20.0
 	golang.org/x/net v0.36.0
-	golang.org/x/oauth2 v0.6.0
+	golang.org/x/oauth2 v0.21.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.30.0
 	golang.org/x/term v0.29.0
@@ -151,14 +149,9 @@ require (
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-openapi/analysis v0.21.4 // indirect
-	github.com/go-openapi/errors v0.20.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
-	github.com/go-openapi/loads v0.21.2 // indirect
-	github.com/go-openapi/spec v0.20.8 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
-	github.com/go-openapi/validate v0.22.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/goccy/go-yaml v1.9.8 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
@@ -244,7 +237,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -256,7 +248,6 @@ require (
 	go.etcd.io/etcd/client/v2 v2.305.8 // indirect
 	go.etcd.io/etcd/pkg/v3 v3.5.8 // indirect
 	go.etcd.io/etcd/raft/v3 v3.5.8 // indirect
-	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.35.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
@@ -276,7 +267,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/launchdarkly/go-jsonstream.v1 v1.0.1 // indirect

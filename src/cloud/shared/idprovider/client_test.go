@@ -26,8 +26,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/sessions"
-	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
-	hydraModels "github.com/ory/hydra-client-go/models"
+	hydra "github.com/ory/hydra-client-go/v2"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +44,7 @@ type testClientConfig struct {
 	idpConsentPath          string
 	hydraBrowserURL         string
 	hydraConsentPath        string
-	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
+	introspectOAuth2TokenFn func(string) (*hydra.IntrospectOAuth2TokenResponse, error)
 }
 
 func fillDefaults(p *testClientConfig) *testClientConfig {
@@ -97,11 +96,9 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 		http.Redirect(w, r, consentURL.String(), http.StatusFound)
 	}))
 
-	acceptConsentRequestFn := func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
-		return &hydraAdmin.AcceptConsentRequestOK{
-			Payload: &hydraModels.CompletedRequest{
-				RedirectTo: &p.postLoginRedirect,
-			},
+	acceptConsentRequestFn := func(challenge string, body *hydra.AcceptOAuth2ConsentRequest) (*hydra.OAuth2RedirectTo, error) {
+		return &hydra.OAuth2RedirectTo{
+			RedirectTo: &p.postLoginRedirect,
 		}, nil
 	}
 
@@ -116,7 +113,7 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 		hydraAdminClient: &fakeHydraAdminClient{
 			introspectOAuth2TokenFn: p.introspectOAuth2TokenFn,
 			redirect:                p.hydraBrowserURL + p.hydraConsentPath,
-			acceptConsentRequestFn:  &acceptConsentRequestFn,
+			acceptConsentRequestFn:  acceptConsentRequestFn,
 		},
 		kratosPublicClient: &kratosFakeAPI{},
 		kratosAdminClient:  &kratosFakeAPI{},
@@ -238,15 +235,18 @@ func TestRedirectToLogin(t *testing.T) {
 
 func TestAcceptHydraLogin(t *testing.T) {
 	loginChallenge := "abcdefgh"
-	acceptLoginRequestFn := func(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error) {
+	acceptLoginRequestFn := func(challenge string, body *hydra.AcceptOAuth2LoginRequest) (*hydra.OAuth2RedirectTo, error) {
 		// Make sure the loginChallenge is forwarded.
-		assert.Equal(t, params.LoginChallenge, loginChallenge)
-		// Call the original login request to handle the rest.
-		return (&fakeHydraAdminClient{}).AcceptLoginRequest(params)
+		assert.Equal(t, challenge, loginChallenge)
+		// Return a redirect response
+		redirect := "/redirect"
+		return &hydra.OAuth2RedirectTo{
+			RedirectTo: &redirect,
+		}, nil
 	}
 	c, cleanup := makeClient(t)
 	c.hydraAdminClient = &fakeHydraAdminClient{
-		acceptLoginRequestFn: &acceptLoginRequestFn,
+		acceptLoginRequestFn: acceptLoginRequestFn,
 	}
 	defer cleanup()
 
@@ -309,35 +309,32 @@ func TestInterceptHydraConsent(t *testing.T) {
 
 func TestAcceptConsent(t *testing.T) {
 	consentChallenge := "123456789"
-	getConsentRequestFn := func(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error) {
-		assert.Equal(t, consentChallenge, params.ConsentChallenge)
-		return &hydraAdmin.GetConsentRequestOK{
-			Payload: &hydraModels.ConsentRequest{
-				Client: &hydraModels.OAuth2Client{
-					ClientID: "hydra_client_id",
-				},
-				RequestedScope:               []string{"openid", "offline"},
-				RequestedAccessTokenAudience: []string{"api"},
+	getConsentRequestFn := func(challenge string) (*hydra.OAuth2ConsentRequest, error) {
+		assert.Equal(t, consentChallenge, challenge)
+		clientID := "hydra_client_id"
+		return &hydra.OAuth2ConsentRequest{
+			Client: &hydra.OAuth2Client{
+				ClientId: &clientID,
 			},
+			RequestedScope:               []string{"openid", "offline"},
+			RequestedAccessTokenAudience: []string{"api"},
 		}, nil
 	}
 	redirectURL := "/oauth2/auth"
-	acceptConsentRequestFn := func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
-		assert.ElementsMatch(t, []string{"openid", "offline"}, params.Body.GrantScope)
-		assert.ElementsMatch(t, []string{"api"}, params.Body.GrantAccessTokenAudience)
-		assert.Equal(t, consentChallenge, params.ConsentChallenge)
-		return &hydraAdmin.AcceptConsentRequestOK{
-			Payload: &hydraModels.CompletedRequest{
-				RedirectTo: &redirectURL,
-			},
+	acceptConsentRequestFn := func(challenge string, body *hydra.AcceptOAuth2ConsentRequest) (*hydra.OAuth2RedirectTo, error) {
+		assert.ElementsMatch(t, []string{"openid", "offline"}, body.GrantScope)
+		assert.ElementsMatch(t, []string{"api"}, body.GrantAccessTokenAudience)
+		assert.Equal(t, consentChallenge, challenge)
+		return &hydra.OAuth2RedirectTo{
+			RedirectTo: &redirectURL,
 		}, nil
 	}
 	hydraAdminClient := &fakeHydraAdminClient{
 		redirect:               "/",
 		consentChallenge:       consentChallenge,
 		oauthClientID:          "hydra_client_id",
-		getConsentRequestFn:    &getConsentRequestFn,
-		acceptConsentRequestFn: &acceptConsentRequestFn,
+		getConsentRequestFn:    getConsentRequestFn,
+		acceptConsentRequestFn: acceptConsentRequestFn,
 	}
 	c := HydraKratosClient{
 		Config: &HydraKratosConfig{
