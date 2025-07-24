@@ -20,7 +20,7 @@ import type * as React from 'react';
 
 import {
   UiNode, UiNodeAttributes, UiNodeGroupEnum, UiNodeInputAttributes,
-  UiNodeTypeEnum, V0alpha2ApiFactory,
+  FrontendApiFactory,
 } from '@ory/kratos-client';
 import { UserManager } from 'oidc-client';
 import * as QueryString from 'query-string';
@@ -36,7 +36,7 @@ export const PasswordError = new Error('Kratos identity server error: Password m
 export const FlowIDError = new Error('Auth server requires a flow parameter in the query string, but none were found.');
 
 const kratosUri = `${location.protocol}//${location.host}/oauth/kratos`;
-const kratosClient = V0alpha2ApiFactory(null, kratosUri);
+const kratosClient = FrontendApiFactory(null, kratosUri);
 
 // Renders a form with an error and no fields.
 const displayErrorFormStructure = (error: Error): FormStructure => ({
@@ -51,32 +51,29 @@ const displayErrorFormStructure = (error: Error): FormStructure => ({
   },
 });
 
-function isInputAttributes(attr: UiNodeAttributes): attr is UiNodeInputAttributes {
-  return attr.node_type === UiNodeTypeEnum.Input;
-}
-
 function nodeToFormField(node: UiNode): FormField | null {
-  if (!isInputAttributes(node.attributes)) {
+  const attr = node.attributes as any;
+  if (attr.node_type !== 'input') {
     return null;
   }
   // We render our own form button.
-  if (node.attributes.type === 'submit') {
+  if (attr.type === 'submit') {
     return null;
   }
   return {
-    disabled: node.attributes.disabled,
+    disabled: attr.disabled,
     messages: node.messages,
-    name: node.attributes.name,
-    pattern: node.attributes.pattern,
-    required: node.attributes.required,
-    type: node.attributes.type,
-    value: node.attributes.value,
+    name: attr.name,
+    pattern: attr.pattern,
+    required: attr.required,
+    type: attr.type,
+    value: attr.value,
   };
 }
 
 function nodesToFormFields(nodes: Array<UiNode>): Array<FormField> {
   return nodes
-    .filter(node => node.type === UiNodeTypeEnum.Input)
+    .filter(node => node.type === 'input')
     .filter(node => node.group === UiNodeGroupEnum.Password || node.group === UiNodeGroupEnum.Default)
     .map(nodeToFormField)
     .filter(node => node);
@@ -278,7 +275,7 @@ export const HydraClient = {
     if (flow == null) {
       return displayErrorFormStructure(FlowIDError);
     }
-    const { data } = await kratosClient.getSelfServiceLoginFlow(flow);
+    const { data } = await kratosClient.getLoginFlow({ id: flow });
 
     return {
       action: data.ui.action,
@@ -298,7 +295,7 @@ export const HydraClient = {
     if (flow == null) {
       return displayErrorFormStructure(FlowIDError);
     }
-    const { data } = await kratosClient.getSelfServiceSettingsFlow(flow);
+    const { data } = await kratosClient.getSettingsFlow({ id: flow });
 
     return {
       action: data.ui.action,
@@ -318,7 +315,7 @@ export const HydraClient = {
     if (error == null) {
       return displayErrorFormStructure(new Error('server error'));
     }
-    const { data } = await kratosClient.getSelfServiceError(error);
+    const { data } = await kratosClient.getFlowError({ id: error });
 
     return displayErrorFormStructure(new Error(JSON.stringify(data)));
   },
