@@ -51,7 +51,7 @@ require (
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/ory/hydra-client-go v1.9.2
-	github.com/ory/kratos-client-go v0.10.1
+	github.com/ory/kratos-client-go v1.3.8
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
@@ -68,7 +68,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.10.0
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5

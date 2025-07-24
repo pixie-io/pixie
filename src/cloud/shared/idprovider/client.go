@@ -96,13 +96,13 @@ type hydraAdminClientService interface {
 }
 
 type kratosPublicClientService interface {
-	ToSession(context.Context) kratos.V0alpha2ApiApiToSessionRequest
+	ToSession(context.Context) kratos.FrontendAPIToSessionRequest
 }
 
 type kratosAdminClientService interface {
-	AdminGetIdentity(context.Context, string) kratos.V0alpha2ApiApiAdminGetIdentityRequest
-	AdminCreateIdentity(context.Context) kratos.V0alpha2ApiApiAdminCreateIdentityRequest
-	AdminCreateSelfServiceRecoveryLink(context.Context) kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest
+	GetIdentity(context.Context, string) kratos.IdentityAPIGetIdentityRequest
+	CreateIdentity(context.Context) kratos.IdentityAPICreateIdentityRequest
+	CreateRecoveryLinkForIdentity(context.Context) kratos.IdentityAPICreateRecoveryLinkForIdentityRequest
 }
 
 // HydraKratosClient implements the Client interface for the a Hydra and Kratos integration.
@@ -206,8 +206,8 @@ func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient,
 		Config:             cfg,
 		httpClient:         httpClient,
 		hydraAdminClient:   hydraAdminClient,
-		kratosAdminClient:  kratosAdminClient.V0alpha2Api,
-		kratosPublicClient: kratosPublicClient.V0alpha2Api,
+		kratosAdminClient:  kratosAdminClient.IdentityAPI,
+		kratosPublicClient: kratosPublicClient.FrontendAPI,
 	}, nil
 }
 
@@ -575,7 +575,7 @@ type KratosUserInfo struct {
 
 // GetUserInfo returns the UserInfo for the userID.
 func (c *HydraKratosClient) GetUserInfo(ctx context.Context, userID string) (*KratosUserInfo, error) {
-	id, _, err := c.kratosAdminClient.AdminGetIdentity(ctx, userID).Execute()
+	id, _, err := c.kratosAdminClient.GetIdentity(ctx, userID).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -611,8 +611,8 @@ type CreateIdentityResponse struct {
 func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*CreateIdentityResponse, error) {
 	schemaID := viper.GetString("kratos_schema_id")
 
-	body := kratos.NewAdminCreateIdentityBody(schemaID, map[string]interface{}{"email": email})
-	idResp, _, err := c.kratosAdminClient.AdminCreateIdentity(ctx).AdminCreateIdentityBody(*body).Execute()
+	body := kratos.NewCreateIdentityBody(schemaID, map[string]interface{}{"email": email})
+	idResp, _, err := c.kratosAdminClient.CreateIdentity(ctx).CreateIdentityBody(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -635,9 +635,9 @@ type CreateInviteLinkForIdentityResponse struct {
 
 // CreateInviteLinkForIdentity creates a Kratos recovery link for the identity, which can act like a one-time use invitelink.
 func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req *CreateInviteLinkForIdentityRequest) (*CreateInviteLinkForIdentityResponse, error) {
-	body := kratos.NewAdminCreateSelfServiceRecoveryLinkBody(req.AuthProviderID)
+	body := kratos.NewCreateRecoveryLinkForIdentityBody(req.AuthProviderID)
 	body.SetExpiresIn(viper.GetString("kratos_recovery_link_lifetime"))
-	recovery, _, err := c.kratosAdminClient.AdminCreateSelfServiceRecoveryLink(ctx).AdminCreateSelfServiceRecoveryLinkBody(*body).Execute()
+	recovery, _, err := c.kratosAdminClient.CreateRecoveryLinkForIdentity(ctx).CreateRecoveryLinkForIdentityBody(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
