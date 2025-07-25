@@ -20,11 +20,14 @@ package(default_visibility = ["//src:__subpackages__"])
 
 filegroup(
     name = "preset_queries",
-    srcs = glob([
-        "**/*.pxl",
-        "**/*.json",
-        "**/*.yaml",
-    ], exclude = ["bundle-oss.json"]),
+    srcs = glob(
+        [
+            "**/*.pxl",
+            "**/*.json",
+            "**/*.yaml",
+        ],
+        exclude = ["bundle-oss.json"],
+    ),
     visibility = ["//src:__subpackages__"],
 )
 
@@ -43,7 +46,10 @@ genrule(
         ":preset_queries",
     ],
     outs = ["bundle-oss.json"],
-    cmd = "export PATH_PREFIX=$$(dirname $(location //src/pxl_scripts:makefile))/; make -C $$PATH_PREFIX bundle-oss.json; cp bundle-oss.json $(@D)/bundle-oss.json",
+    cmd = "export PATH_PREFIX=$$(dirname $(location //src/pxl_scripts:makefile))/; PX_BIN=../../$(location //src/pixie_cli:px) make -C $$PATH_PREFIX bundle-oss.json; cp bundle-oss.json $(@D)/bundle-oss.json",
+    tools = [
+        "//src/pixie_cli:px",
+    ],
     visibility = ["//src:__subpackages__"],
 )
 
