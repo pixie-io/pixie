@@ -1,0 +1,39 @@
+{
+    "variables": [
+        {
+            "name": "asid",
+            "type": "PX_INT64",
+            "description": "Whether to filter the results to a particular ASID",
+            "defaultValue": "-1"
+        }
+    ],
+    "globalFuncs": [
+        {
+            "outputName": "collect_pprofs",
+            "func": {
+                "name": "collect_pprofs",
+                "args": [
+                    {
+                        "name": "asid",
+                        "variable": "asid"
+                    }
+                ]
+            }
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Table",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 4
+            },
+            "globalFuncOutputName": "collect_pprofs",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        }
+    ]
+}
