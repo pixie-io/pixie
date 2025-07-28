@@ -18,14 +18,26 @@
 dirs := bpftrace px pxbeta sotw
 script_files := $(foreach dir,$(dirs),$(wildcard $(dir)/**/*))
 
-EXECUTABLES = px
+EXECUTABLES ?= px
 K := $(foreach exec,$(EXECUTABLES),\
 	$(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
+
+# Optional path prefix to use for the script_files path. Used by bazel
+# to ensure the scripts are in the correct location.
+PATH_PREFIX ?= ""
 
 all: bundle-oss.json.gz
 
 bundle-oss.json: $(script_files)
-	px create-bundle --search_path $(PWD) $(foreach dir,$(dirs),--base $(dir)) -o $(PWD)/bundle-oss.json
+
+	@# When run in CI, $HOME may not be set. This ensures that the
+	@# px create-bundle command can run successfully.
+	@if [ -z "$$HOME" ]; then \
+		TMPDIR=$$(mktemp -d); \
+		export HOME=$$TMPDIR; \
+		trap "rm -rf $$TMPDIR" EXIT; \
+	fi; \
+	$(EXECUTABLES) create-bundle --search_path $(PWD) $(foreach dir,$(dirs),--base $(PATH_PREFIX)$(dir)) -o $(PWD)/bundle-oss.json
 
 bundle-oss.json.gz: bundle-oss.json
 	gzip -c $< > $@
