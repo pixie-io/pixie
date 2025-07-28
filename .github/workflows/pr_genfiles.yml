@@ -46,6 +46,8 @@ jobs:
           - '**/*.graphql'
           proto:
           - '**/*.proto'
+          pxl:
+          - 'src/pxl_scripts/**/*.pxl'
           sql:
           - '**/*.sql'
           gobuild:
@@ -60,6 +62,9 @@ jobs:
     - name: Run update ts protos
       if: ${{ steps.changes.outputs.proto == 'true' }}
       run: scripts/update_ts_protos.sh
+    - name: Run update pxl script README
+      if: ${{ steps.changes.outputs.pxl == 'true' }}
+      run: make -C src/pxl_scripts update_readme
     - name: Run update graphql schema
       if: ${{ steps.changes.outputs.graphql == 'true' }}
       run: src/cloud/api/controllers/schema/update.sh
