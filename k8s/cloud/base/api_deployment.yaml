@@ -122,11 +122,11 @@ spec:
           value: vizier_image_secret.json
         - name: PL_ELASTIC_USERNAME
           value: elastic
-        # - name: PL_ELASTIC_PASSWORD
-        #   valueFrom:
-        #     secretKeyRef:
-        #       name: pl-elastic-es-elastic-user
-        #       key: elastic
+        - name: PL_ELASTIC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-elastic-es-elastic-user
+              key: elastic
         - name: PL_ELASTIC_CA_CERT
           value: /elastic-certs-pub/tls.crt
         - name: PL_WORK_DOMAIN
@@ -140,8 +140,8 @@ spec:
           mountPath: /certs
         - name: vizier-image-secret
           mountPath: /vizier-image-secret
-        # - name: elastic-certs-pub
-        #   mountPath: /elastic-certs-pub
+        - name: elastic-certs-pub
+          mountPath: /elastic-certs-pub
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -167,6 +167,6 @@ spec:
       - name: envoy-yaml
         configMap:
           name: proxy-envoy-config
-      # - name: elastic-certs-pub
-      #   secret:
-      #     secretName: pl-elastic-es-http-certs-public
+      - name: elastic-certs-pub
+        secret:
+          secretName: pl-elastic-es-http-certs-public
