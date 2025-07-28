@@ -58,8 +58,6 @@ spec:
             secretKeyRef:
               name: pl-hydra-secrets
               key: SECRETS_SYSTEM
-        - name: HYDRA_DATABASE
-          value: hydra
         - name: DSN
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_HYDRA_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
@@ -116,7 +114,7 @@ spec:
               key: SECRETS_SYSTEM
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_HYDRA_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         - name: SERVE_TLS_ENABLED
           value: "true"
         - name: SERVE_TLS_CERT_PATH

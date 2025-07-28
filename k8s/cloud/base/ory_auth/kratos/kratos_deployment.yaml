@@ -34,6 +34,8 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-db-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -75,6 +77,8 @@ spec:
             name: pl-db-config
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -88,7 +92,7 @@ spec:
               key: PL_POSTGRES_PASSWORD
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_KRATOS_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         - name: SERVE_PUBLIC_TLS_CERT_PATH
           value: /certs/server.crt
         - name: SERVE_PUBLIC_TLS_KEY_PATH
