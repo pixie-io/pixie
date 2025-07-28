@@ -10,6 +10,166 @@ This document outlines the process for setting up the development environment fo
 
 ## Setting up the Environment
 
+Decide first if you'd like a full buildsystem (on a VM) or a containerized dev environment.
+
+### VM as buildsystem
+
+This utilizes `chef` to setup all dependencies and is based on `ubuntu`.
+> [!Important]
+>  The below description defaults to using a `minikube` on this VM for the developer to have an `all-in-one` setup. The VM type must support nested virtualization for `minikube` to work. Please confirm that the nested virtualization really is turned on before you continue, not all VM-types support it.
+>  If you `bring-your-own-k8s`, you may disregard this.
+
+```yaml
+advancedMachineFeatures:
+  enableNestedVirtualization: true
+```
+
+The following specifics were tested on GCP on a Ubuntu 24.04 (May 2025). Please see the latest [packer file](https://github.com/pixie-io/pixie/blob/main/tools/chef/Makefile#L56) for the current supported Ubuntu version: The initial compilation is CPU intense and `16vcpu` were a good trade-off, a balanced disk of 500 GB seems convenient and overall `n2-standard-16` works well.
+
+> [!Warning]
+>  The first `full build` takes several hours and at least 160 Gb of space
+>  The first `vizier build` on these parameters takes approx. 1 hr and 45 Gb of space.
+
+
+
+
+
+#### 1) Install chef and some dependencies
+
+First, install `chef` to cook your `recipies`:
+
+```bash
+curl -L https://chefdownload-community.chef.io/install.sh | sudo bash
+```
+You may find it helpful to use a terminal manager like `screen` or `tmux`, esp to detach the builds.
+```bash
+sudo apt install -y screen git
+```
+
+In order to very significantly speed up your work, you may opt for a local cache directory. This can be shared between users of the VM, if both are part of the same group.
+Create a cache dir under <directory-path> such as e.g. /tmp/bazel
+```sh
+sudo groupadd bazelcache
+sudo usermod -aG bazelcache $USER
+sudo mkdir -p <directory-path>
+sudo chown -R :bazelcache <directory-path>
+sudo chmod -R 2775 <directory-path>
+```
+
+
+Now, on this VM, clone pixie (or your fork of it)
+
+```bash
+git clone https://github.com/pixie-io/pixie.git
+cd pixie/tools/chef
+sudo chef-solo -c solo.rb -j node_workstation.json
+sudo usermod -aG libvirt $USER
+```
+
+Make permanent the env loading via your bashrc
+```sh
+echo "source /opt/px_dev/pxenv.inc " >> ~/.bashrc
+```
+
+
+#### 2) If using cache, tell bazel about it
+
+Edit the `<directory-path>` into the .bazelrc and put it into your homedir:
+```
+# Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
+
+# Use local Cache directory if building on a VM:
+# On Chef VM, create a directory and comment in the following line:
+ build --disk_cache=/tmp/bazel/ # Optional for multi-user cache: Make this directory owned by a group name e.g. "bazelcache"
+```
+
+```sh
+cp .bazelrc ~/.
+```
+
+#### 3) Create/Use a registry you control and login
+
+```sh
+docker login ghcr.io/<myregistry>
+```
+
+#### 4) Prepare your kubernetes
+
+> [!Important]
+>  The below description defaults to using a `minikube` on this VM for the developer to have an `all-in-one` setup.
+>  If you `bring-your-own-k8s`, please prepare your preferred setup and go to Step 5
+
+If you added your user to the libvirt group (`sudo usermod -aG libvirt $USER`), starting the development environment on this VM will now work (if you did this interactively: you need to refresh your group membership, e.g. by logout/login). The following command will, amongst other things, start minikube
+```sh
+make dev-env-start
+```
+
+#### 5) Deploy a vanilla pixie
+
+First deploy the upstream pixie (`vizier`, `kelvin` and `pem`) using the hosted cloud. Follow [these instructions](https://docs.px.dev/installing-pixie/install-schemes/cli) to install the `px` command line interface and Pixie:
+```sh
+px auth login
+```
+
+Once logged in to pixie, we found that limiting the memory is useful, thus after login, set the deploy option like so:
+```sh
+px deploy -p=1Gi
+```
+For reference and further information https://docs.px.dev/installing-pixie/install-guides/hosted-pixie/cosmic-cloud.
+
+Optional on `minikube`:
+
+You may encounter the following WARNING, which is related to the kernel headers missing on the minikube node (this is not your VM node). This is safe to ignore if Pixie starts up properly and your cluster is queryable from Pixie's [Live UI](https://docs.px.dev/using-pixie/using-live-ui). Please see [pixie-issue2051](https://github.com/pixie-io/pixie/issues/2051) for further details.
+```
+ERR: Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please install kernel headers on all nodes.
+```
+
+#### 6) Skaffold deploy your changes
+
+Once you make changes to the source code, or switch to another source code version, use Skaffold to deploy (after you have the vanilla setup working on minikube)
+
+Ensure that you have commented in the bazelcache-directory into the bazel config (see Step 2).
+
+
+Review the compilation-mode suits your purposes:
+```
+cat skaffold/skaffold_vizier.yaml
+# Note: You will want to stick with a sysroot based build (-p x86_64_sysroot or -p aarch64_sysroot),
+# but you may want to change the --compilation_mode setting based on your needs.
+# opt builds remove assert/debug checks, while dbg builds work with debuggers (gdb).
+# See the bazel docs for more details https://bazel.build/docs/user-manual#compilation-mode
+- name: x86_64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=x86_64_sysroot
+    - --compilation_mode=dbg
+#    - --compilation_mode=opt
+```
+
+Optional: you can make permanent your <default-repo> in the skaffold config:
+```sh
+skaffold config set default-repo <myregistry>
+skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot
+```
+
+Check that your docker login token is still valid, then
+
+```sh
+skaffold run -f skaffold/skaffold_vizier.yaml -p x86_64_sysroot --default-repo=<myregistry>
+```
+
+
+
+#### 7) Golden Image
+
+Once all the above is working and the first cache has been built, bake an image of your VM for safekeeping.
+
+
+
+
+### Containerized Devenv
 To set up the developer environment required to start building Pixie's components, run the `run_docker.sh` script. The following script will run the Docker container and dump you out inside the docker container console from which you can run all the necessary tools to build, test, and deploy Pixie in development mode.
 
 1. Since this script runs a Docker container, you must have Docker installed. To install it follow these instructions [here](https://docs.docker.com/get-docker/).
