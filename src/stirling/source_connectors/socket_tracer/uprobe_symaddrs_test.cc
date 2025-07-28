@@ -238,5 +238,59 @@ TEST(GoOffsetLocator, GetFunctionArgInfoNoDWARFSuccessfulLookup) {
   EXPECT_EQ(arg_info.location.offset, 8);
 }
 
+static inline constexpr std::string_view kGoOffsetgenFile =
+    "src/stirling/source_connectors/socket_tracer/testdata/go_offsetgen.json";
+
+TEST(ParseGoOffsetgenFileTest, ParseGoStructsObject) {
+  ParseGoOffsetgenFile(std::string(kGoOffsetgenFile));
+  auto& struct_offsets = GetGoStructOffsets();
+  EXPECT_GT(struct_offsets.size(), 0);
+
+  // Assert offsets for std package
+  EXPECT_EQ(struct_offsets["runtime.g"].first, "std");
+  EXPECT_EQ(struct_offsets["runtime.g"].second["goid"]["1.19.0"], 152);
+  EXPECT_EQ(struct_offsets["runtime.g"].second["goid"]["1.24.1"], 160);
+
+  EXPECT_EQ(struct_offsets["runtime.hmap"].first, "std");
+  EXPECT_EQ(struct_offsets["runtime.hmap"].second["buckets"]["1.19.0"], 16);
+  // Check that null offsets are handled correctly.
+  EXPECT_EQ(struct_offsets["runtime.hmap"].second["buckets"]["1.24.1"], -1);
+
+  // Check non std packages are handled correctly.
+  EXPECT_EQ(struct_offsets["google.golang.org/grpc/internal/transport.http2Client"].first,
+            "google.golang.org/grpc");
+  EXPECT_EQ(struct_offsets["google.golang.org/grpc/internal/transport.http2Client"]
+                .second["conn"]["1.0.0"],
+            -1);
+  EXPECT_EQ(struct_offsets["google.golang.org/grpc/internal/transport.http2Client"]
+                .second["conn"]["1.57.2"],
+            136);
+}
+
+TEST(ParseGoOffsetgenFileTest, ParseGoFuncsObject) {
+  ParseGoOffsetgenFile(std::string(kGoOffsetgenFile));
+  auto& function_args = GetGoFunctionArgOffsets();
+  EXPECT_GT(function_args.size(), 0);
+
+  EXPECT_EQ(function_args["crypto/tls.(*Conn).Read"].first, "std");
+
+  EXPECT_EQ(function_args["google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders"]
+                .first,
+            "google.golang.org/grpc");
+  auto null_loc = std::move(
+      function_args["google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders"]
+          .second["frame"]["1.0.0"]);
+  EXPECT_TRUE(null_loc != nullptr);
+  EXPECT_EQ(null_loc->loc_type, obj_tools::LocationType::kUnknown);
+  EXPECT_EQ(null_loc->offset, -1);
+
+  auto loc = std::move(
+      function_args["google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders"]
+          .second["frame"]["1.40.0"]);
+  EXPECT_TRUE(loc != nullptr);
+  EXPECT_EQ(loc->loc_type, obj_tools::LocationType::kRegister);
+  EXPECT_EQ(loc->offset, 8);
+}
+
 }  // namespace stirling
 }  // namespace px

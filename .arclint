@@ -23,6 +23,7 @@
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
     "(^src/stirling/obj_tools/testdata/go/test_go_binary.go)",
+    "(^src/stirling/offsetgen_offsets.json$)",
     "(^src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/main.go$)",
     "(^src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/main.go$)",
     "(^src/stirling/utils/testdata/config$)",
