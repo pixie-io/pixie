@@ -12,3 +12,5 @@ data:
   # Kratos only support http at the moment.
   PL_KRATOS_PUBLIC_HOST: https://kratos.plc-dev.svc.cluster.local:4433
   PL_KRATOS_ADMIN_HOST: https://kratos.plc-dev.svc.cluster.local:4434
+  PL_HYDRA_DATABASE: hydra
+  PL_KRATOS_DATABASE: kratos

@@ -47,9 +47,9 @@ spec:
               key: PL_POSTGRES_PASSWORD
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_KRATOS_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: ghcr.io/pixie-io/kratos:1.3.1-scratch@sha256:af0776882c10c3e9137006511c3d4a7aaab2598e75bd86f5692a4a9759da5054
+        image: ghcr.io/pixie-io/kratos:1.3.1-scratch@sha256:4f59887ce4d8b6eec2cf1123eb67ecfef998a0ceba3290438faa650ce7d81512
         resources: {}
         securityContext:
           allowPrivilegeEscalation: false
@@ -135,7 +135,7 @@ spec:
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
         imagePullPolicy: IfNotPresent
-        image: ghcr.io/pixie-io/kratos:1.3.1-scratch@sha256:af0776882c10c3e9137006511c3d4a7aaab2598e75bd86f5692a4a9759da5054
+        image: ghcr.io/pixie-io/kratos:1.3.1-scratch@sha256:4f59887ce4d8b6eec2cf1123eb67ecfef998a0ceba3290438faa650ce7d81512
         ports:
         - containerPort: 4433
         - containerPort: 4434

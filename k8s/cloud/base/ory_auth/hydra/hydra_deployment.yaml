@@ -62,7 +62,7 @@ spec:
           value: hydra
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_HYDRA_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
         image: ghcr.io/pixie-io/hydra:2.3.0-scratch@sha256:cc4503bc8d0f97624e3d6fa004ebda13ef26407b5cc1284191f2958fa93d312c
         volumeMounts:
