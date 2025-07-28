@@ -31,23 +31,15 @@ filegroup(
     visibility = ["//src:__subpackages__"],
 )
 
-filegroup(
-    name = "makefile",
-    srcs = [
-        "Makefile",
-    ],
-    visibility = ["//src:__subpackages__"],
-)
-
 genrule(
     name = "script_bundle",
     srcs = [
-        ":makefile",
+        ":Makefile",
         ":preset_queries",
     ],
     outs = ["bundle-oss.json"],
     cmd = """
-        export PATH_PREFIX=$$(dirname $(location //src/pxl_scripts:makefile))/;
+        export PATH_PREFIX=$$(dirname $(location //src/pxl_scripts:Makefile))/;
         EXECUTABLES=../../$(location //src/pixie_cli:px) make -C $$PATH_PREFIX bundle-oss.json;
         cp bundle-oss.json $(@D)/bundle-oss.json
     """,
