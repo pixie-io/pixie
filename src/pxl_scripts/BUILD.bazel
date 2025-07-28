@@ -46,7 +46,11 @@ genrule(
         ":preset_queries",
     ],
     outs = ["bundle-oss.json"],
-    cmd = "export PATH_PREFIX=$$(dirname $(location //src/pxl_scripts:makefile))/; EXECUTABLES=../../$(location //src/pixie_cli:px) make -C $$PATH_PREFIX bundle-oss.json; cp bundle-oss.json $(@D)/bundle-oss.json",
+    cmd = """
+        export PATH_PREFIX=$$(dirname $(location //src/pxl_scripts:makefile))/;
+        EXECUTABLES=../../$(location //src/pixie_cli:px) make -C $$PATH_PREFIX bundle-oss.json;
+        cp bundle-oss.json $(@D)/bundle-oss.json
+    """,
     tools = [
         "//src/pixie_cli:px",
     ],
