@@ -268,10 +268,6 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 	return mergedResponses, nil
 }
 
-func newHealthCheckWarning(message string) error {
-	return &components.UIWarning{Err: fmt.Errorf("%s", message)}
-}
-
 func evaluateHealthCheckResult(output string) error {
 	jsonData := make(map[string]interface{})
 
