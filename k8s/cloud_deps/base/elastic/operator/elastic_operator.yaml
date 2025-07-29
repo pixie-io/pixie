@@ -11011,4 +11011,3 @@ webhooks:
     - UPDATE
     resources:
     - logstashes
-
