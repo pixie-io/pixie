@@ -3807,8 +3807,8 @@ def pl_go_dependencies():
         name = "com_google_cloud_go_compute_metadata",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "cloud.google.com/go/compute/metadata",
-        sum = "h1:mg4jlk7mCAj6xXp9UJ4fjI9VUI5rubuGBW5aJ7UnBMY=",
-        version = "v0.2.3",
+        sum = "h1:Tz+eQXMEqDIKRsmY3cHTL6FVaynIjX2QxYC4trgAKZc=",
+        version = "v0.3.0",
     )
     go_repository(
         name = "com_google_cloud_go_datastore",
@@ -4483,8 +4483,8 @@ def pl_go_dependencies():
         name = "org_golang_x_oauth2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/oauth2",
-        sum = "h1:Lh8GPgSKBfWSwFvtuWOfeI3aAAnbXTSutYxJiOJFgIw=",
-        version = "v0.6.0",
+        sum = "h1:da9Vo7/tDv5RH/7nZDz1eMGS/q1Vv1N/7FCrBhI9I3M=",
+        version = "v0.27.0",
     )
     go_repository(
         name = "org_golang_x_sync",
