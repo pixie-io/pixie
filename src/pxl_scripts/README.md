@@ -16,11 +16,14 @@ To update this README, run `make update_readme` in this directory.
 - bpftrace/[tcp_drops](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/tcp_drops): Shows TCP drop counts in the cluster.
 - bpftrace/[tcp_retransmits](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/tcp_retransmits): Shows TCP retransmission counts in the cluster.
 - px/[agent_status](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/agent_status): This script gets the status of all the pixie agents (PEMs/Collectors) running.
+- px/[agent_status_diagnostics](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/agent_status_diagnostics): This script performs diagnostics on the agents' (PEMs/Collectors) status
 - px/[amqp_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/amqp_data): Shows a sample of amqp messages in the cluster.
 - px/[cluster](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cluster): This view lists the namespaces and the node that are available on the current cluster.
+- px/[collect_agent_heaps](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/collect_agent_heaps): Script useful for debugging kelvin and PEM memory footprint.
 - px/[cql_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_data): Shows a sample of CQL (Cassandra) requests in the cluster.
 - px/[cql_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_flow_graph): Graph of Cassandra messages in the cluster, with latency stats.
 - px/[cql_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_stats): This live view calculates the latency, error rate, and throughput of a pod's CQL (Cassandra) requests.
+- px/[differential_flamegraph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/differential_flamegraph): This live view shows a differential CPU flame graph. This is helpful in identifying what code paths have changed between deployments, different container instances, etc.
 - px/[dns_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_data): Show a sample of DNS traffic in the cluster.
 - px/[dns_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_flow_graph): Overview of DNS requests in the cluster, with latency stats.
 - px/[dns_query_summary](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_query_summary): Overview of DNS queries from pods in a namespace, grouped by the name being resolved and the rates of success.
@@ -39,6 +42,7 @@ To update this README, run `make update_readme` in this directory.
 - px/[kafka_overview](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_overview): Overview of the Kafka cluster.
 - px/[kafka_producer_consumer_latency](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/kafka_producer_consumer_latency): Shows the producer-consumer latency for a given topic. Values above 0 indicate that the consumer is falling behind the producer.
 - px/[largest_http_request](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/largest_http_request): Calculates the largest HTTP Request according to the passed in filter value.
+- px/[mongodb_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/mongodb_data): Shows the most recent MongoDB messages in the cluster.
 - px/[most_http_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/most_http_data): Finds the endpoint on a specific Pod that passes the most HTTP Data. Optionally, you can uncomment a line to see a table summarizing data per service, endpoint pair.
 - px/[mux_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/mux_data): Shows most recent Mux traffic in the cluster.
 - px/[mysql_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/mysql_data): Shows most recent MySQL messages in the cluster.
