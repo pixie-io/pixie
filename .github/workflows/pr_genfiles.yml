@@ -64,7 +64,7 @@ jobs:
       run: scripts/update_ts_protos.sh
     - name: Run update pxl script README
       if: ${{ steps.changes.outputs.pxl == 'true' }}
-      run: make -C src/pxl_scripts update_readme
+      run: EXECUTABLES=/bin/true make -C src/pxl_scripts update_readme
     - name: Run update graphql schema
       if: ${{ steps.changes.outputs.graphql == 'true' }}
       run: src/cloud/api/controllers/schema/update.sh
