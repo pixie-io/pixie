@@ -19,67 +19,79 @@
 package idprovider
 
 import (
-	"errors"
+	"context"
+	"net/http"
 
-	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
-	hydraModels "github.com/ory/hydra-client-go/models"
+	hydra "github.com/ory/hydra-client-go/v2"
 )
 
 // Implements the hydraAdminClientService interface.
 type fakeHydraAdminClient struct {
+	hydra.OAuth2API
 	redirect         string
 	consentChallenge string
 
 	oauthClientID           string
-	getConsentRequestFn     *func(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
-	acceptConsentRequestFn  *func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error)
-	acceptLoginRequestFn    *func(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error)
-	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
+	getConsentRequestFn     *func(params *hydra.OAuth2APIGetOAuth2ConsentRequestRequest) (*hydra.OAuth2ConsentRequest, *http.Response, error)
+	acceptConsentRequestFn  *func(params *hydra.OAuth2APIAcceptOAuth2ConsentRequestRequest) (*hydra.OAuth2RedirectTo, *http.Response, error)
+	acceptLoginRequestFn    *func(params *hydra.OAuth2APIAcceptOAuth2LoginRequestRequest) (*hydra.OAuth2RedirectTo, *http.Response, error)
+	introspectOAuth2TokenFn *func(req *hydra.OAuth2APIIntrospectOAuth2TokenRequest) (*hydra.IntrospectedOAuth2Token, *http.Response, error)
 }
 
-func (ha *fakeHydraAdminClient) AcceptConsentRequest(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
-	if ha.acceptConsentRequestFn != nil {
-		return (*ha.acceptConsentRequestFn)(params)
+func (ha *fakeHydraAdminClient) AcceptOAuth2LoginRequest(ctx context.Context) hydra.OAuth2APIAcceptOAuth2LoginRequestRequest {
+	return hydra.OAuth2APIAcceptOAuth2LoginRequestRequest{
+		ApiService: ha,
 	}
-
-	return &hydraAdmin.AcceptConsentRequestOK{
-		Payload: &hydraModels.CompletedRequest{
-			RedirectTo: &ha.redirect,
-		},
-	}, nil
 }
 
-func (ha *fakeHydraAdminClient) AcceptLoginRequest(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error) {
+func (ha *fakeHydraAdminClient) AcceptOAuth2LoginRequestExecute(r hydra.OAuth2APIAcceptOAuth2LoginRequestRequest) (*hydra.OAuth2RedirectTo, *http.Response, error) {
 	if ha.acceptLoginRequestFn != nil {
-		return (*ha.acceptLoginRequestFn)(params)
-	}
-	return &hydraAdmin.AcceptLoginRequestOK{
-		Payload: &hydraModels.CompletedRequest{
-			RedirectTo: &ha.redirect,
-		},
-	}, nil
-}
-
-func (ha *fakeHydraAdminClient) IntrospectOAuth2Token(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error) {
-	if ha.introspectOAuth2TokenFn == nil {
-		return nil, errors.New("not implemented")
+		return (*ha.acceptLoginRequestFn)(&r)
 	}
 
-	return (*ha.introspectOAuth2TokenFn)(params)
+	return &hydra.OAuth2RedirectTo{
+		RedirectTo: ha.redirect,
+	}, nil, nil
 }
 
-func (ha *fakeHydraAdminClient) GetConsentRequest(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error) {
+func (ha *fakeHydraAdminClient) AcceptOAuth2ConsentRequest(ctx context.Context) hydra.OAuth2APIAcceptOAuth2ConsentRequestRequest {
+	return hydra.OAuth2APIAcceptOAuth2ConsentRequestRequest{
+		ApiService: ha,
+	}
+}
+
+func (ha *fakeHydraAdminClient) AcceptOAuth2ConsentRequestExecute(params hydra.OAuth2APIAcceptOAuth2ConsentRequestRequest) (*hydra.OAuth2RedirectTo, *http.Response, error) {
+	if ha.acceptConsentRequestFn != nil {
+		return (*ha.acceptConsentRequestFn)(&params)
+	}
+
+	return &hydra.OAuth2RedirectTo{
+		RedirectTo: ha.redirect,
+	}, nil, nil
+}
+
+func (ha *fakeHydraAdminClient) IntrospectOAuth2Token(context.Context) hydra.OAuth2APIIntrospectOAuth2TokenRequest {
+	return hydra.OAuth2APIIntrospectOAuth2TokenRequest{
+		ApiService: ha,
+	}
+}
+
+func (ha *fakeHydraAdminClient) GetOAuth2ConsentRequest(context.Context) hydra.OAuth2APIGetOAuth2ConsentRequestRequest {
+	return hydra.OAuth2APIGetOAuth2ConsentRequestRequest{
+		ApiService: ha,
+	}
+}
+
+func (ha *fakeHydraAdminClient) GetOAuth2ConsentRequestExecute(params hydra.OAuth2APIGetOAuth2ConsentRequestRequest) (*hydra.OAuth2ConsentRequest, *http.Response, error) {
 	if ha.getConsentRequestFn != nil {
-		return (*ha.getConsentRequestFn)(params)
+		return (*ha.getConsentRequestFn)(&params)
 	}
-	return &hydraAdmin.GetConsentRequestOK{
-		Payload: &hydraModels.ConsentRequest{
-			Client: &hydraModels.OAuth2Client{
-				ClientID: ha.oauthClientID,
-			},
-			RequestedScope:               []string{},
-			RequestedAccessTokenAudience: []string{},
-			Challenge:                    &ha.consentChallenge,
+	return &hydra.OAuth2ConsentRequest{
+		LoginChallenge:               &ha.consentChallenge,
+		RequestedScope:               []string{},
+		RequestedAccessTokenAudience: []string{},
+		Client: &hydra.OAuth2Client{
+			ClientId: &ha.oauthClientID,
 		},
-	}, nil
+	}, nil, nil
 }

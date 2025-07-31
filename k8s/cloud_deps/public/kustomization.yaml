@@ -6,6 +6,7 @@ commonLabels:
   app: pl-cloud
 resources:
 - configs.yaml
+- ory_service_config.yaml
 - elastic
 - nats
 - postgres

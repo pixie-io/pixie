@@ -34,7 +34,6 @@ resources:
 - artifact_tracker_deployment.yaml
 - artifact_tracker_service.yaml
 - artifact_config.yaml
-- ory_service_config.yaml
 - indexer_config.yaml
 - indexer_deployment.yaml
 - script_bundles_config.yaml
