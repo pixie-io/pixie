@@ -38,7 +38,45 @@ namespace funcs {
 
 constexpr int kMaxBufferSize = 1024 * 1024;
 
-class HeapStatsUDTF final : public carnot::udf::UDTF<HeapStatsUDTF> {
+// Base template class for Heap UDTFs that provides ASID filtering functionality
+template <typename TDerived>
+class HeapUDTFWithAsidFilter : public carnot::udf::UDTF<TDerived> {
+ public:
+  using FunctionContext = typename carnot::udf::UDTF<TDerived>::FunctionContext;
+  using RecordWriter = typename carnot::udf::UDTF<TDerived>::RecordWriter;
+  using UDTFArg = carnot::udf::UDTFArg;
+
+  Status Init(FunctionContext* ctx, types::Int64Value asid) {
+    asid_ = asid.val;
+    return InitImpl(ctx);
+  }
+
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg::Make<types::INT64>(
+        "asid", "Whether to filter the result set for a specific asid", -1));
+  }
+
+  // This method handles the ASID filtering and delegates to NextRecordImpl
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    auto asid = ctx->metadata_state()->asid();
+    if (asid_ != -1 && asid != asid_) {
+      return false;
+    }
+    return NextRecordImpl(ctx, rw);
+  }
+
+ protected:
+  // Derived classes must implement this method
+  virtual bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) = 0;
+
+  // Derived classes can optionally override this to do additional initialization
+  virtual Status InitImpl(FunctionContext* /*ctx*/) { return Status::OK(); }
+
+ private:
+  int64_t asid_ = -1;
+};
+
+class HeapStatsUDTF final : public HeapUDTFWithAsidFilter<HeapStatsUDTF> {
  public:
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
@@ -49,7 +87,8 @@ class HeapStatsUDTF final : public carnot::udf::UDTF<HeapStatsUDTF> {
                              "The pretty heap stats"));
   }
 
-  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+ protected:
+  bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) override {
 #ifdef TCMALLOC
     std::string buf(kMaxBufferSize, '\0');
     MallocExtension::instance()->GetStats(&buf[0], buf.size());
@@ -66,7 +105,7 @@ class HeapStatsUDTF final : public carnot::udf::UDTF<HeapStatsUDTF> {
   }
 };
 
-class HeapSampleUDTF final : public carnot::udf::UDTF<HeapSampleUDTF> {
+class HeapSampleUDTF final : public HeapUDTFWithAsidFilter<HeapSampleUDTF> {
  public:
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
@@ -77,7 +116,8 @@ class HeapSampleUDTF final : public carnot::udf::UDTF<HeapSampleUDTF> {
                              "The pretty heap stats"));
   }
 
-  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+ protected:
+  bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) override {
 #ifdef TCMALLOC
     std::string buf;
     MallocExtension::instance()->GetHeapSample(&buf);
@@ -93,7 +133,7 @@ class HeapSampleUDTF final : public carnot::udf::UDTF<HeapSampleUDTF> {
   }
 };
 
-class HeapGrowthStacksUDTF final : public carnot::udf::UDTF<HeapGrowthStacksUDTF> {
+class HeapGrowthStacksUDTF final : public HeapUDTFWithAsidFilter<HeapGrowthStacksUDTF> {
  public:
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
@@ -104,7 +144,8 @@ class HeapGrowthStacksUDTF final : public carnot::udf::UDTF<HeapGrowthStacksUDTF
                              "The pretty heap stats"));
   }
 
-  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+ protected:
+  bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) override {
 #ifdef TCMALLOC
     std::string buf;
     MallocExtension::instance()->GetHeapGrowthStacks(&buf);
@@ -314,7 +355,7 @@ class AgentProcSMapsUDTF final : public carnot::udf::UDTF<AgentProcSMapsUDTF> {
   int current_idx_ = 0;
 };
 
-class HeapReleaseFreeMemoryUDTF final : public carnot::udf::UDTF<HeapReleaseFreeMemoryUDTF> {
+class HeapReleaseFreeMemoryUDTF final : public HeapUDTFWithAsidFilter<HeapReleaseFreeMemoryUDTF> {
  public:
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
@@ -323,16 +364,15 @@ class HeapReleaseFreeMemoryUDTF final : public carnot::udf::UDTF<HeapReleaseFree
                              "The short ID of the agent", types::SemanticType::ST_ASID));
   }
 
-  Status Init(FunctionContext*) { return Status::OK(); }
-
-  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+ protected:
+  bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) override {
     px::ReleaseFreeMemory();
     rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
     return false;
   }
 };
 
-class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
+class HeapRangesUDTF final : public HeapUDTFWithAsidFilter<HeapRangesUDTF> {
  public:
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
   static constexpr auto OutputRelation() {
@@ -352,7 +392,8 @@ class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
                 types::SemanticType::ST_NONE));
   }
 
-  Status Init(FunctionContext*) {
+ protected:
+  Status InitImpl(FunctionContext*) override {
 #ifdef TCMALLOC
     auto range_func = [](void* udtf, const ::base::MallocRange* range) {
       static_cast<HeapRangesUDTF*>(udtf)->ranges_.push_back(*range);
@@ -361,7 +402,8 @@ class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
 #endif
     return Status::OK();
   }
-  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+
+  bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) override {
 #ifdef TCMALLOC
     if (idx_ >= ranges_.size()) {
       return false;
@@ -387,7 +429,7 @@ class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
 #endif
 };
 
-class HeapStatsNumericUDTF final : public carnot::udf::UDTF<HeapStatsNumericUDTF> {
+class HeapStatsNumericUDTF final : public HeapUDTFWithAsidFilter<HeapStatsNumericUDTF> {
  public:
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
@@ -414,7 +456,8 @@ class HeapStatsNumericUDTF final : public carnot::udf::UDTF<HeapStatsNumericUDTF
                 "Number of unmapped bytes in tcmalloc's pageheap", types::SemanticType::ST_BYTES));
   }
 
-  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+ protected:
+  bool NextRecordImpl(FunctionContext* ctx, RecordWriter* rw) override {
 #ifdef TCMALLOC
     size_t current_allocated_bytes, heap_size, central_cache_free, transfer_cache_free,
         thread_cache_free, pageheap_free, pageheap_unmapped;
