@@ -30,13 +30,12 @@ DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DE
 
 ## Clang deb parameters
 CLANG_VERSION := 15.0
-CLANG_SUFFIX := pl12
+CLANG_SUFFIX := pl13
 
 CLANG_TAG="$(CLANG_VERSION)-$(CLANG_SUFFIX)"
 
 clang_deb_fname := "clang-$(CLANG_TAG).deb"
 clang_linters_deb_fname := "clang-linters-$(CLANG_TAG).deb"
-clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
 CLANG_BUILD_DIR := "$(BUILD_DIR)/clang-$(CLANG_TAG)"
 
@@ -164,7 +163,6 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(CLANG_BUILD_DIR):/image $(clang_deb_image_tag)
 
 	sha256sum $(CLANG_BUILD_DIR)/* > $(CLANG_BUILD_DIR)/sha256sums
-	gsutil cp $(CLANG_BUILD_DIR)/* $(clang_gs_path)/
 	$(GH_RELEASE_UPLOAD) clang $(CLANG_TAG) $(CLANG_BUILD_DIR)/*
 
 	cat $(CLANG_BUILD_DIR)/sha256sums
