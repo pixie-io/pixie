@@ -33,7 +33,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.24.4",
+    version = "1.24.6",
 )
 
 go_rules_dependencies()
@@ -212,7 +212,7 @@ gazelle_dependencies(go_sdk = "go_sdk")
 
 go_download_sdk(
     name = "go_sdk_1_23",
-    version = "1.23.10",
+    version = "1.23.12",
 )
 
 # The go_sdk_boringcrypto SDK is used for testing boringcrypto specific functionality (TLS tracing).
@@ -225,7 +225,7 @@ go_download_sdk(
 go_download_sdk(
     name = "go_sdk_boringcrypto",
     experiments = ["boringcrypto"],
-    version = "1.23.9",
+    version = "1.23.11",
 )
 
 pip_parse(
