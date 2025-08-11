@@ -33,7 +33,7 @@ spec:
         # TODO(ddelnano): This image was rebuilt from https://github.com/docker-library/postgres 14-alpine
         # to remediate a critical vulnerability. Switch back to upstream once fixed.
         # yamllint disable-line rule:line-length
-        image: ghcr.io/pixie-io/postgres:14-alpine-pl1@sha256:237c5fcf79b230979e12fe02f46e0ad29565b4ecb7cb15047197cbb9a6549e8d
+        image: ghcr.io/pixie-io/postgres:14-alpine-pl2@sha256:e442f0b696dde800a5347fa54d982c87bc1db3edddc64bdb18731e3ed6e84bad
         ports:
         - containerPort: 5432
         env:
