@@ -111,7 +111,7 @@ spec:
       containers:
       - name: pl-nats
         # yamllint disable-line rule:line-length
-        image: ghcr.io/pixie-io/nats:2.9.25-scratch@sha256:869605f46ad21b76be1998e89345640671dbe46714105cf67676ddb0b78d3b85
+        image: ghcr.io/pixie-io/nats:2.9.25-scratch-pl1@sha256:ac7228464fbc7154e91c9a00cba85b5da1df9a3ded6c784cdd6009cece85a1e3
         ports:
         - containerPort: 4222
           name: client
