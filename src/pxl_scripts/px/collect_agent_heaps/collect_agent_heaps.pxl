@@ -17,14 +17,13 @@
 import px
 
 
-# TODO(ddelnano): asid is unused until gh#2245 is addressed.
 def collect_pprofs(asid: int):
     df = px.GetAgentStatus()
     df.ip_address = px.pluck_array(px.split(df.ip_address, ":"), 0)
     df.hostname_by_ip = px.pod_id_to_node_name(px.ip_to_pod_id(df.ip_address))
     df.hostname = px.select(df.hostname_by_ip == "", df.hostname, df.hostname_by_ip)
     df = df[['asid', 'hostname']]
-    heap_stats = px._HeapGrowthStacks()
+    heap_stats = px._HeapGrowthStacks(asid)
     df = df.merge(heap_stats, how='inner', left_on='asid', right_on='asid')
     df.asid = df.asid_x
     return df[['asid', 'hostname', 'heap']]
