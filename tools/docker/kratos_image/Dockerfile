@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-=======
->>>>>>> 75010e004 (Build multi arch kratos image with patched vulns)
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:9fadeb603e14f1f3e08bdbec6681fa14446053c498a554f3e57260bf892c487e AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:c8c5f95d64aa79b6547f3b626eb84b16a7ce18a139e3e9ca19a8c078b85ba80d AS build
 
 ARG TARGETOS TARGETARCH
 ARG KRATOS_VERSION

@@ -121,9 +121,11 @@ nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch-$(NATS_IM
 
 ## Ory image parameters.
 KRATOS_IMAGE_VERSION := 1.3.1
-kratos_image_tag := "ghcr.io/pixie-io/kratos:$(KRATOS_IMAGE_VERSION)-scratch"
+KRATOS_IMAGE_REV := pl1
+kratos_image_tag := "ghcr.io/pixie-io/kratos:$(KRATOS_IMAGE_VERSION)-scratch-$(KRATOS_IMAGE_REV)"
 HYDRA_IMAGE_VERSION := 2.3.0
-hydra_image_tag := "ghcr.io/pixie-io/hydra:$(HYDRA_IMAGE_VERSION)-scratch"
+HYDRA_IMAGE_REV := pl1
+hydra_image_tag := "ghcr.io/pixie-io/hydra:$(HYDRA_IMAGE_VERSION)-scratch-$(HYDRA_IMAGE_REV)"
 
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
