@@ -119,6 +119,7 @@ attrs==23.1.0 \
     # via
     #   aiohttp
     #   hypothesis
+    #   jsonlines
     #   jsonschema
 backoff==2.2.1 \
     --hash=sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba \
@@ -131,6 +132,10 @@ beautifulsoup4==4.12.2 \
     --hash=sha256:492bbc69dca35d12daac71c4db1bfff0c876c00ef4a2ffacce226d4638eb72da \
     --hash=sha256:bd2520ca0d9d7d12694a53d44ac482d181b4ec1888909b035a3dbf40d0f57d4a
     # via gdown
+bioc==2.1 \
+    --hash=sha256:7d9248198bdae291b0ebb218de2dc653c96d32a7eac2fa0ef4ed0c74ce45aaaa \
+    --hash=sha256:f1730d26821330f9f625058841612d6cfb616efb906fc682297fe04dd5d9398a
+    # via flair
 blis==0.7.9 \
     --hash=sha256:179037cb5e6744c2e93b6b5facc6e4a0073776d514933c3db1e1f064a3253425 \
     --hash=sha256:29ef4c25007785a90ffc2f0ab3d3bd3b75cd2d7856a9a482b7d0dac8d511a09d \
@@ -171,10 +176,6 @@ botocore==1.29.152 \
     # via
     #   boto3
     #   s3transfer
-bpemb==0.3.4 \
-    --hash=sha256:585c5e72208d117cd46887fc57e70e3caec92e3def2178bc5156c55b87b3d4c0 \
-    --hash=sha256:c4d330c00bf4ce36a72735d16c825f80320871ba698c1e9c705a3c81b4b9c133
-    # via flair
 catalogue==2.0.8 \
     --hash=sha256:2d786e229d8d202b4f8a2a059858e45a2331201d831e39746732daa704b99f69 \
     --hash=sha256:b325c77659208bfb6af1b0d93b1a1aa4112e1bb29a4c5ced816758a722f0e388
@@ -272,10 +273,6 @@ click==8.1.3 \
     # via
     #   schemathesis
     #   typer
-cloudpickle==2.2.1 \
-    --hash=sha256:61f594d1f4c295fa5cd9014ceb3a1fc4a70b0de1164b94fbc2d854ccba056f9f \
-    --hash=sha256:d89684b8de9e34a2a43b3460fbca07d09d6e25ce858df4d5a44240403b6178f5
-    # via hyperopt
 colorama==0.4.6 \
     --hash=sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44 \
     --hash=sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
@@ -402,6 +399,9 @@ dill==0.3.6 \
     # via
     #   datasets
     #   multiprocess
+docopt==0.6.2 \
+    --hash=sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491
+    # via bioc
 emoji==2.5.0 \
     --hash=sha256:0e048dd540a0644bd30790b540466492f1487a3788528422fe196a939a7a3ac0
     # via stanza
@@ -430,9 +430,9 @@ filelock==3.12.2 \
     #   huggingface-hub
     #   tldextract
     #   transformers
-flair==0.12.2 \
-    --hash=sha256:286f2a3856725251f895fa49e867f614321726cacb0fa30be69fafe2d5e61d26 \
-    --hash=sha256:ad90820beb7e98f2a2ff6eb70e7d7703d7b7cb9c8ff4af160a0b09cb63a3711f
+flair==0.15.0 \
+    --hash=sha256:815513edb2b72f15b54ee5659b6316ccb854b3e7fcadb52c807ff1de90e0ae87 \
+    --hash=sha256:bfb2f6ab2a355fbd94d03edc9d78f836f2e87fc3bc36d576d686c007513410f5
     # via privy-presidio-utils
 fonttools==4.40.0 \
     --hash=sha256:00ab569b2a3e591e00425023ade87e8fef90380c1dde61be7691cb524ca5f743 \
@@ -558,40 +558,9 @@ ftfy==6.1.1 \
     --hash=sha256:0ffd33fce16b54cccaec78d6ec73d95ad370e5df5a25255c8966a6147bd667ca \
     --hash=sha256:bfc2019f84fcd851419152320a6375604a0f1459c281b5b199b2cd0d2e727f8f
     # via flair
-future==0.18.3 \
-    --hash=sha256:34a17436ed1e96697a86f9de3d15a3b0be01d8bc8de9c1dffd59fb8234ed5307
-    # via hyperopt
 gdown==4.4.0 \
     --hash=sha256:18fc3a4da4a2273deb7aa29c7486be4df3919d904158ad6a6a3e25c8115470d7
     # via flair
-gensim==4.3.1 \
-    --hash=sha256:00e652c6df1fb92adf909f6a6b9015ca1eae23e3aa36565449ec34a6008e4d18 \
-    --hash=sha256:14e429352ad80c075c6ce16a43e5010abaf4b7e021c84b84d88b0461924a1836 \
-    --hash=sha256:28a7d31df1cd6ad2f676d48f7e193547f593bee5f0924ae75c1de3eede96b2f2 \
-    --hash=sha256:55f837bdab49fea1f4151a3d3882d0d04ee9a964bb654a7c868a856ca86fbf20 \
-    --hash=sha256:563c184a8c26b92059273fe53561e91953da7d8b3ab292d703431cf807f36342 \
-    --hash=sha256:56b24c3a506c4acdc131326377e04d378dc72a6120f3d2de234ebdfbfda58305 \
-    --hash=sha256:57c3af9e2834c1c9ca12f981b5ab615505e2d6b69f4d4963ccbf5d2cec583a6e \
-    --hash=sha256:5a4b55f5d88a7d445d6dcb94316ab43005844da7dfefc0a592a96f3d06ea0905 \
-    --hash=sha256:6098f4edb4148d56e815f58eae7a7fd57e0b832d5602b9e7637a5c1d740da30f \
-    --hash=sha256:64c0e7104e1b421cb718ec7a79f7d4d26deba4c194785e133fa2dec75d2ba614 \
-    --hash=sha256:840a858035029e1f85a6e5ae90ef1d7def1e594677af94722bd0a0eb21a710f3 \
-    --hash=sha256:8b5f11c0e6a5308086b48e8f6841223a4fa1a37d513684612b7ee854b533015f \
-    --hash=sha256:9a6e9a51fdf1dccf6b6d035b38efdef703b93aff10d6f4112c4e91a182136a74 \
-    --hash=sha256:ad4364ca6fddb03438aaaa377927a76832a28a53b9f7ebaf4c2a7e42dc4ed5c1 \
-    --hash=sha256:adf32a4e131dd7f448eb224b4cde7ef3ae0f6f601b482cfca9d1ae2923c2fe9f \
-    --hash=sha256:b6ea3a726b53d2d229bf171f1aecebb5b1bd7f24192c1cfd3ca571e1d248ab86 \
-    --hash=sha256:c193da0e6a0cdba0ddc0bfd53cb25bbbbdbbbd09305ac4924f2746bc07a97d29 \
-    --hash=sha256:c3f92470f9d5128633fac6bc9686ac4c1c6ca7b2ffdef825669901f002567ea9 \
-    --hash=sha256:ce58a7d9f7a501d670bc2335059f4c1e22800ad12fd968733d12d0565aa49b26 \
-    --hash=sha256:d3ef3e9272de44e6c35c69b5a19c2e306a3c0094db1de9b2547d35b90d1cbe19 \
-    --hash=sha256:e04ab4f2d55bebaca7cec291ac182618be0ef52c8bf36453f69de8d5256c2182 \
-    --hash=sha256:e924e972fabd8a09fe3f06e732b7e05a51c2cb3010871c205717e949bbb05cf4 \
-    --hash=sha256:e93244c50a58c3e08a0f6ee8d552dadd77296f2eac62ff8cc9ef296aa905d734 \
-    --hash=sha256:f183702cf2c3e36a2441236b6e3144d934255307359ef8eee3ac099041400806
-    # via
-    #   bpemb
-    #   flair
 grapheme==0.6.0 \
     --hash=sha256:44c2b9f21bbe77cfb05835fec230bd435954275267fea1858013b102f8603cca
     # via alive-progress
@@ -622,10 +591,6 @@ huggingface-hub==0.15.1 \
     #   datasets
     #   flair
     #   transformers
-hyperopt==0.2.7 \
-    --hash=sha256:1bf89ae58050bbd32c7307199046117feee245c2fd9ab6255c7308522b7ca149 \
-    --hash=sha256:f3046d91fe4167dbf104365016596856b2524a609d22f047a066fc1ac796427c
-    # via flair
 hypothesis==6.78.1 \
     --hash=sha256:4dd3b9534f09956e2d8ec57af4bd278eb40c6336c5ccb6eb82633ecf4292a5d5 \
     --hash=sha256:d39968022d03ea264a301420c3a347c88b6ecd21d674c2ec77b41688bb42cebf
@@ -655,14 +620,13 @@ iniconfig==2.0.0 \
     --hash=sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3 \
     --hash=sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374
     # via pytest
+intervaltree==3.1.0 \
+    --hash=sha256:902b1b88936918f9b2a19e0e5eb7ccb430ae45cde4f39ea4b36932920d33952d
+    # via bioc
 iso3166==2.1.1 \
     --hash=sha256:263660b36f8471c42acd1ff673d28a3715edbce7d24b1550d0cf010f6816c47f \
     --hash=sha256:fcd551b8dda66b44e9f9e6d6bbbee3a1145a22447c0a556e5d0fb1ad1e491719
     # via schwifty
-janome==0.4.2 \
-    --hash=sha256:14c31bbfc11724da299b4b71a06bccb3af9a105e7c912bc38a22132d8991ec97 \
-    --hash=sha256:d292e458aa8a72b4aae51ae1e0cd91bf463beb95ad1ec118be7aab87eea1a454
-    # via flair
 jinja2==3.1.2 \
     --hash=sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852 \
     --hash=sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61
@@ -682,6 +646,10 @@ joblib==1.2.0 \
 json2html==1.3.0 \
     --hash=sha256:8951a53662ae9cfd812685facdba693fc950ffc1c1fd1a8a2d3cf4c34600689c
     # via -r requirements.in
+jsonlines==4.0.0 \
+    --hash=sha256:0c6d2c09117550c089995247f605ae4cf77dd1533041d366351f6f298822ea74 \
+    --hash=sha256:185b334ff2ca5a91362993f42e83588a360cf95ce4b71a73548502bda52a7c55
+    # via bioc
 jsonschema==4.17.3 \
     --hash=sha256:0f864437ab8b6076ba6707453ef8f98a6a0d512a80e93f8abdb676f737ecb60d \
     --hash=sha256:a870ad254da1a8ca84b6a2905cac29d265f805acc57af304784962a2aa6508f6
@@ -848,7 +816,9 @@ lxml==4.9.2 \
     --hash=sha256:efa29c2fe6b4fdd32e8ef81c1528506895eca86e1d8c4657fda04c9b3786ddf9 \
     --hash=sha256:f1496ea22ca2c830cbcbd473de8f114a320da308438ae65abad6bab7867fe38f \
     --hash=sha256:f49e52d174375a7def9915c9f06ec4e569d235ad428f70751765f48d5926678c
-    # via flair
+    # via
+    #   bioc
+    #   flair
 markupsafe==2.1.3 \
     --hash=sha256:05fb21170423db021895e1ea1e1f3ab3adb85d1c2333cbc2310f2a26bc77272e \
     --hash=sha256:0a4e4a1aff6c7ac4cd55792abf96c915634c2b97e3cc1c7129578aa68ebd754e \
@@ -1082,10 +1052,6 @@ murmurhash==1.0.9 \
     #   preshed
     #   spacy
     #   thinc
-networkx==3.1 \
-    --hash=sha256:4f33f68cb2afcf86f28a45f43efc27a9386b535d567d2127f8f61d51dec58d36 \
-    --hash=sha256:de346335408f84de0eada6ff9fafafff9bcda11f0a0dfaa931133debb146ab61
-    # via hyperopt
 numpy==1.24.3 \
     --hash=sha256:0ec87a7084caa559c36e0a2309e4ecb1baa03b687201d0a847c8b0ed476a7187 \
     --hash=sha256:1a7d6acc2e7524c9955e5c903160aa4ea083736fde7e91276b0e5d98e6332812 \
@@ -1119,11 +1085,8 @@ numpy==1.24.3 \
     #   -r requirements.in
     #   accelerate
     #   blis
-    #   bpemb
     #   contourpy
     #   datasets
-    #   gensim
-    #   hyperopt
     #   matplotlib
     #   pandas
     #   privy-presidio-utils
@@ -1339,10 +1302,6 @@ psutil==5.9.5 \
     --hash=sha256:c607bb3b57dc779d55e1554846352b4e358c10fff3abf3514a7a6601beebdb30 \
     --hash=sha256:ea8518d152174e1249c4f2a1c89e3e6065941df2fa13a1ab45327716a23c2b48
     # via accelerate
-py4j==0.10.9.7 \
-    --hash=sha256:0b6e5315bb3ada5cf62ac651d107bb2ebc02def3dee9d9548e3baac644ea8dbb \
-    --hash=sha256:85defdfd2b2376eb3abf5ca6474b51ab7e0de341c75a02f46dc9b5976f5a5c1b
-    # via hyperopt
 pyarrow==14.0.1 \
     --hash=sha256:0140c7e2b740e08c5a459439d87acd26b747fc408bde0a8806096ee0baaa0c15 \
     --hash=sha256:01e44de9749cddc486169cb632f3c99962318e9dacac7778315a110f4bf8a450 \
@@ -1725,7 +1684,6 @@ requests[socks]==2.31.0 \
     --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f \
     --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
     # via
-    #   bpemb
     #   curlify
     #   datasets
     #   fsspec
@@ -1850,10 +1808,7 @@ scipy==1.10.1 \
     --hash=sha256:d925fa1c81b772882aa55bcc10bf88324dadb66ff85d548c71515f6689c6dac5 \
     --hash=sha256:e7354fd7527a4b0377ce55f286805b34e8c54b91be865bac273f527e1b839019 \
     --hash=sha256:fae8a7b898c42dffe3f7361c40d5952b6bf32d10c4569098d276b4c547905ee1
-    # via
-    #   gensim
-    #   hyperopt
-    #   scikit-learn
+    # via scikit-learn
 segtok==1.5.11 \
     --hash=sha256:8ab2dd44245bcbfec25b575dc4618473bbdf2af8c2649698cd5a370f42f3db23 \
     --hash=sha256:910616b76198c3141b2772df530270d3b706e42ae69a5b30ef115c7bd5d1501a
@@ -1905,7 +1860,6 @@ sentencepiece==0.1.99 \
     --hash=sha256:fa16a830416bb823fa2a52cbdd474d1f7f3bba527fd2304fb4b140dad31bb9bc \
     --hash=sha256:fb71af492b0eefbf9f2501bec97bcd043b6812ab000d119eaf4bd33f9e283d03
     # via
-    #   bpemb
     #   transformer-smaller-training-vocab
     #   transformers
 six==1.16.0 \
@@ -1913,7 +1867,6 @@ six==1.16.0 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
     #   gdown
-    #   hyperopt
     #   junit-xml
     #   langdetect
     #   python-dateutil
@@ -1928,7 +1881,6 @@ smart-open==6.3.0 \
     --hash=sha256:b4c9ae193ad6d3e7add50944b86afa0d150bd821ab8ec21edb26d9a06b66f6a8 \
     --hash=sha256:d5238825fe9a9340645fac3d75b287c08fbb99fb2b422477de781c9f5f09e019
     # via
-    #   gensim
     #   pathy
     #   spacy
 sniffio==1.3.0 \
@@ -1941,7 +1893,9 @@ sniffio==1.3.0 \
 sortedcontainers==2.4.0 \
     --hash=sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88 \
     --hash=sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0
-    # via hypothesis
+    # via
+    #   hypothesis
+    #   intervaltree
 soupsieve==2.4.1 \
     --hash=sha256:1c1bfee6819544a3447586c889157365a27e10d88cde3ad3da0cf0ddf646feb8 \
     --hash=sha256:89d12b2d5dfcd2c9e8c22326da9d9aa9cb3dfab0a83a024f05704076ee8d35ea
@@ -2158,12 +2112,11 @@ tqdm==4.65.0 \
     --hash=sha256:c4f53a17fe37e132815abceec022631be8ffe1b9381c2e6e30aa70edc99e9671
     # via
     #   -r requirements.in
-    #   bpemb
+    #   bioc
     #   datasets
     #   flair
     #   gdown
     #   huggingface-hub
-    #   hyperopt
     #   privy-presidio-utils
     #   sklearn-crfsuite
     #   spacy
@@ -2183,7 +2136,6 @@ transformers[sentencepiece,torch]==4.30.0 \
     # via
     #   flair
     #   transformer-smaller-training-vocab
-    #   transformers
 typer==0.7.0 \
     --hash=sha256:b5e704f4e48ec263de1c0b3a2387cd405a13767d2f907f44c1a08cbad96f606d \
     --hash=sha256:ff797846578a9f2a201b53442aedeb543319466870fbe1c701eab66dd7681165
