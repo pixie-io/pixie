@@ -44,9 +44,9 @@ default['helm']['sha256'] =
   '9d029df37664b50e427442a600e4e065fa75fd74dac996c831ac68359654b2c4'
 
 default['kubectl']['download_path'] =
-  'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/darwin/amd64/kubectl'
+  'https://dl.k8s.io/release/v1.33.3/bin/darwin/amd64/kubectl'
 default['kubectl']['sha256'] =
-  'be9dc0782a7b257d9cfd66b76f91081e80f57742f61e12cd29068b213ee48abc'
+  '9652b55a58e84454196a7b9009f6d990d3961e2bd4bd03f64111d959282b46b1'
 
 default['kustomize']['download_path'] =
   'https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_darwin_amd64.tar.gz'

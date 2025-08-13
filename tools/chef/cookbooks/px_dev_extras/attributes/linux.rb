@@ -43,9 +43,9 @@ default['helm']['sha256'] =
   'ca2d5d40d4cdfb9a3a6205dd803b5bc8def00bd2f13e5526c127e9b667974a89'
 
 default['kubectl']['download_path'] =
-  'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl'
+  'https://dl.k8s.io/release/v1.33.3/bin/linux/amd64/kubectl'
 default['kubectl']['sha256'] =
-  'b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae'
+  '2fcf65c64f352742dc253a25a7c95617c2aba79843d1b74e585c69fe4884afb0'
 
 default['kustomize']['download_path'] =
   'https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz'
