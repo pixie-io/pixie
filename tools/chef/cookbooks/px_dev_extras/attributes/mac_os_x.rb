@@ -34,9 +34,9 @@ default['faq']['sha256'] =
   '869f4d8acaa1feb11ce76b2204c5476b8a04d9451216adde6b18e2ef2f978794'
 
 default['gh']['download_path'] =
-  'https://github.com/cli/cli/releases/download/v2.26.1/gh_2.26.1_macOS_amd64.tar.gz'
+  'https://github.com/cli/cli/releases/download/v2.76.1/gh_2.76.1_macOS_amd64.tar.gz'
 default['gh']['sha256'] =
-  'ef398ece1f31d033df6374458f7a87500ccdbdc9964170db04b6a5f707632417'
+  '0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5'
 
 default['helm']['download_path'] =
   'https://get.helm.sh/helm-v3.11.3-darwin-amd64.tar.gz'
@@ -44,9 +44,9 @@ default['helm']['sha256'] =
   '9d029df37664b50e427442a600e4e065fa75fd74dac996c831ac68359654b2c4'
 
 default['kubectl']['download_path'] =
-  'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/darwin/amd64/kubectl'
+  'https://dl.k8s.io/release/v1.33.3/bin/darwin/amd64/kubectl'
 default['kubectl']['sha256'] =
-  'be9dc0782a7b257d9cfd66b76f91081e80f57742f61e12cd29068b213ee48abc'
+  '9652b55a58e84454196a7b9009f6d990d3961e2bd4bd03f64111d959282b46b1'
 
 default['kustomize']['download_path'] =
   'https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_darwin_amd64.tar.gz'
@@ -59,9 +59,9 @@ default['lego']['sha256'] =
   'eaf2792d9731c911da671a6145eebd5ba136c20446adb542e7b1463ffe868388'
 
 default['minikube']['download_path'] =
-  'https://github.com/kubernetes/minikube/releases/download/v1.30.1/minikube-darwin-amd64'
+  'https://github.com/kubernetes/minikube/releases/download/v1.36.0/minikube-darwin-amd64'
 default['minikube']['sha256'] =
-  'b5938a8772c5565b5d0b795938c367c5190bf65bb51fc55fb2417cb4e1d04ef1'
+  'a7e3da0db4041b2f845ca37af592424a9cbe34087ac922220b1e3abc4e1976ea'
 
 default['opm']['download_path'] =
   'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/darwin-amd64-opm'
@@ -74,19 +74,19 @@ default['packer']['sha256'] =
   '8666031111138e2e79ff7d1e42888b23b793b856bc2d9c9dccbb1e2d2cccb5cf'
 
 default['skaffold']['download_path'] =
-  'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-darwin-amd64'
+  'https://storage.googleapis.com/skaffold/releases/v2.16.1/skaffold-darwin-amd64'
 default['skaffold']['sha256'] =
-  'd0956712db4d2dd8084ffe297bf645ec92506b87db5f61c0f5e24c7fd99bf0a3'
+  'ed4c6cd0c82f48908db6bc1210b2f609bb5672b340ad1fbaa092ed2c6acedeb5'
 
 default['sops']['download_path'] =
-  'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.darwin'
+  'https://github.com/mozilla/sops/releases/download/v3.10.2/sops-v3.10.2.darwin.amd64'
 default['sops']['sha256'] =
-  '09bb5920ae609bdf041b74843e2d8211a7059847b21729fadfbd3c3e33e67d26'
+  'dece9b0131af5ced0f8c278a53c0cf06a4f0d1d70a177c0979f6d111654397ce'
 
 default['trivy']['download_path'] =
-  'https://github.com/aquasecurity/trivy/releases/download/v0.39.0/trivy_0.39.0_macOS-64bit.tar.gz'
+  'https://github.com/aquasecurity/trivy/releases/download/v0.64.1/trivy_0.64.1_macOS-64bit.tar.gz'
 default['trivy']['sha256'] =
-  'e0e6831395310452a65cae8dcb142fb743a05b27b0698177e8fad93b24490e19'
+  '107a874b41c1f0a48849f859b756f500d8be06f2d2b8956a046a97ae38088bf6'
 
 default['yq']['download_path'] =
   'https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_darwin_amd64'

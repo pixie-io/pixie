@@ -34,8 +34,8 @@ var ErrArtifactSetNotFound = errors.New("no artifact set with given artifact nam
 var ErrArtifactNotFound = errors.New("no artifact with given version")
 
 // GetArtifact returns a an artifact with the given artifact name and version string.
-func (m *ArtifactManifest) GetArtifact(name string, version string) (*versionspb.Artifact, error) {
-	as, ok := m.sets[name]
+func (a *ArtifactManifest) GetArtifact(name string, version string) (*versionspb.Artifact, error) {
+	as, ok := a.sets[name]
 	if !ok {
 		return nil, ErrArtifactSetNotFound
 	}
@@ -50,8 +50,8 @@ func (m *ArtifactManifest) GetArtifact(name string, version string) (*versionspb
 type ArtifactFilter func(*versionspb.Artifact) bool
 
 // ListArtifacts returns artifacts with the given name, in version sorted order (newest versions first). It returns up to `limit` artifacts.
-func (m *ArtifactManifest) ListArtifacts(name string, limit int64, filters ...ArtifactFilter) ([]*versionspb.Artifact, error) {
-	as, ok := m.sets[name]
+func (a *ArtifactManifest) ListArtifacts(name string, limit int64, filters ...ArtifactFilter) ([]*versionspb.Artifact, error) {
+	as, ok := a.sets[name]
 	if !ok {
 		return nil, ErrArtifactSetNotFound
 	}

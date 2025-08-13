@@ -84,7 +84,7 @@ func (h *dataLossHandler) HandleDone(ctx context.Context) error {
 
 func (h *dataLossHandler) sendRows(ctx context.Context) error {
 	ts := h.lastTimestamp
-	if (ts == time.Time{}) {
+	if (ts.Equal(time.Time{})) {
 		ts = time.Now()
 	}
 	percentRow := newResultRow()
