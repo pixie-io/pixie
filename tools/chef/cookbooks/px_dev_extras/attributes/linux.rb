@@ -33,9 +33,9 @@ default['faq']['sha256'] =
   '6c9234d0b2b024bf0e7c845fc092339b51b94e5addeee9612a7219cfd2a7b731'
 
 default['gh']['download_path'] =
-  'https://github.com/cli/cli/releases/download/v2.26.1/gh_2.26.1_linux_amd64.tar.gz'
+  'https://github.com/cli/cli/releases/download/v2.76.1/gh_2.76.1_linux_amd64.tar.gz'
 default['gh']['sha256'] =
-  '4e1f98c10eb0af2c3bfe6849c10328a2a2446a9ff4294db0dfdb20b7d16eaecc'
+  '18367ca38b4462889ae38fba6a18c53a4c2818b6af309bbe53d0810bb06036e9'
 
 default['helm']['download_path'] =
   'https://get.helm.sh/helm-v3.11.3-linux-amd64.tar.gz'
@@ -58,9 +58,9 @@ default['lego']['sha256'] =
   'd6a6dbf82ae9a1a7f9fbc8d85c224617a17337afa4284aaca6b0556a7347609d'
 
 default['minikube']['download_path'] =
-  'https://github.com/kubernetes/minikube/releases/download/v1.30.1/minikube-linux-amd64'
+  'https://github.com/kubernetes/minikube/releases/download/v1.36.0/minikube-linux-amd64'
 default['minikube']['sha256'] =
-  'e53d9e8c31f4c5f683182f5323d3527aa0725f713945c6d081cf71aa548ab388'
+  'cddeab5ab86ab98e4900afac9d62384dae0941498dfbe712ae0c8868250bc3d7'
 
 default['opm']['download_path'] =
   'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/linux-amd64-opm'
@@ -73,19 +73,19 @@ default['packer']['sha256'] =
   '8a94b84542d21b8785847f4cccc8a6da4c7be5e16d4b1a2d0a5f7ec5532faec0'
 
 default['skaffold']['download_path'] =
-  'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-linux-amd64'
+  'https://storage.googleapis.com/skaffold/releases/v2.16.1/skaffold-linux-amd64'
 default['skaffold']['sha256'] =
-  'f1c54245b97073f39b209dd4b769802701c9901ceaa95774e7507d95bbd1d4c0'
+  '1cbeea85aa14ba603dbc2bbdfa7bfde5644d7988beed0fdc0fd1c67298d4cf67'
 
 default['sops']['download_path'] =
-  'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
+  'https://github.com/mozilla/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64'
 default['sops']['sha256'] =
-  '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
+  '79b0f844237bd4b0446e4dc884dbc1765fc7dedc3968f743d5949c6f2e701739'
 
 default['trivy']['download_path'] =
-  'https://github.com/aquasecurity/trivy/releases/download/v0.39.0/trivy_0.39.0_Linux-64bit.tar.gz'
+  'https://github.com/aquasecurity/trivy/releases/download/v0.64.1/trivy_0.64.1_Linux-64bit.tar.gz'
 default['trivy']['sha256'] =
-  '77cfe88b6b803909982e2dd41149c042fd9e6a58e1f55103f27e7bab2d2fb6d2'
+  '1a09d86667b3885a8783d1877c9abc8061b2b4e9b403941b22cbd82f10d275a8'
 
 default['yq']['download_path'] =
   'https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64'
