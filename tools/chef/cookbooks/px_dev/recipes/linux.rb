@@ -56,6 +56,16 @@ apt_pkg_list = [
   'qemu-system-x86',
   'qemu-user-static',
   'qemu-utils',
+
+  # Minikube dependencies for kvm
+  'libnss3-tools',
+  'libvirt-daemon-system',
+  'libvirt-clients',
+  'qemu-kvm',
+  'virt-manager',
+
+  # Pixie dependencies
+  'mkcert',
 ]
 
 apt_package apt_pkg_list do
