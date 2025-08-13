@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -34,17 +36,19 @@
 
 DECLARE_bool(openssl_force_raw_fptrs);
 DECLARE_bool(openssl_raw_fptrs_enabled);
+DECLARE_bool(disable_dwarf_parsing);
 
 namespace px {
 namespace stirling {
 
 constexpr std::string_view kLibNettyTcnativePrefix = "libnetty_tcnative_linux_x86";
+constexpr std::string_view kGoStdlibPackageName = "std";
 
 using StructVersionMap = std::map<std::string, std::map<std::string, int32_t>>;
-using StructOffsetMap = std::map<std::string, std::pair<std::string, StructVersionMap>>;
+using StructOffsetMap = std::map<std::string, std::pair<std::string_view, StructVersionMap>>;
 using FuncVersionMap =
     std::map<std::string, std::map<std::string, std::unique_ptr<obj_tools::VarLocation>>>;
-using FunctionArgMap = std::map<std::string, std::pair<std::string, FuncVersionMap>>;
+using FunctionArgMap = std::map<std::string, std::pair<std::string_view, FuncVersionMap>>;
 
 class GoOffsetLocator {
  public:
@@ -60,10 +64,14 @@ class GoOffsetLocator {
 
   StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfo(
       std::string_view function_symbol_name) {
-    if (dwarf_reader_ != nullptr) {
+    if (dwarf_reader_ != nullptr && !FLAGS_disable_dwarf_parsing) {
       return dwarf_reader_->GetFunctionArgInfo(function_symbol_name);
     }
-    return GetFunctionArgInfoFromOffsets(function_symbol_name);
+    auto has_vendor_prefix = absl::StartsWith(function_symbol_name, vendor_prefix_);
+    return GetFunctionArgInfoFromOffsets(function_symbol_name.substr(
+        has_vendor_prefix ? vendor_prefix_.size() : 0,
+        has_vendor_prefix ? function_symbol_name.size() - vendor_prefix_.size()
+                          : function_symbol_name.size()));
   }
 
   StatusOr<obj_tools::VarLocation> GetArgumentLocation(std::string_view /*function_symbol_name*/,
@@ -75,13 +83,20 @@ class GoOffsetLocator {
 
   StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
                                            std::string_view member_name) {
-    if (dwarf_reader_ != nullptr) {
+    if (dwarf_reader_ != nullptr && !FLAGS_disable_dwarf_parsing) {
       return dwarf_reader_->GetStructMemberOffset(struct_name, member_name);
     }
-    return GetStructMemberOffsetFromOffsets(struct_name, member_name);
+    auto has_vendor_prefix = absl::StartsWith(struct_name, vendor_prefix_);
+    return GetStructMemberOffsetFromOffsets(
+        struct_name.substr(
+            has_vendor_prefix ? vendor_prefix_.size() : 0,
+            has_vendor_prefix ? struct_name.size() - vendor_prefix_.size() : struct_name.size()),
+        member_name);
   }
 
   std::string go_version() const { return go_version_; }
+
+  void set_vendor_prefix(std::string vendor_prefix) { vendor_prefix_ = vendor_prefix; }
 
  private:
   StatusOr<std::map<std::string, obj_tools::ArgInfo>> GetFunctionArgInfoFromOffsets(
@@ -90,8 +105,8 @@ class GoOffsetLocator {
     if (fn_map_pair == function_args_.end()) {
       return error::Internal("Unable to find function location for $0", function_symbol_name);
     }
-    auto& [mod_name, fn_map] = fn_map_pair->second;
-    std::string version_key = mod_version_map_[mod_name];
+    auto& [pkg_name, fn_map] = fn_map_pair->second;
+    std::string version_key = pkg_version_map_[std::string(pkg_name)];
     std::map<std::string, obj_tools::ArgInfo> result;
 
     for (const auto& [arg_name, version_info_map] : fn_map) {
@@ -116,14 +131,14 @@ class GoOffsetLocator {
     if (struct_map_pair == struct_offsets_.end()) {
       return error::Internal("Unable to find offsets for struct=$0", struct_name);
     }
-    auto& [mod_name, struct_map] = struct_map_pair->second;
+    auto& [pkg_name, struct_map] = struct_map_pair->second;
     auto member_map = struct_map.find(std::string(member_name));
     if (member_map == struct_map.end()) {
       return error::Internal("Unable to find offsets for struct member=$0.$1", struct_name,
                              member_name);
     }
 
-    std::string version_key = mod_version_map_[mod_name];
+    std::string version_key = pkg_version_map_[std::string(pkg_name)];
     auto version_map = member_map->second.find(version_key);
     if (version_map == member_map->second.end()) {
       return error::Internal("Unable to find offsets for struct member=$0.$1 for version $2",
@@ -137,10 +152,10 @@ class GoOffsetLocator {
       // Find the related dependencies and strip the "v" prefix
       if (dep.path == "golang.org/x/net" || dep.path == "google.golang.org/grpc") {
         VLOG(1) << absl::Substitute("Found dependency: $0, version: $1", dep.path, dep.version);
-        mod_version_map_[dep.path] = dep.version.substr(1);
+        pkg_version_map_[dep.path] = dep.version.substr(1);
       }
     }
-    mod_version_map_["std"] = go_version_;
+    pkg_version_map_["std"] = go_version_;
   }
 
   obj_tools::DwarfReader* dwarf_reader_;
@@ -150,8 +165,16 @@ class GoOffsetLocator {
 
   const std::string& go_version_;
 
-  std::map<std::string, std::string> mod_version_map_;
+  std::map<std::string, std::string> pkg_version_map_;
+
+  std::string vendor_prefix_;
 };
+
+StructOffsetMap& GetGoStructOffsets();
+
+FunctionArgMap& GetGoFunctionArgOffsets();
+
+void ParseGoOffsetgenFile(const std::string& offsetgen_file);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for general Go
