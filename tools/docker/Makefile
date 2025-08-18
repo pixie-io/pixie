@@ -121,9 +121,12 @@ nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch-$(NATS_IM
 
 ## Ory image parameters.
 KRATOS_IMAGE_VERSION := 1.3.1
-kratos_image_tag := "ghcr.io/pixie-io/kratos:$(KRATOS_IMAGE_VERSION)-scratch"
+KRATOS_IMAGE_REV := pl1
+kratos_image_tag := "ghcr.io/pixie-io/kratos:$(KRATOS_IMAGE_VERSION)-$(KRATOS_IMAGE_REV)"
 HYDRA_IMAGE_VERSION := 2.3.0
-hydra_image_tag := "ghcr.io/pixie-io/hydra:$(HYDRA_IMAGE_VERSION)-scratch"
+HYDRA_IMAGE_REV := pl1
+hydra_image_tag := "ghcr.io/pixie-io/hydra:$(HYDRA_IMAGE_VERSION)-$(HYDRA_IMAGE_REV)"
+hydra_alpine_image_tag := "ghcr.io/pixie-io/hydra:$(HYDRA_IMAGE_VERSION)-alpine-$(HYDRA_IMAGE_REV)"
 
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
@@ -296,7 +299,15 @@ build_and_upload_hydra_image:
 		--platform linux/amd64,linux/arm64 \
 		--build-arg=HYDRA_VERSION="v$(HYDRA_IMAGE_VERSION)" \
 		--build-arg=BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		--target=distroless \
 		-t $(hydra_image_tag) \
+		--push
+	$(DOCKER) buildx build hydra_image \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg=HYDRA_VERSION="v$(HYDRA_IMAGE_VERSION)" \
+		--build-arg=BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		--target=alpine \
+		-t $(hydra_alpine_image_tag) \
 		--push
 
 .PHONY: build_and_upload_copybara_image

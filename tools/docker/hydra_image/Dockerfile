@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:9fadeb603e14f1f3e08bdbec6681fa14446053c498a554f3e57260bf892c487e AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:c8c5f95d64aa79b6547f3b626eb84b16a7ce18a139e3e9ca19a8c078b85ba80d AS build
 
 ARG TARGETOS TARGETARCH
 ARG HYDRA_VERSION
@@ -44,7 +44,16 @@ RUN go get golang.org/x/crypto@v0.38.0
 
 RUN go build -ldflags="-extldflags=-static" -tags sqlite_omit_load_extension -o /usr/bin/hydra
 
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:627d6c5a23ad24e6bdff827f16c7b60e0289029b0c79e9f7ccd54ae3279fb45f
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:627d6c5a23ad24e6bdff827f16c7b60e0289029b0c79e9f7ccd54ae3279fb45f AS distroless
+
+COPY --from=build /usr/bin/hydra /usr/bin/hydra
+
+EXPOSE 4444 4445
+
+ENTRYPOINT ["hydra"]
+CMD ["serve", "all"]
+
+FROM alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 AS alpine
 
 COPY --from=build /usr/bin/hydra /usr/bin/hydra
 

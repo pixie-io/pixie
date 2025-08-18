@@ -29,7 +29,6 @@ patches:
 - path: auth_deployment_patch.yaml
 - path: db_config.yaml
 - path: indexer_config.yaml
-- path: ory_service_config.yaml
 - path: script_bundles_config.yaml
 - path: proxy_envoy.yaml
 - path: service_config.yaml

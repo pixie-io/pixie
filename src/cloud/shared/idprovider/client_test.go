@@ -20,14 +20,15 @@ package idprovider
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/sessions"
-	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
-	hydraModels "github.com/ory/hydra-client-go/models"
+	hydra "github.com/ory/hydra-client-go/v2"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,6 +36,37 @@ import (
 
 func makeClient(t *testing.T) (*HydraKratosClient, func()) {
 	return makeClientFromConfig(t, &testClientConfig{})
+}
+
+// makeClientWithMockHydra creates a HydraKratosClient with a mock HTTP server for Hydra admin endpoints.
+// Hydra's request structs use unexported fields, which complicates testing. This mock HTTP server
+// allows testing the actual HTTP request/response cycle to inspect request parameters.
+func makeClientWithMockHydra(t *testing.T, hydraHandler http.HandlerFunc) (*HydraKratosClient, func()) {
+	// Create mock Hydra admin server
+	mockHydraAdmin := httptest.NewServer(hydraHandler)
+
+	// Create real Hydra client pointing to mock server
+	hydraClient, err := createHydraClient(mockHydraAdmin.URL, mockHydraAdmin.Client())
+	require.NoError(t, err)
+
+	client := &HydraKratosClient{
+		httpClient: mockHydraAdmin.Client(),
+		Config: &HydraKratosConfig{
+			HydraClientID:    "hydra_client_id",
+			KratosBrowserURL: "https://work.withpixie.ai/kratos",
+			HydraBrowserURL:  "https://work.withpixie.ai/hydra",
+			HydraConsentPath: "/api/auth/consent",
+		},
+		hydraAdminClient:   hydraClient.OAuth2API,
+		kratosPublicClient: &kratosFakeAPI{},
+		kratosAdminClient:  &kratosFakeAPI{},
+	}
+
+	cleanup := func() {
+		mockHydraAdmin.Close()
+	}
+
+	return client, cleanup
 }
 
 type testClientConfig struct {
@@ -45,7 +77,7 @@ type testClientConfig struct {
 	idpConsentPath          string
 	hydraBrowserURL         string
 	hydraConsentPath        string
-	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
+	introspectOAuth2TokenFn *func(req *hydra.OAuth2APIIntrospectOAuth2TokenRequest) (*hydra.IntrospectedOAuth2Token, *http.Response, error)
 }
 
 func fillDefaults(p *testClientConfig) *testClientConfig {
@@ -97,12 +129,10 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 		http.Redirect(w, r, consentURL.String(), http.StatusFound)
 	}))
 
-	acceptConsentRequestFn := func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
-		return &hydraAdmin.AcceptConsentRequestOK{
-			Payload: &hydraModels.CompletedRequest{
-				RedirectTo: &p.postLoginRedirect,
-			},
-		}, nil
+	acceptConsentRequestFn := func(params *hydra.OAuth2APIAcceptOAuth2ConsentRequestRequest) (*hydra.OAuth2RedirectTo, *http.Response, error) {
+		return &hydra.OAuth2RedirectTo{
+			RedirectTo: p.postLoginRedirect,
+		}, nil, nil
 	}
 
 	return &HydraKratosClient{
@@ -231,30 +261,52 @@ func TestRedirectToLogin(t *testing.T) {
 
 func TestAcceptHydraLogin(t *testing.T) {
 	loginChallenge := "abcdefgh"
-	acceptLoginRequestFn := func(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error) {
-		// Make sure the loginChallenge is forwarded.
-		assert.Equal(t, params.LoginChallenge, loginChallenge)
-		// Call the original login request to handle the rest.
-		return (&fakeHydraAdminClient{}).AcceptLoginRequest(params)
-	}
-	c, cleanup := makeClient(t)
-	c.hydraAdminClient = &fakeHydraAdminClient{
-		acceptLoginRequestFn: &acceptLoginRequestFn,
-	}
+	expectedSubject := "user"
+	redirectURL := "/oauth2/redirect"
+
+	// Used to capture values sent to the mock Hydra server.
+	var capturedChallenge string
+	var capturedBody hydra.AcceptOAuth2LoginRequest
+
+	c, cleanup := makeClientWithMockHydra(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/oauth2/auth/requests/login/accept") && r.Method == "PUT":
+			// Capture the login challenge from query params
+			capturedChallenge = r.URL.Query().Get("login_challenge")
+
+			err := json.NewDecoder(r.Body).Decode(&capturedBody)
+			require.NoError(t, err)
+
+			w.Header().Set("Content-Type", "application/json")
+			err = json.NewEncoder(w).Encode(hydra.OAuth2RedirectTo{
+				RedirectTo: redirectURL,
+			})
+			require.NoError(t, err)
+		default:
+			t.Errorf("Unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
 	defer cleanup()
 
 	// Fake whoami response.
 	whoami := &Whoami{
 		kratosSession: &kratos.Session{
-			Identity: kratos.Identity{
-				Id: "user",
+			Identity: &kratos.Identity{
+				Id: expectedSubject,
 			},
 		},
 	}
 
-	// Just make sure the error is not nil.
-	_, err := c.AcceptHydraLogin(context.Background(), loginChallenge, whoami)
+	resp, err := c.AcceptHydraLogin(context.Background(), loginChallenge, whoami)
 	require.NoError(t, err)
+	require.NotNil(t, resp.RedirectTo)
+	assert.Equal(t, redirectURL, *resp.RedirectTo)
+
+	// Verify the captured values
+	assert.Equal(t, loginChallenge, capturedChallenge)
+	assert.Equal(t, expectedSubject, capturedBody.Subject)
+	assert.NotNil(t, capturedBody.Context)
 }
 
 func TestConvertHydraURL(t *testing.T) {
@@ -301,46 +353,62 @@ func TestInterceptHydraConsent(t *testing.T) {
 
 func TestAcceptConsent(t *testing.T) {
 	consentChallenge := "123456789"
-	getConsentRequestFn := func(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error) {
-		assert.Equal(t, consentChallenge, params.ConsentChallenge)
-		return &hydraAdmin.GetConsentRequestOK{
-			Payload: &hydraModels.ConsentRequest{
-				Client: &hydraModels.OAuth2Client{
-					ClientID: "hydra_client_id",
-				},
-				RequestedScope:               []string{"openid", "offline"},
-				RequestedAccessTokenAudience: []string{"api"},
-			},
-		}, nil
-	}
+	clientID := "hydra_client_id"
+	requestedScope := []string{"openid", "offline"}
+	requestedAudience := []string{"api"}
 	redirectURL := "/oauth2/auth"
-	acceptConsentRequestFn := func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
-		assert.ElementsMatch(t, []string{"openid", "offline"}, params.Body.GrantScope)
-		assert.ElementsMatch(t, []string{"api"}, params.Body.GrantAccessTokenAudience)
-		assert.Equal(t, consentChallenge, params.ConsentChallenge)
-		return &hydraAdmin.AcceptConsentRequestOK{
-			Payload: &hydraModels.CompletedRequest{
-				RedirectTo: &redirectURL,
-			},
-		}, nil
-	}
-	hydraAdminClient := &fakeHydraAdminClient{
-		redirect:               "/",
-		consentChallenge:       consentChallenge,
-		oauthClientID:          "hydra_client_id",
-		getConsentRequestFn:    &getConsentRequestFn,
-		acceptConsentRequestFn: &acceptConsentRequestFn,
-	}
-	c := HydraKratosClient{
-		Config: &HydraKratosConfig{
-			HydraClientID: "hydra_client_id",
-		},
-		hydraAdminClient: hydraAdminClient,
-	}
 
-	consentResp, err := c.AcceptConsent(context.Background(), hydraAdminClient.consentChallenge)
+	// Used to capture values sent to the mock Hydra server.
+	var capturedGetChallenge string
+	var capturedAcceptChallenge string
+	var capturedAcceptBody hydra.AcceptOAuth2ConsentRequest
+
+	c, cleanup := makeClientWithMockHydra(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/oauth2/auth/requests/consent") && r.Method == "GET":
+			// Capture the consent challenge from query params
+			capturedGetChallenge = r.URL.Query().Get("consent_challenge")
+
+			// Return consent request
+			w.Header().Set("Content-Type", "application/json")
+			err := json.NewEncoder(w).Encode(hydra.OAuth2ConsentRequest{
+				Client: &hydra.OAuth2Client{
+					ClientId: &clientID,
+				},
+				RequestedScope:               requestedScope,
+				RequestedAccessTokenAudience: requestedAudience,
+			})
+			require.NoError(t, err)
+
+		case strings.HasSuffix(r.URL.Path, "/oauth2/auth/requests/consent/accept") && r.Method == "PUT":
+			// Capture the consent challenge and body
+			capturedAcceptChallenge = r.URL.Query().Get("consent_challenge")
+
+			err := json.NewDecoder(r.Body).Decode(&capturedAcceptBody)
+			require.NoError(t, err)
+
+			w.Header().Set("Content-Type", "application/json")
+			err = json.NewEncoder(w).Encode(hydra.OAuth2RedirectTo{
+				RedirectTo: redirectURL,
+			})
+			require.NoError(t, err)
+
+		default:
+			t.Errorf("Unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer cleanup()
+
+	consentResp, err := c.AcceptConsent(context.Background(), consentChallenge)
 	require.NoError(t, err)
 	assert.Equal(t, redirectURL, *consentResp.RedirectTo)
+
+	// Verify the captured values
+	assert.Equal(t, consentChallenge, capturedGetChallenge)
+	assert.Equal(t, consentChallenge, capturedAcceptChallenge)
+	assert.ElementsMatch(t, requestedScope, capturedAcceptBody.GrantScope)
+	assert.ElementsMatch(t, requestedAudience, capturedAcceptBody.GrantAccessTokenAudience)
 }
 
 func TestAcceptConsentWithWrongClientID(t *testing.T) {
@@ -464,7 +532,7 @@ func Test_CreateInviteLinkForIdentity(t *testing.T) {
 	defer cleanup()
 
 	link := "https://work.withpixie.dev/recovery"
-	c.kratosAdminClient = kratosFakeAPI{
+	c.kratosAdminClient = &kratosFakeAPI{
 		recoveryLink: link,
 	}
 

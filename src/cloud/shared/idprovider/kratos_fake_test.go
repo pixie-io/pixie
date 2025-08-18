@@ -26,46 +26,52 @@ import (
 )
 
 type kratosFakeAPI struct {
-	kratos.V0alpha2Api
-
+	kratos.FrontendAPI
+	kratos.IdentityAPI
 	userID       string
 	recoveryLink string
 }
 
-func (k kratosFakeAPI) ToSession(ctx context.Context) kratos.V0alpha2ApiApiToSessionRequest {
-	return kratos.V0alpha2ApiApiToSessionRequest{
+func (k kratosFakeAPI) ToSession(ctx context.Context) kratos.FrontendAPIToSessionRequest {
+	return kratos.FrontendAPIToSessionRequest{
 		ApiService: k,
 	}
 }
 
-func (k kratosFakeAPI) ToSessionExecute(r kratos.V0alpha2ApiApiToSessionRequest) (*kratos.Session, *http.Response, error) {
+func (k kratosFakeAPI) ToSessionExecute(r kratos.FrontendAPIToSessionRequest) (*kratos.Session, *http.Response, error) {
 	return &kratos.Session{
-		Identity: kratos.Identity{
+		Identity: &kratos.Identity{
 			Id: k.userID,
 		},
 	}, nil, nil
 }
 
-func (k kratosFakeAPI) AdminCreateIdentity(ctx context.Context) kratos.V0alpha2ApiApiAdminCreateIdentityRequest {
-	return kratos.V0alpha2ApiApiAdminCreateIdentityRequest{
+func (k kratosFakeAPI) CreateIdentity(context.Context) kratos.IdentityAPICreateIdentityRequest {
+	return kratos.IdentityAPICreateIdentityRequest{
 		ApiService: k,
 	}
 }
 
-func (k kratosFakeAPI) AdminCreateIdentityExecute(r kratos.V0alpha2ApiApiAdminCreateIdentityRequest) (*kratos.Identity, *http.Response, error) {
+func (k kratosFakeAPI) CreateIdentityExecute(r kratos.IdentityAPICreateIdentityRequest) (*kratos.Identity, *http.Response, error) {
 	return &kratos.Identity{
 		Id: k.userID,
 	}, nil, nil
 }
 
-func (k kratosFakeAPI) AdminCreateSelfServiceRecoveryLink(ctx context.Context) kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest {
-	return kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest{
+func (k kratosFakeAPI) GetIdentity(context.Context, string) kratos.IdentityAPIGetIdentityRequest {
+	return kratos.IdentityAPIGetIdentityRequest{
 		ApiService: k,
 	}
 }
 
-func (k kratosFakeAPI) AdminCreateSelfServiceRecoveryLinkExecute(r kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest) (*kratos.SelfServiceRecoveryLink, *http.Response, error) {
-	return &kratos.SelfServiceRecoveryLink{
+func (k kratosFakeAPI) CreateRecoveryLinkForIdentity(context.Context) kratos.IdentityAPICreateRecoveryLinkForIdentityRequest {
+	return kratos.IdentityAPICreateRecoveryLinkForIdentityRequest{
+		ApiService: k,
+	}
+}
+
+func (k kratosFakeAPI) CreateRecoveryLinkForIdentityExecute(r kratos.IdentityAPICreateRecoveryLinkForIdentityRequest) (*kratos.RecoveryLinkForIdentity, *http.Response, error) {
+	return &kratos.RecoveryLinkForIdentity{
 		RecoveryLink: k.recoveryLink,
 	}, nil, nil
 }

@@ -31,12 +31,8 @@ import (
 	"os"
 	"strings"
 
-	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/strfmt"
 	"github.com/gorilla/sessions"
-	hydra "github.com/ory/hydra-client-go/client"
-	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
-	hydraModels "github.com/ory/hydra-client-go/models"
+	hydra "github.com/ory/hydra-client-go/v2"
 	kratos "github.com/ory/kratos-client-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -89,20 +85,20 @@ type HydraKratosConfig struct {
 const HydraLoginStateKey string = "hydra_login_state"
 
 type hydraAdminClientService interface {
-	AcceptConsentRequest(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error)
-	AcceptLoginRequest(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error)
-	GetConsentRequest(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
-	IntrospectOAuth2Token(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
+	AcceptOAuth2ConsentRequest(context.Context) hydra.OAuth2APIAcceptOAuth2ConsentRequestRequest
+	AcceptOAuth2LoginRequest(context.Context) hydra.OAuth2APIAcceptOAuth2LoginRequestRequest
+	GetOAuth2ConsentRequest(context.Context) hydra.OAuth2APIGetOAuth2ConsentRequestRequest
+	IntrospectOAuth2Token(context.Context) hydra.OAuth2APIIntrospectOAuth2TokenRequest
 }
 
 type kratosPublicClientService interface {
-	ToSession(context.Context) kratos.V0alpha2ApiApiToSessionRequest
+	ToSession(context.Context) kratos.FrontendAPIToSessionRequest
 }
 
 type kratosAdminClientService interface {
-	AdminGetIdentity(context.Context, string) kratos.V0alpha2ApiApiAdminGetIdentityRequest
-	AdminCreateIdentity(context.Context) kratos.V0alpha2ApiApiAdminCreateIdentityRequest
-	AdminCreateSelfServiceRecoveryLink(context.Context) kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest
+	GetIdentity(context.Context, string) kratos.IdentityAPIGetIdentityRequest
+	CreateIdentity(context.Context) kratos.IdentityAPICreateIdentityRequest
+	CreateRecoveryLinkForIdentity(context.Context) kratos.IdentityAPICreateRecoveryLinkForIdentityRequest
 }
 
 // HydraKratosClient implements the Client interface for the a Hydra and Kratos integration.
@@ -142,17 +138,18 @@ func createHTTPClient() (*http.Client, error) {
 	return client, nil
 }
 
-func createRuntime(path string, client *http.Client) (*httptransport.Runtime, error) {
-	u, err := url.Parse(path)
+func createHydraClient(host string, client *http.Client) (*hydra.APIClient, error) {
+	u, err := url.Parse(host)
 	if err != nil {
 		return nil, err
 	}
-	return httptransport.NewWithClient(
-		u.Host,
-		u.Path,
-		[]string{u.Scheme},
-		client,
-	), nil
+
+	conf := hydra.NewConfiguration()
+	conf.Host = u.Host
+	conf.Scheme = u.Scheme
+	conf.Servers = hydra.ServerConfigurations{{URL: host}}
+	conf.HTTPClient = client
+	return hydra.NewAPIClient(conf), nil
 }
 
 func createKratosClient(host string, client *http.Client) (*kratos.APIClient, error) {
@@ -180,12 +177,10 @@ func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient,
 		}
 	}
 
-	hydraAdminRuntime, err := createRuntime(cfg.HydraAdminHost, httpClient)
+	hydraAdminClient, err := createHydraClient(cfg.HydraAdminHost, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	// We specify the Admin client to avoid confusing bugs because the Public client is held behind a different endpoint.
-	hydraAdminClient := hydra.New(hydraAdminRuntime, strfmt.NewFormats()).Admin
 
 	// One can theoretically send public requests to the Admin Host but then kratos will
 	// 302 the requests to the public host/port.
@@ -205,26 +200,25 @@ func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient,
 	return &HydraKratosClient{
 		Config:             cfg,
 		httpClient:         httpClient,
-		hydraAdminClient:   hydraAdminClient,
-		kratosAdminClient:  kratosAdminClient.V0alpha2Api,
-		kratosPublicClient: kratosPublicClient.V0alpha2Api,
+		hydraAdminClient:   hydraAdminClient.OAuth2API,
+		kratosAdminClient:  kratosAdminClient.IdentityAPI,
+		kratosPublicClient: kratosPublicClient.FrontendAPI,
 	}, nil
 }
 
 // NewHydraKratosClient creates a new client with the default config.
 func NewHydraKratosClient() (*HydraKratosClient, error) {
-	return NewHydraKratosClientFromConfig(
-		&HydraKratosConfig{
-			HydraPublicHost:  viper.GetString("hydra_public_host"),
-			HydraAdminHost:   viper.GetString("hydra_admin_host"),
-			HydraBrowserURL:  viper.GetString("hydra_browser_url"),
-			KratosPublicHost: viper.GetString("kratos_public_host"),
-			KratosAdminHost:  viper.GetString("kratos_admin_host"),
-			KratosBrowserURL: viper.GetString("kratos_browser_url"),
-			HydraConsentPath: viper.GetString("hydra_consent_path"),
-			HydraClientID:    viper.GetString("hydra_client_id"),
-		},
-	)
+	config := &HydraKratosConfig{
+		HydraPublicHost:  viper.GetString("hydra_public_host"),
+		HydraAdminHost:   viper.GetString("hydra_admin_host"),
+		HydraBrowserURL:  viper.GetString("hydra_browser_url"),
+		KratosPublicHost: viper.GetString("kratos_public_host"),
+		KratosAdminHost:  viper.GetString("kratos_admin_host"),
+		KratosBrowserURL: viper.GetString("kratos_browser_url"),
+		HydraConsentPath: viper.GetString("hydra_consent_path"),
+		HydraClientID:    viper.GetString("hydra_client_id"),
+	}
+	return NewHydraKratosClientFromConfig(config)
 }
 
 func (c *HydraKratosClient) convertExternalHydraURLToInternal(externalHydraURL string) (string, error) {
@@ -374,19 +368,14 @@ type RedirectResponse struct {
 // AcceptHydraLogin sends a request to accept the login on the hydra endpoint.
 func (c *HydraKratosClient) AcceptHydraLogin(ctx context.Context, challenge string, whoamiResp *Whoami) (*RedirectResponse, error) {
 	subject := whoamiResp.ID()
-	params := &hydraAdmin.AcceptLoginRequestParams{
-		Body: &hydraModels.AcceptLoginRequest{
-			Context: whoamiResp.kratosSession,
-			Subject: &subject,
-		},
-		LoginChallenge: challenge,
-		Context:        ctx,
-	}
-	resp, err := c.hydraAdminClient.AcceptLoginRequest(params)
+	body := hydra.NewAcceptOAuth2LoginRequest(subject)
+	body.SetContext(whoamiResp.kratosSession)
+
+	resp, _, err := c.hydraAdminClient.AcceptOAuth2LoginRequest(ctx).LoginChallenge(challenge).AcceptOAuth2LoginRequest(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
-	return &RedirectResponse{RedirectTo: resp.GetPayload().RedirectTo}, nil
+	return &RedirectResponse{RedirectTo: &resp.RedirectTo}, nil
 }
 
 // InterceptHydraUserConsent performs the user consent flow bypassing normal user interaction. Hydra uses
@@ -432,41 +421,37 @@ func (c *HydraKratosClient) AcceptConsent(ctx context.Context, challenge string)
 	if challenge == "" {
 		return nil, fmt.Errorf("challenge is empty")
 	}
-	resp, err := c.hydraAdminClient.GetConsentRequest(&hydraAdmin.GetConsentRequestParams{
-		ConsentChallenge: challenge,
-		Context:          ctx,
-	})
+	resp, _, err := c.hydraAdminClient.GetOAuth2ConsentRequest(ctx).ConsentChallenge(challenge).Execute()
 	if err != nil {
 		log.Debug("error on hydra.consentRequest:")
 		return nil, err
 	}
 
-	if resp.GetPayload() == nil {
+	if resp == nil {
 		log.Debug("consent request payload is empty")
-		return nil, err
+		return nil, fmt.Errorf("consent request payload is empty: %w", err)
 	}
-
-	consentRequest := resp.GetPayload()
 
 	// We only trust the client that's passed in as a config here. In the future we might want to support other clients
 	// at which point we will want to actually ask for permission from the user.
-	if consentRequest.Client.ClientID != c.Config.HydraClientID {
-		return nil, fmt.Errorf("'%s' not an allowed client", consentRequest.Client.ClientID)
+	if resp.Client.ClientId == nil {
+		return nil, fmt.Errorf("consent request client ID is nil")
 	}
 
-	acceptResp, err := c.hydraAdminClient.AcceptConsentRequest(&hydraAdmin.AcceptConsentRequestParams{
-		Body: &hydraModels.AcceptConsentRequest{
-			GrantScope:               consentRequest.RequestedScope,
-			GrantAccessTokenAudience: consentRequest.RequestedAccessTokenAudience,
-		},
-		ConsentChallenge: challenge,
-		Context:          ctx,
-	})
+	if *resp.Client.ClientId != c.Config.HydraClientID {
+		return nil, fmt.Errorf("'%s' not an allowed client", *resp.Client.ClientId)
+	}
+
+	body := hydra.NewAcceptOAuth2ConsentRequest()
+	body.SetGrantScope(resp.RequestedScope)
+	body.SetGrantAccessTokenAudience(resp.RequestedAccessTokenAudience)
+
+	acceptResp, _, err := c.hydraAdminClient.AcceptOAuth2ConsentRequest(ctx).ConsentChallenge(challenge).AcceptOAuth2ConsentRequest(*body).Execute()
 	if err != nil {
 		log.Debug("error on hydra.AcceptConsentRequest:")
 		return nil, err
 	}
-	return &RedirectResponse{RedirectTo: acceptResp.GetPayload().RedirectTo}, nil
+	return &RedirectResponse{RedirectTo: &acceptResp.RedirectTo}, nil
 }
 
 // HandleLogin handles the login for Hydra and Kratos.
@@ -505,12 +490,12 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	ctx := context.Background()
 	whoami, err := c.Whoami(ctx, r)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not get whoami: %w", err)}
 	}
 
 	redirectResp, err := c.AcceptHydraLogin(ctx, challenge, whoami)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not accept hydra login: %w", err)}
 	}
 
 	if redirectResp.RedirectTo == nil {
@@ -520,12 +505,12 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	// We expect the response to redirect to the consent endpoint. We will just intercept the consent endpoint
 	respHeader, consentChallenge, err := c.InterceptHydraUserConsent(*redirectResp.RedirectTo, r.Header)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not intercept hydra user consent: %w", err)}
 	}
 
 	consentResp, err := c.AcceptConsent(ctx, consentChallenge)
 	if err != nil {
-		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: fmt.Errorf("Could not accept hydra consent: %w", err)}
 	}
 
 	// Copy the header because the header contains a necessary Set-Cookie from the OAuth server.
@@ -549,16 +534,15 @@ func (c *HydraKratosClient) SessionKey() string {
 
 // GetUserIDFromToken returns the userID from the subject portion of the access token.
 func (c *HydraKratosClient) GetUserIDFromToken(ctx context.Context, token string) (string, error) {
-	params := &hydraAdmin.IntrospectOAuth2TokenParams{
-		Context: ctx,
-		Token:   token,
-	}
-	res, err := c.hydraAdminClient.IntrospectOAuth2Token(params)
+	res, _, err := c.hydraAdminClient.IntrospectOAuth2Token(ctx).Token(token).Execute()
 	if err != nil {
 		return "", err
 	}
 
-	return res.GetPayload().Sub, nil
+	if res.Sub == nil {
+		return "", fmt.Errorf("token introspection returned nil subject")
+	}
+	return *res.Sub, nil
 }
 
 // KratosUserInfo contains the user information format as stored in Kratos.
@@ -570,7 +554,7 @@ type KratosUserInfo struct {
 
 // GetUserInfo returns the UserInfo for the userID.
 func (c *HydraKratosClient) GetUserInfo(ctx context.Context, userID string) (*KratosUserInfo, error) {
-	id, _, err := c.kratosAdminClient.AdminGetIdentity(ctx, userID).Execute()
+	id, _, err := c.kratosAdminClient.GetIdentity(ctx, userID).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -606,8 +590,8 @@ type CreateIdentityResponse struct {
 func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*CreateIdentityResponse, error) {
 	schemaID := viper.GetString("kratos_schema_id")
 
-	body := kratos.NewAdminCreateIdentityBody(schemaID, map[string]interface{}{"email": email})
-	idResp, _, err := c.kratosAdminClient.AdminCreateIdentity(ctx).AdminCreateIdentityBody(*body).Execute()
+	body := kratos.NewCreateIdentityBody(schemaID, map[string]interface{}{"email": email})
+	idResp, _, err := c.kratosAdminClient.CreateIdentity(ctx).CreateIdentityBody(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -630,9 +614,9 @@ type CreateInviteLinkForIdentityResponse struct {
 
 // CreateInviteLinkForIdentity creates a Kratos recovery link for the identity, which can act like a one-time use invitelink.
 func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req *CreateInviteLinkForIdentityRequest) (*CreateInviteLinkForIdentityResponse, error) {
-	body := kratos.NewAdminCreateSelfServiceRecoveryLinkBody(req.AuthProviderID)
+	body := kratos.NewCreateRecoveryLinkForIdentityBody(req.AuthProviderID)
 	body.SetExpiresIn(viper.GetString("kratos_recovery_link_lifetime"))
-	recovery, _, err := c.kratosAdminClient.AdminCreateSelfServiceRecoveryLink(ctx).AdminCreateSelfServiceRecoveryLinkBody(*body).Execute()
+	recovery, _, err := c.kratosAdminClient.CreateRecoveryLinkForIdentity(ctx).CreateRecoveryLinkForIdentityBody(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
