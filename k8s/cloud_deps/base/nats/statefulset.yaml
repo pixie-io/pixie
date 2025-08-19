@@ -238,3 +238,18 @@ spec:
               # the NATS Server to gracefully terminate the client connections.
               #
               command: ["/bin/sh", "-c", "/nats-server -sl=ldm=/var/run/nats/nats.pid && /bin/sleep 60"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10100
+        fsGroup: 10100
+        seccompProfile:
+          type: RuntimeDefault
