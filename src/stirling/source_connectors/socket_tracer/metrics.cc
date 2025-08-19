@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
+#include <tuple>
 #include <utility>
 
 #include <magic_enum.hpp>
@@ -48,7 +49,8 @@ namespace px {
 namespace stirling {
 
 SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
-                                         traffic_protocol_t protocol, ssl_source_t tls_source)
+                                         traffic_protocol_t protocol, ssl_source_t tls_source,
+                                         chunk_t incomplete_chunk, bool lazy_parsing_enabled)
     : data_loss_bytes(
           prometheus::BuildCounter()
               .Name("data_loss_bytes")
@@ -66,31 +68,52 @@ SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
                            .Add({
                                {"protocol", std::string(magic_enum::enum_name(protocol))},
                                {"tls_source", std::string(magic_enum::enum_name(tls_source))},
-                           })) {}
+                           })),
+      unparseable_bytes_before_gap(
+          prometheus::BuildCounter()
+              .Name("unparseable_bytes_before_gap")
+              .Help("Records the number of bytes that were unparseable before the gap of an "
+                    "incomplete chunk i.e. rendered unparseable because of the presence of a"
+                    " gap (even if filled with null bytes) in a contiguous section of the "
+                    "data stream buffer. ")
+              .Register(*registry)
+              .Add({
+                  {"protocol", std::string(magic_enum::enum_name(protocol))},
+                  {"tls_source", std::string(magic_enum::enum_name(tls_source))},
+                  {"incomplete_reason", std::string(magic_enum::enum_name(incomplete_chunk))},
+                  {"lazy_parsing_enabled", lazy_parsing_enabled ? "true" : "false"},
+              })) {}
 
 namespace {
 
-std::unordered_map<metrics_key, std::unique_ptr<SocketTracerMetrics>> g_protocol_metrics;
+using metrics_key = std::tuple<traffic_protocol_t, ssl_source_t, chunk_t, bool>;
+std::map<metrics_key, std::unique_ptr<SocketTracerMetrics>> g_protocol_metrics;
 
-void ResetProtocolMetrics(traffic_protocol_t protocol, ssl_source_t tls_source) {
-  std::pair<traffic_protocol_t, ssl_source_t> key = {protocol, tls_source};
-  g_protocol_metrics.insert_or_assign(
-      key, std::make_unique<SocketTracerMetrics>(&GetMetricsRegistry(), protocol, tls_source));
+void ResetProtocolMetrics(traffic_protocol_t protocol, ssl_source_t tls_source,
+                          chunk_t incomplete_chunk = chunk_t::kFullyFormed,
+                          bool lazy_parsing_enabled = false) {
+  metrics_key key = std::make_tuple(protocol, tls_source, incomplete_chunk, lazy_parsing_enabled);
+  g_protocol_metrics[key] = std::make_unique<SocketTracerMetrics>(
+      &GetMetricsRegistry(), protocol, tls_source, incomplete_chunk, lazy_parsing_enabled);
 }
 }  // namespace
 
 SocketTracerMetrics& SocketTracerMetrics::GetProtocolMetrics(traffic_protocol_t protocol,
-                                                             ssl_source_t tls_source) {
-  std::pair<traffic_protocol_t, ssl_source_t> key = {protocol, tls_source};
+                                                             ssl_source_t tls_source,
+                                                             chunk_t incomplete_chunk,
+                                                             bool lazy_parsing_enabled) {
+  metrics_key key = std::make_tuple(protocol, tls_source, incomplete_chunk, lazy_parsing_enabled);
   if (g_protocol_metrics.find(key) == g_protocol_metrics.end()) {
-    ResetProtocolMetrics(protocol, tls_source);
+    ResetProtocolMetrics(protocol, tls_source, incomplete_chunk, lazy_parsing_enabled);
   }
   return *g_protocol_metrics[key];
 }
 
 void SocketTracerMetrics::TestOnlyResetProtocolMetrics(traffic_protocol_t protocol,
-                                                       ssl_source_t tls_source) {
-  ResetProtocolMetrics(protocol, tls_source);
+                                                       ssl_source_t tls_source,
+                                                       chunk_t incomplete_chunk,
+                                                       bool lazy_parsing_enabled) {
+  ResetProtocolMetrics(protocol, tls_source, incomplete_chunk, lazy_parsing_enabled);
 }
 
 }  // namespace stirling
