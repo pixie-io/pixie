@@ -15,7 +15,7 @@ jobs:
       image-base-name: "dev_image_with_extras"
   build-release:
     name: Build Release
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -188,7 +188,7 @@ jobs:
           --notes $'Pixie CLI Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" linux-artifacts/* macos-artifacts/*
   update-gh-artifacts-manifest:
-    runs-on: oracle-8cpu-32gb-x86-64
+    runs-on: oracle-vm-8cpu-32gb-x86-64
     needs: [get-dev-image, create-github-release]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}

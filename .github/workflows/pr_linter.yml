@@ -13,7 +13,7 @@ jobs:
     with:
       image-base-name: "linter_image"
   run-container-lint:
-    runs-on: oracle-8cpu-32gb-x86-64
+    runs-on: oracle-vm-8cpu-32gb-x86-64
     needs: get-linter-image
     container:
       image: ${{ needs.get-linter-image.outputs.image-with-tag }}
