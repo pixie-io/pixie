@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   analyze-go:
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     permissions:
       actions: read
       contents: read
@@ -28,7 +28,7 @@ jobs:
       with:
         category: "/language:go"
   analyze-python:
-    runs-on: oracle-8cpu-32gb-x86-64
+    runs-on: oracle-vm-8cpu-32gb-x86-64
     permissions:
       actions: read
       contents: read
@@ -42,7 +42,7 @@ jobs:
       with:
         category: "/language:python"
   analyze-javascript:
-    runs-on: oracle-8cpu-32gb-x86-64
+    runs-on: oracle-vm-8cpu-32gb-x86-64
     permissions:
       actions: read
       contents: read
