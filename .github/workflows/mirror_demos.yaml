@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     steps:
     - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v2
       with:
