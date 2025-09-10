@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -106,6 +107,8 @@ func main() {
 		log.WithError(err).Fatal("Failed to create api environment.")
 	}
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 	metrics.MustRegisterMetricsHandlerNoDefaultMetrics(mux)
 

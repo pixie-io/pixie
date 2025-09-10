@@ -51,7 +51,9 @@ ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
     : conn_info_map_(WrappedBCCMap<uint64_t, struct conn_info_t>::Create(bcc, "conn_info_map")),
       conn_disabled_map_(WrappedBCCMap<uint64_t, uint64_t>::Create(bcc, "conn_disabled_map")) {
   std::filesystem::path self_path = GetSelfPath().ValueOrDie();
-  auto elf_reader_or_s = obj_tools::ElfReader::Create(self_path.string());
+  // Opt out of the max file size restriction as this is a self-probe and must attach for
+  // stirling to work.
+  auto elf_reader_or_s = obj_tools::ElfReader::CreateUncapped(self_path.string());
   if (!elf_reader_or_s.ok()) {
     LOG(FATAL) << "Failed to create ElfReader for self probe";
   }

@@ -30,13 +30,12 @@ DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DE
 
 ## Clang deb parameters
 CLANG_VERSION := 15.0
-CLANG_SUFFIX := pl12
+CLANG_SUFFIX := pl13
 
 CLANG_TAG="$(CLANG_VERSION)-$(CLANG_SUFFIX)"
 
 clang_deb_fname := "clang-$(CLANG_TAG).deb"
 clang_linters_deb_fname := "clang-linters-$(CLANG_TAG).deb"
-clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
 CLANG_BUILD_DIR := "$(BUILD_DIR)/clang-$(CLANG_TAG)"
 
@@ -73,47 +72,58 @@ SYSROOT_CREATOR_IMAGE_TAG := sysroot-creator-$(SYSROOT_REV)
 ## Linux image parameters
 LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
 LINUX_HEADER_ASSETS_BUILD_DIR := $(LINUX_HEADER_BUILD_DIR)/assets
-LINUX_KERNEL_VERSIONS := 4.14.304 \
+LINUX_KERNEL_VERSIONS := 4.14.309 \
 	4.15.18 \
 	4.16.18 \
 	4.17.19 \
 	4.18.20 \
-	4.19.271 \
+	4.19.325 \
 	4.20.17 \
 	5.0.21 \
 	5.1.21 \
 	5.2.21 \
 	5.3.18 \
-	5.4.230 \
+	5.4.293 \
 	5.5.19 \
 	5.6.19 \
 	5.7.19 \
 	5.8.18 \
 	5.9.16 \
-	5.10.165 \
+	5.10.237 \
 	5.11.22 \
 	5.12.19 \
 	5.13.19 \
 	5.14.21 \
-	5.15.90 \
+	5.15.181 \
 	5.16.20 \
 	5.17.15 \
 	5.18.19 \
 	5.19.17 \
 	6.0.19 \
-	6.1.8
+	6.1.137 \
+	6.6.89
 
-LINUX_HEADER_X86_64_TEMPLATE := linux-headers-x86_64-%.tar.gz
-LINUX_HEADER_ARM64_TEMPLATE := linux-headers-arm64-%.tar.gz
-LINUX_HEADER_X86_64_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_X86_64_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
-LINUX_HEADER_ARM64_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_ARM64_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
+LINUX_HEADER_TEMPLATE := linux-headers-%.tar.gz
+LINUX_HEADER_X86_64_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, \
+			          $(patsubst %,$(subst x86_64,%,$(LINUX_HEADER_TEMPLATE)), $(addprefix x86_64-,$(LINUX_KERNEL_VERSIONS))))
+
+LINUX_HEADER_ARM64_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, \
+			         $(patsubst %,$(subst arm64,%,$(LINUX_HEADER_TEMPLATE)), $(addprefix arm64-,$(LINUX_KERNEL_VERSIONS))))
+
 LINUX_HEADERS_X86_64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-x86_64-$(LINUX_HEADERS_REV).tar.gz
 LINUX_HEADERS_ARM64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-arm64-$(LINUX_HEADERS_REV).tar.gz
 LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV)
 
 ## NATS image parameters.
-NATS_IMAGE_VERSION := 2.9.19
-nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch"
+NATS_IMAGE_VERSION := 2.9.25
+NATS_IMAGE_REV := pl1
+nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch-$(NATS_IMAGE_REV)"
+
+## Ory image parameters.
+KRATOS_IMAGE_VERSION := 1.3.1
+kratos_image_tag := "ghcr.io/pixie-io/kratos:$(KRATOS_IMAGE_VERSION)-scratch"
+HYDRA_IMAGE_VERSION := 2.3.0
+hydra_image_tag := "ghcr.io/pixie-io/hydra:$(HYDRA_IMAGE_VERSION)-scratch"
 
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
@@ -154,7 +164,6 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(CLANG_BUILD_DIR):/image $(clang_deb_image_tag)
 
 	sha256sum $(CLANG_BUILD_DIR)/* > $(CLANG_BUILD_DIR)/sha256sums
-	gsutil cp $(CLANG_BUILD_DIR)/* $(clang_gs_path)/
 	$(GH_RELEASE_UPLOAD) clang $(CLANG_TAG) $(CLANG_BUILD_DIR)/*
 
 	cat $(CLANG_BUILD_DIR)/sha256sums
@@ -205,26 +214,34 @@ upload_graalvm_archive: build_graalvm_archive_image
 ##############################################
 # Linux Headers Build
 ##############################################
-$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-x86_64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/x86_64_config
+LINUX_HEADERS_BASE_PRE_v6_3 := ubuntu:18.04@sha256:152dc042452c496007f07ca9127571cb9c29697f42acbfad72324b2bb2e43c98
+LINUX_HEADERS_BASE_POST_v6_3 := ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
+$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-%.tar.gz: linux_headers_image/Dockerfile
 ifndef LINUX_HEADERS_REV
 	$(error set LINUX_HEADERS_REV to a valid value)
 endif
 	@mkdir -p $(@D)
-	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
-	$(DOCKER) build --build-arg KERN_VERSION=$* --build-arg ARCH=x86_64 linux_headers_image -t "$${linux_headers_image_tag}" && \
-	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
-
-$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-arm64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/arm64_config
-ifndef LINUX_HEADERS_REV
-	$(error set LINUX_HEADERS_REV to a valid value)
-endif
-	@mkdir -p $(@D)
-	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
-	$(DOCKER) build --build-arg KERN_VERSION=$* \
-		--build-arg ARCH=arm64 \
-		--build-arg CROSS_COMPILE=aarch64-linux-gnu- \
-		linux_headers_image -t "$${linux_headers_image_tag}" && \
-	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
+	# Linux 6.3 and later has differences in the build process.
+	# We need to use a different base image for these versions.
+	ARCH=$$(echo $* | cut -d- -f1); \
+	KVER=$$(echo $* | cut -d- -f2-); \
+	KERN_MAJ=$$(echo $$KVER | cut -d. -f1); \
+	KERN_MIN=$$(echo $$KVER | cut -d. -f2); \
+	BASE_IMAGE=$$(echo $(LINUX_HEADERS_BASE_POST_v6_3)); \
+	if [ $${KERN_MAJ} -lt 6 ] || { [ $${KERN_MAJ} -le 6 ] && [ $${KERN_MIN} -lt 3 ]; }; then \
+		BASE_IMAGE=$$(echo $(LINUX_HEADERS_BASE_PRE_v6_3)); \
+	fi; \
+	CONFIG_FILE=$$(echo linux_headers_image/"$$ARCH"_config); \
+	if [ ! -f $$CONFIG_FILE ]; then \
+		echo "Unsupported ARCH=$$ARCH. Missing $$CONFIG_FILE"; exit 1; \
+	fi; \
+	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$$KVER-$(LINUX_HEADERS_REV)"; \
+	$(DOCKER) build --build-arg BASE_IMAGE=$${BASE_IMAGE} linux_headers_image \
+		-t "$${linux_headers_image_tag}" && \
+	$(DOCKER) run --rm --env ARCH=$$ARCH \
+	              --env KERN_VERSION=$$KVER \
+		      $$( [ "$$ARCH" = "arm64" ] && echo "--env CROSS_COMPILE=aarch64-linux-gnu-" ) \
+		      -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
 
 $(LINUX_HEADERS_X86_64_MERGED_FILE): $(LINUX_HEADER_X86_64_TARGETS)
 	tar -czf $@ -C $(LINUX_HEADER_ASSETS_BUILD_DIR) $(^F)
@@ -262,6 +279,24 @@ build_and_upload_nats_image:
 		--platform linux/amd64,linux/arm64 \
 		--build-arg=NATS_VERSION="v$(NATS_IMAGE_VERSION)" \
 		-t $(nats_image_tag) \
+		--push
+
+.PHONY: build_and_upload_kratos_image
+build_and_upload_kratos_image:
+	$(DOCKER) buildx build kratos_image \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg=KRATOS_VERSION="v$(KRATOS_IMAGE_VERSION)" \
+		--build-arg=BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		-t $(kratos_image_tag) \
+		--push
+
+.PHONY: build_and_upload_hydra_image
+build_and_upload_hydra_image:
+	$(DOCKER) buildx build hydra_image \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg=HYDRA_VERSION="v$(HYDRA_IMAGE_VERSION)" \
+		--build-arg=BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+		-t $(hydra_image_tag) \
 		--push
 
 .PHONY: build_and_upload_copybara_image

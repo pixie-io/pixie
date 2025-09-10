@@ -88,14 +88,14 @@ pl_sh_bpf_test(
     srcs = ["stirling_wrapper_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper)",
-        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_19_grpc_server_with_certs)",
-        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_19_grpc_client)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_24_grpc_server_with_certs)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_24_grpc_client)",
         "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
     ],
     data = [
         "//src/stirling/binaries:stirling_wrapper",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_19_grpc_client",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_19_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_24_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_24_grpc_server_with_certs",
     ] + agent_libs,
     # TODO(PL-1462): Uprobe attaching sometimes fails.
     flaky = True,
@@ -132,13 +132,13 @@ pl_sh_bpf_test(
     srcs = ["stirling_wrapper_container_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper_image.tar)",
-        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_19_grpc_server_with_certs)",
-        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_19_grpc_client)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_24_grpc_server_with_certs)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_24_grpc_client)",
     ],
     data = [
         "//src/stirling/binaries:stirling_wrapper_image.tar",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_19_grpc_client",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_19_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_24_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_24_grpc_server_with_certs",
     ],
     flaky = True,
     tags = [

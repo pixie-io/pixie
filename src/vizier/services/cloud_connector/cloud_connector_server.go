@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -174,6 +175,8 @@ func main() {
 	defer svr.Stop()
 
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	// Set up healthz endpoint.
 	healthz.RegisterDefaultChecks(mux)
 	// Set up readyz endpoint.

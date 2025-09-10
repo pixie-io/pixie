@@ -34,14 +34,14 @@ default['codecov']['sha256'] =
   '8d3709d957c7115610e764621569728be102d213fee15bc1d1aa9d465eb2c258'
 
 default['golang']['download_path'] =
-  'https://go.dev/dl/go1.24.0.darwin-amd64.tar.gz'
+  'https://go.dev/dl/go1.24.6.darwin-amd64.tar.gz'
 default['golang']['sha256'] =
-  '7af054e5088b68c24b3d6e135e5ca8d91bbd5a05cb7f7f0187367b3e6e9e05ee'
+  '4a8d7a32052f223e71faab424a69430455b27b3fff5f4e651f9d97c3e51a8746'
 
 default['golangci-lint']['download_path'] =
-  'https://github.com/golangci/golangci-lint/releases/download/v2.0.2/golangci-lint-2.0.2-darwin-amd64.tar.gz'
+  'https://github.com/golangci/golangci-lint/releases/download/v2.3.1/golangci-lint-2.3.1-darwin-amd64.tar.gz'
 default['golangci-lint']['sha256'] =
-  'a88cbdc86b483fe44e90bf2dcc3fec2af8c754116e6edf0aa6592cac5baa7a0e'
+  '2f4412ffa77cb58ab3a7d065e1fff01ab714bb2b6fa06ad16ed793b6fc8d534d'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v18.16.0/node-v18.16.0-darwin-x64.tar.gz'

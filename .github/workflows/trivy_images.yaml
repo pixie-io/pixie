@@ -47,14 +47,40 @@ jobs:
       # yamllint disable rule:line-length
       run: |
         mkdir -p sarif/${{ matrix.artifact }}
-        ./bazel-bin/k8s/${{ matrix.artifact }}/list_image_bundle | xargs -I{} sh -c 'trivy image {} --format=sarif --output=sarif/${{ matrix.artifact }}/$(basename {} | cut -d":" -f1).sarif'
+        ./bazel-bin/k8s/${{ matrix.artifact }}/list_image_bundle | xargs -I{} sh -c 'trivy image --scanners vuln {} --format=sarif --output=sarif/${{ matrix.artifact }}/$(basename {} | cut -d":" -f1).sarif'
+
+        # TODO(ddelnano): Remove this check once the operator dependency images are supported.
+        # This requires rendering helm templates and requires some additional work.
+        if [ "${{ matrix.artifact }}" = "operator" ]; then
+          echo "Skipping operator image scan for now."
+          exit 0
+        fi
+
+        echo "Found non bazel images for ${{ matrix.artifact }}."
+        ./scripts/bazel_ignore_codes.sh build \
+          //k8s/${{ matrix.artifact }}:${{ matrix.artifact }}_image_list
+
+        mkdir -p sarif/${{ matrix.artifact }}_deps
+        # Ignore images whose basename is "/${{ matrix.artifact }}" to avoid scanning the bazel built images (e.g. /vizier-, /cloud-)
+        # The deps images must have their file named processed differently to avoid conflicts with the image name. For example,
+        # ory/hydra:v1.9.2-alpine and ory/hydra:v1.9.2-sqlite must not conflict.
+        cat ./bazel-bin/k8s/${{ matrix.artifact }}/${{ matrix.artifact }}_image_list.txt | grep -v "\/${{ matrix.artifact }}" | xargs -I{} sh -c 'trivy image --scanners vuln {} --format=sarif --output=sarif/${{ matrix.artifact }}_deps/$(basename {} | cut -d"@" -f1 | tr ":" "_").sarif'
       # yamllint enable rule:line-length
     - run: |
-        for f in "sarif/${{ matrix.artifact }}/"*; do
+        # Loop through all ${artifact} and ${artifact}_deps sarif files
+        for f in "sarif/${{ matrix.artifact }}"*/*; do
           jq '.runs[].tool.driver.name = "trivy-images"' < "$f" > tmp
-          mv tmp "$f"
+          # The runAutomationDetails's object must contain a unique category as required by the CodeQL SARIF uploader
+          # The id value will be interpreted like so: "${category}/${run_id}"
+          filename=$(basename "$f")/
+          jq --arg id "$filename" '.runs[].automationDetails.id = $id' < tmp > "$f"
         done
     - uses: github/codeql-action/upload-sarif@1b549b9259bda1cb5ddde3b41741a82a2d15a841  # v3.28.13
       with:
         sarif_file: sarif/${{ matrix.artifact }}
-        category: trivy-images
+    # TODO(ddelnano): Remove this check once the operator dependency images are supported.
+    # This requires rendering helm templates and requires some additional work.
+    - uses: github/codeql-action/upload-sarif@1b549b9259bda1cb5ddde3b41741a82a2d15a841  # v3.28.13
+      if: ${{ matrix.artifact != 'operator' }}
+      with:
+        sarif_file: sarif/${{ matrix.artifact }}_deps

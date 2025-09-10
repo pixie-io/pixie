@@ -126,7 +126,7 @@ func (r *prometheusRecorderImpl) scrapeFunc(fw *forwarder) func() error {
 				continue
 			}
 			// Only collect counters and gauges for now.
-			if !(mf.GetType() == io_prometheus_client.MetricType_COUNTER || mf.GetType() == io_prometheus_client.MetricType_GAUGE) {
+			if mf.GetType() != io_prometheus_client.MetricType_COUNTER && mf.GetType() != io_prometheus_client.MetricType_GAUGE {
 				continue
 			}
 			for _, m := range mf.GetMetric() {

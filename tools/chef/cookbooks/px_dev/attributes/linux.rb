@@ -33,14 +33,14 @@ default['codecov']['sha256'] =
   '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
 
 default['golang']['download_path'] =
-  'https://go.dev/dl/go1.24.0.linux-amd64.tar.gz'
+  'https://go.dev/dl/go1.24.6.linux-amd64.tar.gz'
 default['golang']['sha256'] =
-  'dea9ca38a0b852a74e81c26134671af7c0fbe65d81b0dc1c5bfe22cf7d4c8858'
+  'bbca37cc395c974ffa4893ee35819ad23ebb27426df87af92e93a9ec66ef8712'
 
 default['golangci-lint']['download_path'] =
-  'https://github.com/golangci/golangci-lint/releases/download/v2.0.2/golangci-lint-2.0.2-linux-amd64.tar.gz'
+  'https://github.com/golangci/golangci-lint/releases/download/v2.3.1/golangci-lint-2.3.1-linux-amd64.tar.gz'
 default['golangci-lint']['sha256'] =
-  '89cc8a7810dc63b9a37900da03e37c3601caf46d42265d774e0f1a5d883d53e2'
+  '57c3a4c56b8363f7f1f695ac957b0bb474aca00c490bc5e949669a6c2ba5c432'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar.xz'

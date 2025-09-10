@@ -20,21 +20,21 @@ spec:
     http:
       paths:
       - path: /px.services.(.*)
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: vzconn-service
             port:
               number: 51600
       - path: /px.cloudapi.(.*)
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: api-service
             port:
               number: 51200
       - path: /px.api.(.*)
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: cloud-proxy-service
@@ -44,21 +44,21 @@ spec:
     http:
       paths:
       - path: /px.services.(.*)
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: vzconn-service
             port:
               number: 51600
       - path: /px.cloudapi.(.*)
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: api-service
             port:
               number: 51200
       - path: /px.api.(.*)
-        pathType: Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: cloud-proxy-service

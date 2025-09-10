@@ -175,6 +175,15 @@ StatusOr<int64_t> SpaceAvailableInBytes(const std::filesystem::path& path) {
   return si.available;
 }
 
+StatusOr<std::uintmax_t> GetFileSize(const std::string& binary_path) {
+  PX_ASSIGN_OR_RETURN(const auto stat, fs::Stat(binary_path));
+  if (stat.st_size < 0) {
+    return error::Internal("stat() returned negative file size $0 for file $1", stat.st_size,
+                           binary_path);
+  }
+  return stat.st_size;
+}
+
 StatusOr<bool> IsEmpty(const std::filesystem::path& f) {
   std::error_code ec;
   bool val = std::filesystem::is_empty(f, ec);

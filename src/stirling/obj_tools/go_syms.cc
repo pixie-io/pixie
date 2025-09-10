@@ -19,8 +19,6 @@
 #include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/utils/binary_decoder.h"
 
-#include <utility>
-
 namespace px {
 namespace stirling {
 namespace obj_tools {
@@ -70,11 +68,142 @@ StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uin
   return std::string(go_version_bytecode);
 }
 
+// Reads the Go version from the runtime.buildVersion symbol in the binary's data section.
+// This function serves as a fallback for older Go binaries (Go 1.11 and earlier) that don't
+// have the .go.buildinfo section. It extracts the version string from the runtime.buildVersion
+// symbol and strips the "go" prefix to return just the semantic version (e.g., "1.11.13").
+// Note: This function does not work correctly with 32-bit binaries due to gostring structure
+// size differences (see https://github.com/pixie-io/pixie/issues/1300).
+// See https://github.com/pixie-io/pixie/issues/1318 for context.
+StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_reader) {
+  BuildInfo build_info;
+  PX_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,
+                      elf_reader->SearchTheOnlySymbol(kGoBuildVersionSymbol));
+
+  // The address of this symbol points to a Golang string object.
+  // But the size is for the symbol table entry, not this string object.
+  symbol.size = sizeof(gostring);
+  PX_ASSIGN_OR_RETURN(utils::u8string version_code, elf_reader->SymbolByteCode(".data", symbol));
+
+  // We can't guarantee the alignment on version_string so we make a copy into an aligned address.
+  gostring version_string;
+  std::memcpy(&version_string, version_code.data(), sizeof(version_string));
+
+  ElfReader::SymbolInfo version_symbol;
+  version_symbol.address = reinterpret_cast<uint64_t>(version_string.ptr);
+  version_symbol.size = version_string.len;
+
+  PX_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
+  // Strip go prefix from the version string.
+  if (str.size() >= 2 &&
+      str.substr(0, 2) == utils::u8string(reinterpret_cast<const unsigned char*>("go"), 2)) {
+    str.erase(0, 2);  // Remove "go" from the beginning
+  }
+  return std::make_pair(std::string(reinterpret_cast<const char*>(str.data()), str.size()),
+                        std::move(build_info));
+}
+
+// Extracts the semantic version from a Go version string (e.g., "go1.20.3").
+// This is how the version is formatted in the buildinfo header.
+StatusOr<std::string> ExtractSemVer(const std::string& input) {
+  size_t go_pos = input.find("go");  // Find "go"
+  if (go_pos == std::string::npos) {
+    LOG(ERROR) << "Prefix 'go' not found in input.";
+    return error::NotFound("Prefix 'go' not found in input.");
+  }
+
+  size_t start = go_pos + 2;            // Move past "go"
+  size_t end = input.find(" ", start);  // Find space delimiter after version
+  if (end == std::string::npos) {
+    end = input.size();  // If no space, take the rest of the string
+  }
+
+  return input.substr(start, end - start);
+}
+
+// This is modeled after go's runtime/debug package
+// https://github.com/golang/go/blob/93fb2c90740aef00553c9ce6a7cd4578c2469675/src/runtime/debug/mod.go#L158
+StatusOr<BuildInfo> ReadModInfo(const std::string& mod) {
+  BuildInfo build_info;
+  Module* last_module = nullptr;
+
+  for (std::string_view line : absl::StrSplit(mod, '\n')) {
+    if (absl::StartsWith(line, "path\t")) {
+      build_info.path = line.substr(5);
+    } else if (absl::StartsWith(line, "mod\t")) {
+      std::vector<std::string_view> mod_parts = absl::StrSplit(line.substr(4), '\t');
+
+      // The sum is optional, so each line must have either 2 or 3 parts.
+      auto size = mod_parts.size();
+      if (size != 2 && size != 3) {
+        return error::InvalidArgument(absl::Substitute("Invalid mod line format: $0", line));
+      }
+      build_info.main.path = mod_parts[0];
+      build_info.main.version = mod_parts[1];
+      if (size == 3) {
+        build_info.main.sum = mod_parts[2];
+      }
+      VLOG(2) << absl::Substitute("mod.path=$0, mod.version=$1, mod.sum=$2", build_info.main.path,
+                                  build_info.main.version, build_info.main.sum);
+      last_module = &build_info.main;
+    } else if (absl::StartsWith(line, "dep\t")) {
+      std::vector<std::string_view> dep_parts = absl::StrSplit(line.substr(4), '\t');
+
+      // The sum is optional, so each line must have either 2 or 3 parts.
+      auto size = dep_parts.size();
+      if (size != 2 && size != 3) {
+        return error::InvalidArgument(absl::Substitute("Invalid dep line format: $0", line));
+      }
+      Module dep;
+      dep.path = dep_parts[0];
+      dep.version = dep_parts[1];
+      if (size == 3) {
+        dep.sum = dep_parts[2];
+      }
+
+      build_info.deps.push_back(std::move(dep));
+      last_module = &build_info.deps.back();
+
+      VLOG(2) << absl::Substitute("dep.path=$0, dep.version=$1, dep.sum=$2", dep.path, dep.version,
+                                  dep.sum);
+
+    } else if (absl::StartsWith(line, "=>\t")) {
+      if (last_module == nullptr) {
+        return error::InvalidArgument(
+            "Unexpected module replacement line with no preceding module.");
+      }
+      std::vector<std::string_view> replace_parts = absl::StrSplit(line.substr(3), '\t');
+
+      if (replace_parts.size() != 3) {
+        return error::InvalidArgument(
+            absl::Substitute("Invalid module replacement line format: $0", line));
+      }
+
+      std::unique_ptr<Module> replacement = std::make_unique<Module>();
+      replacement->path = replace_parts[0];
+      replacement->version = replace_parts[1];
+      replacement->sum = replace_parts[2];
+      last_module->replace = std::move(replacement);
+    }
+    // TODO(ddelnano): Handle the build flags line in the future
+    // (https://github.com/golang/go/blob/93fb2c90740aef00553c9ce6a7cd4578c2469675/src/runtime/debug/mod.go#L171).
+    // This is omitted for now since it doesn't help with Go uprobes.
+  }
+  return build_info;
+}
+
 // Reads the buildinfo header embedded in the .go.buildinfo ELF section in order to determine the go
 // toolchain version. This function emulates what the go version cli performs as seen
 // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L151-L221
-StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
-  PX_ASSIGN_OR_RETURN(ELFIO::section * section, elf_reader->SectionWithName(kGoBuildInfoSection));
+StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reader) {
+  auto build_info_section_s = elf_reader->SectionWithName(kGoBuildInfoSection);
+
+  if (!build_info_section_s.ok()) {
+    // If the section is not found, it means that the binary is either not a Go binary or it was
+    // built with an older version of Go that does not include the .go.buildinfo section.
+    return ReadBuildVersion(elf_reader);
+  }
+  auto section = build_info_section_s.ConsumeValueOrDie();
   int offset = section->get_offset();
   PX_ASSIGN_OR_RETURN(std::string_view buildInfoByteCode,
                       elf_reader->BinaryByteCode<char>(offset, 64 * 1024));
@@ -85,6 +214,9 @@ StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
   PX_ASSIGN_OR_RETURN(uint8_t ptr_size, binary_decoder.ExtractBEInt<uint8_t>());
   PX_ASSIGN_OR_RETURN(uint8_t endianness, binary_decoder.ExtractBEInt<uint8_t>());
 
+  BuildInfo build_info;
+  std::string go_version;
+  std::string mod_info;
   // If the endianness has its second bit set, then the go version immediately follows the 32 bit
   // header specified by the varint encoded string data
   if ((endianness & 0x2) != 0) {
@@ -92,56 +224,80 @@ StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
     PX_CHECK_OK(binary_decoder.ExtractBufIgnore(16));
 
     PX_ASSIGN_OR_RETURN(uint64_t size, binary_decoder.ExtractUVarInt());
-    PX_ASSIGN_OR_RETURN(std::string_view go_version, binary_decoder.ExtractString(size));
-    return std::string(go_version);
+    PX_ASSIGN_OR_RETURN(go_version, binary_decoder.ExtractString(size));
+
+    PX_ASSIGN_OR_RETURN(uint64_t mod_size, binary_decoder.ExtractUVarInt());
+    PX_ASSIGN_OR_RETURN(mod_info, binary_decoder.ExtractString(mod_size));
+  } else {
+    read_ptr_func_t read_ptr;
+    switch (endianness) {
+      case 0x0: {
+        if (ptr_size == 4) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::LEndianBytesToInt<uint32_t, 4>(str_view);
+          };
+        } else if (ptr_size == 8) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::LEndianBytesToInt<uint64_t, 8>(str_view);
+          };
+        } else {
+          return error::NotFound(absl::Substitute(
+              "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
+        }
+        break;
+      }
+      case 0x1:
+        if (ptr_size == 4) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::BEndianBytesToInt<uint64_t, 4>(str_view);
+          };
+        } else if (ptr_size == 8) {
+          read_ptr = [&](u8string_view str_view) {
+            return utils::BEndianBytesToInt<uint64_t, 8>(str_view);
+          };
+        } else {
+          return error::NotFound(absl::Substitute(
+              "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
+        }
+        break;
+      default: {
+        auto msg =
+            absl::Substitute("Invalid endianness=$0, refusing to parse non go binary", endianness);
+        DCHECK(false) << msg;
+        return error::NotFound(msg);
+      }
+    }
+
+    // Reads the virtual address location of the runtime.buildVersion symbol.
+    PX_ASSIGN_OR_RETURN(auto runtime_version_vaddr,
+                        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
+    PX_ASSIGN_OR_RETURN(auto mod_info_vaddr,
+                        binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
+    PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
+                        elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
+
+    PX_ASSIGN_OR_RETURN(go_version, ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr));
+
+    auto mod_ptr_addr_s = elf_reader->VirtualAddrToBinaryAddr(read_ptr(mod_info_vaddr));
+    if (mod_ptr_addr_s.ok()) {
+      PX_ASSIGN_OR_RETURN(mod_info, ReadGoString(elf_reader, ptr_size,
+                                                 mod_ptr_addr_s.ConsumeValueOrDie(), read_ptr));
+    }
   }
 
-  read_ptr_func_t read_ptr;
-  switch (endianness) {
-    case 0x0: {
-      if (ptr_size == 4) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::LEndianBytesToInt<uint32_t, 4>(str_view);
-        };
-      } else if (ptr_size == 8) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::LEndianBytesToInt<uint64_t, 8>(str_view);
-        };
-      } else {
-        return error::NotFound(absl::Substitute(
-            "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
-      }
-      break;
-    }
-    case 0x1:
-      if (ptr_size == 4) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::BEndianBytesToInt<uint64_t, 4>(str_view);
-        };
-      } else if (ptr_size == 8) {
-        read_ptr = [&](u8string_view str_view) {
-          return utils::BEndianBytesToInt<uint64_t, 8>(str_view);
-        };
-      } else {
-        return error::NotFound(absl::Substitute(
-            "Binary reported pointer size=$0, refusing to parse non go binary", ptr_size));
-      }
-      break;
-    default: {
-      auto msg =
-          absl::Substitute("Invalid endianness=$0, refusing to parse non go binary", endianness);
-      DCHECK(false) << msg;
-      return error::NotFound(msg);
+  auto mod_size = mod_info.size();
+  if (mod_size > 0) {
+    // The module info string is delimited by the sentinel strings cmd/go/internal/modload.infoStart
+    // and infoEnd. These strings are 16 characters long, so first check that the module info
+    // contains more than the sentinel strings. This check reflects upstream's implementation
+    // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L214-L215
+    if (mod_size >= 33 && mod_info.at(mod_size - 17) == '\n') {
+      mod_info.erase(0, 16);
+      PX_ASSIGN_OR_RETURN(build_info, ReadModInfo(mod_info));
     }
   }
-
-  // Reads the virtual address location of the runtime.buildVersion symbol.
-  PX_ASSIGN_OR_RETURN(auto runtime_version_vaddr,
-                      binary_decoder.ExtractString<u8string_view::value_type>(ptr_size));
-  PX_ASSIGN_OR_RETURN(uint64_t ptr_addr,
-                      elf_reader->VirtualAddrToBinaryAddr(read_ptr(runtime_version_vaddr)));
-
-  return ReadGoString(elf_reader, ptr_size, ptr_addr, read_ptr);
+  PX_ASSIGN_OR_RETURN(auto s, ExtractSemVer(go_version));
+  return std::make_pair(s, std::move(build_info));
 }
 
 // Prefixes used to search for itable symbols in the binary. Follows the format:

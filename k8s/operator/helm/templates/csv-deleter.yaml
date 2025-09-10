@@ -15,7 +15,7 @@ spec:
       serviceAccountName: olm-operator-serviceaccount
       containers:
         - name: trigger-csv-finalizer
-          image: ghcr.io/pixie-io/pixie-oss-pixie-dev-public-curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
+          image: ghcr.io/pixie-io/pixie-oss-pixie-dev-public-curl:8.15.0@sha256:4026b29997dc7c823b51c164b71e2b51e0fd95cce4601f78202c513d97da2922
           command:
             - /bin/sh
             - -c
