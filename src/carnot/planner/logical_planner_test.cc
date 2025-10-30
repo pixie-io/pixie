@@ -1049,7 +1049,7 @@ constexpr char kClickHouseSourceQuery[] = R"pxl(
 import px
 
 # Test ClickHouse source node functionality
-df = px.DataFrame('http_events', start_time='-10m', end_time='-5m', clickhouse=True)
+df = px.DataFrame('http_events', start_time='-10m', end_time='-5m', clickhouse_dsn='default:test_password@localhost:9000/default')
 df = df['time_', 'req_headers']
 px.display(df, 'clickhouse_data')
 )pxl";

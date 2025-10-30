@@ -36,8 +36,10 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf/registry.h"
+#include "src/common/event/time_system.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -64,6 +66,20 @@ class ClickHouseExportSinkNodeTest : public ::testing::Test {
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
         MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
+
+    // Create a minimal agent metadata state for test execution
+    auto metadata_state = std::make_shared<md::AgentMetadataState>(
+        "test_host",      // hostname
+        1,                // asid
+        getpid(),         // pid
+        0,                // start_time
+        sole::uuid4(),    // agent_id
+        "",               // pod_name
+        sole::uuid4(),    // vizier_id
+        "test_vizier",    // vizier_name
+        "",               // vizier_namespace
+        time_system_.get()); // time_system
+    exec_state_->set_metadata_state(metadata_state);
 
     // Start ClickHouse container
     clickhouse_server_ =
@@ -224,6 +240,7 @@ class ClickHouseExportSinkNodeTest : public ::testing::Test {
   std::unique_ptr<clickhouse::Client> client_;
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<udf::Registry> func_registry_;
+  std::unique_ptr<event::TimeSystem> time_system_ = std::make_unique<event::RealTimeSystem>();
 };
 
 TEST_F(ClickHouseExportSinkNodeTest, BasicExport) {

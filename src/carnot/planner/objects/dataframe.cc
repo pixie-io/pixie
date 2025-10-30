@@ -32,10 +32,79 @@
 #include "src/carnot/planner/objects/time.h"
 #include "src/common/base/statusor.h"
 
+#include <absl/strings/str_split.h>
+#include <absl/strings/numbers.h>
+
 namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
+
+struct ClickHouseDSN {
+  std::string host = "localhost";
+  int port = 9000;
+  std::string username = "default";
+  std::string password = "";
+  std::string database = "default";
+};
+
+/**
+ * @brief Parse a ClickHouse DSN string
+ *
+ * Supports formats:
+ *   clickhouse://user:password@host:port/database
+ *   user:password@host:port/database
+ *   host:port
+ *   host
+ */
+StatusOr<ClickHouseDSN> ParseClickHouseDSN(const std::string& dsn_str) {
+  ClickHouseDSN dsn;
+  std::string remaining = dsn_str;
+
+  // Strip clickhouse:// prefix if present
+  if (absl::StartsWith(remaining, "clickhouse://")) {
+    remaining = remaining.substr(13);
+  }
+
+  // Parse user:password@ if present
+  size_t at_pos = remaining.find('@');
+  if (at_pos != std::string::npos) {
+    std::string auth_part = remaining.substr(0, at_pos);
+    remaining = remaining.substr(at_pos + 1);
+
+    size_t colon_pos = auth_part.find(':');
+    if (colon_pos != std::string::npos) {
+      dsn.username = auth_part.substr(0, colon_pos);
+      dsn.password = auth_part.substr(colon_pos + 1);
+    } else {
+      dsn.username = auth_part;
+    }
+  }
+
+  // Parse host:port/database
+  size_t slash_pos = remaining.find('/');
+  std::string host_port;
+  if (slash_pos != std::string::npos) {
+    host_port = remaining.substr(0, slash_pos);
+    dsn.database = remaining.substr(slash_pos + 1);
+  } else {
+    host_port = remaining;
+  }
+
+  // Parse host:port
+  size_t colon_pos = host_port.find(':');
+  if (colon_pos != std::string::npos) {
+    dsn.host = host_port.substr(0, colon_pos);
+    std::string port_str = host_port.substr(colon_pos + 1);
+    if (!absl::SimpleAtoi(port_str, &dsn.port)) {
+      return error::InvalidArgument("Invalid port in ClickHouse DSN: $0", port_str);
+    }
+  } else if (!host_port.empty()) {
+    dsn.host = host_port;
+  }
+
+  return dsn;
+}
 
 StatusOr<std::shared_ptr<Dataframe>> GetAsDataFrame(QLObjectPtr obj) {
   if (!Dataframe::IsDataframe(obj)) {
@@ -119,8 +188,20 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
   std::string table_name = table->str();
 
   // Check if we should use ClickHouse or memory source
-  PX_ASSIGN_OR_RETURN(BoolIR * use_clickhouse, GetArgAs<BoolIR>(ast, args, "clickhouse"));
-  bool is_clickhouse = use_clickhouse->val();
+  bool is_clickhouse = false;
+  ClickHouseDSN dsn;
+  std::string timestamp_column = "event_time";
+  if (!NoneObject::IsNoneObject(args.GetArg("clickhouse_dsn"))) {
+    is_clickhouse = true;
+    PX_ASSIGN_OR_RETURN(StringIR * dsn_ir, GetArgAs<StringIR>(ast, args, "clickhouse_dsn"));
+    PX_ASSIGN_OR_RETURN(dsn, ParseClickHouseDSN(dsn_ir->str()));
+
+    // Get timestamp column if specified
+    if (!NoneObject::IsNoneObject(args.GetArg("clickhouse_ts_col"))) {
+      PX_ASSIGN_OR_RETURN(StringIR * ts_col_ir, GetArgAs<StringIR>(ast, args, "clickhouse_ts_col"));
+      timestamp_column = ts_col_ir->str();
+    }
+  }
 
   if (is_clickhouse) {
     // Create ClickHouseSourceIR
@@ -141,7 +222,10 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
     // If columns is empty, select_all() will be true and ResolveType will handle adding all columns
 
     PX_ASSIGN_OR_RETURN(ClickHouseSourceIR * clickhouse_source_op,
-                        graph->CreateNode<ClickHouseSourceIR>(ast, table_name, clickhouse_columns));
+                        graph->CreateNode<ClickHouseSourceIR>(ast, table_name, clickhouse_columns,
+                                                              dsn.host, dsn.port, dsn.username,
+                                                              dsn.password, dsn.database,
+                                                              timestamp_column));
 
     if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
       PX_ASSIGN_OR_RETURN(ExpressionIR * start_time,
@@ -475,8 +559,8 @@ Status Dataframe::Init() {
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> constructor_fn,
       FuncObject::Create(
-          name(), {"table", "select", "start_time", "end_time", "clickhouse"},
-          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}, {"clickhouse", "False"}},
+          name(), {"table", "select", "start_time", "end_time", "clickhouse_dsn", "clickhouse_ts_col"},
+          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}, {"clickhouse_dsn", "None"}, {"clickhouse_ts_col", "None"}},
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(&DataFrameConstructor, compiler_state_, graph(), std::placeholders::_1,

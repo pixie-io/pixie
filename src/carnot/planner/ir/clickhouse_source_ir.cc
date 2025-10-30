@@ -34,12 +34,12 @@ Status ClickHouseSourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_clickhouse_source_op();
   op->set_op_type(planpb::CLICKHOUSE_SOURCE_OPERATOR);
 
-  // TODO(ddelnano): Set ClickHouse connection parameters from config
-  pb->set_host("localhost");
-  pb->set_port(9000);
-  pb->set_username("default");
-  pb->set_password("test_password");
-  pb->set_database("default");
+  // Set ClickHouse connection parameters from stored values
+  pb->set_host(host_);
+  pb->set_port(port_);
+  pb->set_username(username_);
+  pb->set_password(password_);
+  pb->set_database(database_);
 
   // Build the query
   pb->set_query(absl::Substitute("SELECT * FROM $0", table_name_));
@@ -68,18 +68,27 @@ Status ClickHouseSourceIR::ToProto(planpb::Operator* op) const {
   // Set batch size
   pb->set_batch_size(1024);
 
-  // Set default timestamp and partition columns (can be configured later)
-  // TODO(ddelnano): This needs to be set properly.
-  pb->set_timestamp_column("event_time");
+  // Set timestamp and partition columns from stored values
+  pb->set_timestamp_column(timestamp_column_);
   pb->set_partition_column("hostname");
 
   return Status::OK();
 }
 
 Status ClickHouseSourceIR::Init(const std::string& table_name,
-                                const std::vector<std::string>& select_columns) {
+                                const std::vector<std::string>& select_columns,
+                                const std::string& host, int port,
+                                const std::string& username, const std::string& password,
+                                const std::string& database,
+                                const std::string& timestamp_column) {
   table_name_ = table_name;
   column_names_ = select_columns;
+  host_ = host;
+  port_ = port;
+  username_ = username;
+  password_ = password;
+  database_ = database;
+  timestamp_column_ = timestamp_column;
   return Status::OK();
 }
 
@@ -154,28 +163,18 @@ StatusOr<types::DataType> ClickHouseSourceIR::ClickHouseTypeToPixieType(
 StatusOr<table_store::schema::Relation> ClickHouseSourceIR::InferRelationFromClickHouse(
     CompilerState* compiler_state, const std::string& table_name) {
   // Check if ClickHouse config is available
+  // TODO(ddelnano): Add this check in when the configuration plumbing is done.
   auto* ch_config = compiler_state->clickhouse_config();
   PX_UNUSED(ch_config);
-  // TODO(ddelnano): Add this check in when the configuration plumbing is done.
-  /* if (ch_config == nullptr) { */
-  /*   return error::Internal( */
-  /*       "ClickHouse config not available in compiler state. Cannot infer schema for table '$0'.", */
-  /*       table_name); */
-  /* } */
 
-  // Set up ClickHouse client options
-  std::string host = true ? "localhost" : ch_config->host();
-  int port = true ? 9000 : ch_config->port();
-  std::string username = true ? "default" : ch_config->username();
-  std::string password = true ? "test_password" : ch_config->password();
-  std::string database = true ? "default" : ch_config->database();
+  // Use stored connection parameters from Init()
 
   clickhouse::ClientOptions options;
-  options.SetHost(host);
-  options.SetPort(port);
-  options.SetUser(username);
-  options.SetPassword(password);
-  options.SetDefaultDatabase(database);
+  options.SetHost(host_);
+  options.SetPort(port_);
+  options.SetUser(username_);
+  options.SetPassword(password_);
+  options.SetDefaultDatabase(database_);
 
   // Create ClickHouse client
   std::unique_ptr<clickhouse::Client> client;
@@ -183,7 +182,7 @@ StatusOr<table_store::schema::Relation> ClickHouseSourceIR::InferRelationFromCli
     client = std::make_unique<clickhouse::Client>(options);
   } catch (const std::exception& e) {
     return error::Internal("Failed to connect to ClickHouse at $0:$1 - $2",
-                          host, port, e.what());
+                          host_, port_, e.what());
   }
 
   // Query ClickHouse for table schema using DESCRIBE TABLE

@@ -48,11 +48,26 @@ class ClickHouseSourceIR : public OperatorIR {
    *
    * @param table_name the table to load.
    * @param select_columns the columns to select. If vector is empty, then select all columns.
+   * @param host the ClickHouse server host.
+   * @param port the ClickHouse server port.
+   * @param username the ClickHouse username.
+   * @param password the ClickHouse password.
+   * @param database the ClickHouse database.
    * @return Status
    */
-  Status Init(const std::string& table_name, const std::vector<std::string>& select_columns);
+  Status Init(const std::string& table_name, const std::vector<std::string>& select_columns,
+              const std::string& host = "localhost", int port = 9000,
+              const std::string& username = "default", const std::string& password = "",
+              const std::string& database = "default",
+              const std::string& timestamp_column = "event_time");
 
   std::string table_name() const { return table_name_; }
+  std::string host() const { return host_; }
+  int port() const { return port_; }
+  std::string username() const { return username_; }
+  std::string password() const { return password_; }
+  std::string database() const { return database_; }
+  std::string timestamp_column() const { return timestamp_column_; }
 
   void SetTimeStartNS(int64_t time_start_ns) { time_start_ns_ = time_start_ns; }
   void SetTimeStopNS(int64_t time_stop_ns) { time_stop_ns_ = time_stop_ns; }
@@ -102,6 +117,16 @@ class ClickHouseSourceIR : public OperatorIR {
 
  private:
   std::string table_name_;
+
+  // ClickHouse connection parameters
+  std::string host_ = "localhost";
+  int port_ = 9000;
+  std::string username_ = "default";
+  std::string password_ = "";
+  std::string database_ = "default";
+
+  // ClickHouse column configuration
+  std::string timestamp_column_ = "event_time";
 
   std::optional<int64_t> time_start_ns_;
   std::optional<int64_t> time_stop_ns_;
