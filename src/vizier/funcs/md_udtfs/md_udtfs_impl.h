@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <absl/numeric/int128.h>
+#include <clickhouse/client.h>
 #include <grpcpp/grpcpp.h>
 #include <magic_enum.hpp>
 
@@ -1217,6 +1218,249 @@ class GetCronScriptHistory final : public carnot::udf::UDTF<GetCronScriptHistory
   std::unique_ptr<px::vizier::services::metadata::GetAllExecutionResultsResponse> resp_;
   std::shared_ptr<CronScriptStoreStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
+};
+
+namespace clickhouse_schema {
+
+/**
+ * Maps Pixie DataType to ClickHouse type string.
+ * Based on the mapping used in carnot_executable.cc for http_events table.
+ */
+inline std::string PixieTypeToClickHouseType(types::DataType pixie_type,
+                                              const std::string& column_name) {
+  switch (pixie_type) {
+    case types::DataType::INT64:
+      return "Int64";
+    case types::DataType::FLOAT64:
+      return "Float64";
+    case types::DataType::STRING:
+      return "String";
+    case types::DataType::BOOLEAN:
+      return "UInt8";
+    case types::DataType::TIME64NS:
+      // Use DateTime64(9) for time_ column (nanoseconds)
+      // Use DateTime64(3) for event_time column (milliseconds)
+      if (column_name == "time_") {
+        return "DateTime64(9)";
+      } else if (column_name == "event_time") {
+        return "DateTime64(3)";
+      }
+      // Default to DateTime64(9) for other time columns
+      return "DateTime64(9)";
+    case types::DataType::UINT128:
+      // ClickHouse doesn't have native UINT128, use String representation (high:low format)
+      return "String";
+    default:
+      return "String";  // Fallback to String for unsupported types
+  }
+}
+
+}  // namespace clickhouse_schema
+
+/**
+ * This UDTF creates ClickHouse schemas from Pixie DataTable schemas.
+ * It fetches table schemas from MDS and creates corresponding tables in ClickHouse.
+ */
+class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseSchemas> {
+ public:
+  using MDSStub = vizier::services::metadata::MetadataService::Stub;
+  using SchemaResponse = vizier::services::metadata::SchemaResponse;
+
+  CreateClickHouseSchemas() = delete;
+  CreateClickHouseSchemas(std::shared_ptr<MDSStub> stub,
+                          std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("table_name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The name of the table"),
+                     ColInfo("status", types::DataType::STRING, types::PatternType::GENERAL,
+                             "Status of the table creation (success/error)"),
+                     ColInfo("message", types::DataType::STRING, types::PatternType::GENERAL,
+                             "Additional information or error message"));
+  }
+
+  static constexpr auto InitArgs() {
+    return MakeArray(
+        UDTFArg::Make<types::DataType::STRING>("host", "ClickHouse server host", "'localhost'"),
+        UDTFArg::Make<types::DataType::INT64>("port", "ClickHouse server port", 9000),
+        UDTFArg::Make<types::DataType::STRING>("username", "ClickHouse username", "'default'"),
+        UDTFArg::Make<types::DataType::STRING>("password", "ClickHouse password", "'test_password'"),
+        UDTFArg::Make<types::DataType::STRING>("database", "ClickHouse database", "'default'"),
+        UDTFArg::Make<types::BOOLEAN>("use_if_not_exists", "Whether to use IF NOT EXISTS in CREATE TABLE statements", true));
+  }
+
+  Status Init(FunctionContext*, types::StringValue host, types::Int64Value port,
+              types::StringValue username, types::StringValue password,
+              types::StringValue database, types::BoolValue use_if_not_exists) {
+    // Store ClickHouse connection parameters
+    host_ = std::string(host);
+    port_ = port.val;
+    username_ = std::string(username);
+    password_ = std::string(password);
+    database_ = std::string(database);
+    use_if_not_exists_ = use_if_not_exists.val;
+
+    // Fetch schemas from MDS
+    px::vizier::services::metadata::SchemaRequest req;
+    px::vizier::services::metadata::SchemaResponse resp;
+
+    grpc::ClientContext ctx;
+    add_context_authentication_func_(&ctx);
+    auto s = stub_->GetSchemas(&ctx, req, &resp);
+    if (!s.ok()) {
+      return error::Internal("Failed to make RPC call to metadata service: $0",
+                             s.error_message());
+    }
+
+    // Connect to ClickHouse
+    clickhouse::ClientOptions client_options;
+    client_options.SetHost(host_);
+    client_options.SetPort(port_);
+    client_options.SetUser(username_);
+    client_options.SetPassword(password_);
+    client_options.SetDefaultDatabase(database_);
+
+    try {
+      clickhouse_client_ = std::make_unique<clickhouse::Client>(client_options);
+      // Test connection
+      clickhouse_client_->Execute("SELECT 1");
+    } catch (const std::exception& e) {
+      return error::Internal("Failed to connect to ClickHouse at $0:$1 - $2",
+                             host_, port_, e.what());
+    }
+
+    for (const auto& [table_name, rel] : resp.schema().relation_map()) {
+      TableResult result;
+      result.table_name = table_name;
+
+      // Check if table has a time_ column (required for partitioning)
+      bool has_time_column = false;
+      for (const auto& col : rel.columns()) {
+        if (col.column_name() == "time_" &&
+            col.column_type() == types::DataType::TIME64NS) {
+          has_time_column = true;
+          break;
+        }
+      }
+
+      if (!has_time_column) {
+        result.status = "skipped";
+        result.message = "Table does not have a time_ TIME64NS column, skipping";
+        results_.push_back(result);
+        continue;
+      }
+
+      // Generate CREATE TABLE statement
+      std::string create_table_sql = GenerateCreateTableSQL(table_name, rel, use_if_not_exists_);
+
+      // Execute the CREATE TABLE
+      try {
+        // Drop existing table if not using IF NOT EXISTS
+        if (!use_if_not_exists_) {
+          clickhouse_client_->Execute(absl::Substitute("DROP TABLE IF EXISTS $0", table_name));
+        }
+
+        // Create new table
+        clickhouse_client_->Execute(create_table_sql);
+
+        result.status = "success";
+        result.message = "Table created successfully";
+      } catch (const std::exception& e) {
+        result.status = "error";
+        result.message = absl::Substitute("Failed to create table: $0", e.what());
+      }
+
+      results_.push_back(result);
+    }
+
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    if (idx_ >= static_cast<int>(results_.size())) {
+      return false;
+    }
+
+    const auto& result = results_[idx_];
+    rw->Append<IndexOf("table_name")>(result.table_name);
+    rw->Append<IndexOf("status")>(result.status);
+    rw->Append<IndexOf("message")>(result.message);
+
+    idx_++;
+    return idx_ < static_cast<int>(results_.size());
+  }
+
+ private:
+  struct TableResult {
+    std::string table_name;
+    std::string status;
+    std::string message;
+  };
+
+  /**
+   * Generates a CREATE TABLE SQL statement for ClickHouse based on Pixie table schema.
+   * Follows the pattern from carnot_executable.cc:
+   * - Maps Pixie types to ClickHouse types
+   * - Adds hostname String column
+   * - Adds event_time DateTime64(3) column
+   * - Uses ENGINE = MergeTree()
+   * - Uses PARTITION BY toYYYYMM(event_time)
+   * - Uses ORDER BY (hostname, event_time)
+   */
+  std::string GenerateCreateTableSQL(const std::string& table_name,
+                                      const px::table_store::schemapb::Relation& schema,
+                                      bool use_if_not_exists) {
+    std::vector<std::string> column_defs;
+
+    // Add columns from schema
+    for (const auto& col : schema.columns()) {
+      std::string column_name = col.column_name();
+      if (column_name == "event_time" || column_name == "hostname") {
+        // event_time and hostname are added separately
+        continue;
+      }
+      std::string clickhouse_type = clickhouse_schema::PixieTypeToClickHouseType(
+          col.column_type(), column_name);
+      column_defs.push_back(absl::Substitute("$0 $1", column_name, clickhouse_type));
+    }
+
+    // Add hostname column
+    column_defs.push_back("hostname String");
+
+    // Add event_time column for partitioning (will be populated from time_ column)
+    column_defs.push_back("event_time DateTime64(3)");
+
+    // Build the CREATE TABLE statement
+    std::string columns_str = absl::StrJoin(column_defs, ",\n        ");
+
+    std::string if_not_exists_clause = use_if_not_exists ? "IF NOT EXISTS " : "";
+    std::string create_sql = absl::Substitute(R"(
+      CREATE TABLE $0$1 (
+        $2
+      ) ENGINE = MergeTree()
+      PARTITION BY toYYYYMM(event_time)
+      ORDER BY (hostname, event_time)
+    )", if_not_exists_clause, table_name, columns_str);
+
+    return create_sql;
+  }
+
+  int idx_ = 0;
+  std::vector<TableResult> results_;
+  std::shared_ptr<MDSStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
+  std::unique_ptr<clickhouse::Client> clickhouse_client_;
+
+  // ClickHouse connection parameters
+  std::string host_;
+  int port_;
+  std::string username_;
+  std::string password_;
+  std::string database_;
+  bool use_if_not_exists_;
 };
 
 }  // namespace md

@@ -181,6 +181,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnUDTFSource(no_op)
       .OnEmptySource(no_op)
       .OnOTelSink(no_op)
+      .OnClickHouseSource(no_op)
       .Walk(pf);
 }
 

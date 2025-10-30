@@ -17,8 +17,12 @@
  */
 
 #include "src/carnot/planner/objects/dataframe.h"
+
+#include <algorithm>
+
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ast_utils.h"
+#include "src/carnot/planner/ir/clickhouse_source_ir.h"
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
@@ -113,38 +117,66 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
   PX_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("select"), "select"));
   std::string table_name = table->str();
-  PX_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
-                      graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
 
-  if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
-    PX_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
-    PX_ASSIGN_OR_RETURN(auto start_time_ns,
-                        ParseAllTimeFormats(compiler_state->time_now().val, start_time));
-    mem_source_op->SetTimeStartNS(start_time_ns);
-  }
-  if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
-    PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
-    PX_ASSIGN_OR_RETURN(auto end_time_ns,
-                        ParseAllTimeFormats(compiler_state->time_now().val, end_time));
-    mem_source_op->SetTimeStopNS(end_time_ns);
-  }
-  StringIR* mutation_id_ir = nullptr;
-  if (!NoneObject::IsNoneObject(args.GetArg("mutation_id"))) {
-    PX_ASSIGN_OR_RETURN(mutation_id_ir, GetArgAs<StringIR>(ast, args, "mutation_id"));
-  }
-  auto relation_map = compiler_state->relation_map();
-  std::optional<std::string> mutation_id = std::nullopt;
-  if (mutation_id_ir != nullptr) {
-    mutation_id = mutation_id_ir->str();
-  }
-  for (const auto& [table_name, relation] : *relation_map) {
-    if (table_name == table->str() && mutation_id == std::nullopt) {
-      mutation_id = relation.mutation_id();
-      break;
+  // Check if we should use ClickHouse or memory source
+  PX_ASSIGN_OR_RETURN(BoolIR * use_clickhouse, GetArgAs<BoolIR>(ast, args, "clickhouse"));
+  bool is_clickhouse = use_clickhouse->val();
+
+  if (is_clickhouse) {
+    // Create ClickHouseSourceIR
+    // Note: hostname and event_time columns are handled in ClickHouseSourceIR::ResolveType
+    // Only add them if the user explicitly selected some columns
+    std::vector<std::string> clickhouse_columns = columns;
+
+    if (!columns.empty()) {
+      // User selected specific columns - add hostname and event_time if not already present
+      if (std::find(clickhouse_columns.begin(), clickhouse_columns.end(), "hostname") == clickhouse_columns.end()) {
+        clickhouse_columns.push_back("hostname");
+      }
+
+      if (std::find(clickhouse_columns.begin(), clickhouse_columns.end(), "event_time") == clickhouse_columns.end()) {
+        clickhouse_columns.push_back("event_time");
+      }
     }
+    // If columns is empty, select_all() will be true and ResolveType will handle adding all columns
+
+    PX_ASSIGN_OR_RETURN(ClickHouseSourceIR * clickhouse_source_op,
+                        graph->CreateNode<ClickHouseSourceIR>(ast, table_name, clickhouse_columns));
+
+    if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * start_time,
+                          GetArgAs<ExpressionIR>(ast, args, "start_time"));
+      PX_ASSIGN_OR_RETURN(auto start_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, start_time));
+      clickhouse_source_op->SetTimeStartNS(start_time_ns);
+    }
+    if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+      PX_ASSIGN_OR_RETURN(auto end_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, end_time));
+      clickhouse_source_op->SetTimeStopNS(end_time_ns);
+    }
+    return Dataframe::Create(compiler_state, clickhouse_source_op, visitor);
+  } else {
+    // Create MemorySourceIR (existing behavior)
+    PX_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
+                        graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
+
+    if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * start_time,
+                          GetArgAs<ExpressionIR>(ast, args, "start_time"));
+      PX_ASSIGN_OR_RETURN(auto start_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, start_time));
+      mem_source_op->SetTimeStartNS(start_time_ns);
+    }
+    if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+      PX_ASSIGN_OR_RETURN(auto end_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, end_time));
+      mem_source_op->SetTimeStopNS(end_time_ns);
+    }
+    return Dataframe::Create(compiler_state, mem_source_op, visitor);
   }
-  graph->RecordMutationId(mutation_id);
-  return Dataframe::Create(compiler_state, mem_source_op, visitor, mutation_id);
 }
 
 StatusOr<std::vector<ColumnIR*>> ProcessCols(IR* graph, const pypa::AstPtr& ast, QLObjectPtr obj,
@@ -443,8 +475,8 @@ Status Dataframe::Init() {
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> constructor_fn,
       FuncObject::Create(
-          name(), {"table", "select", "start_time", "end_time", "mutation_id"},
-          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}, {"mutation_id", "None"}},
+          name(), {"table", "select", "start_time", "end_time", "clickhouse"},
+          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}, {"clickhouse", "False"}},
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(&DataFrameConstructor, compiler_state_, graph(), std::placeholders::_1,

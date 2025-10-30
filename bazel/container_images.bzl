@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull", "container_image", "container_layer")
 
 # When adding an image here, first add it to scripts/regclient/regbot_deps.yaml
 # Once that is in, trigger the github workflow that mirrors the required image
@@ -366,4 +366,13 @@ def stirling_test_images():
         name = "golang_1_22_grpc_server_with_buildinfo",
         repository = "golang_1_22_grpc_server_with_buildinfo",
         digest = "sha256:67adba5e8513670fa37bd042862e7844f26239e8d2997ed8c3b0aa527bc04cc3",
+    )
+
+    # ClickHouse server image for testing.
+    # clickhouse/clickhouse-server:25.7-alpine
+    container_pull(
+        name = "clickhouse_server_base_image",
+        registry = "docker.io",
+        repository = "clickhouse/clickhouse-server",
+        digest = "sha256:60c53a520a1caad6555eb6772a8a9c91bb09774c1c7ec87e3371ea3da254eeab",
     )

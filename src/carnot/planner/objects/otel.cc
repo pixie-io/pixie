@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/ir/clickhouse_export_sink_ir.h"
 #include "src/carnot/planner/ir/otel_export_sink_ir.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/dict_object.h"
@@ -79,6 +80,11 @@ Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df
   return op->graph()->CreateNode<OTelExportSinkIR>(ast, op, data).status();
 }
 
+Status ExportToClickHouse(const std::string& table_name, const pypa::AstPtr& ast, Dataframe* df) {
+  auto op = df->op();
+  return op->graph()->CreateNode<ClickHouseExportSinkIR>(ast, op, table_name).status();
+}
+
 StatusOr<std::string> GetArgAsString(const pypa::AstPtr& ast, const ParsedArgs& args,
                                      std::string_view arg_name) {
   PX_ASSIGN_OR_RETURN(StringIR * arg_ir, GetArgAs<StringIR>(ast, args, arg_name));
@@ -107,6 +113,22 @@ Status ParseEndpointConfig(CompilerState* compiler_state, const QLObjectPtr& end
 StatusOr<std::shared_ptr<OTelDataContainer>> OTelDataContainer::Create(
     ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan, OTelLogRecord> data) {
   return std::shared_ptr<OTelDataContainer>(new OTelDataContainer(ast_visitor, std::move(data)));
+}
+
+StatusOr<std::shared_ptr<ClickHouseRows>> ClickHouseRows::Create(
+    ASTVisitor* ast_visitor, const std::string& table_name) {
+  return std::shared_ptr<ClickHouseRows>(new ClickHouseRows(ast_visitor, table_name));
+}
+
+StatusOr<QLObjectPtr> ClickHouseRowsDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                                ASTVisitor* visitor) {
+  PX_ASSIGN_OR_RETURN(StringIR* table_name_ir, GetArgAs<StringIR>(ast, args, "table"));
+  std::string table_name = table_name_ir->str();
+
+  return Exporter::Create(visitor, [table_name](auto&& ast_arg, auto&& df) -> Status {
+    return ExportToClickHouse(table_name, std::forward<decltype(ast_arg)>(ast_arg),
+                             std::forward<decltype(df)>(df));
+  });
 }
 
 StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
@@ -351,6 +373,17 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
   AddMethod(kEndpointOpID, endpoint_fn);
   PX_RETURN_IF_ERROR(endpoint_fn->SetDocString(kEndpointOpDocstring));
+
+  PX_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> clickhouse_rows_fn,
+      FuncObject::Create(kClickHouseRowsOpID, {"table"}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&ClickHouseRowsDefinition, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  AddMethod(kClickHouseRowsOpID, clickhouse_rows_fn);
+  PX_RETURN_IF_ERROR(clickhouse_rows_fn->SetDocString(kClickHouseRowsOpDocstring));
 
   return Status::OK();
 }

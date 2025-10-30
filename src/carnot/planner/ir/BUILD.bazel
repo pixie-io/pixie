@@ -47,6 +47,7 @@ pl_cc_library(
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/shared/metadata:cc_library",
         "//src/shared/metadatapb:metadata_pl_cc_proto",
+        "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
         "@com_github_vinzenz_libpypa//:libpypa",
     ],
 )
@@ -62,6 +63,14 @@ pl_cc_test(
 pl_cc_test(
     name = "otel_export_sink_ir_test",
     srcs = ["otel_export_sink_ir_test.cc"],
+    deps = [
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "clickhouse_export_sink_ir_test",
+    srcs = ["clickhouse_export_sink_ir_test.cc"],
     deps = [
         "//src/carnot/planner/compiler:test_utils",
     ],

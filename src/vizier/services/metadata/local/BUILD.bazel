@@ -16,38 +16,18 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-package(default_visibility = ["//src/vizier:__subpackages__"])
-
-pl_cc_library(
-    name = "cc_header",
-    hdrs = ["md_udtfs.h"],
-    deps = [
-        "//src/carnot/udf:cc_library",
-        "//src/vizier/funcs/context:cc_library",
-        "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
-        "@com_github_grpc_grpc//:grpc++",
-    ],
-)
+package(default_visibility = [
+    "//src/carnot:__subpackages__",
+    "//src/experimental:__subpackages__",
+    "//src/vizier:__subpackages__",
+])
 
 pl_cc_library(
     name = "cc_library",
-    srcs = glob(
-        ["*.cc"],
-        exclude = ["**/*_test.cc"],
-    ),
-    hdrs = glob(
-        ["*.h"],
-        exclude = ["md_udtfs.h"],
-    ),
+    hdrs = ["local_metadata_service.h"],
     deps = [
-        ":cc_header",
-        "//src/carnot/udf:cc_library",
-        "//src/common/uuid:cc_library",
-        "//src/vizier/funcs/context:cc_library",
-        "//src/vizier/services/agent/shared/manager:cc_headers",
+        "//src/table_store:cc_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
-        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
-        "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
         "@com_github_grpc_grpc//:grpc++",
     ],
 )

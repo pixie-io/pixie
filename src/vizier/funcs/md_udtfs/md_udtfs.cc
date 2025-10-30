@@ -60,6 +60,9 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
   registry
       ->RegisterFactoryOrDie<GetCronScriptHistory, UDTFWithCronscriptFactory<GetCronScriptHistory>>(
           "GetCronScriptHistory", ctx);
+  registry->RegisterFactoryOrDie<CreateClickHouseSchemas,
+                                 UDTFWithMDFactory<CreateClickHouseSchemas>>(
+      "CreateClickHouseSchemas", ctx);
 }
 
 }  // namespace md

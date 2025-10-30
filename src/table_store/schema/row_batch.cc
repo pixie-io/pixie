@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <absl/strings/str_format.h>
+#include <magic_enum.hpp>
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
@@ -38,13 +39,23 @@ std::shared_ptr<arrow::Array> RowBatch::ColumnAt(int64_t i) const { return colum
 
 Status RowBatch::AddColumn(const std::shared_ptr<arrow::Array>& col) {
   if (columns_.size() >= desc_.size()) {
-    return error::InvalidArgument("Schema only allows $0 columns", desc_.size());
+    return error::InvalidArgument("Schema only allows $0 columns, got $1", desc_.size(), columns_.size());
   }
   if (col->length() != num_rows_) {
     return error::InvalidArgument("Schema only allows $0 rows, got $1", num_rows_, col->length());
   }
-  if (col->type_id() != types::ToArrowType(desc_.type(columns_.size()))) {
-    return error::InvalidArgument("Column[$0] was given incorrect type", columns_.size());
+  auto expected_arrow_type = types::ToArrowType(desc_.type(columns_.size()));
+  if (col->type_id() != expected_arrow_type) {
+    auto pixie_type = desc_.type(columns_.size());
+    return error::InvalidArgument(
+        "Column[$0] has incorrect Arrow type. "
+        "Got Arrow type_id=$1 (type=$2), expected Arrow type_id=$3 for Pixie DataType::$4 (enum value $5)",
+        columns_.size(),
+        static_cast<int>(col->type_id()),
+        col->type()->ToString(),
+        static_cast<int>(expected_arrow_type),
+        magic_enum::enum_name(pixie_type),
+        static_cast<int>(pixie_type));
   }
 
   columns_.emplace_back(col);

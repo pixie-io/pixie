@@ -97,6 +97,18 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
   for (const auto& debug_info_pb : logical_state.debug_info().otel_debug_attributes()) {
     debug_info.otel_debug_attrs.push_back({debug_info_pb.name(), debug_info_pb.value()});
   }
+
+  std::unique_ptr<planpb::ClickHouseConfig> clickhouse_config = nullptr;
+  if (logical_state.has_clickhouse_config()) {
+    clickhouse_config = std::make_unique<planpb::ClickHouseConfig>();
+    clickhouse_config->set_hostname(logical_state.clickhouse_config().hostname());
+    clickhouse_config->set_host(logical_state.clickhouse_config().host());
+    clickhouse_config->set_port(logical_state.clickhouse_config().port());
+    clickhouse_config->set_username(logical_state.clickhouse_config().username());
+    clickhouse_config->set_password(logical_state.clickhouse_config().password());
+    clickhouse_config->set_database(logical_state.clickhouse_config().database());
+  }
+
   // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(
       std::move(rel_map), sensitive_columns, registry_info, px::CurrentTimeNS(),
@@ -105,7 +117,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       // TODO(philkuz) add an endpoint config to logical_state and pass that in here.
       RedactionOptionsFromPb(logical_state.redaction_options()), std::move(otel_endpoint_config),
       // TODO(philkuz) propagate the otel debug attributes here.
-      std::move(plugin_config), debug_info);
+      std::move(plugin_config), debug_info,
+      std::move(clickhouse_config));
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

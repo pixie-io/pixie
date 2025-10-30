@@ -88,6 +88,24 @@ class OTelModule : public QLObject {
     timeout (int, optional): The number of seconds before the request should timeout when exporting to the OTel collector.
   )doc";
 
+  inline static constexpr char kClickHouseRowsOpID[] = "ClickHouseRows";
+  inline static constexpr char kClickHouseRowsOpDocstring[] = R"doc(
+  Specifies a ClickHouse table to export DataFrame rows to.
+
+  Describes the table name in ClickHouse where columnar DataFrame data will be
+  inserted. All columns from the DataFrame will be mapped to corresponding
+  columns in the ClickHouse table. Passed as the data argument to `px.export`.
+
+  :topic: clickhouse
+
+  Args:
+    table (string): The name of the ClickHouse table to insert data into.
+
+  Returns:
+    ClickHouseRows: Configuration for exporting DataFrame data to ClickHouse.
+      Can be passed to `px.export`.
+  )doc";
+
  protected:
   explicit OTelModule(ASTVisitor* ast_visitor) : QLObject(OTelModuleType, ast_visitor) {}
   Status Init(CompilerState* compiler_state, IR* ir);
@@ -311,6 +329,30 @@ class OTelDataContainer : public QLObject {
 
  private:
   std::variant<OTelMetric, OTelSpan, OTelLogRecord> data_;
+};
+
+class ClickHouseRows : public QLObject {
+ public:
+  static constexpr TypeDescriptor ClickHouseRowsType = {
+      /* name */ "ClickHouseRows",
+      /* type */ QLObjectType::kClickHouseRows,
+  };
+
+  static StatusOr<std::shared_ptr<ClickHouseRows>> Create(
+      ASTVisitor* ast_visitor, const std::string& table_name);
+
+  static bool IsClickHouseRows(const QLObjectPtr& obj) {
+    return obj->type() == ClickHouseRowsType.type();
+  }
+
+  const std::string& table_name() const { return table_name_; }
+
+ protected:
+  ClickHouseRows(ASTVisitor* ast_visitor, std::string table_name)
+      : QLObject(ClickHouseRowsType, ast_visitor), table_name_(std::move(table_name)) {}
+
+ private:
+  std::string table_name_;
 };
 
 }  // namespace compiler

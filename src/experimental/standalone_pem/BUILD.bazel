@@ -50,6 +50,7 @@ pl_cc_library(
         "//src/vizier/funcs:cc_library",
         "//src/vizier/funcs/context:cc_library",
         "//src/vizier/services/agent/shared/base:cc_library",
+        "//src/vizier/services/metadata/local:cc_library",
         "@com_github_grpc_grpc//:grpc++",
     ],
 )
