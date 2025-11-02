@@ -41,21 +41,25 @@ Status ClickHouseSourceIR::ToProto(planpb::Operator* op) const {
   pb->set_password(password_);
   pb->set_database(database_);
 
-  // Build the query
-  pb->set_query(absl::Substitute("SELECT * FROM $0", table_name_));
-
   if (!column_index_map_set()) {
     return error::InvalidArgument("ClickHouseSource columns are not set.");
   }
 
   DCHECK(is_type_resolved());
   DCHECK_EQ(column_index_map_.size(), resolved_table_type()->ColumnNames().size());
+
+  // Build the query with explicit column list to match output_descriptor_ order
+  std::vector<std::string> column_list;
   for (const auto& [idx, col_name] : Enumerate(resolved_table_type()->ColumnNames())) {
+    column_list.push_back(col_name);
     pb->add_column_names(col_name);
     auto val_type = std::static_pointer_cast<ValueType>(
         resolved_table_type()->GetColumnType(col_name).ConsumeValueOrDie());
     pb->add_column_types(val_type->data_type());
   }
+
+  // Generate SELECT with explicit columns instead of SELECT * to ensure correct column ordering
+  pb->set_query(absl::Substitute("SELECT $0 FROM $1", absl::StrJoin(column_list, ", "), table_name_));
 
   if (IsTimeStartSet()) {
     pb->set_start_time(time_start_ns());
@@ -162,7 +166,6 @@ StatusOr<types::DataType> ClickHouseSourceIR::ClickHouseTypeToPixieType(
   if (ch_type_name == "Bool") {
     return types::DataType::BOOLEAN;
   }
-  // Default to String for unsupported types
   return types::DataType::STRING;
 }
 
@@ -252,7 +255,7 @@ Status ClickHouseSourceIR::ResolveType(CompilerState* compiler_state) {
   auto relation_it = compiler_state->relation_map()->find(table_name());
   if (relation_it == compiler_state->relation_map()->end()) {
     // Table not found in relation_map, try to infer from ClickHouse
-    LOG(INFO) << absl::Substitute("Table '$0' not found in relation_map. Attempting to infer schema from ClickHouse...", table_name());
+    VLOG(1) << absl::Substitute("Table '$0' not found in relation_map. Attempting to infer schema from ClickHouse...", table_name());
 
     auto relation_or = InferRelationFromClickHouse(compiler_state, table_name());
     if (!relation_or.ok()) {

@@ -47,9 +47,24 @@
 // The records inserted into clickhouse exist between -10m and -5m
 // bazel run -c dbg  src/carnot:carnot_executable --  --vmodule=clickhouse_source_node=1 --use_clickhouse=true     --query="import px;df = px.DataFrame('http_events', clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m', end_time='-9m'); px.display(df)"     --output_file=$(pwd)/output.csv
 //
+//
+// Test that verifies bug with Map operators isn't introduced
+//  bazel run -c dbg  src/carnot:carnot_executable --  -v=1 --vmodule=clickhouse_source_node=1 --use_clickhouse=true     --query="import px;df = px.DataFrame('http_events', clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m', end_time='-9m'); df.time_ = df.event_time; df = df[['time_', 'req_path']]; px.display(df)"     --output_file=$(pwd)/output.csv
+//
+//
 // Testing existing ClickHouse table (kubescape_stix) table population and query:
 // docker run -p 9000:9000 --network=host --env=CLICKHOUSE_PASSWORD=test_password clickhouse/clickhouse-server:25.7-alpine
-// Create clickhouse table
+// CREATE TABLE IF NOT EXISTS default.kubescape_stix (
+//    timestamp String,
+//    pod_name String,
+//    namespace String,
+//    data String,
+//    hostname String,
+//    event_time DateTime64(3)
+//) ENGINE = MergeTree()
+//PARTITION BY toYYYYMM(event_time)
+//ORDER BY (hostname, event_time);
+
 // bazel run -c dbg  src/carnot:carnot_executable --  --vmodule=clickhouse_source_node=1 --use_clickhouse=true --start_clickhouse=false --query="import px;df = px.DataFrame('kubescape_stix', clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m'); px.display(df)"     --output_file=$(pwd)/output.csv
 
 
