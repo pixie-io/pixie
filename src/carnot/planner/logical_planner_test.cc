@@ -1049,7 +1049,7 @@ constexpr char kClickHouseSourceQuery[] = R"pxl(
 import px
 
 # Test ClickHouse source node functionality
-df = px.DataFrame('http_events', start_time='-10m', end_time='-5m', clickhouse_dsn='default:test_password@localhost:9000/default')
+df = px.DataFrame('http_events', start_time='-10m', end_time='-5m', clickhouse_dsn='user:test@clickhouse-server:9000/pixie')
 df = df['time_', 'req_headers']
 px.display(df, 'clickhouse_data')
 )pxl";
@@ -1073,6 +1073,11 @@ TEST_F(LogicalPlannerTest, ClickHouseSourceNode) {
     for (const auto& planFragment : agent_plan.nodes()) {
       for (const auto& planNode : planFragment.nodes()) {
         if (planNode.op().op_type() == planpb::OperatorType::CLICKHOUSE_SOURCE_OPERATOR) {
+          EXPECT_THAT(planNode.op().clickhouse_source_op().host(), "clickhouse-server");
+          EXPECT_THAT(planNode.op().clickhouse_source_op().port(), 9000);
+          EXPECT_THAT(planNode.op().clickhouse_source_op().database(), "pixie");
+          EXPECT_THAT(planNode.op().clickhouse_source_op().username(), "user");
+          EXPECT_THAT(planNode.op().clickhouse_source_op().password(), "test");
           has_clickhouse_source = true;
           break;
         }

@@ -734,7 +734,17 @@ StatusOr<table_store::schema::Relation> EmptySourceOperator::OutputRelation(
  */
 
 std::string ClickHouseSourceOperator::DebugString() const { 
-  return absl::Substitute("Op:ClickHouseSource(query=$0)", pb_.query()); 
+  return absl::Substitute(R"(Op:ClickHouseSource(
+  host=$0
+  port=$1
+  username=$2
+  batch_size=$3
+  start_time=$4
+  end_time=$5
+  timestamp_column=$6
+  partition_column=$7
+)", pb_.host(), pb_.port(), pb_.username(), pb_.batch_size(), pb_.start_time(), pb_.end_time(),
+                         pb_.timestamp_column(), pb_.partition_column());
 }
 
 Status ClickHouseSourceOperator::Init(const planpb::ClickHouseSourceOperator& pb) {

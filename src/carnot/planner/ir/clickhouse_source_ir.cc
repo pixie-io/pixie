@@ -124,6 +124,12 @@ Status ClickHouseSourceIR::CopyFromNodeImpl(const IRNode* node,
   column_index_map_set_ = source_ir->column_index_map_set_;
   column_index_map_ = source_ir->column_index_map_;
 
+  username_ = source_ir->username_;
+  password_ = source_ir->password_;
+  database_ = source_ir->database_;
+  port_ = source_ir->port_;
+  host_ = source_ir->host_;
+
   return Status::OK();
 }
 
