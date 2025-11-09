@@ -1332,8 +1332,9 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
                              host_, port_, e.what());
     }
 
-    for (const auto& [table_name, rel] : resp.schema().relation_map()) {
+    for (const auto& [rel_table_name, rel] : resp.schema().relation_map()) {
       TableResult result;
+      std::string table_name = rel_table_name;
       result.table_name = table_name;
 
       // Check if table has a time_ column (required for partitioning)
@@ -1352,6 +1353,15 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
         results_.push_back(result);
         continue;
       }
+
+      std::vector<std::string> names = absl::StrSplit(table_name, '.');
+      if (names.size() <= 0 || names.size() > 2) {
+        result.status = "error";
+        result.message = "Invalid table name with multiple dots";
+        results_.push_back(result);
+        continue;
+      }
+      table_name = names[0];
 
       // Generate CREATE TABLE statement
       std::string create_table_sql = GenerateCreateTableSQL(table_name, rel, use_if_not_exists_);
