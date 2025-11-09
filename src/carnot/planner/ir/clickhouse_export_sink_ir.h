@@ -37,14 +37,14 @@ namespace planner {
  * @brief The IR representation for the ClickHouseExportSink operator.
  * Represents a configuration to export a DataFrame to a ClickHouse database.
  */
-class ClickHouseExportSinkIR : public OperatorIR {
+class ClickHouseExportSinkIR : public SinkOperatorIR {
  public:
-  explicit ClickHouseExportSinkIR(int64_t id) : OperatorIR(id, IRNodeType::kClickHouseExportSink) {}
+  explicit ClickHouseExportSinkIR(int64_t id, std::string mutation_id)
+      : SinkOperatorIR(id, IRNodeType::kClickHouseExportSink, mutation_id) {}
 
-  Status Init(OperatorIR* parent, const std::string& table_name) {
-    table_name_ = table_name;
-    return AddParent(parent);
-  }
+  Status Init(OperatorIR* parent, const std::string& table_name, const std::string& clickhouse_dsn);
+
+  StatusOr<planpb::ClickHouseConfig> ParseClickHouseDSN(const std::string& dsn);
 
   Status ToProto(planpb::Operator* op) const override;
 

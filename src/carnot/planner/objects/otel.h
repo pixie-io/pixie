@@ -289,6 +289,8 @@ class EndpointConfig : public QLObject {
 
   Status ToProto(planpb::OTelEndpointConfig* endpoint_config);
 
+  const std::string& url() const { return url_; }
+
  protected:
   EndpointConfig(ASTVisitor* ast_visitor, std::string url,
                  std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure,

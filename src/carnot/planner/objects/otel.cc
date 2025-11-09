@@ -80,9 +80,10 @@ Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df
   return op->graph()->CreateNode<OTelExportSinkIR>(ast, op, data).status();
 }
 
-Status ExportToClickHouse(const std::string& table_name, const pypa::AstPtr& ast, Dataframe* df) {
+Status ExportToClickHouse(const std::string& table_name, const std::string& clickhouse_dsn,
+                          const pypa::AstPtr& ast, Dataframe* df) {
   auto op = df->op();
-  return op->graph()->CreateNode<ClickHouseExportSinkIR>(ast, op, table_name).status();
+  return op->graph()->CreateNode<ClickHouseExportSinkIR>(ast, op, table_name, clickhouse_dsn).status();
 }
 
 StatusOr<std::string> GetArgAsString(const pypa::AstPtr& ast, const ParsedArgs& args,
@@ -120,13 +121,31 @@ StatusOr<std::shared_ptr<ClickHouseRows>> ClickHouseRows::Create(
   return std::shared_ptr<ClickHouseRows>(new ClickHouseRows(ast_visitor, table_name));
 }
 
-StatusOr<QLObjectPtr> ClickHouseRowsDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
+StatusOr<QLObjectPtr> ClickHouseRowsDefinition(CompilerState* compiler_state,
+                                                const pypa::AstPtr& ast, const ParsedArgs& args,
                                                 ASTVisitor* visitor) {
   PX_ASSIGN_OR_RETURN(StringIR* table_name_ir, GetArgAs<StringIR>(ast, args, "table"));
   std::string table_name = table_name_ir->str();
 
-  return Exporter::Create(visitor, [table_name](auto&& ast_arg, auto&& df) -> Status {
-    return ExportToClickHouse(table_name, std::forward<decltype(ast_arg)>(ast_arg),
+  // Parse endpoint config to get the ClickHouse DSN from the URL field
+  std::string clickhouse_dsn;
+  QLObjectPtr endpoint = args.GetArg("endpoint");
+  if (NoneObject::IsNoneObject(endpoint)) {
+    if (!compiler_state->endpoint_config()) {
+      return endpoint->CreateError("no default config found for endpoint, please specify one");
+    }
+    clickhouse_dsn = compiler_state->endpoint_config()->url();
+  } else {
+    if (endpoint->type() != EndpointConfig::EndpointType.type()) {
+      return endpoint->CreateError("expected Endpoint type for 'endpoint' arg, received $0",
+                                   endpoint->name());
+    }
+    auto endpoint_config = static_cast<EndpointConfig*>(endpoint.get());
+    clickhouse_dsn = endpoint_config->url();
+  }
+
+  return Exporter::Create(visitor, [table_name, clickhouse_dsn](auto&& ast_arg, auto&& df) -> Status {
+    return ExportToClickHouse(table_name, clickhouse_dsn, std::forward<decltype(ast_arg)>(ast_arg),
                              std::forward<decltype(df)>(df));
   });
 }
@@ -376,10 +395,10 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> clickhouse_rows_fn,
-      FuncObject::Create(kClickHouseRowsOpID, {"table"}, {},
+      FuncObject::Create(kClickHouseRowsOpID, {"table", "endpoint"}, {{"endpoint", "None"}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
-                         std::bind(&ClickHouseRowsDefinition, std::placeholders::_1,
+                         std::bind(&ClickHouseRowsDefinition, compiler_state, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
   AddMethod(kClickHouseRowsOpID, clickhouse_rows_fn);

@@ -23,6 +23,8 @@
 #include <vector>
 
 #include <absl/strings/substitute.h>
+#include <absl/numeric/int128.h>
+#include <sole.hpp>
 #include "glog/logging.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/macros.h"
@@ -141,6 +143,17 @@ Status ClickHouseExportSinkNode::ConsumeNextImpl(ExecState* /*exec_state*/, cons
         auto col = std::make_shared<clickhouse::ColumnUInt8>();
         for (int64_t i = 0; i < num_rows; ++i) {
           col->Append(types::GetValueFromArrowArray<types::BOOLEAN>(arrow_col.get(), i) ? 1 : 0);
+        }
+        block.AppendColumn(mapping.clickhouse_column_name(), col);
+        break;
+      }
+      case types::UINT128: {
+        // UINT128 is exported as STRING (UUID format)
+        auto col = std::make_shared<clickhouse::ColumnString>();
+        for (int64_t i = 0; i < num_rows; ++i) {
+          auto val = types::GetValueFromArrowArray<types::UINT128>(arrow_col.get(), i);
+          std::string uuid_str = sole::rebuild(absl::Uint128High64(val), absl::Uint128Low64(val)).str();
+          col->Append(uuid_str);
         }
         block.AppendColumn(mapping.clickhouse_column_name(), col);
         break;

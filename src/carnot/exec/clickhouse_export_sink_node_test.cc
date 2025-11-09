@@ -363,6 +363,122 @@ TEST_F(ClickHouseExportSinkNodeTest, MultipleBatches) {
   }
 }
 
+TEST_F(ClickHouseExportSinkNodeTest, UINT128Export) {
+  const std::string table_name = "export_test_uint128";
+
+  // Create table with String column for UUID
+  try {
+    client_->Execute(absl::Substitute("DROP TABLE IF EXISTS $0", table_name));
+
+    client_->Execute(absl::Substitute(R"(
+      CREATE TABLE $0 (
+        time_ DateTime64(9),
+        upid String,
+        hostname String,
+        value Int64
+      ) ENGINE = MergeTree()
+      ORDER BY time_
+    )", table_name));
+
+    LOG(INFO) << "UINT128 export table created successfully: " << table_name;
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "Failed to create UINT128 export table: " << e.what();
+    throw;
+  }
+
+  // Create plan node for UINT128 test
+  planpb::Operator op;
+  op.set_op_type(planpb::CLICKHOUSE_EXPORT_SINK_OPERATOR);
+  auto* ch_op = op.mutable_clickhouse_sink_op();
+
+  auto* config = ch_op->mutable_clickhouse_config();
+  config->set_host("localhost");
+  config->set_port(kClickHousePort);
+  config->set_username("default");
+  config->set_password("test_password");
+  config->set_database("default");
+
+  ch_op->set_table_name(table_name);
+
+  // Add column mappings
+  auto* mapping0 = ch_op->add_column_mappings();
+  mapping0->set_input_column_index(0);
+  mapping0->set_clickhouse_column_name("time_");
+  mapping0->set_column_type(types::TIME64NS);
+
+  auto* mapping1 = ch_op->add_column_mappings();
+  mapping1->set_input_column_index(1);
+  mapping1->set_clickhouse_column_name("upid");
+  mapping1->set_column_type(types::UINT128);
+
+  auto* mapping2 = ch_op->add_column_mappings();
+  mapping2->set_input_column_index(2);
+  mapping2->set_clickhouse_column_name("hostname");
+  mapping2->set_column_type(types::STRING);
+
+  auto* mapping3 = ch_op->add_column_mappings();
+  mapping3->set_input_column_index(3);
+  mapping3->set_clickhouse_column_name("value");
+  mapping3->set_column_type(types::INT64);
+
+  auto plan_node = std::make_unique<plan::ClickHouseExportSinkOperator>(1);
+  EXPECT_OK(plan_node->Init(op.clickhouse_sink_op()));
+
+  // Define input schema
+  RowDescriptor input_rd({types::TIME64NS, types::UINT128, types::STRING, types::INT64});
+
+  // Create node tester
+  auto tester = exec::ExecNodeTester<ClickHouseExportSinkNode, plan::ClickHouseExportSinkOperator>(
+      *plan_node, RowDescriptor({}), {input_rd}, exec_state_.get());
+
+  // Create test UUIDs
+  auto uuid1 = sole::uuid4();
+  auto uuid2 = sole::uuid4();
+  auto uuid3 = sole::uuid4();
+
+  absl::uint128 upid1 = absl::MakeUint128(uuid1.ab, uuid1.cd);
+  absl::uint128 upid2 = absl::MakeUint128(uuid2.ab, uuid2.cd);
+  absl::uint128 upid3 = absl::MakeUint128(uuid3.ab, uuid3.cd);
+
+  // Create test data with UINT128 values
+  auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+      .AddColumn<types::Time64NSValue>({1000000000000000000LL, 2000000000000000000LL})
+      .AddColumn<types::UInt128Value>({upid1, upid2})
+      .AddColumn<types::StringValue>({"host1", "host2"})
+      .AddColumn<types::Int64Value>({100, 200})
+      .get();
+
+  auto rb2 = RowBatchBuilder(input_rd, 1, /*eow*/ true, /*eos*/ true)
+      .AddColumn<types::Time64NSValue>({3000000000000000000LL})
+      .AddColumn<types::UInt128Value>({upid3})
+      .AddColumn<types::StringValue>({"host3"})
+      .AddColumn<types::Int64Value>({300})
+      .get();
+
+  // Send data to sink
+  tester.ConsumeNext(rb1, 0, 0);
+  tester.ConsumeNext(rb2, 0, 0);
+  tester.Close();
+
+  // Verify data was inserted and UINT128 values were converted to UUID strings
+  auto results = QueryTable(absl::Substitute("SELECT upid, hostname, value FROM $0 ORDER BY time_", table_name));
+
+  ASSERT_EQ(results.size(), 3);
+
+  // Check that UINT128 values were converted to valid UUID strings
+  EXPECT_EQ(results[0][0], uuid1.str());
+  EXPECT_EQ(results[0][1], "host1");
+  EXPECT_EQ(results[0][2], "100");
+
+  EXPECT_EQ(results[1][0], uuid2.str());
+  EXPECT_EQ(results[1][1], "host2");
+  EXPECT_EQ(results[1][2], "200");
+
+  EXPECT_EQ(results[2][0], uuid3.str());
+  EXPECT_EQ(results[2][1], "host3");
+  EXPECT_EQ(results[2][2], "300");
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace px

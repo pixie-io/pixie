@@ -49,8 +49,9 @@ TEST_F(ClickHouseExportSinkTest, basic_export) {
   auto src = MakeMemSource("table");
   EXPECT_OK(src->ResolveType(compiler_state_.get()));
 
+  std::string clickhouse_dsn = "default:test_password@localhost:9000/default";
   ASSERT_OK_AND_ASSIGN(auto clickhouse_sink,
-                       graph->CreateNode<ClickHouseExportSinkIR>(src->ast(), src, "http_events"));
+                       graph->CreateNode<ClickHouseExportSinkIR>(src->ast(), src, "http_events", clickhouse_dsn));
 
   clickhouse_sink->PullParentTypes();
   EXPECT_OK(clickhouse_sink->UpdateOpAfterParentTypesResolved());
@@ -112,8 +113,9 @@ TEST_F(ClickHouseExportSinkTest, required_input_columns) {
   auto src = MakeMemSource("table");
   EXPECT_OK(src->ResolveType(compiler_state_.get()));
 
+  std::string clickhouse_dsn = "default:test_password@localhost:9000/default";
   ASSERT_OK_AND_ASSIGN(auto clickhouse_sink,
-                       graph->CreateNode<ClickHouseExportSinkIR>(src->ast(), src, "http_events"));
+                       graph->CreateNode<ClickHouseExportSinkIR>(src->ast(), src, "http_events", clickhouse_dsn));
 
   clickhouse_sink->PullParentTypes();
   EXPECT_OK(clickhouse_sink->UpdateOpAfterParentTypesResolved());

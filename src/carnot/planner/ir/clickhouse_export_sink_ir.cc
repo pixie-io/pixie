@@ -19,6 +19,7 @@
 #include "src/carnot/planner/ir/clickhouse_export_sink_ir.h"
 #include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include <regex>
 
 namespace px {
 namespace carnot {
@@ -29,7 +30,44 @@ ClickHouseExportSinkIR::RequiredInputColumns() const {
   return std::vector<absl::flat_hash_set<std::string>>{required_column_names_};
 }
 
+Status ClickHouseExportSinkIR::Init(OperatorIR* parent, const std::string& table_name,
+                                     const std::string& clickhouse_dsn) {
+  table_name_ = table_name;
+
+  // Parse the ClickHouse DSN and initialize the config
+  PX_ASSIGN_OR_RETURN(auto config, ParseClickHouseDSN(clickhouse_dsn));
+  clickhouse_config_ = std::make_unique<planpb::ClickHouseConfig>(config);
+
+  return AddParent(parent);
+}
+
+StatusOr<planpb::ClickHouseConfig> ClickHouseExportSinkIR::ParseClickHouseDSN(const std::string& dsn) {
+  // Expected format: [clickhouse://]username:password@host:port/database
+  // The clickhouse:// prefix is optional
+  std::regex dsn_regex(R"((?:clickhouse://)?([^:]+):([^@]+)@([^:]+):(\d+)/(.+))");
+  std::smatch matches;
+
+  if (!std::regex_match(dsn, matches, dsn_regex)) {
+    return error::InvalidArgument("Invalid ClickHouse DSN format. Expected: [clickhouse://]username:password@host:port/database");
+  }
+
+  planpb::ClickHouseConfig config;
+
+  // Extract the components
+  config.set_username(matches[1].str());
+  config.set_password(matches[2].str());
+  config.set_host(matches[3].str());
+  config.set_port(std::stoi(matches[4].str()));
+  config.set_database(matches[5].str());
+
+  // hostname will be set by the runtime
+  config.set_hostname("");
+
+  return config;
+}
+
 Status ClickHouseExportSinkIR::ToProto(planpb::Operator* op) const {
+  PX_RETURN_IF_ERROR(SinkOperatorIR::ToProto(op));
   op->set_op_type(planpb::CLICKHOUSE_EXPORT_SINK_OPERATOR);
   auto clickhouse_op = op->mutable_clickhouse_sink_op();
 
@@ -43,17 +81,17 @@ Status ClickHouseExportSinkIR::ToProto(planpb::Operator* op) const {
   clickhouse_op->set_table_name(table_name_);
 
   // Map all input columns to ClickHouse columns
-  DCHECK_EQ(1U, parent_types().size());
-  auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
+  DCHECK(is_type_resolved());
+  int64_t idx = 0;
+  for (const auto& [col_name, col_type] : *resolved_table_type()) {
+    DCHECK(col_type->IsValueType());
+    auto value_type = std::static_pointer_cast<ValueType>(col_type);
 
-  for (const auto& [idx, col_name] : Enumerate(parent_table_type->ColumnNames())) {
     auto column_mapping = clickhouse_op->add_column_mappings();
     column_mapping->set_input_column_index(idx);
     column_mapping->set_clickhouse_column_name(col_name);
-
-    PX_ASSIGN_OR_RETURN(auto col_type, parent_table_type->GetColumnType(col_name));
-    auto value_type = std::static_pointer_cast<ValueType>(col_type);
     column_mapping->set_column_type(value_type->data_type());
+    idx++;
   }
 
   return Status::OK();
@@ -75,8 +113,8 @@ Status ClickHouseExportSinkIR::ResolveType(CompilerState* compiler_state) {
 
   auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
 
-  // Store ClickHouse config from compiler state
-  if (compiler_state->clickhouse_config() != nullptr) {
+  // Store ClickHouse config from compiler state only if not already set by Init()
+  if (clickhouse_config_ == nullptr && compiler_state->clickhouse_config() != nullptr) {
     clickhouse_config_ = std::make_unique<planpb::ClickHouseConfig>(*compiler_state->clickhouse_config());
   }
 
