@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/utils/shared/k8s"
 )
@@ -71,14 +72,22 @@ func findVizierNamespace(clientset *kubernetes.Clientset) (string, error) {
 // getK8sConfig attempts to read configuration from Kubernetes secrets and configmaps.
 // Returns (clusterID, apiKey, clusterName, host, error).
 func getK8sConfig() (string, string, string, string, error) {
-	config := k8s.GetConfig()
-	if config == nil {
-		return "", "", "", "", fmt.Errorf("unable to get kubernetes config")
+	// Try in-cluster config first (when running in K8s)
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		log.WithError(err).Debug("In-cluster config not available, trying kubeconfig...")
+		// Fall back to kubeconfig for local/adhoc testing
+		config = k8s.GetConfig()
+		if config == nil {
+			return "", "", "", "", fmt.Errorf("unable to get kubernetes config")
+		}
+	} else {
+		log.Debug("Using in-cluster Kubernetes config")
 	}
 
-	clientset := k8s.GetClientset(config)
-	if clientset == nil {
-		return "", "", "", "", fmt.Errorf("unable to get kubernetes clientset")
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("unable to create kubernetes clientset: %w", err)
 	}
 
 	vzNs, err := findVizierNamespace(clientset)

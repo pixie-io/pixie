@@ -1,0 +1,69 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adaptive-export
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: adaptive-export
+  template:
+    metadata:
+      labels:
+        name: adaptive-export
+        plane: control
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: Exists
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: Exists
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      serviceAccountName: pl-adaptive-export-service-account
+      containers:
+      - name: adaptive-export
+        image: vizier-adaptive_export_image:latest
+        env:
+        - name: PL_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PIXIE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pl-adaptive-export-secrets
+              key: pixie-api-key
+        - name: CLICKHOUSE_DSN
+          valueFrom:
+            secretKeyRef:
+              name: pl-adaptive-export-secrets
+              key: clickhouse-dsn
+        - name: VERBOSE
+          value: "true"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        runAsUser: 10100
+        runAsGroup: 10100
+        fsGroup: 10100
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

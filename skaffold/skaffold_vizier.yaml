@@ -45,6 +45,13 @@ build:
       args:
       - --config=x86_64_sysroot
       - --compilation_mode=opt
+  - image: vizier-adaptive_export_image
+    context: .
+    bazel:
+      target: //src/vizier/services/adaptive_export:adaptive_export_image.tar
+      args:
+      - --config=x86_64_sysroot
+      - --compilation_mode=opt
   tagPolicy:
     dateTime: {}
   local:
