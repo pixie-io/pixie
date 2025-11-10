@@ -55,7 +55,7 @@ spec:
               name: pl-service-config
               key: PL_PLUGIN_SERVICE
         - name: PL_PLUGIN_REPO
-          value: "pixie-io/pixie-plugin"
+          value: "k8sstormcenter/pixie-plugin"
       # The alpine based image contains a shell and is needed for this command to work.
       # yamllint disable-line rule:line-length
       - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.3-alpine@sha256:4885fd3e6362ba22abff1804a7f5e75cec5fafbeb4e41be8b0059ecad94a16f1

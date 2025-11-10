@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/ir/clickhouse_export_sink_ir.h"
 #include "src/carnot/planner/ir/otel_export_sink_ir.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/dict_object.h"
@@ -79,6 +80,12 @@ Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df
   return op->graph()->CreateNode<OTelExportSinkIR>(ast, op, data).status();
 }
 
+Status ExportToClickHouse(const std::string& table_name, const std::string& clickhouse_dsn,
+                          const pypa::AstPtr& ast, Dataframe* df) {
+  auto op = df->op();
+  return op->graph()->CreateNode<ClickHouseExportSinkIR>(ast, op, table_name, clickhouse_dsn).status();
+}
+
 StatusOr<std::string> GetArgAsString(const pypa::AstPtr& ast, const ParsedArgs& args,
                                      std::string_view arg_name) {
   PX_ASSIGN_OR_RETURN(StringIR * arg_ir, GetArgAs<StringIR>(ast, args, arg_name));
@@ -107,6 +114,40 @@ Status ParseEndpointConfig(CompilerState* compiler_state, const QLObjectPtr& end
 StatusOr<std::shared_ptr<OTelDataContainer>> OTelDataContainer::Create(
     ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan, OTelLogRecord> data) {
   return std::shared_ptr<OTelDataContainer>(new OTelDataContainer(ast_visitor, std::move(data)));
+}
+
+StatusOr<std::shared_ptr<ClickHouseRows>> ClickHouseRows::Create(
+    ASTVisitor* ast_visitor, const std::string& table_name) {
+  return std::shared_ptr<ClickHouseRows>(new ClickHouseRows(ast_visitor, table_name));
+}
+
+StatusOr<QLObjectPtr> ClickHouseRowsDefinition(CompilerState* compiler_state,
+                                                const pypa::AstPtr& ast, const ParsedArgs& args,
+                                                ASTVisitor* visitor) {
+  PX_ASSIGN_OR_RETURN(StringIR* table_name_ir, GetArgAs<StringIR>(ast, args, "table"));
+  std::string table_name = table_name_ir->str();
+
+  // Parse endpoint config to get the ClickHouse DSN from the URL field
+  std::string clickhouse_dsn;
+  QLObjectPtr endpoint = args.GetArg("endpoint");
+  if (NoneObject::IsNoneObject(endpoint)) {
+    if (!compiler_state->endpoint_config()) {
+      return endpoint->CreateError("no default config found for endpoint, please specify one");
+    }
+    clickhouse_dsn = compiler_state->endpoint_config()->url();
+  } else {
+    if (endpoint->type() != EndpointConfig::EndpointType.type()) {
+      return endpoint->CreateError("expected Endpoint type for 'endpoint' arg, received $0",
+                                   endpoint->name());
+    }
+    auto endpoint_config = static_cast<EndpointConfig*>(endpoint.get());
+    clickhouse_dsn = endpoint_config->url();
+  }
+
+  return Exporter::Create(visitor, [table_name, clickhouse_dsn](auto&& ast_arg, auto&& df) -> Status {
+    return ExportToClickHouse(table_name, clickhouse_dsn, std::forward<decltype(ast_arg)>(ast_arg),
+                             std::forward<decltype(df)>(df));
+  });
 }
 
 StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
@@ -351,6 +392,17 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
   AddMethod(kEndpointOpID, endpoint_fn);
   PX_RETURN_IF_ERROR(endpoint_fn->SetDocString(kEndpointOpDocstring));
+
+  PX_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> clickhouse_rows_fn,
+      FuncObject::Create(kClickHouseRowsOpID, {"table", "endpoint"}, {{"endpoint", "None"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&ClickHouseRowsDefinition, compiler_state, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  AddMethod(kClickHouseRowsOpID, clickhouse_rows_fn);
+  PX_RETURN_IF_ERROR(clickhouse_rows_fn->SetDocString(kClickHouseRowsOpDocstring));
 
   return Status::OK();
 }

@@ -15,3 +15,6 @@ resources:
 - cert_provisioner_role.yaml
 - cert_provisioner_job.yaml
 - vizier_crd_role.yaml
+- adaptive_export_role.yaml
+- adaptive_export_secrets.yaml
+- adaptive_export_deployment.yaml

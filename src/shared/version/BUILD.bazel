@@ -77,6 +77,7 @@ pl_cc_library_internal(
     # be restricted to binaries.
     # TODO(zasgar): Refactor dependent code so we can more precisely apply the visbility rules.
     visibility = [
+        "//src/carnot:__pkg__",
         "//src/carnot/planner/docs:__pkg__",
         "//src/experimental:__subpackages__",
         "//src/vizier/funcs:__pkg__",

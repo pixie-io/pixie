@@ -98,7 +98,23 @@ pl_cc_binary(
 pl_cc_binary(
     name = "carnot_executable",
     srcs = ["carnot_executable.cc"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:clickhouse.tar",
+    ],
+    stamp = -1,
+    tags = [
+        "requires_docker",
+    ],
     deps = [
         ":cc_library",
+        "//src/common/testing:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/shared/version:cc_library",
+        "//src/shared/version:version_linkstamp",
+        "//src/stirling/source_connectors/socket_tracer:cc_library",
+        "//src/vizier/funcs:cc_library",
+        "//src/vizier/funcs/context:cc_library",
+        "//src/vizier/services/metadata/local:cc_library",
+        "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
     ],
 )

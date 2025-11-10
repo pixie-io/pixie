@@ -20,7 +20,6 @@
 
 #include <stddef.h>
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -81,30 +80,9 @@ class Operator : public PlanNode {
   bool is_initialized_ = false;
 };
 
-class SinkOperator : public Operator {
+class MemorySourceOperator : public Operator {
  public:
-  explicit SinkOperator(int64_t id, planpb::OperatorType op_type,
-                        std::map<std::string, std::string> context)
-      : Operator(id, op_type), context_(context) {}
-
-  std::string DebugString() const override { return absl::StrCat("SinkOperator: ", id_); }
-
-  StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema& /*schema*/, const PlanState& /*state*/,
-      const std::vector<int64_t>& /*input_ids*/) const override {
-    return error::Unimplemented("Derived sink operator must implement OutputRelation");
-  }
-
-  std::map<std::string, std::string> context() const { return context_; }
-
- protected:
-  std::map<std::string, std::string> context_;
-};
-
-class MemorySourceOperator : public SinkOperator {
- public:
-  explicit MemorySourceOperator(int64_t id, std::map<std::string, std::string> context)
-      : SinkOperator(id, planpb::MEMORY_SOURCE_OPERATOR, context) {}
+  explicit MemorySourceOperator(int64_t id) : Operator(id, planpb::MEMORY_SOURCE_OPERATOR) {}
   ~MemorySourceOperator() override = default;
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema& schema, const PlanState& state,
@@ -175,10 +153,9 @@ class AggregateOperator : public Operator {
   planpb::AggregateOperator pb_;
 };
 
-class MemorySinkOperator : public SinkOperator {
+class MemorySinkOperator : public Operator {
  public:
-  explicit MemorySinkOperator(int64_t id, std::map<std::string, std::string> context)
-      : SinkOperator(id, planpb::MEMORY_SINK_OPERATOR, context) {}
+  explicit MemorySinkOperator(int64_t id) : Operator(id, planpb::MEMORY_SINK_OPERATOR) {}
   ~MemorySinkOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
@@ -208,10 +185,9 @@ class GRPCSourceOperator : public Operator {
   planpb::GRPCSourceOperator pb_;
 };
 
-class GRPCSinkOperator : public SinkOperator {
+class GRPCSinkOperator : public Operator {
  public:
-  explicit GRPCSinkOperator(int64_t id, std::map<std::string, std::string> context)
-      : SinkOperator(id, planpb::GRPC_SINK_OPERATOR, context) {}
+  explicit GRPCSinkOperator(int64_t id) : Operator(id, planpb::GRPC_SINK_OPERATOR) {}
   ~GRPCSinkOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
@@ -383,10 +359,72 @@ class EmptySourceOperator : public Operator {
   std::vector<int64_t> column_idxs_;
 };
 
-class OTelExportSinkOperator : public SinkOperator {
+class ClickHouseSourceOperator : public Operator {
  public:
-  explicit OTelExportSinkOperator(int64_t id, std::map<std::string, std::string> context)
-      : SinkOperator(id, planpb::OTEL_EXPORT_SINK_OPERATOR, context) {}
+  explicit ClickHouseSourceOperator(int64_t id)
+      : Operator(id, planpb::CLICKHOUSE_SOURCE_OPERATOR) {}
+  ~ClickHouseSourceOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::ClickHouseSourceOperator& pb);
+  std::string DebugString() const override;
+
+  std::string host() const { return pb_.host(); }
+  int32_t port() const { return pb_.port(); }
+  std::string username() const { return pb_.username(); }
+  std::string password() const { return pb_.password(); }
+  std::string database() const { return pb_.database(); }
+  std::string query() const { return pb_.query(); }
+  int32_t batch_size() const { return pb_.batch_size(); }
+  bool streaming() const { return pb_.streaming(); }
+  std::vector<std::string> column_names() const {
+    return std::vector<std::string>(pb_.column_names().begin(), pb_.column_names().end());
+  }
+  std::vector<types::DataType> column_types() const {
+    std::vector<types::DataType> types;
+    types.reserve(pb_.column_types_size());
+    for (const auto& type : pb_.column_types()) {
+      types.push_back(static_cast<types::DataType>(type));
+    }
+    return types;
+  }
+  std::string timestamp_column() const { return pb_.timestamp_column(); }
+  std::string partition_column() const { return pb_.partition_column(); }
+  int64_t start_time() const { return pb_.start_time(); }
+  int64_t end_time() const { return pb_.end_time(); }
+
+ private:
+  planpb::ClickHouseSourceOperator pb_;
+};
+
+class ClickHouseExportSinkOperator : public Operator {
+ public:
+  explicit ClickHouseExportSinkOperator(int64_t id)
+      : Operator(id, planpb::CLICKHOUSE_EXPORT_SINK_OPERATOR) {}
+  ~ClickHouseExportSinkOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::ClickHouseExportSinkOperator& pb);
+  std::string DebugString() const override;
+
+  const planpb::ClickHouseConfig& clickhouse_config() const { return pb_.clickhouse_config(); }
+  const std::string& table_name() const { return pb_.table_name(); }
+  const ::google::protobuf::RepeatedPtrField<planpb::ClickHouseExportSinkOperator::ColumnMapping>&
+  column_mappings() const {
+    return pb_.column_mappings();
+  }
+
+ private:
+  planpb::ClickHouseExportSinkOperator pb_;
+};
+
+class OTelExportSinkOperator : public Operator {
+ public:
+  explicit OTelExportSinkOperator(int64_t id) : Operator(id, planpb::OTEL_EXPORT_SINK_OPERATOR) {}
   ~OTelExportSinkOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
@@ -400,7 +438,6 @@ class OTelExportSinkOperator : public SinkOperator {
   // TODO(philkuz) temporary measure.
   const planpb::OTelExportSinkOperator& pb() const { return pb_; }
 
-  const ::google::protobuf::RepeatedPtrField<planpb::OTelLog>& logs() const { return pb_.logs(); }
   const ::google::protobuf::RepeatedPtrField<planpb::OTelMetric>& metrics() const {
     return pb_.metrics();
   }

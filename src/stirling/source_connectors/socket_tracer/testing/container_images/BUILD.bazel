@@ -14,11 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label", "pl_go_test_versions", "pl_supported_go_sdk_versions")
 
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = [
+    "//src/stirling:__subpackages__",
+    "//src/carnot:__subpackages__",
+])
 
 pl_cc_test_library(
     name = "bssl_container",
@@ -415,4 +419,19 @@ pl_cc_test_library(
         "//src/stirling/source_connectors/socket_tracer/testing/containers:zookeeper_image.tar",
     ],
     deps = ["//src/common/testing/test_utils:cc_library"],
+)
+
+# ClickHouse configuration layer for console logging
+container_layer(
+    name = "clickhouse_config_layer",
+    files = ["clickhouse_logging_config.xml"],
+    mode = "0644",
+    directory = "/etc/clickhouse-server/config.d",
+)
+
+container_image(
+    name = "clickhouse",
+    base = "@clickhouse_server_base_image//image",
+    layers = [":clickhouse_config_layer"],
+    visibility = ["//visibility:public"],
 )

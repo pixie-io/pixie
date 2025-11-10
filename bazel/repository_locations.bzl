@@ -71,6 +71,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "concurrentqueue-1.0.3",
         urls = ["https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.3.tar.gz"],
     ),
+    com_github_clickhouse_clickhouse_cpp = dict(
+        sha256 = "1029a1bb0da8a72db1662a0418267742e66c82bb3e6b0ed116623a2fa8c65a58",
+        strip_prefix = "clickhouse-cpp-22dc9441cd807156511c6dcf97b1b878bd663d77",
+        urls = ["https://github.com/ClickHouse/clickhouse-cpp/archive/22dc9441cd807156511c6dcf97b1b878bd663d77.tar.gz"],
+    ),
     com_github_cyan4973_xxhash = dict(
         sha256 = "952ebbf5b11fbf59ae5d760a562d1e9112278f244340ad7714e8556cbe54f7f7",
         strip_prefix = "xxHash-0.7.3",

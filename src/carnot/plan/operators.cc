@@ -99,6 +99,10 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<UDTFSourceOperator>(id, pb.udtf_source_op());
     case planpb::EMPTY_SOURCE_OPERATOR:
       return CreateOperator<EmptySourceOperator>(id, pb.empty_source_op());
+    case planpb::CLICKHOUSE_SOURCE_OPERATOR:
+      return CreateOperator<ClickHouseSourceOperator>(id, pb.clickhouse_source_op());
+    case planpb::CLICKHOUSE_EXPORT_SINK_OPERATOR:
+      return CreateOperator<ClickHouseExportSinkOperator>(id, pb.clickhouse_sink_op());
     case planpb::OTEL_EXPORT_SINK_OPERATOR:
       return CreateOperator<OTelExportSinkOperator>(id, pb.otel_sink_op(), context);
     default:
@@ -723,6 +727,65 @@ StatusOr<table_store::schema::Relation> EmptySourceOperator::OutputRelation(
     r.AddColumn(pb_.column_types(i), pb_.column_names(i));
   }
   return r;
+}
+
+/**
+ * ClickHouseSourceOperator implementation.
+ */
+
+std::string ClickHouseSourceOperator::DebugString() const { 
+  return absl::Substitute(R"(Op:ClickHouseSource(
+  host=$0
+  port=$1
+  username=$2
+  batch_size=$3
+  start_time=$4
+  end_time=$5
+  timestamp_column=$6
+  partition_column=$7
+)", pb_.host(), pb_.port(), pb_.username(), pb_.batch_size(), pb_.start_time(), pb_.end_time(),
+                         pb_.timestamp_column(), pb_.partition_column());
+}
+
+Status ClickHouseSourceOperator::Init(const planpb::ClickHouseSourceOperator& pb) {
+  pb_ = pb;
+  is_initialized_ = true;
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> ClickHouseSourceOperator::OutputRelation(
+    const table_store::schema::Schema&, const PlanState&,
+    const std::vector<int64_t>& input_ids) const {
+  DCHECK(is_initialized_) << "Not initialized";
+  if (!input_ids.empty()) {
+    return error::InvalidArgument("Source operator cannot have any inputs");
+  }
+  table_store::schema::Relation r;
+  for (int i = 0; i < pb_.column_types_size(); ++i) {
+    r.AddColumn(static_cast<types::DataType>(pb_.column_types(i)), pb_.column_names(i));
+  }
+  return r;
+}
+
+/**
+ * ClickHouse Export Sink Operator Implementation.
+ */
+
+Status ClickHouseExportSinkOperator::Init(const planpb::ClickHouseExportSinkOperator& pb) {
+  pb_ = pb;
+  is_initialized_ = true;
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> ClickHouseExportSinkOperator::OutputRelation(
+    const table_store::schema::Schema&, const PlanState&, const std::vector<int64_t>&) const {
+  DCHECK(is_initialized_) << "Not initialized";
+  // There are no outputs.
+  return table_store::schema::Relation();
+}
+
+std::string ClickHouseExportSinkOperator::DebugString() const {
+  return absl::Substitute("Op:ClickHouseExportSink(table=$0)", pb_.table_name());
 }
 
 /**
