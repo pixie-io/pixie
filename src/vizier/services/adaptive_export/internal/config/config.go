@@ -33,16 +33,20 @@ import (
 )
 
 const (
-	envVerbose         = "VERBOSE"
-	envClickHouseDSN   = "CLICKHOUSE_DSN"
-	envPixieClusterID  = "PIXIE_CLUSTER_ID"
-	envPixieEndpoint   = "PIXIE_ENDPOINT"
-	envPixieAPIKey     = "PIXIE_API_KEY"
-	envClusterName     = "CLUSTER_NAME"
-	envCollectInterval = "COLLECT_INTERVAL_SEC"
-	defPixieHostname   = "work.withpixie.ai:443"
-	boolTrue           = "true"
-	defCollectInterval = 30
+	envVerbose                  = "VERBOSE"
+	envClickHouseDSN            = "CLICKHOUSE_DSN"
+	envPixieClusterID           = "PIXIE_CLUSTER_ID"
+	envPixieEndpoint            = "PIXIE_ENDPOINT"
+	envPixieAPIKey              = "PIXIE_API_KEY"
+	envClusterName              = "CLUSTER_NAME"
+	envCollectInterval          = "COLLECT_INTERVAL_SEC"
+	envDetectionInterval        = "DETECTION_INTERVAL_SEC"
+	envDetectionLookback        = "DETECTION_LOOKBACK_SEC"
+	defPixieHostname            = "work.withpixie.ai:443"
+	boolTrue                    = "true"
+	defCollectInterval          = 30
+	defDetectionInterval        = 10
+	defDetectionLookback        = 15
 )
 
 var (
@@ -138,9 +142,6 @@ func GetConfig() (Config, error) {
 
 func setUpConfig() error {
 	log.SetLevel(log.InfoLevel)
-	if strings.EqualFold(os.Getenv(envVerbose), boolTrue) {
-		log.SetLevel(log.DebugLevel)
-	}
 
 	// Try to read configuration from environment variables first
 	clickhouseDSN := os.Getenv(envClickHouseDSN)
@@ -148,6 +149,11 @@ func setUpConfig() error {
 	pixieAPIKey := os.Getenv(envPixieAPIKey)
 	clusterName := os.Getenv(envClusterName)
 	pixieHost := getEnvWithDefault(envPixieEndpoint, defPixieHostname)
+	enableDebug := os.Getenv(envVerbose)
+
+	if strings.EqualFold(enableDebug, boolTrue) {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	log.Debugf("Config from environment - ClickHouse DSN: %s", clickhouseDSN)
 	log.Debugf("Config from environment - Pixie Cluster ID: %s", pixieClusterID)
@@ -190,6 +196,16 @@ func setUpConfig() error {
 		return err
 	}
 
+	detectionInterval, err := getIntEnvWithDefault(envDetectionInterval, defDetectionInterval)
+	if err != nil {
+		return err
+	}
+
+	detectionLookback, err := getIntEnvWithDefault(envDetectionLookback, defDetectionLookback)
+	if err != nil {
+		return err
+	}
+
 	instance = &config{
 		settings: &settings{
 			buildDate: buildDate,
@@ -197,9 +213,11 @@ func setUpConfig() error {
 			version:   integrationVersion,
 		},
 		worker: &worker{
-			clusterName:     clusterName,
-			pixieClusterID:  pixieClusterID,
-			collectInterval: collectInterval,
+			clusterName:        clusterName,
+			pixieClusterID:     pixieClusterID,
+			collectInterval:    collectInterval,
+			detectionInterval:  detectionInterval,
+			detectionLookback:  detectionLookback,
 		},
 		clickhouse: &clickhouse{
 			dsn:       clickhouseDSN,
@@ -370,13 +388,17 @@ type Worker interface {
 	ClusterName() string
 	PixieClusterID() string
 	CollectInterval() int64
+	DetectionInterval() int64
+	DetectionLookback() int64
 	validate() error
 }
 
 type worker struct {
-	clusterName     string
-	pixieClusterID  string
-	collectInterval int64
+	clusterName        string
+	pixieClusterID     string
+	collectInterval    int64
+	detectionInterval  int64
+	detectionLookback  int64
 }
 
 func (a *worker) validate() error {
@@ -396,4 +418,12 @@ func (a *worker) PixieClusterID() string {
 
 func (a *worker) CollectInterval() int64 {
 	return a.collectInterval
+}
+
+func (a *worker) DetectionInterval() int64 {
+	return a.detectionInterval
+}
+
+func (a *worker) DetectionLookback() int64 {
+	return a.detectionLookback
 }

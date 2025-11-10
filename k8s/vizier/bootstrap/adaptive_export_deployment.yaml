@@ -53,6 +53,10 @@ spec:
               key: clickhouse-dsn
         - name: VERBOSE
           value: "true"
+        - name: DETECTION_INTERVAL_SEC
+          value: "10"
+        - name: DETECTION_LOOKBACK_SEC
+          value: "30"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

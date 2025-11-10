@@ -20,43 +20,180 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"px.dev/pixie/src/api/go/pxapi"
 
 	"px.dev/pixie/src/vizier/services/adaptive_export/internal/config"
 	"px.dev/pixie/src/vizier/services/adaptive_export/internal/pixie"
+	"px.dev/pixie/src/vizier/services/adaptive_export/internal/pxl"
 	"px.dev/pixie/src/vizier/services/adaptive_export/internal/script"
 )
 
 const (
-	defaultRetries   = 100
-	defaultSleepTime = 15 * time.Second
+	defaultRetries         = 100
+	defaultSleepTime       = 15 * time.Second
+	schemaCreationInterval = 2 * time.Minute
+	setupTimeout           = 30 * time.Second
+	scriptExecutionTimeout = 60 * time.Second
+)
+
+const (
+	// TODO(ddelnano): Clickhouse configuration should come from plugin config.
+	schemaCreationScript = `
+import px
+px.display(px.CreateClickHouseSchemas(
+  host="hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local",
+  port=9000,
+  username="otelcollector",
+  password="otelcollectorpass",
+  database="default"
+))
+`
+	detectionScript = `
+import px
+
+df = px.DataFrame('kubescape_logs', clickhouse_dsn='otelcollector:otelcollectorpass@hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:9000/default', start_time='-%ds')
+df.alert = df.message
+df.namespace = px.pluck(df.RuntimeK8sDetails, "podNamespace")
+df.podName = px.pluck(df.RuntimeK8sDetails, "podName")
+df.time_ = px.int64_to_time(df.event_time * 1000000000)
+df = df[['time_', 'alert', 'namespace', 'podName']]
+px.display(df)
+`
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	log.Info("Starting the setup of the ClickHouse Pixie plugin")
+	log.Info("Starting the ClickHouse Adaptive Export service")
 	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Error(err)
-		os.Exit(1)
+		log.WithError(err).Fatal("failed to load configuration")
 	}
 
 	clusterId := cfg.Pixie().ClusterID()
 	clusterName := cfg.Worker().ClusterName()
 
-	log.Infof("Setting up Pixie plugin for cluster-id %s", clusterId)
-	client, err := setupPixie(ctx, cfg.Pixie(), defaultRetries, defaultSleepTime)
+	// Setup Pixie Plugin API client
+	log.Infof("Setting up Pixie plugin API client for cluster-id %s", clusterId)
+	pluginClient, err := setupPixie(ctx, cfg.Pixie(), defaultRetries, defaultSleepTime)
 	if err != nil {
-		log.WithError(err).Fatal("setting up Pixie client failed")
+		log.WithError(err).Fatal("setting up Pixie plugin client failed")
 	}
 
+	// Setup Pixie pxapi client for executing PxL scripts
+	log.Info("Setting up Pixie pxapi client")
+	// Use parent context - client stores this and uses it for all subsequent operations
+	pxClient, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(cfg.Pixie().APIKey()), pxapi.WithCloudAddr(cfg.Pixie().Host()))
+	if err != nil {
+		log.WithError(err).Fatal("failed to create pxapi client")
+	}
+
+	// Start schema creation background task
+	go runSchemaCreationTask(ctx, pxClient, clusterId)
+
+	// Start detection script that monitors for when to enable persistence
+	go runDetectionTask(ctx, pxClient, pluginClient, cfg, clusterId, clusterName)
+
+	// Wait for signal to shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	log.Info("Shutting down adaptive export service")
+	cancel()
+	time.Sleep(1 * time.Second)
+}
+
+func runSchemaCreationTask(ctx context.Context, client *pxapi.Client, clusterID string) {
+	ticker := time.NewTicker(schemaCreationInterval)
+	defer ticker.Stop()
+
+	// Run immediately on startup
+	log.Info("Running schema creation script")
+	execCtx, cancel := context.WithTimeout(ctx, scriptExecutionTimeout)
+	if _, err := pxl.ExecuteScript(execCtx, client, clusterID, schemaCreationScript); err != nil {
+		log.WithError(err).Error("failed to execute schema creation script")
+	} else {
+		log.Info("Schema creation script completed successfully")
+	}
+	cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Schema creation task shutting down")
+			return
+		case <-ticker.C:
+			log.Info("Running schema creation script")
+			execCtx, cancel := context.WithTimeout(ctx, scriptExecutionTimeout)
+			if _, err := pxl.ExecuteScript(execCtx, client, clusterID, schemaCreationScript); err != nil {
+				log.WithError(err).Error("failed to execute schema creation script")
+			} else {
+				log.Info("Schema creation script completed successfully")
+			}
+			cancel()
+		}
+	}
+}
+
+func runDetectionTask(ctx context.Context, pxClient *pxapi.Client, pluginClient *pixie.Client, cfg config.Config, clusterID string, clusterName string) {
+	detectionInterval := time.Duration(cfg.Worker().DetectionInterval()) * time.Second
+	detectionLookback := cfg.Worker().DetectionLookback()
+
+	ticker := time.NewTicker(detectionInterval)
+	defer ticker.Stop()
+
+	pluginEnabled := false
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Detection task shutting down")
+			return
+		case <-ticker.C:
+			log.Info("Running detection script")
+			// Run detection script with lookback period
+			detectionPxl := fmt.Sprintf(detectionScript, detectionLookback)
+			execCtx, cancel := context.WithTimeout(ctx, scriptExecutionTimeout)
+			recordCount, err := pxl.ExecuteScript(execCtx, pxClient, clusterID, detectionPxl)
+			cancel()
+
+			if err != nil {
+				log.WithError(err).Error("failed to execute detection script")
+				continue
+			}
+
+			log.Debugf("Detection script returned %d records", recordCount)
+
+			// If we have records and plugin is not enabled, enable it
+			if recordCount > 0 && !pluginEnabled {
+				log.Info("Detection script returned records - enabling forensic export")
+				pluginCtx, pluginCancel := context.WithTimeout(ctx, 2*time.Minute)
+				if err := enableClickHousePlugin(pluginCtx, pluginClient, cfg, clusterID, clusterName); err != nil {
+					log.WithError(err).Error("failed to enable forensic export")
+				} else {
+					pluginEnabled = true
+					log.Info("Forensic export enabled successfully")
+				}
+				pluginCancel()
+			} else if recordCount > 0 && pluginEnabled {
+				log.Info("Detection script returned records but forensic export already enabled, no action taken")
+			}
+		}
+	}
+}
+
+func enableClickHousePlugin(ctx context.Context, client *pixie.Client, cfg config.Config, clusterID string, clusterName string) error {
 	log.Info("Checking the current ClickHouse plugin configuration")
 	plugin, err := client.GetClickHousePlugin()
 	if err != nil {
-		log.WithError(err).Fatal("getting data retention plugins failed")
+		return fmt.Errorf("getting data retention plugins failed: %w", err)
 	}
 
 	enablePlugin := true
@@ -64,7 +201,7 @@ func main() {
 		enablePlugin = false
 		config, err := client.GetClickHousePluginConfig()
 		if err != nil {
-			log.WithError(err).Fatal("getting ClickHouse plugin config failed")
+			return fmt.Errorf("getting ClickHouse plugin config failed: %w", err)
 		}
 		if config.ExportUrl != cfg.ClickHouse().DSN() {
 			log.Info("ClickHouse plugin is configured with different DSN... Overwriting")
@@ -78,7 +215,7 @@ func main() {
 			ExportUrl: cfg.ClickHouse().DSN(),
 		}, plugin.LatestVersion)
 		if err != nil {
-			log.WithError(err).Fatal("failed to enabled ClickHouse plugin")
+			return fmt.Errorf("failed to enable ClickHouse plugin: %w", err)
 		}
 	}
 
@@ -87,20 +224,20 @@ func main() {
 	log.Info("Getting preset script from the Pixie plugin")
 	defsFromPixie, err := client.GetPresetScripts()
 	if err != nil {
-		log.WithError(err).Fatal("failed to get preset scripts")
+		return fmt.Errorf("failed to get preset scripts: %w", err)
 	}
 
 	definitions := defsFromPixie
 
 	log.Infof("Getting current scripts for cluster")
-	currentScripts, err := client.GetClusterScripts(clusterId, clusterName)
+	currentScripts, err := client.GetClusterScripts(clusterID, clusterName)
 	if err != nil {
-		log.WithError(err).Fatal("failed to get data retention scripts")
+		return fmt.Errorf("failed to get data retention scripts: %w", err)
 	}
 
 	actions := script.GetActions(definitions, currentScripts, script.ScriptConfig{
 		ClusterName:     clusterName,
-		ClusterId:       clusterId,
+		ClusterId:       clusterID,
 		CollectInterval: cfg.Worker().CollectInterval(),
 	})
 
@@ -116,7 +253,7 @@ func main() {
 
 	for _, s := range actions.ToUpdate {
 		log.Infof("Updating script %s", s.Name)
-		err := client.UpdateDataRetentionScript(clusterId, s.ScriptId, s.Name, s.Description, s.FrequencyS, s.Script)
+		err := client.UpdateDataRetentionScript(clusterID, s.ScriptId, s.Name, s.Description, s.FrequencyS, s.Script)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -124,18 +261,18 @@ func main() {
 
 	for _, s := range actions.ToCreate {
 		log.Infof("Creating script %s", s.Name)
-		err := client.AddDataRetentionScript(clusterId, s.Name, s.Description, s.FrequencyS, s.Script)
+		err := client.AddDataRetentionScript(clusterID, s.Name, s.Description, s.FrequencyS, s.Script)
 		if err != nil {
 			errs = append(errs, err)
 		}
 	}
 
 	if len(errs) > 0 {
-		log.Fatalf("errors while setting up data retention scripts: %v", errs)
+		return fmt.Errorf("errors while setting up data retention scripts: %v", errs)
 	}
 
 	log.Info("All done! The ClickHouse plugin is now configured.")
-	os.Exit(0)
+	return nil
 }
 
 func setupPixie(ctx context.Context, cfg config.Pixie, tries int, sleepTime time.Duration) (*pixie.Client, error) {
@@ -144,13 +281,16 @@ func setupPixie(ctx context.Context, cfg config.Pixie, tries int, sleepTime time
 	log.Infof("setupPixie: API Key length=%d, Host=%s", len(apiKey), host)
 
 	for tries > 0 {
+		// Use parent context - client stores this and uses it for all subsequent operations
 		client, err := pixie.NewClient(ctx, apiKey, host)
 		if err == nil {
 			return client, nil
 		}
 		tries -= 1
 		log.WithError(err).Warning("error creating Pixie API client")
-		time.Sleep(sleepTime)
+		if tries > 0 {
+			time.Sleep(sleepTime)
+		}
 	}
 	return nil, fmt.Errorf("exceeded maximum number of retries")
 }

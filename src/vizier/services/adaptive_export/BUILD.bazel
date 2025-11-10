@@ -23,8 +23,10 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/adaptive_export",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/api/go/pxapi",
         "//src/vizier/services/adaptive_export/internal/config",
         "//src/vizier/services/adaptive_export/internal/pixie",
+        "//src/vizier/services/adaptive_export/internal/pxl",
         "//src/vizier/services/adaptive_export/internal/script",
         "@com_github_sirupsen_logrus//:logrus",
     ],

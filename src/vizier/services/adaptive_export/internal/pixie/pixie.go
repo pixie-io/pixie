@@ -47,7 +47,6 @@ type Client struct {
 }
 
 func NewClient(ctx context.Context, apiKey string, cloudAddr string) (*Client, error) {
-	fmt.Printf("DEBUG: NewClient called with apiKey length: %d, cloudAddr: %s\n", len(apiKey), cloudAddr)
 	if apiKey == "" {
 		fmt.Println("WARNING: API key is empty!")
 	}
@@ -55,14 +54,6 @@ func NewClient(ctx context.Context, apiKey string, cloudAddr string) (*Client, e
 	c := &Client{
 		cloudAddr: cloudAddr,
 		ctx:       metadata.AppendToOutgoingContext(ctx, "pixie-api-key", apiKey),
-	}
-
-	// Debug: check what's in the context
-	md, ok := metadata.FromOutgoingContext(c.ctx)
-	if ok {
-		fmt.Printf("DEBUG: Context metadata: %v\n", md)
-	} else {
-		fmt.Println("WARNING: No metadata in context!")
 	}
 
 	if err := c.init(); err != nil {
