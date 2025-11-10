@@ -27,6 +27,7 @@
 #include "src/shared/schema/utils.h"
 #include "src/table_store/table_store.h"
 #include "src/vizier/funcs/funcs.h"
+#include "src/vizier/services/metadata/local/local_metadata_service.h"
 
 DEFINE_int32(
     table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
@@ -72,8 +73,8 @@ StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view
       api_(std::make_unique<px::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       table_store_(std::make_shared<table_store::TableStore>()),
-      func_context_(this, /* mds_stub= */ nullptr, /* mdtp_stub= */ nullptr,
-                    /* mdfs_stub= */ nullptr,
+      metadata_grpc_server_(std::make_unique<services::metadata::LocalMetadataGRPCServer>(table_store_.get())),
+      func_context_(this, metadata_grpc_server_->StubGenerator(), /* mdtp_stub= */ nullptr,
                     /* cronscript_stub= */ nullptr, table_store_, [](grpc::ClientContext*) {}),
       stirling_(px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag())),
       results_sink_server_(std::make_unique<StandaloneGRPCResultSinkServer>()) {

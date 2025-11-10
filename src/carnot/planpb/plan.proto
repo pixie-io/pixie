@@ -104,6 +104,7 @@ enum OperatorType {
   GRPC_SOURCE_OPERATOR = 1100;
   UDTF_SOURCE_OPERATOR = 1200;
   EMPTY_SOURCE_OPERATOR = 1300;
+  CLICKHOUSE_SOURCE_OPERATOR = 1400;
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
   AGGREGATE_OPERATOR = 2100;
@@ -116,6 +117,7 @@ enum OperatorType {
   GRPC_SINK_OPERATOR = 9100;
   OTEL_EXPORT_SINK_OPERATOR = 9200;
   // TODO(ddelnano): 10001 - 11000 are reserved for future use (sink_results table)
+  CLICKHOUSE_EXPORT_SINK_OPERATOR = 9300;
 }
 
 // The Logical operation performed. Each operator needs and entry in this
@@ -150,8 +152,12 @@ message Operator {
     EmptySourceOperator empty_source_op = 13;
     // OTelExportSinkOperator writes the input table to an OpenTelemetry endpoint.
     OTelExportSinkOperator otel_sink_op = 14 [ (gogoproto.customname) = "OTelSinkOp" ];
+    // ClickHouseSourceOperator reads data from a ClickHouse database.
+    ClickHouseSourceOperator clickhouse_source_op = 15;
+    // ClickHouseExportSinkOperator writes the input table to a ClickHouse database.
+    ClickHouseExportSinkOperator clickhouse_sink_op = 16;
   }
-  map<string, string> context = 15;
+  map<string, string> context = 17;
 }
 
 // Fetches data from in-memory source.
@@ -360,6 +366,44 @@ message EmptySourceOperator {
   repeated px.types.DataType column_types = 2;
 }
 
+// Source operator that queries a ClickHouse database.
+message ClickHouseSourceOperator {
+  // Connection parameters
+  string host = 1;
+  int32 port = 2;
+  string username = 3;
+  string password = 4;
+  string database = 5;
+  
+  // Query to execute
+  string query = 6;
+  
+  // The names for the columns (can be auto-detected from query)
+  repeated string column_names = 7;
+  // The types of the columns (can be auto-detected from query)
+  repeated px.types.DataType column_types = 8;
+  
+  // Batch size for fetching results
+  int32 batch_size = 9;
+  
+  // Whether to stream results (future enhancement)
+  bool streaming = 10;
+
+  // Column name to use for timestamp-based filtering and ordering
+  // This column should be of DateTime or DateTime64 type
+  string timestamp_column = 11;
+
+  // Column name to use for partitioning
+  // The underlying ClickHouse table should be partitioned by this column
+  string partition_column = 12;
+
+  // Start time for time-based filtering (nanoseconds since epoch)
+  int64 start_time = 13;
+
+  // End time for time-based filtering (nanoseconds since epoch)
+  int64 end_time = 14;
+}
+
 // OTelLog maps operator columns to each field in the OpenTelemetry Log configuration.
 // The mapping ensures that each row of the table will be a separate log.
 // Maps to the config described here:
@@ -526,6 +570,22 @@ message OTelEndpointConfig {
   int64 timeout = 4;
 }
 
+// ClickHouseConfig contains the connection parameters for ClickHouse.
+message ClickHouseConfig {
+  // The hostname of the node executing the query.
+  string hostname = 1;
+  // The ClickHouse server host.
+  string host = 2;
+  // The ClickHouse server port.
+  int32 port = 3;
+  // The ClickHouse username.
+  string username = 4;
+  // The ClickHouse password.
+  string password = 5;
+  // The ClickHouse database name.
+  string database = 6;
+}
+
 // Defines a resource. Discussed in depth in the OpenTelemetry spec.
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md
 message OTelResource {
@@ -547,6 +607,24 @@ message OTelExportSinkOperator {
   repeated OTelSpan spans = 4;
   // Logs describes the exported logs for this resource.
   repeated OTelLog logs = 5;
+}
+
+message ClickHouseExportSinkOperator {
+  // ClickHouse connection parameters
+  ClickHouseConfig clickhouse_config = 1;
+  // Target table name to insert data into
+  string table_name = 2;
+  // Column mapping: maps input column indices to ClickHouse table columns
+  repeated ColumnMapping column_mappings = 3;
+
+  message ColumnMapping {
+    // Index of the column in the input row batch
+    int32 input_column_index = 1;
+    // Name of the column in the ClickHouse table
+    string clickhouse_column_name = 2;
+    // Data type of the column
+    px.types.DataType column_type = 3;
+  }
 }
 
 // Scalar expression is any single valued expression.

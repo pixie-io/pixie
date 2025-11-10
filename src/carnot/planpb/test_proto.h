@@ -195,6 +195,26 @@ column_names: "usage"
 streaming: false
 )";
 
+constexpr char kClickHouseSourceOperator[] = R"(
+host: "localhost"
+port: 9000
+username: "default"
+password: "test_password"
+database: "default"
+query: "SELECT id, name, value FROM test_table"
+batch_size: 2
+streaming: false
+column_names: "id"
+column_names: "name"
+column_names: "value"
+column_types: INT64
+column_types: STRING
+column_types: FLOAT64
+timestamp_column: "timestamp"
+start_time: 1000000000000000000
+end_time: 9223372036854775807
+)";
+
 constexpr char kBlockingAggOperator1[] = R"(
 windowed: false
 values {
@@ -1394,6 +1414,14 @@ planpb::Operator CreateTestSource1PB(const std::string& table_name = "cpu") {
   return op;
 }
 
+planpb::Operator CreateClickHouseSourceOperatorPB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "CLICKHOUSE_SOURCE_OPERATOR",
+                                   "clickhouse_source_op", kClickHouseSourceOperator);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
 planpb::Operator CreateTestStreamingSource1PB(const std::string& table_name = "cpu") {
   planpb::Operator op;
   auto mem_proto = absl::Substitute(kStreamingMemSourceOperator1, table_name);
@@ -1440,6 +1468,32 @@ planpb::Operator CreateTestSink1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
                                    kMemSinkOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+// Create a test ClickHouse source operator with hardcoded values
+planpb::Operator CreateTestClickHouseSourcePB() {
+  constexpr char kClickHouseSourceOperator[] = R"(
+    host: "localhost"
+    port: 9000
+    username: "default"
+    password: "test_password"
+    database: "default"
+    query: "SELECT id, name, value FROM test_table ORDER BY id"
+    batch_size: 1024
+    streaming: false
+    column_names: "id"
+    column_names: "name"
+    column_names: "value"
+    column_types: UINT64
+    column_types: STRING
+    column_types: FLOAT64
+  )";
+
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "CLICKHOUSE_SOURCE_OPERATOR",
+                                   "clickhouse_source_op", kClickHouseSourceOperator);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

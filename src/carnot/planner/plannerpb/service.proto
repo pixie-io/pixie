@@ -76,6 +76,22 @@ message Configs {
     int64 end_time_ns = 2;
   }
   PluginConfig plugin_config = 2;
+  // ClickHouseConfig contains information about ClickHouse connection parameters.
+  message ClickHouseConfig {
+    // The hostname of the node executing the query.
+    string hostname = 1;
+    // The ClickHouse server host.
+    string host = 2;
+    // The ClickHouse server port.
+    int32 port = 3;
+    // The ClickHouse username.
+    string username = 4;
+    // The ClickHouse password.
+    string password = 5;
+    // The ClickHouse database name.
+    string database = 6;
+  }
+  ClickHouseConfig clickhouse_config = 3;
 }
 
 // QueryRequest is the body of the request made to the planner.

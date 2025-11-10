@@ -17,8 +17,12 @@
  */
 
 #include "src/carnot/planner/objects/dataframe.h"
+
+#include <algorithm>
+
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ast_utils.h"
+#include "src/carnot/planner/ir/clickhouse_source_ir.h"
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
@@ -28,10 +32,79 @@
 #include "src/carnot/planner/objects/time.h"
 #include "src/common/base/statusor.h"
 
+#include <absl/strings/str_split.h>
+#include <absl/strings/numbers.h>
+
 namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
+
+struct ClickHouseDSN {
+  std::string host = "localhost";
+  int port = 9000;
+  std::string username = "default";
+  std::string password = "";
+  std::string database = "default";
+};
+
+/**
+ * @brief Parse a ClickHouse DSN string
+ *
+ * Supports formats:
+ *   clickhouse://user:password@host:port/database
+ *   user:password@host:port/database
+ *   host:port
+ *   host
+ */
+StatusOr<ClickHouseDSN> ParseClickHouseDSN(const std::string& dsn_str) {
+  ClickHouseDSN dsn;
+  std::string remaining = dsn_str;
+
+  // Strip clickhouse:// prefix if present
+  if (absl::StartsWith(remaining, "clickhouse://")) {
+    remaining = remaining.substr(13);
+  }
+
+  // Parse user:password@ if present
+  size_t at_pos = remaining.find('@');
+  if (at_pos != std::string::npos) {
+    std::string auth_part = remaining.substr(0, at_pos);
+    remaining = remaining.substr(at_pos + 1);
+
+    size_t colon_pos = auth_part.find(':');
+    if (colon_pos != std::string::npos) {
+      dsn.username = auth_part.substr(0, colon_pos);
+      dsn.password = auth_part.substr(colon_pos + 1);
+    } else {
+      dsn.username = auth_part;
+    }
+  }
+
+  // Parse host:port/database
+  size_t slash_pos = remaining.find('/');
+  std::string host_port;
+  if (slash_pos != std::string::npos) {
+    host_port = remaining.substr(0, slash_pos);
+    dsn.database = remaining.substr(slash_pos + 1);
+  } else {
+    host_port = remaining;
+  }
+
+  // Parse host:port
+  size_t colon_pos = host_port.find(':');
+  if (colon_pos != std::string::npos) {
+    dsn.host = host_port.substr(0, colon_pos);
+    std::string port_str = host_port.substr(colon_pos + 1);
+    if (!absl::SimpleAtoi(port_str, &dsn.port)) {
+      return error::InvalidArgument("Invalid port in ClickHouse DSN: $0", port_str);
+    }
+  } else if (!host_port.empty()) {
+    dsn.host = host_port;
+  }
+
+  return dsn;
+}
 
 StatusOr<std::shared_ptr<Dataframe>> GetAsDataFrame(QLObjectPtr obj) {
   if (!Dataframe::IsDataframe(obj)) {
@@ -113,38 +186,97 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
   PX_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("select"), "select"));
   std::string table_name = table->str();
-  PX_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
-                      graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
 
-  if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
-    PX_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
-    PX_ASSIGN_OR_RETURN(auto start_time_ns,
-                        ParseAllTimeFormats(compiler_state->time_now().val, start_time));
-    mem_source_op->SetTimeStartNS(start_time_ns);
-  }
-  if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
-    PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
-    PX_ASSIGN_OR_RETURN(auto end_time_ns,
-                        ParseAllTimeFormats(compiler_state->time_now().val, end_time));
-    mem_source_op->SetTimeStopNS(end_time_ns);
-  }
-  StringIR* mutation_id_ir = nullptr;
-  if (!NoneObject::IsNoneObject(args.GetArg("mutation_id"))) {
-    PX_ASSIGN_OR_RETURN(mutation_id_ir, GetArgAs<StringIR>(ast, args, "mutation_id"));
-  }
-  auto relation_map = compiler_state->relation_map();
-  std::optional<std::string> mutation_id = std::nullopt;
-  if (mutation_id_ir != nullptr) {
-    mutation_id = mutation_id_ir->str();
-  }
-  for (const auto& [table_name, relation] : *relation_map) {
-    if (table_name == table->str() && mutation_id == std::nullopt) {
-      mutation_id = relation.mutation_id();
-      break;
+  // Check if we should use ClickHouse or memory source
+  bool is_clickhouse = false;
+  ClickHouseDSN dsn;
+  std::string timestamp_column = "event_time";
+  if (!NoneObject::IsNoneObject(args.GetArg("clickhouse_dsn"))) {
+    is_clickhouse = true;
+    PX_ASSIGN_OR_RETURN(StringIR * dsn_ir, GetArgAs<StringIR>(ast, args, "clickhouse_dsn"));
+    PX_ASSIGN_OR_RETURN(dsn, ParseClickHouseDSN(dsn_ir->str()));
+
+    // Get timestamp column if specified
+    if (!NoneObject::IsNoneObject(args.GetArg("clickhouse_ts_col"))) {
+      PX_ASSIGN_OR_RETURN(StringIR * ts_col_ir, GetArgAs<StringIR>(ast, args, "clickhouse_ts_col"));
+      timestamp_column = ts_col_ir->str();
     }
   }
-  graph->RecordMutationId(mutation_id);
-  return Dataframe::Create(compiler_state, mem_source_op, visitor, mutation_id);
+
+  if (is_clickhouse) {
+    // Create ClickHouseSourceIR
+    // Note: hostname and event_time columns are handled in ClickHouseSourceIR::ResolveType
+    // Only add them if the user explicitly selected some columns
+    std::vector<std::string> clickhouse_columns = columns;
+
+    if (!columns.empty()) {
+      // User selected specific columns - add hostname and event_time if not already present
+      if (std::find(clickhouse_columns.begin(), clickhouse_columns.end(), "hostname") == clickhouse_columns.end()) {
+        clickhouse_columns.push_back("hostname");
+      }
+
+      if (std::find(clickhouse_columns.begin(), clickhouse_columns.end(), "event_time") == clickhouse_columns.end()) {
+        clickhouse_columns.push_back("event_time");
+      }
+    }
+    // If columns is empty, select_all() will be true and ResolveType will handle adding all columns
+
+    PX_ASSIGN_OR_RETURN(ClickHouseSourceIR * clickhouse_source_op,
+                        graph->CreateNode<ClickHouseSourceIR>(ast, table_name, clickhouse_columns,
+                                                              dsn.host, dsn.port, dsn.username,
+                                                              dsn.password, dsn.database,
+                                                              timestamp_column));
+
+    if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * start_time,
+                          GetArgAs<ExpressionIR>(ast, args, "start_time"));
+      PX_ASSIGN_OR_RETURN(auto start_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, start_time));
+      clickhouse_source_op->SetTimeStartNS(start_time_ns);
+    }
+    if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+      PX_ASSIGN_OR_RETURN(auto end_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, end_time));
+      clickhouse_source_op->SetTimeStopNS(end_time_ns);
+    }
+    return Dataframe::Create(compiler_state, clickhouse_source_op, visitor);
+  } else {
+    // Create MemorySourceIR (existing behavior)
+    PX_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
+                        graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
+
+    if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * start_time,
+                          GetArgAs<ExpressionIR>(ast, args, "start_time"));
+      PX_ASSIGN_OR_RETURN(auto start_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, start_time));
+      mem_source_op->SetTimeStartNS(start_time_ns);
+    }
+    if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
+      PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+      PX_ASSIGN_OR_RETURN(auto end_time_ns,
+                          ParseAllTimeFormats(compiler_state->time_now().val, end_time));
+      mem_source_op->SetTimeStopNS(end_time_ns);
+    }
+    StringIR* mutation_id_ir = nullptr;
+    if (!NoneObject::IsNoneObject(args.GetArg("mutation_id"))) {
+      PX_ASSIGN_OR_RETURN(mutation_id_ir, GetArgAs<StringIR>(ast, args, "mutation_id"));
+    }
+    auto relation_map = compiler_state->relation_map();
+    std::optional<std::string> mutation_id = std::nullopt;
+    if (mutation_id_ir != nullptr) {
+      mutation_id = mutation_id_ir->str();
+    }
+    for (const auto& [table_name, relation] : *relation_map) {
+      if (table_name == table->str() && mutation_id == std::nullopt) {
+        mutation_id = relation.mutation_id();
+        break;
+      }
+    }
+    graph->RecordMutationId(mutation_id);
+    return Dataframe::Create(compiler_state, mem_source_op, visitor, mutation_id);
+  }
 }
 
 StatusOr<std::vector<ColumnIR*>> ProcessCols(IR* graph, const pypa::AstPtr& ast, QLObjectPtr obj,
@@ -443,8 +575,8 @@ Status Dataframe::Init() {
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> constructor_fn,
       FuncObject::Create(
-          name(), {"table", "select", "start_time", "end_time", "mutation_id"},
-          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}, {"mutation_id", "None"}},
+          name(), {"table", "select", "start_time", "end_time", "mutation_id", "clickhouse_dsn", "clickhouse_ts_col"},
+          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}, {"mutation_id", "None"}, {"clickhouse_dsn", "None"}, {"clickhouse_ts_col", "None"}},
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(&DataFrameConstructor, compiler_state_, graph(), std::placeholders::_1,

@@ -1093,7 +1093,6 @@ TEST_F(LogicalPlannerTest, FileSourcePlan) {
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
-
   auto otel_export_matched = false;
   auto grpc_sink_matched = false;
   for (const auto& id : plan->dag().TopologicalSort()) {
@@ -1124,6 +1123,54 @@ TEST_F(LogicalPlannerTest, FileSourcePlan) {
   }
   EXPECT_TRUE(otel_export_matched);
   EXPECT_TRUE(grpc_sink_matched);
+}
+
+constexpr char kClickHouseSourceQuery[] = R"pxl(
+import px
+
+# Test ClickHouse source node functionality
+df = px.DataFrame('http_events', start_time='-10m', end_time='-5m', clickhouse_dsn='user:test@clickhouse-server:9000/pixie')
+df = df['time_', 'req_headers']
+px.display(df, 'clickhouse_data')
+)pxl";
+
+TEST_F(LogicalPlannerTest, ClickHouseSourceNode) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+
+  // Create a test schema that includes a ClickHouse table
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+
+  auto plan_or_s = planner->Plan(MakeQueryRequest(state, kClickHouseSourceQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+
+  // Verify the plan contains ClickHouse source operators
+  auto plan_pb = plan->ToProto().ConsumeValueOrDie();
+  bool has_clickhouse_source = false;
+
+  for (const auto& [address, agent_plan] : plan_pb.qb_address_to_plan()) {
+    for (const auto& planFragment : agent_plan.nodes()) {
+      for (const auto& planNode : planFragment.nodes()) {
+        if (planNode.op().op_type() == planpb::OperatorType::CLICKHOUSE_SOURCE_OPERATOR) {
+          EXPECT_THAT(planNode.op().clickhouse_source_op().host(), "clickhouse-server");
+          EXPECT_THAT(planNode.op().clickhouse_source_op().port(), 9000);
+          EXPECT_THAT(planNode.op().clickhouse_source_op().database(), "pixie");
+          EXPECT_THAT(planNode.op().clickhouse_source_op().username(), "user");
+          EXPECT_THAT(planNode.op().clickhouse_source_op().password(), "test");
+          has_clickhouse_source = true;
+          break;
+        }
+      }
+      if (has_clickhouse_source) break;
+    }
+    if (has_clickhouse_source) break;
+  }
+
+  // Note: This test validates that the planner can process ClickHouse queries
+  // The actual presence of ClickHouse operators depends on the table configuration
+  EXPECT_OK(plan->ToProto());
+  EXPECT_TRUE(has_clickhouse_source);
 }
 
 const char kExplicitStreamId[] = R"pxl(
@@ -1183,6 +1230,132 @@ TEST_F(LogicalPlannerTest, non_mutation_dataframe_with_explicit_stream_id) {
   }
   EXPECT_TRUE(otel_export_matched);
   EXPECT_TRUE(grpc_sink_matched);
+}
+
+constexpr char kClickHouseExportQuery[] = R"pxl(
+import px
+
+# Test ClickHouse export using endpoint config
+df = px.DataFrame('http_events', start_time='-10m')
+df = df[['time_', 'req_path', 'resp_status', 'resp_latency_ns']]
+px.export(df, px.otel.ClickHouseRows(table='http_events'))
+)pxl";
+
+TEST_F(LogicalPlannerTest, ClickHouseExportWithEndpointConfig) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+
+  // Create a planner state with an OTel endpoint config containing ClickHouse DSN
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+
+  // Set up the endpoint config with ClickHouse DSN in the URL field
+  auto* endpoint_config = state.mutable_otel_endpoint_config();
+  endpoint_config->set_url("clickhouse_user:clickhouse_pass@clickhouse.example.com:9000/pixie_db");
+  endpoint_config->set_insecure(true);
+  endpoint_config->set_timeout(10);
+
+  auto plan_or_s = planner->Plan(MakeQueryRequest(state, kClickHouseExportQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+
+  // Verify the plan contains ClickHouse export sink operators with correct config
+  auto plan_pb = plan->ToProto().ConsumeValueOrDie();
+  bool has_clickhouse_export = false;
+
+  for (const auto& [address, agent_plan] : plan_pb.qb_address_to_plan()) {
+    for (const auto& planFragment : agent_plan.nodes()) {
+      for (const auto& planNode : planFragment.nodes()) {
+        if (planNode.op().op_type() == planpb::OperatorType::CLICKHOUSE_EXPORT_SINK_OPERATOR) {
+          const auto& clickhouse_sink_op = planNode.op().clickhouse_sink_op();
+
+          // Verify table name
+          EXPECT_EQ(clickhouse_sink_op.table_name(), "http_events");
+
+          // Verify the DSN was parsed correctly into ClickHouseConfig
+          const auto& config = clickhouse_sink_op.clickhouse_config();
+          EXPECT_EQ(config.username(), "clickhouse_user");
+          EXPECT_EQ(config.password(), "clickhouse_pass");
+          EXPECT_EQ(config.host(), "clickhouse.example.com");
+          EXPECT_EQ(config.port(), 9000);
+          EXPECT_EQ(config.database(), "pixie_db");
+
+          // Verify column mappings were created
+          EXPECT_GT(clickhouse_sink_op.column_mappings_size(), 0);
+
+          has_clickhouse_export = true;
+          break;
+        }
+      }
+      if (has_clickhouse_export) break;
+    }
+    if (has_clickhouse_export) break;
+  }
+
+  EXPECT_TRUE(has_clickhouse_export);
+}
+
+constexpr char kClickHouseExportWithExplicitEndpointQuery[] = R"pxl(
+import px
+
+# Test ClickHouse export with explicit endpoint config
+df = px.DataFrame('http_events', start_time='-10m')
+df = df[['time_', 'req_path', 'resp_status']]
+
+endpoint = px.otel.Endpoint(
+  url="explicit_user:explicit_pass@explicit-host:9001/explicit_db",
+  insecure=False,
+  timeout=20
+)
+
+px.export(df, px.otel.ClickHouseRows(table='custom_table', endpoint=endpoint))
+)pxl";
+
+TEST_F(LogicalPlannerTest, ClickHouseExportWithExplicitEndpoint) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+
+  // Create a planner state with a default endpoint config
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+
+  // Set up a default endpoint config (should be overridden by explicit endpoint)
+  auto* endpoint_config = state.mutable_otel_endpoint_config();
+  endpoint_config->set_url("default_user:default_pass@default-host:9000/default_db");
+
+  auto plan_or_s = planner->Plan(MakeQueryRequest(state, kClickHouseExportWithExplicitEndpointQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+
+  // Verify the plan uses the explicit endpoint config, not the default
+  auto plan_pb = plan->ToProto().ConsumeValueOrDie();
+  bool has_clickhouse_export = false;
+
+  for (const auto& [address, agent_plan] : plan_pb.qb_address_to_plan()) {
+    for (const auto& planFragment : agent_plan.nodes()) {
+      for (const auto& planNode : planFragment.nodes()) {
+        if (planNode.op().op_type() == planpb::OperatorType::CLICKHOUSE_EXPORT_SINK_OPERATOR) {
+          const auto& clickhouse_sink_op = planNode.op().clickhouse_sink_op();
+
+          // Verify table name
+          EXPECT_EQ(clickhouse_sink_op.table_name(), "custom_table");
+
+          // Verify the explicit endpoint was used, not the default
+          const auto& config = clickhouse_sink_op.clickhouse_config();
+          EXPECT_EQ(config.username(), "explicit_user");
+          EXPECT_EQ(config.password(), "explicit_pass");
+          EXPECT_EQ(config.host(), "explicit-host");
+          EXPECT_EQ(config.port(), 9001);
+          EXPECT_EQ(config.database(), "explicit_db");
+
+          has_clickhouse_export = true;
+          break;
+        }
+      }
+      if (has_clickhouse_export) break;
+    }
+    if (has_clickhouse_export) break;
+  }
+
+  EXPECT_TRUE(has_clickhouse_export);
 }
 
 }  // namespace planner

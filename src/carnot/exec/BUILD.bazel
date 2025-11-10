@@ -33,6 +33,7 @@ pl_cc_library(
         ],
     ),
     hdrs = [
+        "clickhouse_source_node.h",
         "exec_node.h",
         "exec_state.h",
     ],
@@ -46,6 +47,7 @@ pl_cc_library(
         "//src/shared/types:cc_library",
         "//src/table_store/table:cc_library",
         "@com_github_apache_arrow//:arrow",
+        "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_opentelemetry_proto//:logs_service_grpc_cc",
         "@com_github_opentelemetry_proto//:metrics_service_grpc_cc",
@@ -300,5 +302,48 @@ pl_cc_test(
         "//src/common/testing/event:cc_library",
         "@com_github_apache_arrow//:arrow",
         "@com_github_grpc_grpc//:grpc++_test",
+    ],
+)
+
+pl_cc_test(
+    name = "clickhouse_source_node_test",
+    timeout = "long",
+    srcs = ["clickhouse_source_node_test.cc"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:clickhouse.tar",
+    ],
+    tags = [
+        "exclusive",
+        "requires_docker",
+    ],
+    deps = [
+        ":cc_library",
+        ":exec_node_test_helpers",
+        ":test_utils",
+        "//src/carnot/planpb:plan_testutils",
+        "//src/common/testing/test_utils:cc_library",
+        "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
+    ],
+)
+
+pl_cc_test(
+    name = "clickhouse_export_sink_node_test",
+    timeout = "long",
+    srcs = ["clickhouse_export_sink_node_test.cc"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:clickhouse.tar",
+    ],
+    tags = [
+        "exclusive",
+        "requires_docker",
+    ],
+    deps = [
+        ":cc_library",
+        ":exec_node_test_helpers",
+        ":test_utils",
+        "//src/carnot/plan:cc_library",
+        "//src/carnot/planpb:plan_pl_cc_proto",
+        "//src/common/testing/test_utils:cc_library",
+        "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
     ],
 )

@@ -62,7 +62,7 @@ spec:
               name: pl-service-config
               key: PL_PLUGIN_SERVICE
         - name: PL_PLUGIN_REPO
-          value: "pixie-io/pixie-plugin"
+          value: "k8sstormcenter/pixie-plugin"
         - name: PL_GH_API_KEY
           valueFrom:
             secretKeyRef:
