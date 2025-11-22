@@ -15,7 +15,7 @@ jobs:
       image-base-name: "dev_image_with_extras"
   build-release:
     name: Build Release
-    runs-on: oracle-vm-16cpu-64gb-x86-64
+    runs-on: oracle-16cpu-64gb-x86-64
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
