@@ -34,7 +34,7 @@ jobs:
       ref: ${{ inputs.ref }}
   generate-perf-matrix:
     needs: get-dev-image-with-extras
-    runs-on: oracle-vm-16cpu-64gb-x86-64
+    runs-on: oracle-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
     outputs:
@@ -57,7 +57,7 @@ jobs:
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
   run-perf-eval:
     needs: [get-dev-image-with-extras, generate-perf-matrix]
-    runs-on: oracle-vm-16cpu-64gb-x86-64
+    runs-on: oracle-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
     strategy:

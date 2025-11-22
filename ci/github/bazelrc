@@ -5,9 +5,6 @@ common --color=yes
 # a given run.
 common --keep_going
 
-# Always use remote exec
-build --config=remote
-
 build --build_metadata=HOST=github-actions
 build --build_metadata=USER=github-actions
 build --build_metadata=REPO_URL=https://github.com/pixie-io/pixie
