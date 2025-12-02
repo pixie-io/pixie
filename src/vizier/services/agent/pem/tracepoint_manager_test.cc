@@ -115,8 +115,8 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   tracepoint->set_name("test_tracepoint");
 
   EXPECT_CALL(stirling_,
-              RegisterTracepoint(tracepoint_id, ::testing::Pointee(testing::proto::EqualsProto(
-                                                    tracepoint->DebugString()))));
+              RegisterTracepoint(tracepoint_id,
+                                 ::testing::Pointee(testing::proto::EqualsProto(*tracepoint))));
   EXPECT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
@@ -152,8 +152,8 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
   tracepoint->set_name("test_tracepoint");
 
   EXPECT_CALL(stirling_,
-              RegisterTracepoint(tracepoint_id, ::testing::Pointee(testing::proto::EqualsProto(
-                                                    tracepoint->DebugString()))));
+              RegisterTracepoint(tracepoint_id,
+                                 ::testing::Pointee(testing::proto::EqualsProto(*tracepoint))));
   EXPECT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
@@ -185,8 +185,8 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   tracepoint->set_name("test_tracepoint");
 
   EXPECT_CALL(stirling_,
-              RegisterTracepoint(tracepoint_id, ::testing::Pointee(testing::proto::EqualsProto(
-                                                    tracepoint->DebugString()))));
+              RegisterTracepoint(tracepoint_id,
+                                 ::testing::Pointee(testing::proto::EqualsProto(*tracepoint))));
   EXPECT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
