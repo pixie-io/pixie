@@ -29,6 +29,7 @@ cc_clang_binary = meta.wrap_with_transition(
     native.cc_binary,
     {
         "@//bazel/cc_toolchains:compiler": meta.replace_with("clang"),
+        "@//bazel/cc_toolchains:libc_version": meta.replace_with("glibc2_36"),
     },
     executable = True,
 )
