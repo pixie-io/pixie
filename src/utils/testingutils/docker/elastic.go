@@ -55,8 +55,6 @@ func SetupElastic() (*elastic.Client, func(), error) {
 			"xpack.security.http.ssl.enabled=false",
 			"xpack.security.transport.ssl.enabled=false",
 			"indices.lifecycle.poll_interval=5s",
-			"path.data=/opt/elasticsearch/volatile/data",
-			"path.logs=/opt/elasticsearch/volatile/logs",
 			"ES_JAVA_OPTS=-Xms128m -Xmx128m -server",
 			"ES_HEAP_SIZE=128m",
 		},
