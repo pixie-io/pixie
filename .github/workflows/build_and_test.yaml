@@ -5,7 +5,6 @@ on:
   push:
     branches:
     - 'main'
-    - 'ddelnano/update-gha-oracle-runners'
   schedule:
   # Run at 23:09 PST (07:09 UTC) every sunday. Github suggests not running actions on the hour.
   - cron: '9 7 * * 0'
