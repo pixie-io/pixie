@@ -63,30 +63,6 @@ func SetupElastic() (*elastic.Client, func(), error) {
 	}, func(config *docker.HostConfig) {
 		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
-		// Tmpfs is much faster than the default docker mounts.
-		config.Mounts = []docker.HostMount{
-			{
-				Target: "/opt/elasticsearch/volatile/data",
-				Type:   "tmpfs",
-				TempfsOptions: &docker.TempfsOptions{
-					SizeBytes: 100 * 1024 * 1024,
-				},
-			},
-			{
-				Target: "/opt/elasticsearch/volatile/logs",
-				Type:   "tmpfs",
-				TempfsOptions: &docker.TempfsOptions{
-					SizeBytes: 100 * 1024 * 1024,
-				},
-			},
-			{
-				Target: "/tmp",
-				Type:   "tmpfs",
-				TempfsOptions: &docker.TempfsOptions{
-					SizeBytes: 100 * 1024 * 1024,
-				},
-			},
-		}
 		config.CPUCount = 1
 		config.Memory = 1024 * 1024 * 1024
 		config.MemorySwap = 0
