@@ -55,12 +55,41 @@ func SetupElastic() (*elastic.Client, func(), error) {
 			"xpack.security.http.ssl.enabled=false",
 			"xpack.security.transport.ssl.enabled=false",
 			"indices.lifecycle.poll_interval=5s",
+			"path.data=/opt/elasticsearch/volatile/data",
+			"path.logs=/opt/elasticsearch/volatile/logs",
 			"ES_JAVA_OPTS=-Xms128m -Xmx128m -server",
 			"ES_HEAP_SIZE=128m",
 		},
 	}, func(config *docker.HostConfig) {
 		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+		// Tmpfs is much faster than the default docker mounts.
+		config.Mounts = []docker.HostMount{
+			{
+				Target: "/opt/elasticsearch/volatile/data",
+				Type:   "tmpfs",
+				TempfsOptions: &docker.TempfsOptions{
+					SizeBytes: 100 * 1024 * 1024,
+					Mode:      0777,
+				},
+			},
+			{
+				Target: "/opt/elasticsearch/volatile/logs",
+				Type:   "tmpfs",
+				TempfsOptions: &docker.TempfsOptions{
+					SizeBytes: 100 * 1024 * 1024,
+					Mode:      0777,
+				},
+			},
+			{
+				Target: "/tmp",
+				Type:   "tmpfs",
+				TempfsOptions: &docker.TempfsOptions{
+					SizeBytes: 100 * 1024 * 1024,
+					Mode:      0777,
+				},
+			},
+		}
 		config.CPUCount = 1
 		config.Memory = 1024 * 1024 * 1024
 		config.MemorySwap = 0
