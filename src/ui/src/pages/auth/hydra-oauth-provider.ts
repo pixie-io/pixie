@@ -20,7 +20,7 @@ import type * as React from 'react';
 
 import {
   UiNode, UiNodeAttributes, UiNodeGroupEnum, UiNodeInputAttributes,
-  UiNodeTypeEnum, V0alpha2ApiFactory,
+  UiNodeTypeEnum, FrontendApiFactory,
 } from '@ory/kratos-client';
 import { UserManager } from 'oidc-client';
 import * as QueryString from 'query-string';
@@ -35,7 +35,7 @@ import { CallbackArgs, getSignupArgs, getLoginArgs } from './callback-url';
 export const PasswordError = new Error('Kratos identity server error: Password method not found in flows.');
 export const FlowIDError = new Error('Auth server requires a flow parameter in the query string, but none were found.');
 
-const kratosClient = V0alpha2ApiFactory(null, '/oauth/kratos');
+const kratosClient = FrontendApiFactory(null, '/oauth/kratos');
 
 // Renders a form with an error and no fields.
 const displayErrorFormStructure = (error: Error): FormStructure => ({
@@ -50,7 +50,7 @@ const displayErrorFormStructure = (error: Error): FormStructure => ({
   },
 });
 
-function isInputAttributes(attr: UiNodeAttributes): attr is UiNodeInputAttributes {
+function isInputAttributes(attr: UiNodeAttributes): attr is Extract<UiNodeAttributes, { node_type: 'input' }> {
   return attr.node_type === UiNodeTypeEnum.Input;
 }
 
@@ -141,7 +141,7 @@ export const HydraClient = {
     if (flow == null) {
       return displayErrorFormStructure(FlowIDError);
     }
-    const { data } = await kratosClient.getSelfServiceLoginFlow(flow);
+    const { data } = await kratosClient.getLoginFlow({ id: flow });
 
     return {
       action: data.ui.action,
@@ -161,7 +161,7 @@ export const HydraClient = {
     if (flow == null) {
       return displayErrorFormStructure(FlowIDError);
     }
-    const { data } = await kratosClient.getSelfServiceSettingsFlow(flow);
+    const { data } = await kratosClient.getSettingsFlow({ id: flow });
 
     return {
       action: data.ui.action,
@@ -181,7 +181,7 @@ export const HydraClient = {
     if (error == null) {
       return displayErrorFormStructure(new Error('server error'));
     }
-    const { data } = await kratosClient.getSelfServiceError(error);
+    const { data } = await kratosClient.getFlowError({ id: error });
 
     return displayErrorFormStructure(new Error(JSON.stringify(data)));
   },

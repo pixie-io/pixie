@@ -26,14 +26,17 @@ spec:
       - name: migrate
         args:
         - migrate
+        - sql
+        - up
+        - -e
         - -c
         - /etc/config/hydra/hydra.yml
-        - sql
-        - -e
         - --yes
         envFrom:
         - configMapRef:
             name: pl-db-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -55,13 +58,12 @@ spec:
             secretKeyRef:
               name: pl-hydra-secrets
               key: SECRETS_SYSTEM
-        - name: HYDRA_DATABASE
-          value: hydra
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_HYDRA_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: oryd/hydra:v1.9.2-sqlite@sha256:61771c706934e1ffd66f86700a28a294ce4ed150fbf30cc131710924271a5871
+        # yamllint disable-line rule:line-length
+        image: ghcr.io/pixie-io/hydra:2.3.0-pl1@sha256:9f0b31b1ca13d22bf14abf0c83251333b9a957a9ade39e3c723a963b84402572
         volumeMounts:
         - mountPath: /etc/config/hydra
           name: config
@@ -77,7 +79,8 @@ spec:
       containers:
       - name: server
         imagePullPolicy: IfNotPresent
-        image: oryd/hydra:v1.9.2-sqlite@sha256:61771c706934e1ffd66f86700a28a294ce4ed150fbf30cc131710924271a5871
+        # yamllint disable-line rule:line-length
+        image: ghcr.io/pixie-io/hydra:2.3.0-pl1@sha256:9f0b31b1ca13d22bf14abf0c83251333b9a957a9ade39e3c723a963b84402572
         args:
         - serve
         - -c
@@ -86,6 +89,8 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-db-config
+        - configMapRef:
+            name: pl-ory-service-config
         - configMapRef:
             name: pl-domain-config
         env:
@@ -111,11 +116,17 @@ spec:
               key: SECRETS_SYSTEM
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_HYDRA_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
+        - name: SERVE_TLS_ENABLED
+          value: "true"
         - name: SERVE_TLS_CERT_PATH
           value: /certs/server.crt
         - name: SERVE_TLS_KEY_PATH
           value: /certs/server.key
+        - name: SERVE_PUBLIC_CORS_ALLOWED_ORIGINS_0
+          value: https://$(PL_DOMAIN_NAME)
+        - name: SERVE_PUBLIC_CORS_ALLOWED_ORIGINS_1
+          value: https://work.$(PL_DOMAIN_NAME)
         - name: PL_WORK_DOMAIN
           value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
@@ -132,6 +143,10 @@ spec:
           value: $(HYDRA_URL)
         - name: URLS_SELF_ISSUER
           value: $(HYDRA_URL)
+        # admin is not exposed to Pixie clients. Requests to this endpoint originate
+        # from Pixie services.
+        - name: URLS_SELF_ADMIN
+          value: $(PL_HYDRA_ADMIN_HOST)
         ports:
         - containerPort: 4444
         - containerPort: 4445
@@ -153,7 +168,8 @@ spec:
             type: RuntimeDefault
       - name: client-create-or-update
         imagePullPolicy: IfNotPresent
-        image: oryd/hydra:v1.9.2-alpine@sha256:faa6ca02e77e0a08f66bfa7470a5e06d80e6e68c9c35410c65a4ea7b501aea61
+        # yamllint disable-line rule:line-length
+        image: ghcr.io/pixie-io/hydra:2.3.0-alpine-pl1@sha256:8e09f1a6882d37387411dc8ee1647cc3c40ba42c7f74d9a711b0fa1f483a6dba
         command: ['sh', '-c', 'set -x;
           URL="https://localhost:4445/health/ready";
           until [
@@ -163,22 +179,30 @@ spec:
             echo "waiting for ${URL}";
             sleep 2;
           done;
-          CMD="hydra clients update auth-code-client";
-          hydra clients get auth-code-client
+          CMD="hydra update oauth2-client auth-code-client";
+          hydra get client auth-code-client
             --endpoint=https://localhost:4445
             --skip-tls-verify;
           if [ $? -ne 0 ]; then
             echo "Creating client";
-            CMD="hydra clients create --id auth-code-client";
+            CMD="hydra create oauth2-client --id auth-code-client";
           fi;
           ${CMD}
             --endpoint https://localhost:4445
             --secret "${HYDRA_CLIENT_SECRET}"
-            --grant-types authorization_code,refresh_token,implicit
-            --response-types code,id_token,token
-            --scope openid,offline,notifications,gist,vizier
-            --callbacks "https://${PL_DOMAIN_NAME}/oauth/auth/callback"
-            --callbacks "https://work.${PL_DOMAIN_NAME}/auth/callback"
+            --grant-type authorization_code
+            --grant-type refresh_token
+            --grant-type implicit
+            --response-type code
+            --response-type id_token
+            --response-type token
+            --scope openid
+            --scope offline
+            --scope notifications
+            --scope gist
+            --scope vizier
+            --redirect-uri "https://${PL_DOMAIN_NAME}/oauth/auth/callback"
+            --redirect-uri "https://work.${PL_DOMAIN_NAME}/auth/callback"
             --skip-tls-verify;
           sleep infinity;
         ']

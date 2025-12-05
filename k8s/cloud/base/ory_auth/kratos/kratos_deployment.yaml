@@ -34,6 +34,8 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-db-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -47,9 +49,10 @@ spec:
               key: PL_POSTGRES_PASSWORD
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_KRATOS_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: oryd/kratos:v0.10.1@sha256:fdcfac3da3b64e619af553451607e1ab00160e59860bb19ec145cdc6f6f9c41d
+        # yamllint disable-line rule:line-length
+        image: ghcr.io/pixie-io/kratos:1.3.1-pl1@sha256:3edbd266d68e9fac5e188478704e3f302962310a3685eec65890101e966c7bad
         resources: {}
         securityContext:
           allowPrivilegeEscalation: false
@@ -75,6 +78,8 @@ spec:
             name: pl-db-config
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -88,7 +93,7 @@ spec:
               key: PL_POSTGRES_PASSWORD
         - name: DSN
           # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_KRATOS_DATABASE)?sslmode=disable&max_conns=20&max_idle_conns=4
         - name: SERVE_PUBLIC_TLS_CERT_PATH
           value: /certs/server.crt
         - name: SERVE_PUBLIC_TLS_KEY_PATH
@@ -135,7 +140,8 @@ spec:
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
         imagePullPolicy: IfNotPresent
-        image: oryd/kratos:v0.10.1@sha256:fdcfac3da3b64e619af553451607e1ab00160e59860bb19ec145cdc6f6f9c41d
+        # yamllint disable-line rule:line-length
+        image: ghcr.io/pixie-io/kratos:1.3.1-pl1@sha256:3edbd266d68e9fac5e188478704e3f302962310a3685eec65890101e966c7bad
         ports:
         - containerPort: 4433
         - containerPort: 4434

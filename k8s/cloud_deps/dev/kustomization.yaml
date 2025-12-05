@@ -9,3 +9,4 @@ resources:
 - kibana
 - nats
 - postgres
+- ory_service_config.yaml
