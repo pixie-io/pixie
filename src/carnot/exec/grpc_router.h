@@ -126,7 +126,8 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
    */
   struct QueryTracker {
     QueryTracker() : create_time(std::chrono::steady_clock::now()) {}
-    absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers ABSL_GUARDED_BY(query_lock);
+    absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers
+        ABSL_GUARDED_BY(query_lock);
     const std::chrono::steady_clock::time_point create_time ABSL_GUARDED_BY(query_lock);
     std::function<void()> restart_execution_func_ ABSL_GUARDED_BY(query_lock);
     // The set of agents we've seen for the query.
