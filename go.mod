@@ -45,8 +45,8 @@ require (
 	github.com/mattn/go-isatty v0.0.17
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/mikefarah/yq/v4 v4.30.8
-	github.com/nats-io/nats-server/v2 v2.10.4
-	github.com/nats-io/nats.go v1.31.0
+	github.com/nats-io/nats-server/v2 v2.10.27
+	github.com/nats-io/nats.go v1.39.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.8.1
@@ -84,7 +84,7 @@ require (
 	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.30.0
 	golang.org/x/term v0.29.0
-	golang.org/x/time v0.3.0
+	golang.org/x/time v0.10.0
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/api v0.111.0
 	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4
@@ -191,7 +191,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -210,7 +210,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-sqlite3 v1.14.5 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
-	github.com/minio/highwayhash v1.0.2 // indirect
+	github.com/minio/highwayhash v1.0.3 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
@@ -222,8 +222,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/jwt/v2 v2.5.2 // indirect
-	github.com/nats-io/nkeys v0.4.6 // indirect
+	github.com/nats-io/jwt/v2 v2.7.3 // indirect
+	github.com/nats-io/nkeys v0.4.10 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
