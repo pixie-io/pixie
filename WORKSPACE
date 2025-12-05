@@ -55,13 +55,15 @@ grpc_deps()
 
 load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
 
-scala_version = "2.13.6"
+scala_version = "2.13.12"
 
 scala_config(scala_version = scala_version)
 
-load("@io_bazel_rules_scala//scala:scala.bzl", "scala_repositories")
+load("@io_bazel_rules_scala//scala:scala.bzl", "rules_scala_setup", "rules_scala_toolchain_deps_repositories")
 
-scala_repositories()
+rules_scala_setup()
+
+rules_scala_toolchain_deps_repositories()
 
 load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
 

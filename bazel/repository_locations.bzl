@@ -434,11 +434,11 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_scala = dict(
-        sha256 = "6e9191363357d30b144e7306fec74deea2c7f1de63f3ed32028838116c239e8a",
+        sha256 = "3b00fa0b243b04565abb17d3839a5f4fa6cc2cac571f6db9f83c1982ba1e19e5",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/archive/4ba3780fcba8d26980daff4639abc6f18517308b.tar.gz",
+            "https://github.com/bazelbuild/rules_scala/releases/download/v6.5.0/rules_scala-v6.5.0.tar.gz",
         ],
-        strip_prefix = "rules_scala-4ba3780fcba8d26980daff4639abc6f18517308b",
+        strip_prefix = "rules_scala-6.5.0",
     ),
     org_tensorflow = dict(
         sha256 = "99c732b92b1b37fc243a559e02f9aef5671771e272758aa4aec7f34dc92dac48",
