@@ -36,7 +36,7 @@ jobs:
       image-base-name: "dev_image_with_extras"
       ref: ${{ needs.env-protect-setup.outputs.ref }}
   clang-tidy:
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     needs: [authorize, env-protect-setup, get-dev-image]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -64,7 +64,7 @@ jobs:
   code-coverage:
     if: github.event_name == 'push'
     needs: [authorize, env-protect-setup, get-dev-image]
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     steps:
@@ -88,7 +88,7 @@ jobs:
         ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
   generate-matrix:
     needs: [authorize, env-protect-setup, get-dev-image]
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     outputs:
@@ -120,7 +120,7 @@ jobs:
           bazel_tests_*
   build-and-test:
     needs: [authorize, env-protect-setup, get-dev-image, generate-matrix]
-    runs-on: oracle-16cpu-64gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     permissions:
       contents: read
       actions: read
@@ -160,6 +160,10 @@ jobs:
       run: |
         # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
         sysctl -w net.ipv6.conf.lo.disable_ipv6=0
+
+        # Our qemu builds require unprivileged user namespaces to run.
+        sysctl -w kernel.unprivileged_userns_clone=1
+        sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
         ./scripts/bazel_ignore_codes.sh test ${{ matrix.args }} --target_pattern_file=target_files/${{ matrix.tests }} \
           2> >(tee bazel_stderr)
     - name: Parse junit reports
