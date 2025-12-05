@@ -65,7 +65,8 @@ class RelationInfoManager {
  private:
   mutable std::atomic<bool> has_updates_ = false;
   mutable absl::base_internal::SpinLock relation_info_map_lock_;
-  absl::btree_map<std::string, RelationInfo> relation_info_map_ ABSL_GUARDED_BY(relation_info_map_lock_);
+  absl::btree_map<std::string, RelationInfo> relation_info_map_
+      ABSL_GUARDED_BY(relation_info_map_lock_);
 };
 
 }  // namespace agent
