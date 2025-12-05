@@ -141,17 +141,17 @@ tf_workspace0()
 pl_model_files()
 
 python_register_toolchains(
-    name = "python3_10",
+    name = "python3_12",
     # Allow the root user to build the code base since this is a current requirement for
     # building in a containerized environment. See https://github.com/bazelbuild/rules_python/pull/713
     # for more details.
     ignore_root_user_error = True,
     # Available versions are listed in @rules_python//python:versions.bzl.
     # We recommend using the same version your team is already standardized on.
-    python_version = "3.10",
+    python_version = "3.12",
 )
 
-load("@python3_10//:defs.bzl", "interpreter")
+load("@python3_12//:defs.bzl", "interpreter")
 
 # Setup the environment for the open-source python API.
 pip_parse(
