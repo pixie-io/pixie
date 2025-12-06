@@ -106,9 +106,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/gperftools/gperftools/releases/download/gperftools-2.9.1/gperftools-2.9.1.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "b55696fb249669744de3e71acc54a9382bea0dce7cd5ba379b356b12b82d4229",
-        strip_prefix = "grpc-1.51.1",
-        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.51.1.tar.gz"],
+        sha256 = "7bf97c11cf3808d650a3a025bbf9c5f922c844a590826285067765dfd055d228",
+        strip_prefix = "grpc-1.74.1",
+        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.74.1.tar.gz"],
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
@@ -232,14 +232,14 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/libpypa/archive/eba8ec485a6c5e566d0d7a0716a06c91837c9d2f.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "91ac87d30cc6d79f9ab974c51874a704de9c2647c40f6932597329a282217ba8",
-        strip_prefix = "abseil-cpp-20220623.1",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20220623.1.tar.gz"],
+        sha256 = "9b7a064305e9fd94d124ffa6cc358592eb42b5da588fb4e07d09254aa40086db",
+        strip_prefix = "abseil-cpp-20250512.1",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20250512.1.tar.gz"],
     ),
     com_google_benchmark = dict(
-        sha256 = "3aff99169fa8bdee356eaa1f691e835a6e57b1efeadb8a0f9f228531158246ac",
-        strip_prefix = "benchmark-1.7.0",
-        urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.7.0.tar.gz"],
+        sha256 = "3aff99169fa8bdee356eaa1f691e835a6e57b1efeadb8a0f9f228531158245ac",
+        strip_prefix = "benchmark-1.8.5",
+        urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.8.5.tar.gz"],
     ),
     com_google_double_conversion = dict(
         sha256 = "3dbcdf186ad092a8b71228a5962009b5c96abde9a315257a3452eb988414ea3b",
@@ -257,23 +257,28 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v2.0.6.tar.gz"],
     ),
     com_google_googletest = dict(
-        sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
-        strip_prefix = "googletest-release-1.12.1",
-        urls = ["https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"],
+        sha256 = "65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",
+        strip_prefix = "googletest-1.17.0",
+        urls = ["https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz"],
     ),
     com_google_protobuf = dict(
-        sha256 = "63c5539a8506dc6bccd352a857cea106e0a389ce047a3ff0a78fe3f8fede410d",
-        strip_prefix = "protobuf-24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb",
+        # sha256 = "63c5539a8506dc6bccd352a857cea106e0a389ce047a3ff0a78fe3f8fede410d",
+        # strip_prefix = "protobuf-24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb",
+        sha256 = "12bfd76d27b9ac3d65c00966901609e020481b9474ef75c7ff4601ac06fa0b82",
+        strip_prefix = "protobuf-31.1",
         urls = [
-            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
+            # "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v31.1/protobuf-31.1.tar.gz",
+	    # "https://github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
         ],
     ),
+    # I needed to `apt-get install -y nodejs` for this install to work. This wasn't the
+    # case for the ddelnano/debugging-bazel-7-and-bzlmod-missing-system-includes-isolated branch
     com_google_protobuf_javascript = dict(
-        sha256 = "35bca1729532b0a77280bf28ab5937438e3dcccd6b31a282d9ae84c896b6f6e3",
-        strip_prefix = "protobuf-javascript-3.21.2",
+        sha256 = "123fac2e86109b24e80ccd356aa914e268bf5863ad1354d224d6ceaed6f5c45b",
+        strip_prefix = "protobuf-javascript-4.0.1",
         urls = [
-            "https://github.com/protocolbuffers/protobuf-javascript/archive/refs/tags/v3.21.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf-javascript/archive/refs/tags/v4.0.1.tar.gz",
         ],
     ),
     com_googlesource_code_re2 = dict(
@@ -456,6 +461,13 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "rules_foreign_cc-0.8.0",
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.8.0.tar.gz"],
     ),
+    rules_java = dict(
+	sha256 = "c5bc17e17bb62290b1fd8fdd847a2396d3459f337a7e07da7769b869b488ec26",
+	urls = [
+	    "https://github.com/bazelbuild/rules_java/releases/download/8.6.1/rules_java-8.6.1.tar.gz",
+	],
+	# strip_prefix = "rules_java-8.6.1",
+    ),
     rules_python = dict(
         sha256 = "9d04041ac92a0985e344235f5d946f71ac543f1b1565f2cdbc9a2aaee8adf55b",
         strip_prefix = "rules_python-0.26.0",
@@ -493,6 +505,14 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cpuinfo-5e63739504f0f8e18e941bd63b2d6d42536c7d90",
         urls = ["https://github.com/pytorch/cpuinfo/archive/5e63739504f0f8e18e941bd63b2d6d42536c7d90.tar.gz"],
     ),
+)
+
+# TODO(ddelnano): Remove once bzlmod is used.
+# Alias for gRPC/Protobuf which use "abseil-cpp" as the repo name
+REPOSITORY_LOCATIONS["abseil-cpp"] = dict(
+    sha256 = "9b7a064305e9fd94d124ffa6cc358592eb42b5da588fb4e07d09254aa40086db",
+    strip_prefix = "abseil-cpp-20250512.1",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20250512.1.tar.gz"],
 )
 
 # To modify one of the forked repos below:

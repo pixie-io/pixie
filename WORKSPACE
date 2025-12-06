@@ -19,6 +19,7 @@ pl_register_cc_toolchains()
 # Install Pixie Labs Dependencies.
 pl_deps()
 
+
 # Order is important. Try to go from most basic/primitive to higher level packages.
 # - go_rules_dependencies
 # - protobuf_deps
@@ -45,6 +46,10 @@ go_register_toolchains()
 # gazelle:repository_macro go_deps.bzl%pl_go_dependencies
 pl_go_dependencies()
 
+load("@rules_java//java:rules_java_deps.bzl", "rules_java_dependencies")
+
+rules_java_dependencies()
+
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
@@ -63,7 +68,7 @@ load("@io_bazel_rules_scala//scala:scala.bzl", "rules_scala_setup", "rules_scala
 
 rules_scala_setup()
 
-rules_scala_toolchain_deps_repositories()
+rules_scala_toolchain_deps_repositories(fetch_sources = True)
 
 load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
 

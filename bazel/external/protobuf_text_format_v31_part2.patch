@@ -1,0 +1,18 @@
+--- a/src/google/protobuf/text_format.cc
++++ b/src/google/protobuf/text_format.cc
+@@ -2947,7 +2947,14 @@ void TextFormat::Printer::PrintUnknownFields(
+             break;
+           }
+           generator->PrintMaybeWithMarker(MarkerToken(), ": ", "\"");
+-          generator->PrintString(absl::CEscape(value));
++          absl::string_view value_to_print = value;
++          bool truncated = TruncateStringView(truncate_string_field_longer_than_, &value_to_print);
++
++          if (truncated) {
++            generator->PrintString(absl::StrCat(absl::CEscape(value_to_print), "...<truncated>..."));
++          } else {
++            generator->PrintString(absl::CEscape(value));
++          }
+           if (single_line_mode_) {
+             generator->PrintLiteral("\" ");
+           } else {
