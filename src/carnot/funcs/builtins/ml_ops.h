@@ -31,7 +31,7 @@
 #include "src/carnot/exec/ml/coreset.h"
 #include "src/carnot/exec/ml/kmeans.h"
 #include "src/carnot/exec/ml/sampling.h"
-/* #include "src/carnot/exec/ml/transformer_executor.h" */
+#include "src/carnot/exec/ml/transformer_executor.h"
 #include "src/carnot/udf/model_executor.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/utils.h"
@@ -53,11 +53,11 @@ class TransformerUDF : public udf::ScalarUDF {
  public:
   TransformerUDF() : TransformerUDF("/embedding.proto") {}
   explicit TransformerUDF(std::string model_proto_path) : model_proto_path_(model_proto_path) {}
-  StringValue Exec(FunctionContext* /*ctx*/, StringValue /*doc*/) {
-    /* auto executor = */
-    /*     ctx->model_pool()->GetModelExecutor<exec::ml::TransformerExecutor>(model_proto_path_); */
-    std::string output = "";
-    /* executor->Execute(doc, &output); */
+  StringValue Exec(FunctionContext* ctx, StringValue doc) {
+    auto executor =
+        ctx->model_pool()->GetModelExecutor<exec::ml::TransformerExecutor>(model_proto_path_);
+    std::string output;
+    executor->Execute(doc, &output);
     return output;
   }
 

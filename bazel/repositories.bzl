@@ -121,6 +121,7 @@ def _cc_deps():
     # Dependencies with native bazel build files.
 
     _bazel_repo("upb")
+    _bazel_repo("com_google_flatbuffers", patches = ["//bazel/external:flatbuffers_local_changes.patch"], patch_args = ["-p1"])
     _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf_text_format_v31_part1.patch", "//bazel/external:protobuf_text_format_v31_part2.patch", "//bazel/external:protobuf_py_proto_library.patch"], patch_args = ["-p1"])
     # _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc_go_toolchain.patch"], patch_args = ["-p1"])
@@ -133,17 +134,11 @@ def _cc_deps():
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
     _bazel_repo("abseil-cpp")  # Alias for gRPC/Protobuf
-    _bazel_repo("com_google_flatbuffers")
     _bazel_repo("cpuinfo", patches = ["//bazel/external:cpuinfo.patch"], patch_args = ["-p1"])
     # _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_disable_llvm.patch", "//bazel/external:tensorflow_disable_mirrors.patch", "//bazel/external:tensorflow_disable_py.patch"], patch_args = ["-p1"])
-    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_disable_py_v2.20.patch"], patch_args = ["-p1"])
+    # _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_disable_py_v2.20.patch"], patch_args = ["-p1"])
+    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_local_changes.patch"], patch_args = ["-p1"])
 
-    # Stub CUDA repository for TensorFlow (we don't need CUDA support)
-    native.new_local_repository(
-        name = "local_config_cuda",
-        path = "bazel/external/local_config_cuda",
-        build_file_content = "",
-    )
     _bazel_repo("com_github_neargye_magic_enum")
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_googlesource_code_re2", patches = ["//bazel/external:re2_warning.patch"], patch_args = ["-p1"])

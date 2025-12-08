@@ -252,9 +252,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/farmhash/archive/2f0e005b81e296fa6963e395626137cf729b710c.tar.gz"],
     ),
     com_google_flatbuffers = dict(
-        sha256 = "e2dc24985a85b278dd06313481a9ca051d048f9474e0f199e372fea3ea4248c9",
-        strip_prefix = "flatbuffers-2.0.6",
-        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v2.0.6.tar.gz"],
+        sha256 = "4157c5cacdb59737c5d627e47ac26b140e9ee28b1102f812b36068aab728c1ed",
+        strip_prefix = "flatbuffers-24.3.25",
+        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v24.3.25.tar.gz"],
     ),
     com_google_googletest = dict(
         sha256 = "65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",

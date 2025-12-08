@@ -21,7 +21,8 @@ java_graal_binary, _java_graal_binary_internal = with_cfg(native.java_binary).se
     "java_runtime_version", "remotejdk_openjdk_graal_17").build()
 
 cc_clang_binary, _cc_clang_binary_internal = with_cfg(native.cc_binary).set(
-        Label("@//bazel/cc_toolchains:compiler"), "clang").build()
+        Label("@//bazel/cc_toolchains:compiler"), "clang").set(
+        Label("@//bazel/cc_toolchains:libc_version"), "glibc2_36").build()
 
 qemu_interactive_runner, _qemu_interactive_runner_internal = with_cfg(qemu_with_kernel_interactive_runner).set(
     Label("@//bazel/cc_toolchains:libc_version"), "glibc2_36").build()

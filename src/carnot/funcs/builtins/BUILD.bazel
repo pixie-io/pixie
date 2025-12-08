@@ -103,42 +103,42 @@ pl_cc_test(
     ],
 )
 
-# pl_cc_test(
-#     name = "ml_ops_test",
-#     srcs = ["ml_ops_test.cc"],
-#     args = [
-#         "--sentencepiece_dir=$(location //:sentencepiece.proto)",
-#         "--embedding_dir=$(location //:embedding.proto)",
-#     ],
-#     data = [
-#         "//:embedding.proto",
-#         "//:sentencepiece.proto",
-#     ],
-#     deps = [
-#         ":cc_library",
-#         "//src/carnot/exec/ml:eigen_testutils",
-#         "//src/carnot/udf:udf_testutils",
-#     ],
-# )
+pl_cc_test(
+    name = "ml_ops_test",
+    srcs = ["ml_ops_test.cc"],
+    args = [
+        "--sentencepiece_dir=$(location //:sentencepiece.proto)",
+        "--embedding_dir=$(location //:embedding.proto)",
+    ],
+    data = [
+        "//:embedding.proto",
+        "//:sentencepiece.proto",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/carnot/exec/ml:eigen_testutils",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
 
-# pl_cc_binary(
-#     name = "ml_ops_benchmark",
-#     testonly = 1,
-#     srcs = ["ml_ops_benchmark.cc"],
-#     args = [
-#         "--sentencepiece_dir=$(location //:sentencepiece.proto)",
-#         "--embedding_dir=$(location //:embedding.proto)",
-#     ],
-#     data = [
-#         "//:embedding.proto",
-#         "//:sentencepiece.proto",
-#     ],
-#     deps = [
-#         ":cc_library",
-#         "//src/common/benchmark:cc_library",
-#         # "@org_tensorflow//tensorflow/lite:tflite_with_xnnpack",
-#     ],
-# )
+pl_cc_binary(
+    name = "ml_ops_benchmark",
+    testonly = 1,
+    srcs = ["ml_ops_benchmark.cc"],
+    args = [
+        "--sentencepiece_dir=$(location //:sentencepiece.proto)",
+        "--embedding_dir=$(location //:embedding.proto)",
+    ],
+    data = [
+        "//:embedding.proto",
+        "//:sentencepiece.proto",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+        # "@org_tensorflow//tensorflow/lite:tflite_with_xnnpack",
+    ],
+)
 
 pl_cc_test(
     name = "request_path_ops_test",
