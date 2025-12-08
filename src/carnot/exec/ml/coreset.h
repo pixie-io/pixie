@@ -28,7 +28,7 @@
 #include <vector>
 
 #include <absl/strings/substitute.h>
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"
 
 #include "src/common/base/base.h"
 

@@ -19,7 +19,7 @@
 #pragma once
 
 #include "src/common/base/base.h"
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"
 
 namespace px {
 namespace carnot {
