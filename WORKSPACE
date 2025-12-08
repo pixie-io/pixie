@@ -19,6 +19,9 @@ pl_register_cc_toolchains()
 # Install Pixie Labs Dependencies.
 pl_deps()
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
 
 # Order is important. Try to go from most basic/primitive to higher level packages.
 # - go_rules_dependencies
@@ -58,19 +61,19 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
 
+load("@io_bazel_rules_scala//scala:deps.bzl", "rules_scala_dependencies")
+
+rules_scala_dependencies()
+
 load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
 
-scala_version = "2.13.12"
+scala_version = "2.13.16"
 
 scala_config(scala_version = scala_version)
 
-load("@io_bazel_rules_scala//scala:scala.bzl", "rules_scala_setup", "rules_scala_toolchain_deps_repositories")
+load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains", "scala_toolchains")
 
-rules_scala_setup()
-
-rules_scala_toolchain_deps_repositories(fetch_sources = True)
-
-load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
+scala_toolchains(fetch_sources = True, twitter_scrooge = True)
 
 scala_register_toolchains()
 

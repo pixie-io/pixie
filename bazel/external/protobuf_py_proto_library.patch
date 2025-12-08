@@ -1,0 +1,25 @@
+diff --git a/protobuf.bzl b/protobuf.bzl
+--- a/protobuf.bzl
++++ b/protobuf.bzl
+@@ -637,6 +637,21 @@ def internal_py_proto_library(
+         **kargs
+     )
+
++def py_proto_library(**kargs):
++    """Deprecated alias for use before Bazel 5.3.
++
++    This is provided for backwards compatibility only.  Users should migrate
++    to the py_proto_library rule from bazel/py_proto_library.bzl instead.
++
++    Args:
++      **kargs: arguments that are passed to internal_py_proto_library.
++
++    """
++
++    # buildifier: disable=native-py-proto
++    internal_py_proto_library(**kargs)
++
++
+ def _source_proto_library(
+         name,
+         srcs = [],

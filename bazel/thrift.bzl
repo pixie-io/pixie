@@ -14,11 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "twitter_scrooge")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 def thrift_deps(scala_version):
-    twitter_scrooge()
+    # twitter_scrooge is now set up via scala_toolchains(twitter_scrooge = True) in WORKSPACE
 
     finagle_version = "22.7.0"
     scala_minor_version = ".".join(scala_version.split(".")[:2])

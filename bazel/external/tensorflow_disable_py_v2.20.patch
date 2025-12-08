@@ -1,0 +1,110 @@
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index f28f12927db..cc1b1ea29b9 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -3027,9 +3027,7 @@ _local_genrule_internal = rule(
+ # Wrap the rule in a macro so we can pass in exec_compatible_with.
+ def _local_genrule(**kwargs):
+     _local_genrule_internal(
+-        exec_compatible_with = [
+-            "@local_execution_config_platform//:platform_constraint",
+-        ],
++        exec_compatible_with = [],
+         **kwargs
+     )
+
+diff --git a/tensorflow/tensorflow.default.bzl b/tensorflow/tensorflow.default.bzl
+index fc6793e5d74..1585754a602 100644
+--- a/tensorflow/tensorflow.default.bzl
++++ b/tensorflow/tensorflow.default.bzl
+@@ -1,15 +1,5 @@
+ """Default (OSS) build versions of TensorFlow general-purpose build extensions."""
+
+-load(
+-    "@local_xla//third_party/py/rules_pywrap:pywrap.default.bzl",
+-    _pywrap_aware_cc_import = "pywrap_aware_cc_import",
+-    _pywrap_aware_filegroup = "pywrap_aware_filegroup",
+-    _pywrap_aware_genrule = "pywrap_aware_genrule",
+-    _pywrap_binaries = "pywrap_binaries",
+-    _pywrap_common_library = "pywrap_common_library",
+-    _pywrap_library = "pywrap_library",
+-    _stripped_cc_info = "stripped_cc_info",
+-)
+ load(
+     "//tensorflow:tensorflow.bzl",
+     _ADDITIONAL_API_INDEXABLE_SETTINGS = "ADDITIONAL_API_INDEXABLE_SETTINGS",
+@@ -107,10 +97,15 @@ tf_disable_ptxas_warning_flags = _tf_disable_ptxas_warning_flags
+ replace_with_portable_tf_lib_when_required = _replace_with_portable_tf_lib_when_required
+ tf_python_framework_friends = _tf_python_framework_friends
+ pywrap_aware_tf_cc_shared_object = _pywrap_aware_tf_cc_shared_object
+-pywrap_aware_filegroup = _pywrap_aware_filegroup
+-pywrap_aware_genrule = _pywrap_aware_genrule
+-pywrap_aware_cc_import = _pywrap_aware_cc_import
+-pywrap_library = _pywrap_library
+-pywrap_common_library = _pywrap_common_library
+-stripped_cc_info = _stripped_cc_info
+-pywrap_binaries = _pywrap_binaries
++
++# Stub out pywrap symbols that require @python_version_repo
++def _not_implemented(*args, **kwargs):
++    fail("pywrap rules are disabled")
++
++pywrap_aware_filegroup = _not_implemented
++pywrap_aware_genrule = _not_implemented
++pywrap_aware_cc_import = _not_implemented
++pywrap_library = _not_implemented
++pywrap_common_library = _not_implemented
++stripped_cc_info = _not_implemented
++pywrap_binaries = _not_implemented
+diff --git a/tensorflow/tf_version.default.bzl b/tensorflow/tf_version.default.bzl
+index 6b2374cc96c..95cbf574544 100644
+--- a/tensorflow/tf_version.default.bzl
++++ b/tensorflow/tf_version.default.bzl
+@@ -1,10 +1,5 @@
+ """Default (OSS) TensorFlow wheel version suffix data."""
+
+-load(
+-    "@tf_wheel_version_suffix//:wheel_version_suffix.bzl",
+-    "SEMANTIC_WHEEL_VERSION_SUFFIX",
+-    "WHEEL_VERSION_SUFFIX",
+-)
+-
+-VERSION_SUFFIX = WHEEL_VERSION_SUFFIX
+-SEMANTIC_VERSION_SUFFIX = SEMANTIC_WHEEL_VERSION_SUFFIX
++# Stub out wheel version suffix (not needed for TF Lite builds)
++VERSION_SUFFIX = ""
++SEMANTIC_VERSION_SUFFIX = ""
+diff --git a/tensorflow/workspace1.bzl b/tensorflow/workspace1.bzl
+index 399ff8f7579..af35b6d1972 100644
+--- a/tensorflow/workspace1.bzl
++++ b/tensorflow/workspace1.bzl
+@@ -15,8 +15,8 @@ def workspace(with_rules_cc = True):
+     Args:
+       with_rules_cc: Unused, to be removed soon.
+     """
+-    llvm_setup(name = "llvm-project")
+-    native.register_toolchains("@local_config_python//:py_toolchain")
++    # llvm_setup(name = "llvm-project")
++    # native.register_toolchains("@local_config_python//:py_toolchain")
+     rules_pkg_dependencies()
+
+     closure_repositories()
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+index 9e49ab40b25..fc13a5172d7 100644
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -105,11 +105,11 @@ def _initialize_third_party():
+
+ # Toolchains & platforms required by Tensorflow to build.
+ def _tf_toolchains():
+-    native.register_execution_platforms("@local_execution_config_platform//:platform")
+-    native.register_toolchains("@local_execution_config_python//:py_toolchain")
++    # native.register_execution_platforms("@local_execution_config_platform//:platform")
++    # native.register_toolchains("@local_execution_config_python//:py_toolchain")
+
+     # Loads all external repos to configure RBE builds.
+-    initialize_rbe_configs()
++    # initialize_rbe_configs()
+
+     # Note that we check the minimum bazel version in WORKSPACE.
+     clang6_configure(name = "local_config_clang6")

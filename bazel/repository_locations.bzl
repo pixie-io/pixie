@@ -237,7 +237,7 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20250512.1.tar.gz"],
     ),
     com_google_benchmark = dict(
-        sha256 = "3aff99169fa8bdee356eaa1f691e835a6e57b1efeadb8a0f9f228531158245ac",
+        sha256 = "d26789a2b46d8808a48a4556ee58ccc7c497fcd4c0af9b90197674a81e04798a",
         strip_prefix = "benchmark-1.8.5",
         urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.8.5.tar.gz"],
     ),
@@ -439,16 +439,23 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_scala = dict(
-        sha256 = "3b00fa0b243b04565abb17d3839a5f4fa6cc2cac571f6db9f83c1982ba1e19e5",
+        sha256 = "a4700d6e6cdf13cf85e29029ec998e2ec3ba94791606ec83d2c96e3c5b0aebed",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/releases/download/v6.5.0/rules_scala-v6.5.0.tar.gz",
+            "https://github.com/bazelbuild/rules_scala/releases/download/v7.0.0/rules_scala-v7.0.0.tar.gz",
         ],
-        strip_prefix = "rules_scala-6.5.0",
+        strip_prefix = "rules_scala-7.0.0",
+    ),
+    rules_scala = dict(
+        sha256 = "a4700d6e6cdf13cf85e29029ec998e2ec3ba94791606ec83d2c96e3c5b0aebed",
+        urls = [
+            "https://github.com/bazelbuild/rules_scala/releases/download/v7.0.0/rules_scala-v7.0.0.tar.gz",
+        ],
+        strip_prefix = "rules_scala-7.0.0",
     ),
     org_tensorflow = dict(
-        sha256 = "99c732b92b1b37fc243a559e02f9aef5671771e272758aa4aec7f34dc92dac48",
-        strip_prefix = "tensorflow-2.11.0",
-        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.11.0.tar.gz"],
+        sha256 = "a640d1f97be316a09301dfc9347e3d929ad4d9a2336e3ca23c32c93b0ff7e5d0",
+        strip_prefix = "tensorflow-2.20.0",
+        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.20.0.tar.gz"],
     ),
     org_libc_musl = dict(
         sha256 = "7d5b0b6062521e4627e099e4c9dc8248d32a30285e959b7eecaa780cf8cfd4a4",
@@ -462,9 +469,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.8.0.tar.gz"],
     ),
     rules_java = dict(
-	sha256 = "c5bc17e17bb62290b1fd8fdd847a2396d3459f337a7e07da7769b869b488ec26",
+	sha256 = "a64ab04616e76a448c2c2d8165d836f0d2fb0906200d0b7c7376f46dd62e59cc",
 	urls = [
-	    "https://github.com/bazelbuild/rules_java/releases/download/8.6.1/rules_java-8.6.1.tar.gz",
+	    "https://github.com/bazelbuild/rules_java/releases/download/8.6.2/rules_java-8.6.2.tar.gz",
 	],
 	# strip_prefix = "rules_java-8.6.1",
     ),
@@ -513,6 +520,24 @@ REPOSITORY_LOCATIONS["abseil-cpp"] = dict(
     sha256 = "9b7a064305e9fd94d124ffa6cc358592eb42b5da588fb4e07d09254aa40086db",
     strip_prefix = "abseil-cpp-20250512.1",
     urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20250512.1.tar.gz"],
+)
+
+REPOSITORY_LOCATIONS["with_cfg.bzl"] = dict(
+    sha256 = "c7af6227d24499438fa0bb96fe4034e163d8c807b06f7c0645f3654448268b84",
+    strip_prefix = "with_cfg.bzl-0.11.0",
+    urls = ["https://github.com/fmeum/with_cfg.bzl/releases/download/v0.11.0/with_cfg.bzl-v0.11.0.tar.gz"],
+)
+
+REPOSITORY_LOCATIONS["bazel_features"] = dict(
+    sha256 = "07271d0f6b12633777b69020c4cb1eb67b1939c0cf84bb3944dc85cc250c0c01",
+    strip_prefix = "bazel_features-1.38.0",
+    urls = ["https://github.com/bazel-contrib/bazel_features/releases/download/v1.38.0/bazel_features-v1.38.0.tar.gz"],
+)
+
+REPOSITORY_LOCATIONS["googletest"] = dict(
+    sha256 = "65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",
+    strip_prefix = "googletest-1.17.0",
+    urls = ["https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz"],
 )
 
 # To modify one of the forked repos below:
