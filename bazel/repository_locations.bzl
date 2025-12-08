@@ -439,18 +439,18 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_scala = dict(
-        sha256 = "a4700d6e6cdf13cf85e29029ec998e2ec3ba94791606ec83d2c96e3c5b0aebed",
+        sha256 = "6a900a39bf643c5c9308c8200f9a61e27588dc54a67aa08fcfc798f25add4f7b",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/releases/download/v7.0.0/rules_scala-v7.0.0.tar.gz",
+            "https://github.com/bazelbuild/rules_scala/releases/download/v7.1.0/rules_scala-v7.1.0.tar.gz",
         ],
-        strip_prefix = "rules_scala-7.0.0",
+        strip_prefix = "rules_scala-7.1.0",
     ),
     rules_scala = dict(
-        sha256 = "a4700d6e6cdf13cf85e29029ec998e2ec3ba94791606ec83d2c96e3c5b0aebed",
+        sha256 = "6a900a39bf643c5c9308c8200f9a61e27588dc54a67aa08fcfc798f25add4f7b",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/releases/download/v7.0.0/rules_scala-v7.0.0.tar.gz",
+            "https://github.com/bazelbuild/rules_scala/releases/download/v7.1.0/rules_scala-v7.1.0.tar.gz",
         ],
-        strip_prefix = "rules_scala-7.0.0",
+        strip_prefix = "rules_scala-7.1.0",
     ),
     org_tensorflow = dict(
         sha256 = "a640d1f97be316a09301dfc9347e3d929ad4d9a2336e3ca23c32c93b0ff7e5d0",

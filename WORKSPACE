@@ -73,7 +73,27 @@ scala_config(scala_version = scala_version)
 
 load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains", "scala_toolchains")
 
-scala_toolchains(fetch_sources = True, twitter_scrooge = True)
+# Configure twitter_scrooge toolchain with custom dependencies from thrift_deps.
+# Note: thrift_deps must be loaded before this is evaluated.
+# The finagle dependencies (finagle-thrift, finagle-core) are needed as compile
+# dependencies for the generated scrooge code when thrift services are defined.
+# We use scrooge_core_with_finagle which bundles finagle deps with scrooge_core.
+scala_toolchains(
+    fetch_sources = True,
+    twitter_scrooge = {
+        "libthrift": "@thrift_deps//:org_apache_thrift_libthrift",
+        # Use scrooge_core_with_finagle to include finagle on the compile classpath
+        # for generated thrift service code. Must use @px// prefix to reference
+        # the main workspace from within the generated @rules_scala_toolchains repo.
+        "scrooge_core": "@px//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_core_with_finagle",
+        "scrooge_generator": "@thrift_deps//:com_twitter_scrooge_generator_2_13",
+        "util_core": "@thrift_deps//:com_twitter_util_core_2_13",
+        "util_logging": "@thrift_deps//:com_twitter_util_logging_2_13",
+        "javax_annotation_api": "@thrift_deps//:javax_annotation_javax_annotation_api",
+        "mustache": "@thrift_deps//:com_github_spullara_mustache_java_compiler",
+        "scopt": "@thrift_deps//:com_github_scopt_scopt_2_13",
+    },
+)
 
 scala_register_toolchains()
 
@@ -192,26 +212,6 @@ thrift_deps(scala_version = scala_version)
 load("@thrift_deps//:defs.bzl", thrift_pinned_maven_install = "pinned_maven_install")
 
 thrift_pinned_maven_install()
-
-# twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
-# These bind statements ensure that the correct versions of finagle libthrift, scrooge core
-# and scrooge generator are used to ensure successful compilation.
-# See https://github.com/bazelbuild/rules_scala/issues/592 and
-# https://github.com/bazelbuild/rules_scala/pull/847 for more details.
-bind(
-    name = "io_bazel_rules_scala/dependency/thrift/scrooge_core",
-    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars",
-)
-
-bind(
-    name = "io_bazel_rules_scala/dependency/thrift/scrooge_generator",
-    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars",
-)
-
-bind(
-    name = "io_bazel_rules_scala/dependency/thrift/libthrift",
-    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:thrift_jars",
-)
 
 # gazelle:repo bazel_gazelle
 # Gazelle depes need to be loaded last to make sure they don't override our dependencies.
