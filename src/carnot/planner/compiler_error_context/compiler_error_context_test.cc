@@ -51,7 +51,7 @@ TEST(CompilerErrorContextStatus, Default) {
   ASSERT_TRUE(status_pb.context().Is<compilerpb::CompilerErrorGroup>());
 
   status_pb.context().UnpackTo(&errorgroup_out);
-  EXPECT_EQ(errorgroup_in.DebugString(), errorgroup_out.DebugString());
+  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(errorgroup_in, errorgroup_out));
   for (int64_t i = 0; i < errorgroup_in.errors_size(); i++) {
     auto error_parent_out = errorgroup_in.errors(i);
     auto error_out = error_parent_out.line_col_error();

@@ -27,6 +27,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "src/common/base/logging.h"
@@ -106,6 +107,17 @@ struct PartiallyEqualsProtoMatcher : public ProtoMatcher {
 };
 
 inline ::testing::PolymorphicMatcher<EqualsProtoMatcher> EqualsProto(std::string text_pb) {
+  return ::testing::MakePolymorphicMatcher(EqualsProtoMatcher(std::move(text_pb)));
+}
+
+// Overload that takes a protobuf message directly.
+// This avoids the need to call DebugString() which in newer protobuf versions
+// adds a "goo.gle/debugonly" prefix that breaks parsing.
+template <typename ProtoType,
+          typename = std::enable_if_t<std::is_base_of_v<google::protobuf::Message, ProtoType>>>
+inline ::testing::PolymorphicMatcher<EqualsProtoMatcher> EqualsProto(const ProtoType& proto) {
+  std::string text_pb;
+  google::protobuf::TextFormat::PrintToString(proto, &text_pb);
   return ::testing::MakePolymorphicMatcher(EqualsProtoMatcher(std::move(text_pb)));
 }
 
