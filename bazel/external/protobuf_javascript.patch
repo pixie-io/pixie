@@ -1,9 +1,22 @@
+diff --git a/generator/BUILD.bazel b/generator/BUILD.bazel
+index ac7756d..a3480c8 100644
+--- a/generator/BUILD.bazel
++++ b/generator/BUILD.bazel
+@@ -2,7 +2,7 @@ genrule(
+     name = "generate_version_header",
+     srcs = ["//:package.json"],
+     outs = ["version.h"],
+-    cmd = "node $(location //:generate-version-header.js) $(OUTS)",
++    cmd = "/opt/px_dev/tools/node/bin/node $(location //:generate-version-header.js) $(OUTS)",
+     tools = ["//:generate-version-header.js"],
+ )
+ 
 diff --git a/generator/js_generator.cc b/generator/js_generator.cc
-index 97b5844..1351a54 100644
+index 7ba8bf0..09b1391 100644
 --- a/generator/js_generator.cc
 +++ b/generator/js_generator.cc
-@@ -3648,6 +3648,9 @@ void Generator::GenerateFile(const GeneratorOptions& options,
-
+@@ -3647,6 +3647,9 @@ void Generator::GenerateFile(const GeneratorOptions& options,
+ 
      for (int i = 0; i < file->dependency_count(); i++) {
        const std::string name = std::string(file->dependency(i)->name());
 +      if (ModuleAlias(name) == "gogoproto_gogo_pb") {
