@@ -23,10 +23,10 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     bazel_skylib = dict(
-        sha256 = "f7be3474d42aae265405a592bb7da8e171919d74c16f082a5457840f06054728",
+        sha256 = "51b5105a760b353773f904d2bbc5e664d0987fbaf22265164de65d43e910d8ac",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.2.1/bazel-skylib-1.2.1.tar.gz",
-            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.1/bazel-skylib-1.2.1.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.8.1/bazel-skylib-1.8.1.tar.gz",
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.8.1/bazel-skylib-1.8.1.tar.gz",
         ],
     ),
     # Must be called boringssl to make sure the deps pick it up correctly.
@@ -414,6 +414,11 @@ REPOSITORY_LOCATIONS = dict(
             "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz",
         ],
         manual_license_name = "oracle/openjdk",
+    ),
+    rules_cc = dict(
+	sha256 = "a2fdfde2ab9b2176bd6a33afca14458039023edb1dd2e73e6823810809df4027",
+	strip_prefix = "rules_cc-0.2.14",
+	urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.2.14/rules_cc-0.2.14.tar.gz"],
     ),
     io_bazel_rules_closure = dict(
         sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",

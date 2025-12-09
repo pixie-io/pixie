@@ -1,24 +1,25 @@
-diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
---- a/cc_toolchain_config.bzl	2023-01-06 15:34:50.000000000 -0800
-+++ b/cc_toolchain_config.bzl	2023-01-22 15:33:16.794758043 -0800
-@@ -27,6 +27,7 @@
+diff --git a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
+index 0b77afc..a046faf 100644
+--- a/cc_toolchain_config.bzl
++++ b/cc_toolchain_config.bzl
+@@ -27,6 +27,7 @@ load(
      "with_feature_set",
  )
  load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 +load(":toolchain_features.bzl", "pl_toolchain_pre_features", "PL_EXTRA_CC_CONFIG_ATTRS", "pl_toolchain_post_features", "pl_action_configs")
- 
+
  def layering_check_features(compiler):
      if compiler != "clang":
-@@ -147,7 +148,7 @@
+@@ -147,7 +148,7 @@ def _impl(ctx):
          tool_path(name = name, path = path)
          for name, path in ctx.attr.tool_paths.items()
      ]
 -    action_configs = []
 +    action_configs = pl_action_configs(ctx)
- 
+
      llvm_cov_action = action_config(
          action_name = ACTION_NAMES.llvm_cov,
-@@ -168,6 +169,10 @@
+@@ -168,6 +169,10 @@ def _impl(ctx):
          name = "supports_start_end_lib",
          enabled = True,
      )
@@ -26,10 +27,10 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
 +        name = "default_opt_level_flags",
 +        enabled = True,
 +    )
- 
+
      default_compile_flags_feature = feature(
          name = "default_compile_flags",
-@@ -203,7 +208,7 @@
+@@ -203,7 +208,7 @@ def _impl(ctx):
                          flags = ctx.attr.dbg_compile_flags,
                      ),
                  ] if ctx.attr.dbg_compile_flags else []),
@@ -38,7 +39,7 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
              ),
              flag_set(
                  actions = all_compile_actions,
-@@ -212,7 +217,7 @@
+@@ -212,7 +217,7 @@ def _impl(ctx):
                          flags = ctx.attr.opt_compile_flags,
                      ),
                  ] if ctx.attr.opt_compile_flags else []),
@@ -47,7 +48,7 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
              ),
              flag_set(
                  actions = all_cpp_compile_actions + [ACTION_NAMES.lto_backend],
-@@ -244,7 +249,7 @@
+@@ -244,7 +249,7 @@ def _impl(ctx):
                          flags = ctx.attr.opt_link_flags,
                      ),
                  ] if ctx.attr.opt_link_flags else []),
@@ -56,7 +57,7 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
              ),
          ],
      )
-@@ -1255,6 +1260,7 @@
+@@ -1255,6 +1260,7 @@ def _impl(ctx):
              strip_debug_symbols_feature,
              coverage_feature,
              supports_pic_feature,
@@ -64,7 +65,7 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
          ] + (
              [
                  supports_start_end_lib_feature,
-@@ -1276,6 +1282,7 @@
+@@ -1276,6 +1282,7 @@ def _impl(ctx):
      else:
          features = [
              supports_pic_feature,
@@ -72,28 +73,41 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
          ] + (
              [
                  supports_start_end_lib_feature,
-@@ -1294,6 +1301,7 @@
+@@ -1294,6 +1301,17 @@ def _impl(ctx):
              unfiltered_compile_flags_feature,
          ] + layering_check_features(ctx.attr.compiler)
- 
+
 +    features = pl_toolchain_pre_features(ctx) + features + pl_toolchain_post_features(ctx)
++
++    sysroot_path = ctx.attr.builtin_sysroot
++    # Only override with toolchain sysroot if this cc_toolchain is configured to use a sysroot
++    # (i.e., builtin_sysroot is non-empty). This prevents exec toolchains from incorrectly
++    # inheriting the target sysroot.
++    if sysroot_path:
++        sysroot_toolchain = ctx.toolchains["@px//bazel/cc_toolchains/sysroots/build:toolchain_type"]
++        if sysroot_toolchain:
++            sysroot_path = sysroot_toolchain.sysroot.path
++
      return cc_common.create_cc_toolchain_config_info(
          ctx = ctx,
          features = features,
-@@ -1313,7 +1321,7 @@
- 
+@@ -1308,7 +1322,7 @@ def _impl(ctx):
+         abi_version = ctx.attr.abi_version,
+         abi_libc_version = ctx.attr.abi_libc_version,
+         tool_paths = tool_paths,
+-        builtin_sysroot = ctx.attr.builtin_sysroot,
++        builtin_sysroot = sysroot_path,
+     )
+
  cc_toolchain_config = rule(
-     implementation = _impl,
--    attrs = {
-+    attrs = dict({
-         "cpu": attr.string(mandatory = True),
-         "compiler": attr.string(mandatory = True),
-         "toolchain_identifier": attr.string(mandatory = True),
-@@ -1336,6 +1344,6 @@
+@@ -1336,5 +1350,8 @@ cc_toolchain_config = rule(
          "coverage_link_flags": attr.string_list(),
          "supports_start_end_lib": attr.bool(),
          "builtin_sysroot": attr.string(),
 -    },
-+    }, **PL_EXTRA_CC_CONFIG_ATTRS),
++    } | PL_EXTRA_CC_CONFIG_ATTRS,
      provides = [CcToolchainConfigInfo],
++    toolchains = [
++        config_common.toolchain_type("@px//bazel/cc_toolchains/sysroots/build:toolchain_type", mandatory = False),
++    ],
  )

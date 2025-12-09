@@ -1,5 +1,7 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
+common --noenable_bzlmod --enable_workspace
+
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
 

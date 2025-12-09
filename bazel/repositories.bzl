@@ -247,6 +247,7 @@ def _pl_cc_toolchain_deps():
 def _pl_deps():
     _bazel_repo("bazel_gazelle")
     _bazel_repo("io_bazel_rules_go", patches = ["//bazel/external:rules_go.patch"], patch_args = ["-p1"])
+    _bazel_repo("rules_cc")
     _bazel_repo("rules_java")
     _bazel_repo("io_bazel_rules_scala")
     _bazel_repo("rules_scala")

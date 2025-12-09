@@ -66,9 +66,10 @@ def pl_toolchain_pre_features(ctx):
 # pl_toolchain_post_features are added to the command line after all of the default features.
 def pl_toolchain_post_features(ctx):
     features = []
-    features += _libstdcpp(ctx)
     if ctx.attr.compiler == "clang":
         features += _clang_features(ctx)
+    else:
+        features += _libstdcpp(ctx)
 
     features += _external_dep(ctx)
 
@@ -148,6 +149,10 @@ def _libcpp(ctx):
     return [
         feature(
             name = "libc++",
+            # Enable by default for clang toolchains since they bundle libc++ and don't have libstdc++.
+            # This is especially important for exec toolchains where --features=libc++ from bazelrc
+            # may not be applied in Bazel 7+.
+            enabled = True,
             flag_sets = [
                 flag_set(
                     actions = all_cpp_compile_actions + [ACTION_NAMES.lto_backend],
