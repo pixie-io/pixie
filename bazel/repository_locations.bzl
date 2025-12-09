@@ -262,10 +262,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz"],
     ),
     com_google_protobuf = dict(
-        sha256 = "07a43d88fe5a38e434c7f94129cad56a4c43a51f99336074d0799c2f7d4e44c5",
-        strip_prefix = "protobuf-30.2",
+        sha256 = "c3a0a9ece8932e31c3b736e2db18b1c42e7070cd9b881388b26d01aa71e24ca2",
+        strip_prefix = "protobuf-31.1",
         urls = [
-            "https://github.com/protocolbuffers/protobuf/archive/v30.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/archive/v31.1.tar.gz",
         ],
     ),
     com_google_protobuf_javascript = dict(
