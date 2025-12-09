@@ -252,9 +252,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/farmhash/archive/2f0e005b81e296fa6963e395626137cf729b710c.tar.gz"],
     ),
     com_google_flatbuffers = dict(
-        sha256 = "e2dc24985a85b278dd06313481a9ca051d048f9474e0f199e372fea3ea4248c9",
-        strip_prefix = "flatbuffers-2.0.6",
-        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v2.0.6.tar.gz"],
+        sha256 = "4157c5cacdb59737c5d627e47ac26b140e9ee28b1102f812b36068aab728c1ed",
+        strip_prefix = "flatbuffers-24.3.25",
+        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v24.3.25.tar.gz"],
     ),
     com_google_googletest = dict(
         sha256 = "65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",
@@ -440,9 +440,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "rules_scala-4ba3780fcba8d26980daff4639abc6f18517308b",
     ),
     org_tensorflow = dict(
-        sha256 = "99c732b92b1b37fc243a559e02f9aef5671771e272758aa4aec7f34dc92dac48",
-        strip_prefix = "tensorflow-2.11.0",
-        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.11.0.tar.gz"],
+        sha256 = "a640d1f97be316a09301dfc9347e3d929ad4d9a2336e3ca23c32c93b0ff7e5d0",
+        strip_prefix = "tensorflow-2.20.0",
+        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.20.0.tar.gz"],
     ),
     org_libc_musl = dict(
         sha256 = "7d5b0b6062521e4627e099e4c9dc8248d32a30285e959b7eecaa780cf8cfd4a4",
