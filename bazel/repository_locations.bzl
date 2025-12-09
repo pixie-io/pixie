@@ -451,6 +451,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["http://musl.libc.org/releases/musl-1.2.3.tar.gz"],
         manual_license_name = "libc/musl",
     ),
+    rules_cc = dict(
+        sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
+        strip_prefix = "rules_cc-0.0.17",
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz"],
+    ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",
         strip_prefix = "rules_foreign_cc-0.8.0",
@@ -460,6 +465,12 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "9d04041ac92a0985e344235f5d946f71ac543f1b1565f2cdbc9a2aaee8adf55b",
         strip_prefix = "rules_python-0.26.0",
         urls = ["https://github.com/bazelbuild/rules_python/archive/refs/tags/0.26.0.tar.gz"],
+    ),
+    rules_java = dict(
+        sha256 = "a64ab04616e76a448c2c2d8165d836f0d2fb0906200d0b7c7376f46dd62e59cc",
+        urls = [
+            "https://github.com/bazelbuild/rules_java/releases/download/8.6.2/rules_java-8.6.2.tar.gz",
+        ],
     ),
     rules_jvm_external = dict(
         urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/5.2.tar.gz"],

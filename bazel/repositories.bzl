@@ -120,6 +120,7 @@ def _com_llvm_lib():
 def _cc_deps():
     # Dependencies with native bazel build files.
 
+    _bazel_repo("rules_cc")
     _bazel_repo("upb")
     _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_go_toolchain.patch", "//bazel/external:grpc_test_visibility.patch"], patch_args = ["-p1"])
@@ -127,6 +128,7 @@ def _cc_deps():
     _bazel_repo("boringssl", patches = ["//bazel/external:boringssl.patch"], patch_args = ["-p0"])
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
+    # _bazel_repo("com_google_googletest", repo_mapping = {"@abseil-cpp": "@com_google_absl"})
     _bazel_repo("com_github_gflags_gflags")
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
@@ -241,6 +243,7 @@ def _pl_cc_toolchain_deps():
 def _pl_deps():
     _bazel_repo("bazel_gazelle")
     _bazel_repo("io_bazel_rules_go", patches = ["//bazel/external:rules_go.patch"], patch_args = ["-p1"])
+    _bazel_repo("rules_java")
     _bazel_repo("io_bazel_rules_scala")
     _bazel_repo("rules_jvm_external")
     _bazel_repo("rules_foreign_cc")
