@@ -28,6 +28,7 @@ lib_srcs.append("__init__.py")
 py_library(
     name = "protocol_inference_lib",
     srcs = lib_srcs,
+    imports = ["."],
     deps = [
         requirement("pandas"),
         requirement("prettytable"),
