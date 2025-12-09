@@ -431,11 +431,11 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_scala = dict(
-        sha256 = "6e9191363357d30b144e7306fec74deea2c7f1de63f3ed32028838116c239e8a",
+        sha256 = "6a900a39bf643c5c9308c8200f9a61e27588dc54a67aa08fcfc798f25add4f7b",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/archive/4ba3780fcba8d26980daff4639abc6f18517308b.tar.gz",
+            "https://github.com/bazelbuild/rules_scala/releases/download/v7.1.0/rules_scala-v7.1.0.tar.gz",
         ],
-        strip_prefix = "rules_scala-4ba3780fcba8d26980daff4639abc6f18517308b",
+        strip_prefix = "rules_scala-7.1.0",
     ),
     org_tensorflow = dict(
         sha256 = "a640d1f97be316a09301dfc9347e3d929ad4d9a2336e3ca23c32c93b0ff7e5d0",
@@ -449,9 +449,9 @@ REPOSITORY_LOCATIONS = dict(
         manual_license_name = "libc/musl",
     ),
     rules_cc = dict(
-        sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
-        strip_prefix = "rules_cc-0.0.17",
-        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz"],
+        sha256 = "a2fdfde2ab9b2176bd6a33afca14458039023edb1dd2e73e6823810809df4027",
+        strip_prefix = "rules_cc-0.2.14",
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.2.14/rules_cc-0.2.14.tar.gz"],
     ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",
