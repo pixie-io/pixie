@@ -131,9 +131,14 @@ def _cc_deps():
     _bazel_repo("com_github_gflags_gflags")
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
-    _bazel_repo("com_google_flatbuffers")
+    _bazel_repo("com_google_flatbuffers", patches = ["//bazel/external:flatbuffers_remove_rules_js_use.patch"], patch_args = ["-p1"])
     _bazel_repo("cpuinfo", patches = ["//bazel/external:cpuinfo.patch"], patch_args = ["-p1"])
-    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_disable_llvm.patch", "//bazel/external:tensorflow_disable_mirrors.patch", "//bazel/external:tensorflow_disable_py.patch"], patch_args = ["-p1"])
+    _bazel_repo("org_tensorflow", patches = [
+        "//bazel/external:tensorflow_disable_py.patch",
+        "//bazel/external:tensorflow_disable_mirrors.patch",
+        # TODO(ddelnano): Remove once bazel 7.x is used.
+        "//bazel/external:tensorflow_disable_gpu_bazel_6.x.patch",
+    ], patch_args = ["-p1"])
     _bazel_repo("com_github_neargye_magic_enum")
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_googlesource_code_re2", patches = ["//bazel/external:re2_warning.patch"], patch_args = ["-p1"])
