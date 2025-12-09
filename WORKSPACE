@@ -19,6 +19,10 @@ pl_register_cc_toolchains()
 # Install Pixie Labs Dependencies.
 pl_deps()
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
 # Order is important. Try to go from most basic/primitive to higher level packages.
 # - go_rules_dependencies
 # - protobuf_deps

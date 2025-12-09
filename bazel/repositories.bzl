@@ -257,8 +257,9 @@ def _pl_deps():
     _bazel_repo("rules_python")
     _bazel_repo("rules_pkg")
     _bazel_repo("com_github_bazelbuild_buildtools")
-    _bazel_repo("com_github_fmeum_rules_meta")
     _bazel_repo("com_google_protobuf_javascript", patches = ["//bazel/external:protobuf_javascript.patch"], patch_args = ["-p1"])
+    _bazel_repo("bazel_features")
+    _bazel_repo("with_cfg.bzl")
 
     _com_llvm_lib()
     _cc_deps()
