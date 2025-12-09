@@ -106,9 +106,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/gperftools/gperftools/releases/download/gperftools-2.9.1/gperftools-2.9.1.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "b55696fb249669744de3e71acc54a9382bea0dce7cd5ba379b356b12b82d4229",
-        strip_prefix = "grpc-1.51.1",
-        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.51.1.tar.gz"],
+        sha256 = "7bf97c11cf3808d650a3a025bbf9c5f922c844a590826285067765dfd055d228",
+        strip_prefix = "grpc-1.74.1",
+        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.74.1.tar.gz"],
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
@@ -232,9 +232,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/libpypa/archive/eba8ec485a6c5e566d0d7a0716a06c91837c9d2f.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "91ac87d30cc6d79f9ab974c51874a704de9c2647c40f6932597329a282217ba8",
-        strip_prefix = "abseil-cpp-20220623.1",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20220623.1.tar.gz"],
+        sha256 = "9b7a064305e9fd94d124ffa6cc358592eb42b5da588fb4e07d09254aa40086db",
+        strip_prefix = "abseil-cpp-20250512.1",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20250512.1.tar.gz"],
     ),
     com_google_benchmark = dict(
         sha256 = "d26789a2b46d8808a48a4556ee58ccc7c497fcd4c0af9b90197674a81e04798a",
@@ -262,11 +262,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz"],
     ),
     com_google_protobuf = dict(
-        sha256 = "63c5539a8506dc6bccd352a857cea106e0a389ce047a3ff0a78fe3f8fede410d",
-        strip_prefix = "protobuf-24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb",
+        sha256 = "07a43d88fe5a38e434c7f94129cad56a4c43a51f99336074d0799c2f7d4e44c5",
+        strip_prefix = "protobuf-30.2",
         urls = [
-            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/archive/v30.2.tar.gz",
         ],
     ),
     com_google_protobuf_javascript = dict(

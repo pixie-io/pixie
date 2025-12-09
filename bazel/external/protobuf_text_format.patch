@@ -1,39 +1,13 @@
-diff --git a/src/google/protobuf/stubs/strutil.cc b/src/google/protobuf/stubs/strutil.cc
-index 594c8eac6..c7ef9437b 100644
---- a/src/google/protobuf/stubs/strutil.cc
-+++ b/src/google/protobuf/stubs/strutil.cc
-@@ -592,7 +592,7 @@ void CEscapeAndAppend(StringPiece src, std::string *dest) {
-   }
- }
- 
--std::string CEscape(const std::string &src) {
-+std::string CEscape(StringPiece src) {
-   std::string dest;
-   CEscapeAndAppend(src, &dest);
-   return dest;
-diff --git a/src/google/protobuf/stubs/strutil.h b/src/google/protobuf/stubs/strutil.h
-index 9658abf90..9cf9cae83 100644
---- a/src/google/protobuf/stubs/strutil.h
-+++ b/src/google/protobuf/stubs/strutil.h
-@@ -328,7 +328,7 @@ PROTOBUF_EXPORT std::string UnescapeCEscapeString(const std::string& src);
- //
- //    Escaped chars: \n, \r, \t, ", ', \, and !isprint().
- // ----------------------------------------------------------------------
--PROTOBUF_EXPORT std::string CEscape(const std::string& src);
-+PROTOBUF_EXPORT std::string CEscape(StringPiece src);
- 
- // ----------------------------------------------------------------------
- // CEscapeAndAppend()
 diff --git a/src/google/protobuf/text_format.cc b/src/google/protobuf/text_format.cc
-index 19110499d..0d116ee7e 100644
+index 2c0a95d..1234567 100644
 --- a/src/google/protobuf/text_format.cc
 +++ b/src/google/protobuf/text_format.cc
-@@ -81,6 +81,18 @@ inline bool IsOctNumber(const std::string& str) {
+@@ -82,6 +82,18 @@ inline bool IsOctNumber(const std::string& str) {
            (str[1] >= '0' && str[1] < '8'));
  }
- 
-+// Returns true if truncatation occurred.
-+bool TruncateString(int64_t max_length, StringPiece* s) {
+
++// Returns true if truncation occurred.
++bool TruncateString(int64_t max_length, absl::string_view* s) {
 +  if (max_length > 0) {
 +    int64_t excess = static_cast<int64_t>(s->size()) - max_length;
 +    if (excess > 0) {
@@ -44,10 +18,10 @@ index 19110499d..0d116ee7e 100644
 +  return false;
 +}
 +
- }  // namespace
- 
- namespace internal {
-@@ -2555,20 +2567,22 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
+ // The number of fields that are redacted in AbslStringify.
+ std::atomic<int64_t> num_redacted_field{0};
+
+@@ -2738,20 +2750,22 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
                ? reflection->GetRepeatedStringReference(message, field, index,
                                                         &scratch)
                : reflection->GetStringReference(message, field, &scratch);
@@ -60,39 +34,39 @@ index 19110499d..0d116ee7e 100644
 -                          "...<truncated>...";
 -        value_to_print = &truncated_value;
 -      }
-+      StringPiece value_to_print(value);
++      absl::string_view value_to_print(value);
 +      bool truncated = TruncateString(truncate_string_field_longer_than_, &value_to_print);
 +
        if (field->type() == FieldDescriptor::TYPE_STRING) {
 -        printer->PrintString(*value_to_print, generator);
 +        if (truncated) {
-+          printer->PrintString(StrCat(value_to_print, "...<truncated>..."), generator);
++          printer->PrintString(absl::StrCat(value_to_print, "...<truncated>..."), generator);
 +        } else {
 +          printer->PrintString(value, generator);
 +        }
        } else {
-         GOOGLE_DCHECK_EQ(field->type(), FieldDescriptor::TYPE_BYTES);
+         ABSL_DCHECK_EQ(field->type(), FieldDescriptor::TYPE_BYTES);
 -        printer->PrintBytes(*value_to_print, generator);
 +        if (truncated) {
-+          printer->PrintBytes(StrCat(value_to_print, "...<truncated>..."), generator);
++          printer->PrintBytes(absl::StrCat(value_to_print, "...<truncated>..."), generator);
 +        } else {
 +          printer->PrintBytes(value, generator);
 +        }
        }
        break;
      }
-@@ -2708,7 +2722,14 @@ void TextFormat::Printer::PrintUnknownFields(
-           // This field is not parseable as a Message (or we ran out of
-           // recursion budget). So it is probably just a plain string.
-           generator->PrintMaybeWithMarker(": ", "\"");
--          generator->PrintString(CEscape(value));
-+          StringPiece value_to_print(value);
+@@ -2937,7 +2951,14 @@ void TextFormat::Printer::PrintUnknownFields(
+             break;
+           }
+           generator->PrintMaybeWithMarker(MarkerToken(), ": ", "\"");
+-          generator->PrintString(absl::CEscape(value));
++          absl::string_view value_to_print(value);
 +          bool truncated = TruncateString(truncate_string_field_longer_than_, &value_to_print);
 +
 +          if (truncated) {
-+            generator->PrintString(CEscape(value_to_print) + "...<truncated>...");
++            generator->PrintString(absl::StrCat(absl::CEscape(value_to_print), "...<truncated>..."));
 +          } else {
-+            generator->PrintString(CEscape(value));
++            generator->PrintString(absl::CEscape(value));
 +          }
            if (single_line_mode_) {
              generator->PrintLiteral("\" ");

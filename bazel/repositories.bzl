@@ -122,13 +122,12 @@ def _cc_deps():
 
     _bazel_repo("rules_cc")
     _bazel_repo("upb")
-    _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"])
-    _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_go_toolchain.patch", "//bazel/external:grpc_test_visibility.patch"], patch_args = ["-p1"])
+    _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"], repo_mapping = {"@abseil-cpp": "@com_google_absl"})
+    _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_go_toolchain.patch"], patch_args = ["-p1"])
 
     _bazel_repo("boringssl", patches = ["//bazel/external:boringssl.patch"], patch_args = ["-p0"])
     _bazel_repo("com_google_benchmark")
-    _bazel_repo("com_google_googletest")
-    # _bazel_repo("com_google_googletest", repo_mapping = {"@abseil-cpp": "@com_google_absl"})
+    _bazel_repo("com_google_googletest", repo_mapping = {"@abseil-cpp": "@com_google_absl"})
     _bazel_repo("com_github_gflags_gflags")
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
