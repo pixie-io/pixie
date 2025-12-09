@@ -40,6 +40,12 @@ if platform_family?('mac_os_x')
   homebrew_package pkg_list
 end
 
+remote_file '/usr/local/share/zsh/site-functions/_bazel' do
+  source node['bazel']['zsh_completions']
+  mode '0644'
+  action :create
+end
+
 common_remote_bin 'faq'
 common_remote_bin 'kubectl'
 common_remote_tar_bin 'kustomize'
