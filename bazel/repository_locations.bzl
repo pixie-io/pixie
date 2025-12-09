@@ -237,9 +237,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20220623.1.tar.gz"],
     ),
     com_google_benchmark = dict(
-        sha256 = "3aff99169fa8bdee356eaa1f691e835a6e57b1efeadb8a0f9f228531158246ac",
-        strip_prefix = "benchmark-1.7.0",
-        urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.7.0.tar.gz"],
+        sha256 = "d26789a2b46d8808a48a4556ee58ccc7c497fcd4c0af9b90197674a81e04798a",
+        strip_prefix = "benchmark-1.8.5",
+        urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.8.5.tar.gz"],
     ),
     com_google_double_conversion = dict(
         sha256 = "3dbcdf186ad092a8b71228a5962009b5c96abde9a315257a3452eb988414ea3b",
