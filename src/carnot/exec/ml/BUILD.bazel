@@ -38,9 +38,9 @@ pl_cc_library(
         "//src/shared/types:cc_library",
         "@com_github_google_sentencepiece//:libsentencepiece",
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@eigen_archive//:eigen3",
         "@org_tensorflow//tensorflow/lite:framework",
         "@org_tensorflow//tensorflow/lite/kernels:builtin_ops",
-        "@eigen_archive//:eigen3"
     ],
 )
 
@@ -51,7 +51,7 @@ pl_cc_test_library(
         "eigen_test_utils.h",
     ],
     deps = [
-        "@eigen_archive//:eigen3"
+        "@eigen_archive//:eigen3",
     ],
 )
 

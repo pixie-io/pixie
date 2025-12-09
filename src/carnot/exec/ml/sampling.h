@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "src/common/base/base.h"
 #include "Eigen/Core"
+#include "src/common/base/base.h"
 
 namespace px {
 namespace carnot {
