@@ -27,9 +27,9 @@ namespace px {
 namespace stirling {
 namespace testing {
 
-class Python310Container : public ContainerRunner {
+class PythonMin310Container : public ContainerRunner {
  public:
-  Python310Container()
+  PythonMin310Container()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 

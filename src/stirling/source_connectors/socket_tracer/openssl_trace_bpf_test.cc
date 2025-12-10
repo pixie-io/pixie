@@ -34,7 +34,7 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_12_3_1_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_14_18_1_alpine_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_client_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/python_3_10_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/python_min_310_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/ruby_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
@@ -86,7 +86,9 @@ class Node14_18_1AlpineContainerWrapper
   int32_t PID() const { return process_pid(); }
 };
 
-class Python310ContainerWrapper : public ::px::stirling::testing::Python310Container {
+// Python 3.10 and later use SSL_write_ex and SSL_read_ex. This test case is itended to cover
+// this case. See https://github.com/pixie-io/pixie/issues/1113 for more details.
+class PythonMin310ContainerWrapper : public ::px::stirling::testing::PythonMin310Container {
  public:
   int32_t PID() const { return process_pid(); }
 };
@@ -181,7 +183,7 @@ http::Record GetExpectedHTTPRecord() {
 
 using OpenSSLServerImplementations =
     Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-          NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
+          NginxOpenSSL_3_0_8_ContainerWrapper, PythonMin310ContainerWrapper,
           Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
