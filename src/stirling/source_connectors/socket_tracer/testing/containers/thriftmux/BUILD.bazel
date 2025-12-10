@@ -129,11 +129,11 @@ scala_library(
 
 scrooge_scala_library(
     name = "thriftmux_scrooge",
-    deps = [
-        ":thrift_library",
-    ],
     exports = [
         ":scrooge_runtime_deps",
+    ],
+    deps = [
+        ":thrift_library",
     ],
 )
 

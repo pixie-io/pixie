@@ -34,7 +34,6 @@
     "(^src/ui/src/types/schema\\.ts$)",
     "(^third_party/cpplint/cpplint.py$)",
     "(^third_party/gogoproto/gogo.proto$)",
-    "(^third_party/protoc-gen-grpc-web/grpc_generator.cc$)",
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
     "(go\\.sum$)"
