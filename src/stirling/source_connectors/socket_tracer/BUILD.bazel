@@ -461,7 +461,7 @@ pl_cc_bpf_test(
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:node_12_3_1_container",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:node_14_18_1_alpine_container",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:node_client_container",
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:python_3_10_container",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:python_min_310_container",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:ruby_container",
         "//src/stirling/testing:cc_library",
     ],
