@@ -120,9 +120,14 @@ def _com_llvm_lib():
 def _cc_deps():
     # Dependencies with native bazel build files.
 
-    _bazel_repo("upb")
-    _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"])
-    _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_go_toolchain.patch", "//bazel/external:grpc_test_visibility.patch"], patch_args = ["-p1"])
+    _bazel_repo("rules_cc")
+    _bazel_repo("com_google_protobuf", patches = [
+        "//bazel/external:protobuf_text_format.patch",
+        "//bazel/external:protobuf_warning.patch",
+        # TODO(ddelnano): Remove once protobuf is upgraded to v31+
+        "//bazel/external:protobuf_remove_absl_if_constexpr.patch"
+    ], patch_args = ["-p1"])
+    _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_go_toolchain.patch"], patch_args = ["-p1"])
 
     _bazel_repo("boringssl", patches = ["//bazel/external:boringssl.patch"], patch_args = ["-p0"])
     _bazel_repo("com_google_benchmark")

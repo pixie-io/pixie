@@ -16,13 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "src/common/base/base.h"
+
 #include <grpcpp/grpcpp.h>
 
 #include <chrono>
 #include <string>
 
 #include <absl/strings/str_format.h>
-#include "src/common/base/base.h"
 #include "src/common/grpcutils/logger.h"
 
 using grpc::experimental::InterceptionHookPoints;

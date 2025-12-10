@@ -106,9 +106,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/gperftools/gperftools/releases/download/gperftools-2.9.1/gperftools-2.9.1.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "b55696fb249669744de3e71acc54a9382bea0dce7cd5ba379b356b12b82d4229",
-        strip_prefix = "grpc-1.51.1",
-        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.51.1.tar.gz"],
+        sha256 = "c682fc39baefc6e804d735e6b48141157b7213602cc66dbe0bf375b904d8b5f9",
+        strip_prefix = "grpc-1.64.2",
+        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.64.2.tar.gz"],
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
@@ -232,9 +232,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/libpypa/archive/eba8ec485a6c5e566d0d7a0716a06c91837c9d2f.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "91ac87d30cc6d79f9ab974c51874a704de9c2647c40f6932597329a282217ba8",
-        strip_prefix = "abseil-cpp-20220623.1",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20220623.1.tar.gz"],
+        sha256 = "9b7a064305e9fd94d124ffa6cc358592eb42b5da588fb4e07d09254aa40086db",
+        strip_prefix = "abseil-cpp-20250512.1",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20250512.1.tar.gz"],
     ),
     com_google_benchmark = dict(
         sha256 = "d26789a2b46d8808a48a4556ee58ccc7c497fcd4c0af9b90197674a81e04798a",
@@ -262,12 +262,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz"],
     ),
     com_google_protobuf = dict(
-        sha256 = "63c5539a8506dc6bccd352a857cea106e0a389ce047a3ff0a78fe3f8fede410d",
-        strip_prefix = "protobuf-24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb",
-        urls = [
-            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
-        ],
+        sha256 = "da288bf1daa6c04d03a9051781caa52aceb9163586bff9aa6cfb12f69b9395aa",
+	strip_prefix = "protobuf-27.0",
+	urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v27.0/protobuf-27.0.tar.gz",]
     ),
     com_google_protobuf_javascript = dict(
         sha256 = "35bca1729532b0a77280bf28ab5937438e3dcccd6b31a282d9ae84c896b6f6e3",
@@ -451,6 +448,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["http://musl.libc.org/releases/musl-1.2.3.tar.gz"],
         manual_license_name = "libc/musl",
     ),
+    rules_cc = dict(
+        sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
+        strip_prefix = "rules_cc-0.0.17",
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz"],
+    ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",
         strip_prefix = "rules_foreign_cc-0.8.0",
@@ -477,15 +479,6 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "2c1d60ef4d586909f138c28409780e102e2ebd619e7d462ded26dce43a8f9ffb",
         urls = [
             "https://raw.githubusercontent.com/bazelbuild/bazel/5.3.1/tools/cpp/unix_cc_toolchain_config.bzl",
-        ],
-    ),
-    # GRPC and Protobuf pick different versions. Pick the newer one.
-    upb = dict(
-        sha256 = "017a7e8e4e842d01dba5dc8aa316323eee080cd1b75986a7d1f94d87220e6502",
-        strip_prefix = "upb-e4635f223e7d36dfbea3b722a4ca4807a7e882e2",
-        urls = [
-            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/upb/archive/e4635f223e7d36dfbea3b722a4ca4807a7e882e2.tar.gz",
-            "https://github.com/protocolbuffers/upb/archive/e4635f223e7d36dfbea3b722a4ca4807a7e882e2.tar.gz",
         ],
     ),
     cpuinfo = dict(
