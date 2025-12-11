@@ -112,7 +112,7 @@ test:clang-libstdc++ --config=tmp-sandbox
 
 build:qemu-bpf --config=clang-base
 build:qemu-bpf --//bazel:enable_libcpp
-build:qemu-bpf --features=libc++ --features=-libstdc++
+build:qemu-bpf --features=libc++ --features=-libstdc++ --host_features=libc++ --host_features=-libstdc++
 build:qemu-bpf --build_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp
 build:qemu-bpf --test_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp,-disabled
 build:qemu-bpf --sandbox_fake_username
