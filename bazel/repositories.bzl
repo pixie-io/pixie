@@ -259,6 +259,8 @@ def _pl_deps():
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("com_github_fmeum_rules_meta")
     _bazel_repo("com_google_protobuf_javascript", patches = ["//bazel/external:protobuf_javascript.patch"], patch_args = ["-p1"])
+    # TODO(ddelnano): Remove patch once grpc-web upgrades to protobuf v30+.
+    _bazel_repo("com_github_grpc_grpcweb", patches = ["//bazel/external:grpc-web_protobuf_v30_support.patch"], patch_args = ["-p1"])
 
     _com_llvm_lib()
     _cc_deps()

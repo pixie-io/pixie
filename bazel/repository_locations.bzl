@@ -110,6 +110,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "grpc-1.74.1",
         urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.74.1.tar.gz"],
     ),
+    com_github_grpc_grpcweb = dict(
+        sha256 = "0f0c8c0c1104306d67dad678be7c14efe52a698795a58b2b72ab67a8bb100c15",
+        strip_prefix = "grpc-web-2.0.2",
+        urls = ["https://github.com/grpc/grpc-web/archive/refs/tags/2.0.2.tar.gz"],
+    ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
         sha256 = "1c0bd83e03f71a10fc934b7ce996e327488b838587f03159fd392c77c7701389",

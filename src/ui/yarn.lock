@@ -2813,7 +2813,7 @@ __metadata:
     google-protobuf: 4.0.1
     graphql: ^15.5.0
     graphql-schema-typescript: ^1.5.2
-    grpc-web: ^1.0.7
+    grpc-web: 2.0.2
     history: ^4.10.1
     html-webpack-plugin: ^5.5.0
     jest: ^27.3.1
@@ -8658,10 +8658,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"grpc-web@npm:^1.0.7":
-  version: 1.2.1
-  resolution: "grpc-web@npm:1.2.1"
-  checksum: 3860a3761793ccff10db513126957acf2794bcdb0fb82fc20fc4ffbc16e25b9742500d966acc88fbb258bf1d88ef7a4014189287bffbc79177560d7d83eadec1
+"grpc-web@npm:2.0.2":
+  version: 2.0.2
+  resolution: "grpc-web@npm:2.0.2"
+  checksum: 3f587ca5d8da51ca126f2014259981ee4b2d18051449db8a03a2df572fa94c5304b0f5ac4d6ed371aa76d278e6cfe428e05b0c703e23aa0dfabfec2ce5ec5dbd
   languageName: node
   linkType: hard
 

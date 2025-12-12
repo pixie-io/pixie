@@ -103,7 +103,7 @@
     "date-fns": "^2.29.3",
     "google-protobuf": "4.0.1",
     "graphql": "^15.5.0",
-    "grpc-web": "^1.0.7",
+    "grpc-web": "2.0.2",
     "history": "^4.10.1",
     "jose": "^4.9.3",
     "launchdarkly-react-client-sdk": "^2.20.0",
