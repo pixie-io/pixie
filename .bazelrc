@@ -22,11 +22,6 @@ run --remote_download_outputs=all
 coverage --build_runfile_links
 coverage --nocache_test_results
 
-# Needed by rules_meta.
-# Follow https://github.com/fmeum/rules_meta/issues/1#issuecomment-1255828109
-# for updates.
-common --incompatible_remove_rule_name_parameter=false
-
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status.sh
 

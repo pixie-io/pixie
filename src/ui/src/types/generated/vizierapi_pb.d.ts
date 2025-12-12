@@ -20,9 +20,9 @@ export class UInt128 extends jspb.Message {
 
 export namespace UInt128 {
   export type AsObject = {
-    low: number,
-    high: number,
-  }
+    low: number;
+    high: number;
+  };
 }
 
 export class BooleanColumn extends jspb.Message {
@@ -41,8 +41,8 @@ export class BooleanColumn extends jspb.Message {
 
 export namespace BooleanColumn {
   export type AsObject = {
-    dataList: Array<boolean>,
-  }
+    dataList: Array<boolean>;
+  };
 }
 
 export class Int64Column extends jspb.Message {
@@ -61,8 +61,8 @@ export class Int64Column extends jspb.Message {
 
 export namespace Int64Column {
   export type AsObject = {
-    dataList: Array<number>,
-  }
+    dataList: Array<number>;
+  };
 }
 
 export class UInt128Column extends jspb.Message {
@@ -81,8 +81,8 @@ export class UInt128Column extends jspb.Message {
 
 export namespace UInt128Column {
   export type AsObject = {
-    dataList: Array<UInt128.AsObject>,
-  }
+    dataList: Array<UInt128.AsObject>;
+  };
 }
 
 export class Float64Column extends jspb.Message {
@@ -101,8 +101,8 @@ export class Float64Column extends jspb.Message {
 
 export namespace Float64Column {
   export type AsObject = {
-    dataList: Array<number>,
-  }
+    dataList: Array<number>;
+  };
 }
 
 export class Time64NSColumn extends jspb.Message {
@@ -121,8 +121,8 @@ export class Time64NSColumn extends jspb.Message {
 
 export namespace Time64NSColumn {
   export type AsObject = {
-    dataList: Array<number>,
-  }
+    dataList: Array<number>;
+  };
 }
 
 export class StringColumn extends jspb.Message {
@@ -141,8 +141,8 @@ export class StringColumn extends jspb.Message {
 
 export namespace StringColumn {
   export type AsObject = {
-    dataList: Array<Uint8Array | string>,
-  }
+    dataList: Array<Uint8Array | string>;
+  };
 }
 
 export class Column extends jspb.Message {
@@ -188,15 +188,15 @@ export class Column extends jspb.Message {
 
 export namespace Column {
   export type AsObject = {
-    booleanData?: BooleanColumn.AsObject,
-    int64Data?: Int64Column.AsObject,
-    uint128Data?: UInt128Column.AsObject,
-    time64nsData?: Time64NSColumn.AsObject,
-    float64Data?: Float64Column.AsObject,
-    stringData?: StringColumn.AsObject,
-  }
+    booleanData?: BooleanColumn.AsObject;
+    int64Data?: Int64Column.AsObject;
+    uint128Data?: UInt128Column.AsObject;
+    time64nsData?: Time64NSColumn.AsObject;
+    float64Data?: Float64Column.AsObject;
+    stringData?: StringColumn.AsObject;
+  };
 
-  export enum ColDataCase { 
+  export enum ColDataCase {
     COL_DATA_NOT_SET = 0,
     BOOLEAN_DATA = 1,
     INT64_DATA = 2,
@@ -235,12 +235,12 @@ export class RowBatchData extends jspb.Message {
 
 export namespace RowBatchData {
   export type AsObject = {
-    tableId: string,
-    colsList: Array<Column.AsObject>,
-    numRows: number,
-    eow: boolean,
-    eos: boolean,
-  }
+    tableId: string;
+    colsList: Array<Column.AsObject>;
+    numRows: number;
+    eow: boolean;
+    eos: boolean;
+  };
 }
 
 export class Relation extends jspb.Message {
@@ -259,8 +259,8 @@ export class Relation extends jspb.Message {
 
 export namespace Relation {
   export type AsObject = {
-    columnsList: Array<Relation.ColumnInfo.AsObject>,
-  }
+    columnsList: Array<Relation.ColumnInfo.AsObject>;
+  };
 
   export class ColumnInfo extends jspb.Message {
     getColumnName(): string;
@@ -285,11 +285,11 @@ export namespace Relation {
 
   export namespace ColumnInfo {
     export type AsObject = {
-      columnName: string,
-      columnType: DataType,
-      columnDesc: string,
-      columnSemanticType: SemanticType,
-    }
+      columnName: string;
+      columnType: DataType;
+      columnDesc: string;
+      columnSemanticType: SemanticType;
+    };
   }
 
 }
@@ -314,10 +314,10 @@ export class CompilerError extends jspb.Message {
 
 export namespace CompilerError {
   export type AsObject = {
-    line: number,
-    column: number,
-    message: string,
-  }
+    line: number;
+    column: number;
+    message: string;
+  };
 }
 
 export class ErrorDetails extends jspb.Message {
@@ -338,10 +338,10 @@ export class ErrorDetails extends jspb.Message {
 
 export namespace ErrorDetails {
   export type AsObject = {
-    compilerError?: CompilerError.AsObject,
-  }
+    compilerError?: CompilerError.AsObject;
+  };
 
-  export enum ErrorCase { 
+  export enum ErrorCase {
     ERROR_NOT_SET = 0,
     COMPILER_ERROR = 1,
   }
@@ -369,10 +369,10 @@ export class Status extends jspb.Message {
 
 export namespace Status {
   export type AsObject = {
-    code: number,
-    message: string,
-    errorDetailsList: Array<ErrorDetails.AsObject>,
-  }
+    code: number;
+    message: string;
+    errorDetailsList: Array<ErrorDetails.AsObject>;
+  };
 }
 
 export class ScalarValue extends jspb.Message {
@@ -381,18 +381,28 @@ export class ScalarValue extends jspb.Message {
 
   getBoolValue(): boolean;
   setBoolValue(value: boolean): ScalarValue;
+  hasBoolValue(): boolean;
+  clearBoolValue(): ScalarValue;
 
   getInt64Value(): number;
   setInt64Value(value: number): ScalarValue;
+  hasInt64Value(): boolean;
+  clearInt64Value(): ScalarValue;
 
   getFloat64Value(): number;
   setFloat64Value(value: number): ScalarValue;
+  hasFloat64Value(): boolean;
+  clearFloat64Value(): ScalarValue;
 
   getStringValue(): string;
   setStringValue(value: string): ScalarValue;
+  hasStringValue(): boolean;
+  clearStringValue(): ScalarValue;
 
   getTime64NsValue(): number;
   setTime64NsValue(value: number): ScalarValue;
+  hasTime64NsValue(): boolean;
+  clearTime64NsValue(): ScalarValue;
 
   getUint128Value(): UInt128 | undefined;
   setUint128Value(value?: UInt128): ScalarValue;
@@ -411,16 +421,16 @@ export class ScalarValue extends jspb.Message {
 
 export namespace ScalarValue {
   export type AsObject = {
-    dataType: DataType,
-    boolValue: boolean,
-    int64Value: number,
-    float64Value: number,
-    stringValue: string,
-    time64NsValue: number,
-    uint128Value?: UInt128.AsObject,
-  }
+    dataType: DataType;
+    boolValue?: boolean;
+    int64Value?: number;
+    float64Value?: number;
+    stringValue?: string;
+    time64NsValue?: number;
+    uint128Value?: UInt128.AsObject;
+  };
 
-  export enum ValueCase { 
+  export enum ValueCase {
     VALUE_NOT_SET = 0,
     BOOL_VALUE = 2,
     INT64_VALUE = 3,
@@ -472,15 +482,15 @@ export class ExecuteScriptRequest extends jspb.Message {
 
 export namespace ExecuteScriptRequest {
   export type AsObject = {
-    queryStr: string,
-    clusterId: string,
-    execFuncsList: Array<ExecuteScriptRequest.FuncToExecute.AsObject>,
-    mutation: boolean,
-    encryptionOptions?: ExecuteScriptRequest.EncryptionOptions.AsObject,
-    queryId: string,
-    configs?: Configs.AsObject,
-    queryName: string,
-  }
+    queryStr: string;
+    clusterId: string;
+    execFuncsList: Array<ExecuteScriptRequest.FuncToExecute.AsObject>;
+    mutation: boolean;
+    encryptionOptions?: ExecuteScriptRequest.EncryptionOptions.AsObject;
+    queryId: string;
+    configs?: Configs.AsObject;
+    queryName: string;
+  };
 
   export class FuncToExecute extends jspb.Message {
     getFuncName(): string;
@@ -504,10 +514,10 @@ export namespace ExecuteScriptRequest {
 
   export namespace FuncToExecute {
     export type AsObject = {
-      funcName: string,
-      argValuesList: Array<ExecuteScriptRequest.FuncToExecute.ArgValue.AsObject>,
-      outputTablePrefix: string,
-    }
+      funcName: string;
+      argValuesList: Array<ExecuteScriptRequest.FuncToExecute.ArgValue.AsObject>;
+      outputTablePrefix: string;
+    };
 
     export class ArgValue extends jspb.Message {
       getName(): string;
@@ -526,9 +536,9 @@ export namespace ExecuteScriptRequest {
 
     export namespace ArgValue {
       export type AsObject = {
-        name: string,
-        value: string,
-      }
+        name: string;
+        value: string;
+      };
     }
 
   }
@@ -557,11 +567,11 @@ export namespace ExecuteScriptRequest {
 
   export namespace EncryptionOptions {
     export type AsObject = {
-      jwkKey: string,
-      keyAlg: string,
-      contentAlg: string,
-      compressionAlg: string,
-    }
+      jwkKey: string;
+      keyAlg: string;
+      contentAlg: string;
+      compressionAlg: string;
+    };
   }
 
 }
@@ -587,9 +597,9 @@ export class Configs extends jspb.Message {
 
 export namespace Configs {
   export type AsObject = {
-    otelEndpointConfig?: Configs.OTelEndpointConfig.AsObject,
-    pluginConfig?: Configs.PluginConfig.AsObject,
-  }
+    otelEndpointConfig?: Configs.OTelEndpointConfig.AsObject;
+    pluginConfig?: Configs.PluginConfig.AsObject;
+  };
 
   export class OTelEndpointConfig extends jspb.Message {
     getUrl(): string;
@@ -614,11 +624,11 @@ export namespace Configs {
 
   export namespace OTelEndpointConfig {
     export type AsObject = {
-      url: string,
-      headersMap: Array<[string, string]>,
-      insecure: boolean,
-      timeout: number,
-    }
+      url: string;
+      headersMap: Array<[string, string]>;
+      insecure: boolean;
+      timeout: number;
+    };
   }
 
 
@@ -639,9 +649,9 @@ export namespace Configs {
 
   export namespace PluginConfig {
     export type AsObject = {
-      startTimeNs: number,
-      endTimeNs: number,
-    }
+      startTimeNs: number;
+      endTimeNs: number;
+    };
   }
 
 }
@@ -663,9 +673,9 @@ export class QueryTimingInfo extends jspb.Message {
 
 export namespace QueryTimingInfo {
   export type AsObject = {
-    executionTimeNs: number,
-    compilationTimeNs: number,
-  }
+    executionTimeNs: number;
+    compilationTimeNs: number;
+  };
 }
 
 export class QueryExecutionStats extends jspb.Message {
@@ -690,10 +700,10 @@ export class QueryExecutionStats extends jspb.Message {
 
 export namespace QueryExecutionStats {
   export type AsObject = {
-    timing?: QueryTimingInfo.AsObject,
-    bytesProcessed: number,
-    recordsProcessed: number,
-  }
+    timing?: QueryTimingInfo.AsObject;
+    bytesProcessed: number;
+    recordsProcessed: number;
+  };
 }
 
 export class QueryMetadata extends jspb.Message {
@@ -718,10 +728,10 @@ export class QueryMetadata extends jspb.Message {
 
 export namespace QueryMetadata {
   export type AsObject = {
-    relation?: Relation.AsObject,
-    name: string,
-    id: string,
-  }
+    relation?: Relation.AsObject;
+    name: string;
+    id: string;
+  };
 }
 
 export class QueryData extends jspb.Message {
@@ -750,10 +760,10 @@ export class QueryData extends jspb.Message {
 
 export namespace QueryData {
   export type AsObject = {
-    batch?: RowBatchData.AsObject,
-    encryptedBatch: Uint8Array | string,
-    executionStats?: QueryExecutionStats.AsObject,
-  }
+    batch?: RowBatchData.AsObject;
+    encryptedBatch: Uint8Array | string;
+    executionStats?: QueryExecutionStats.AsObject;
+  };
 }
 
 export class ExecuteScriptResponse extends jspb.Message {
@@ -792,14 +802,14 @@ export class ExecuteScriptResponse extends jspb.Message {
 
 export namespace ExecuteScriptResponse {
   export type AsObject = {
-    status?: Status.AsObject,
-    queryId: string,
-    data?: QueryData.AsObject,
-    metaData?: QueryMetadata.AsObject,
-    mutationInfo?: MutationInfo.AsObject,
-  }
+    status?: Status.AsObject;
+    queryId: string;
+    data?: QueryData.AsObject;
+    metaData?: QueryMetadata.AsObject;
+    mutationInfo?: MutationInfo.AsObject;
+  };
 
-  export enum ResultCase { 
+  export enum ResultCase {
     RESULT_NOT_SET = 0,
     DATA = 3,
     META_DATA = 4,
@@ -827,9 +837,9 @@ export class MutationInfo extends jspb.Message {
 
 export namespace MutationInfo {
   export type AsObject = {
-    status?: Status.AsObject,
-    statesList: Array<MutationInfo.MutationState.AsObject>,
-  }
+    status?: Status.AsObject;
+    statesList: Array<MutationInfo.MutationState.AsObject>;
+  };
 
   export class MutationState extends jspb.Message {
     getId(): string;
@@ -851,10 +861,10 @@ export namespace MutationInfo {
 
   export namespace MutationState {
     export type AsObject = {
-      id: string,
-      state: LifeCycleState,
-      name: string,
-    }
+      id: string;
+      state: LifeCycleState;
+      name: string;
+    };
   }
 
 }
@@ -873,8 +883,8 @@ export class HealthCheckRequest extends jspb.Message {
 
 export namespace HealthCheckRequest {
   export type AsObject = {
-    clusterId: string,
-  }
+    clusterId: string;
+  };
 }
 
 export class HealthCheckResponse extends jspb.Message {
@@ -893,8 +903,8 @@ export class HealthCheckResponse extends jspb.Message {
 
 export namespace HealthCheckResponse {
   export type AsObject = {
-    status?: Status.AsObject,
-  }
+    status?: Status.AsObject;
+  };
 }
 
 export class GenerateOTelScriptRequest extends jspb.Message {
@@ -914,9 +924,9 @@ export class GenerateOTelScriptRequest extends jspb.Message {
 
 export namespace GenerateOTelScriptRequest {
   export type AsObject = {
-    clusterId: string,
-    pxlScript: string,
-  }
+    clusterId: string;
+    pxlScript: string;
+  };
 }
 
 export class GenerateOTelScriptResponse extends jspb.Message {
@@ -938,9 +948,9 @@ export class GenerateOTelScriptResponse extends jspb.Message {
 
 export namespace GenerateOTelScriptResponse {
   export type AsObject = {
-    status?: Status.AsObject,
-    otelScript: string,
-  }
+    status?: Status.AsObject;
+    otelScript: string;
+  };
 }
 
 export class DebugLogRequest extends jspb.Message {
@@ -966,11 +976,11 @@ export class DebugLogRequest extends jspb.Message {
 
 export namespace DebugLogRequest {
   export type AsObject = {
-    clusterId: string,
-    podName: string,
-    previous: boolean,
-    container: string,
-  }
+    clusterId: string;
+    podName: string;
+    previous: boolean;
+    container: string;
+  };
 }
 
 export class DebugLogResponse extends jspb.Message {
@@ -987,8 +997,8 @@ export class DebugLogResponse extends jspb.Message {
 
 export namespace DebugLogResponse {
   export type AsObject = {
-    data: string,
-  }
+    data: string;
+  };
 }
 
 export class ContainerStatus extends jspb.Message {
@@ -1020,13 +1030,13 @@ export class ContainerStatus extends jspb.Message {
 
 export namespace ContainerStatus {
   export type AsObject = {
-    name: string,
-    containerState: ContainerState,
-    message: string,
-    reason: string,
-    startTimestampNs: number,
-    restartCount: number,
-  }
+    name: string;
+    containerState: ContainerState;
+    message: string;
+    reason: string;
+    startTimestampNs: number;
+    restartCount: number;
+  };
 }
 
 export class VizierPodStatus extends jspb.Message {
@@ -1063,14 +1073,14 @@ export class VizierPodStatus extends jspb.Message {
 
 export namespace VizierPodStatus {
   export type AsObject = {
-    name: string,
-    phase: PodPhase,
-    message: string,
-    reason: string,
-    createdAt: number,
-    containerStatusesList: Array<ContainerStatus.AsObject>,
-    restartCount: number,
-  }
+    name: string;
+    phase: PodPhase;
+    message: string;
+    reason: string;
+    createdAt: number;
+    containerStatusesList: Array<ContainerStatus.AsObject>;
+    restartCount: number;
+  };
 }
 
 export class DebugPodsRequest extends jspb.Message {
@@ -1087,8 +1097,8 @@ export class DebugPodsRequest extends jspb.Message {
 
 export namespace DebugPodsRequest {
   export type AsObject = {
-    clusterId: string,
-  }
+    clusterId: string;
+  };
 }
 
 export class DebugPodsResponse extends jspb.Message {
@@ -1112,12 +1122,12 @@ export class DebugPodsResponse extends jspb.Message {
 
 export namespace DebugPodsResponse {
   export type AsObject = {
-    dataPlanePodsList: Array<VizierPodStatus.AsObject>,
-    controlPlanePodsList: Array<VizierPodStatus.AsObject>,
-  }
+    dataPlanePodsList: Array<VizierPodStatus.AsObject>;
+    controlPlanePodsList: Array<VizierPodStatus.AsObject>;
+  };
 }
 
-export enum DataType { 
+export enum DataType {
   DATA_TYPE_UNKNOWN = 0,
   BOOLEAN = 1,
   INT64 = 2,
@@ -1126,7 +1136,7 @@ export enum DataType {
   STRING = 5,
   TIME64NS = 6,
 }
-export enum SemanticType { 
+export enum SemanticType {
   ST_UNSPECIFIED = 0,
   ST_NONE = 1,
   ST_TIME_NS = 2,
@@ -1156,20 +1166,20 @@ export enum SemanticType {
   ST_HTTP_RESP_MESSAGE = 1500,
   ST_SCRIPT_REFERENCE = 3000,
 }
-export enum LifeCycleState { 
+export enum LifeCycleState {
   UNKNOWN_STATE = 0,
   PENDING_STATE = 1,
   RUNNING_STATE = 2,
   FAILED_STATE = 3,
   TERMINATED_STATE = 4,
 }
-export enum ContainerState { 
+export enum ContainerState {
   CONTAINER_STATE_UNKNOWN = 0,
   CONTAINER_STATE_RUNNING = 1,
   CONTAINER_STATE_TERMINATED = 2,
   CONTAINER_STATE_WAITING = 3,
 }
-export enum PodPhase { 
+export enum PodPhase {
   PHASE_UNKNOWN = 0,
   PENDING = 1,
   RUNNING = 2,

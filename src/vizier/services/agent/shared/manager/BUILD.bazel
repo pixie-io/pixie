@@ -93,6 +93,7 @@ pl_cc_test(
         "//src/common/event:cc_library",
         "//src/common/testing/event:cc_library",
     ],
+    timeout = "moderate",
 )
 
 pl_cc_test(
@@ -125,4 +126,5 @@ pl_cc_test(
         "//src/common/event:cc_library",
         "//src/common/testing/event:cc_library",
     ],
+    timeout = "moderate",
 )
