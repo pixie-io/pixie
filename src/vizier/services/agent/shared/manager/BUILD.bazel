@@ -86,8 +86,6 @@ pl_cc_test(
 
 pl_cc_test(
     name = "heartbeat_test",
-    # TODO(ddelnano): Remove the moderate timeout once flakiness is resolved (gh#2295)
-    timeout = "moderate",
     srcs = ["heartbeat_test.cc"],
     deps = [
         ":cc_library",
@@ -120,8 +118,6 @@ pl_cc_test(
 
 pl_cc_test(
     name = "registration_test",
-    # TODO(ddelnano): Remove the moderate timeout once flakiness is resolved (gh#2295)
-    timeout = "moderate",
     srcs = ["registration_test.cc"],
     deps = [
         ":cc_library",

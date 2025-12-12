@@ -143,7 +143,8 @@ test:gcc --config=tmp-sandbox
 build:asan --config=clang
 build:asan --//bazel:sanitizer=asan
 build:asan --features=asan
-build:asan --test_timeout="120,600,1800,3600"
+# TODO(#2295): Revert to lower timeouts once ASAN performance is improved.
+build:asan --test_timeout="180,600,1800,3600"
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --define tcmalloc=disabled
 build:asan --build_tag_filters=-no_asan
