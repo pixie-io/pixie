@@ -184,7 +184,7 @@ pl_grpc_web_library = rule(
             default = Label("@com_google_protobuf//:well_known_protos"),
         ),
         "_protoc": attr.label(
-            default = Label("//external:protocol_compiler"),
+            default = Label("@com_google_protobuf//:protoc"),
             executable = True,
             cfg = "host",
         ),

@@ -46,6 +46,7 @@ pl_cc_library(
 
 pl_cc_test(
     name = "collections_test",
+    timeout = "moderate",
     srcs = ["collections_test.cc"],
     deps = [
         ":cc_library",

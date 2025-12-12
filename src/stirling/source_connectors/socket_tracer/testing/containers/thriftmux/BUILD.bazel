@@ -67,6 +67,19 @@ thrift_library(
     srcs = glob(["**/*.thrift"]),
 )
 
+# Scrooge core with finagle dependencies bundled.
+# This is used as the scrooge_core for the toolchain, so that the generated
+# service code has access to finagle classes at compile time.
+scala_library(
+    name = "scrooge_core_with_finagle",
+    visibility = ["//visibility:public"],
+    exports = [
+        "@thrift_deps//:com_twitter_finagle_core_2_13",
+        "@thrift_deps//:com_twitter_finagle_thrift_2_13",
+        "@thrift_deps//:com_twitter_scrooge_core_2_13",
+    ],
+)
+
 scala_library(
     name = "scrooge_jars",
     visibility = ["//visibility:public"],
@@ -81,6 +94,31 @@ scala_library(
     ],
 )
 
+# Runtime dependencies for generated scrooge code (for downstream consumers)
+scala_library(
+    name = "scrooge_runtime_deps",
+    visibility = ["//visibility:public"],
+    exports = [
+        "@thrift_deps//:com_twitter_finagle_core_2_13",
+        "@thrift_deps//:com_twitter_finagle_thrift_2_13",
+        "@thrift_deps//:com_twitter_scrooge_core_2_13",
+        "@thrift_deps//:org_apache_thrift_libthrift",
+    ],
+)
+
+# Full finagle dependencies for Server/Client scala files
+scala_library(
+    name = "finagle_deps",
+    visibility = ["//visibility:public"],
+    exports = [
+        "@thrift_deps//:com_twitter_finagle_core_2_13",
+        "@thrift_deps//:com_twitter_finagle_http_2_13",
+        "@thrift_deps//:com_twitter_finagle_mux_2_13",
+        "@thrift_deps//:com_twitter_finagle_thrift_2_13",
+        "@thrift_deps//:com_twitter_finagle_thriftmux_2_13",
+    ],
+)
+
 scala_library(
     name = "thrift_jars",
     visibility = ["//visibility:public"],
@@ -91,6 +129,9 @@ scala_library(
 
 scrooge_scala_library(
     name = "thriftmux_scrooge",
+    exports = [
+        ":scrooge_runtime_deps",
+    ],
     deps = [
         ":thrift_library",
     ],
@@ -110,6 +151,7 @@ scala_binary(
     srcs = glob(["**/*.scala"]),
     main_class = "Server",
     deps = [
+        ":finagle_deps",
         ":thriftmux_scrooge",
     ],
 )
@@ -119,6 +161,7 @@ scala_binary(
     srcs = glob(["**/*.scala"]),
     main_class = "Client",
     deps = [
+        ":finagle_deps",
         ":thriftmux_scrooge",
     ],
 )
@@ -144,6 +187,7 @@ scala_image(
     ],
     main_class = "Server",
     deps = [
+        ":finagle_deps",
         ":logging",
         ":thriftmux_scrooge",
     ],

@@ -2810,7 +2810,7 @@ __metadata:
     favicons-webpack-plugin: ^6.0.0
     file-loader: ^6.2.0
     fsevents: ^2.3.2
-    google-protobuf: ^3.15.5
+    google-protobuf: 4.0.1
     graphql: ^15.5.0
     graphql-schema-typescript: ^1.5.2
     grpc-web: ^1.0.7
@@ -8562,10 +8562,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-protobuf@npm:^3.15.5":
-  version: 3.15.7
-  resolution: "google-protobuf@npm:3.15.7"
-  checksum: 532b36804b260cb30402ab0c715e3706e2adb81319320cb5c198861c207d193807ccd22d754da3f1e5c5ae90f61b4627893afb6e2f2316fcab40b87fdf1978e3
+"google-protobuf@npm:4.0.1":
+  version: 4.0.1
+  resolution: "google-protobuf@npm:4.0.1"
+  checksum: d6ed3007b121ac28dbe9a686bdcc26ba4aba8bc41bd43bbaf59c2cbad96eba4d56338b9da56e8006fa89922eb5b15cb5c79f40b82d03ac39e006c9163435ad4b
   languageName: node
   linkType: hard
 
