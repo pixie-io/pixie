@@ -23,9 +23,9 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_python//python:defs.bzl", "py_test")
 load("//bazel:toolchain_transitions.bzl", "qemu_interactive_runner")
 
-pl_boringcrypto_go_sdk = ["1.23.11"]
-pl_go_test_versions = ["1.18", "1.19", "1.20", "1.21", "1.22"]
-pl_supported_go_sdk_versions = ["1.23", "1.24"]
+pl_boringcrypto_go_sdk = ["1.24.10"]
+pl_go_test_versions = ["1.18", "1.19", "1.20", "1.21", "1.22", "1.23"]
+pl_supported_go_sdk_versions = ["1.24", "1.25"]
 
 # The last version in this list corresponds to the boringcrypto go sdk version.
 # This list is used for generating container libraries and other version-specific targets.
