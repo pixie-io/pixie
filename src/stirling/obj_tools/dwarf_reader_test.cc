@@ -24,10 +24,10 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/utils/detect_application.h"
 
-constexpr std::string_view kTestGo1_23Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_23_binary";
 constexpr std::string_view kTestGo1_24Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_23_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_24_binary";
+constexpr std::string_view kTestGo1_25Binary =
+    "src/stirling/obj_tools/testdata/go/test_go_1_25_binary";
 constexpr std::string_view kGoGRPCServer =
     "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_24_grpc_tls_server_binary";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
@@ -35,8 +35,8 @@ constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/go/sockshop_payments_service";
 
 const auto kCPPBinaryPath = px::testing::BazelRunfilePath(kCppBinary);
-const auto kGo1_23BinaryPath = px::testing::BazelRunfilePath(kTestGo1_23Binary);
 const auto kGo1_24BinaryPath = px::testing::BazelRunfilePath(kTestGo1_24Binary);
+const auto kGo1_25BinaryPath = px::testing::BazelRunfilePath(kTestGo1_25Binary);
 const auto kGoServerBinaryPath = px::testing::BazelRunfilePath(kGoGRPCServer);
 const auto kGoBinaryUnconventionalPath = px::testing::BazelRunfilePath(kGoBinaryUnconventional);
 
@@ -563,10 +563,10 @@ INSTANTIATE_TEST_SUITE_P(CppDwarfReaderParameterizedTest, CppDwarfReaderTest,
                                            DwarfReaderTestParam{kCPPBinaryPath, false}));
 
 INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedTest, GolangDwarfReaderTest,
-                         ::testing::Values(DwarfReaderTestParam{kGo1_23BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_23BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_24BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_24BinaryPath, false}));
+                         ::testing::Values(DwarfReaderTestParam{kGo1_24BinaryPath, true},
+                                           DwarfReaderTestParam{kGo1_24BinaryPath, false},
+                                           DwarfReaderTestParam{kGo1_25BinaryPath, true},
+                                           DwarfReaderTestParam{kGo1_25BinaryPath, false}));
 
 INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedIndexTest, GolangDwarfReaderIndexTest,
                          ::testing::Values(true, false));

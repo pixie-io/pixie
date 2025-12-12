@@ -462,23 +462,23 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
                HasSubstr("All printf statements must have exactly the same format string")));
 }
 
-constexpr std::string_view kServerPath_1_23 =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_23_grpc_server";
 constexpr std::string_view kServerPath_1_24 =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
     "golang_1_24_grpc_server";
+constexpr std::string_view kServerPath_1_25 =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+    "golang_1_25_grpc_server";
 
 TEST(DynamicBPFTraceConnectorTest, InsertUProbeTargetObjPaths) {
-  std::string go1_23_binary_path = px::testing::BazelRunfilePath(kServerPath_1_23).string();
   std::string go1_24_binary_path = px::testing::BazelRunfilePath(kServerPath_1_24).string();
+  std::string go1_25_binary_path = px::testing::BazelRunfilePath(kServerPath_1_25).string();
 
-  ASSERT_TRUE(fs::Exists(go1_23_binary_path));
   ASSERT_TRUE(fs::Exists(go1_24_binary_path));
+  ASSERT_TRUE(fs::Exists(go1_25_binary_path));
 
   DeploymentSpec spec;
-  spec.mutable_path_list()->add_paths(go1_23_binary_path);
   spec.mutable_path_list()->add_paths(go1_24_binary_path);
+  spec.mutable_path_list()->add_paths(go1_25_binary_path);
 
   std::string uprobe_script =
       "// Deploys uprobes to trace http2 traffic.\n"
@@ -489,16 +489,16 @@ TEST(DynamicBPFTraceConnectorTest, InsertUProbeTargetObjPaths) {
   InsertUprobeTargetObjPaths(spec, &uprobe_script);
   EXPECT_EQ(
       uprobe_script,
-      absl::StrCat("// Deploys uprobes to trace http2 traffic.\n", "uprobe:", go1_23_binary_path,
+      absl::StrCat("// Deploys uprobes to trace http2 traffic.\n", "uprobe:", go1_24_binary_path,
                    ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\",\n"
                    "uprobe:",
-                   go1_24_binary_path,
+                   go1_25_binary_path,
                    ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
                    "{ printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }\n",
-                   "uretprobe:", go1_23_binary_path,
+                   "uretprobe:", go1_24_binary_path,
                    ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\",\n"
                    "uretprobe:",
-                   go1_24_binary_path,
+                   go1_25_binary_path,
                    ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
                    "{ printf(\"retval: %d\", retval); }"));
 }
