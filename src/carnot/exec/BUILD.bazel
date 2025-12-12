@@ -259,7 +259,7 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "@com_github_grpc_grpc//test/core/util:grpc_test_util_base",
+        "@com_github_grpc_grpc//test/core/test_util:grpc_test_util_base",
     ],
 )
 

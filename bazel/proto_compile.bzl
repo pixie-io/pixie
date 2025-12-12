@@ -85,7 +85,7 @@ def pl_cc_proto_library(name, proto, deps = [], **kwargs):
     )
     grpc_deps = [
         "@com_github_grpc_grpc//:grpc++_codegen_proto",
-        "//external:protobuf",
+        "@com_google_protobuf//:protoc",
     ]
     pl_cc_library_internal(
         name = name,

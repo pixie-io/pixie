@@ -184,12 +184,12 @@ pl_grpc_web_library = rule(
             default = Label("@com_google_protobuf//:well_known_protos"),
         ),
         "_protoc": attr.label(
-            default = Label("//external:protocol_compiler"),
+            default = Label("@com_google_protobuf//:protoc"),
             executable = True,
             cfg = "host",
         ),
         "_protoc_gen_grpc_web": attr.label(
-            default = Label("//third_party/protoc-gen-grpc-web:protoc-gen-grpc-web"),
+            default = Label("@com_github_grpc_grpcweb//javascript/net/grpc/web/generator:protoc-gen-grpc-web"),
             executable = True,
             cfg = "host",
         ),
