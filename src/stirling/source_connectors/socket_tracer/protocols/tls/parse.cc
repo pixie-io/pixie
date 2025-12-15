@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/utils/binary_decoder.h"
 

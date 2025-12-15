@@ -25,7 +25,7 @@
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "protocols/http/types.h"
 #include "src/common/testing/testing.h"

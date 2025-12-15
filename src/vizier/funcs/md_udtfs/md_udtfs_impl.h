@@ -29,7 +29,7 @@
 
 #include <absl/numeric/int128.h>
 #include <grpcpp/grpcpp.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"

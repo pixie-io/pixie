@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>

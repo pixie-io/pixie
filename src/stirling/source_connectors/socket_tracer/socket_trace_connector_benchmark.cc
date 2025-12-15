@@ -21,7 +21,7 @@
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_split.h>
 #include <benchmark/benchmark.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/perf/memory_tracker.h"
 #include "src/common/perf/tcmalloc.h"
@@ -91,8 +91,7 @@ px::StatusOr<absl::flat_hash_set<DisplayStatCategory>> GetDisplayStatCategories(
   absl::flat_hash_set<DisplayStatCategory> categories;
   auto case_insensitive_cmp = [](char a, char b) { return tolower(a) == tolower(b); };
   for (std::string_view category_str : absl::StrSplit(FLAGS_display, ",")) {
-    auto cast_opt = magic_enum::enum_cast<DisplayStatCategory, decltype(case_insensitive_cmp)>(
-        category_str, case_insensitive_cmp);
+    auto cast_opt = magic_enum::enum_cast<DisplayStatCategory>(category_str, case_insensitive_cmp);
     if (!cast_opt.has_value()) {
       return px::error::InvalidArgument("Invalid DisplayStatCategory: ", category_str);
     }

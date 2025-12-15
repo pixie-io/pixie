@@ -22,13 +22,15 @@
 #include <vector>
 
 #include <absl/container/flat_hash_set.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/base.h"
 
 namespace px {
 namespace stirling {
 namespace utils {
+
+using magic_enum::as_common;
 
 /**
  * A map-like data structure backed by vector. The key type must be enum type.
@@ -38,7 +40,7 @@ namespace utils {
 template <typename TEnumKeyType, typename TValueType>
 class EnumMap {
  public:
-  EnumMap() : values_(magic_enum::detail::reflected_max_v<TEnumKeyType>) {}
+  EnumMap() : values_(magic_enum::detail::reflected_max<TEnumKeyType, as_common<>>()) {}
 
   bool Set(TEnumKeyType key, TValueType value) {
     if (set_keys_.contains(key)) {

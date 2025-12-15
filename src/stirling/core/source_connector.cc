@@ -20,7 +20,7 @@
 #include <ctime>
 #include <memory>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/core/source_connector.h"
 

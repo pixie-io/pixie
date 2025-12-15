@@ -24,7 +24,7 @@
 #include <string_view>
 #include <thread>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/fs/temp_file.h"
 #include "src/common/system/clock.h"
