@@ -15,6 +15,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 REPOSITORY_LOCATIONS = dict(
+    bazel_features = dict(
+        sha256 = "07271d0f6b12633777b69020c4cb1eb67b1939c0cf84bb3944dc85cc250c0c01",
+        strip_prefix = "bazel_features-1.38.0",
+        urls = ["https://github.com/bazel-contrib/bazel_features/releases/download/v1.38.0/bazel_features-v1.38.0.tar.gz"],
+    ),
     bazel_gazelle = dict(
         sha256 = "d76bf7a60fd8b050444090dfa2837a4eaf9829e1165618ee35dceca5cbdf58d5",
         urls = [
@@ -80,13 +85,6 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "e420c7f9c73fe2af59ab69f302ea8279ec41ae3d241b749277761fdc2e8abfd7",
         strip_prefix = "tdigest-85e0f70092460e60236821db4c25143768d3da12",
         urls = ["https://github.com/pixie-io/tdigest/archive/85e0f70092460e60236821db4c25143768d3da12.tar.gz"],
-    ),
-    com_github_fmeum_rules_meta = dict(
-        sha256 = "ed3ed909e6e3f34a11d7c2adcc461535975a875fe434719540a4e6f63434a866",
-        strip_prefix = "rules_meta-0.0.4",
-        urls = [
-            "https://github.com/fmeum/rules_meta/archive/refs/tags/v0.0.4.tar.gz",
-        ],
     ),
     com_github_gflags_gflags = dict(
         sha256 = "9e1a38e2dcbb20bb10891b5a171de2e5da70e0a50fff34dd4b0c2c6d75043909",
@@ -439,11 +437,11 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_scala = dict(
-        sha256 = "6e9191363357d30b144e7306fec74deea2c7f1de63f3ed32028838116c239e8a",
+        sha256 = "6a900a39bf643c5c9308c8200f9a61e27588dc54a67aa08fcfc798f25add4f7b",
         urls = [
-            "https://github.com/bazelbuild/rules_scala/archive/4ba3780fcba8d26980daff4639abc6f18517308b.tar.gz",
+            "https://github.com/bazelbuild/rules_scala/releases/download/v7.1.0/rules_scala-v7.1.0.tar.gz",
         ],
-        strip_prefix = "rules_scala-4ba3780fcba8d26980daff4639abc6f18517308b",
+        strip_prefix = "rules_scala-7.1.0",
     ),
     org_tensorflow = dict(
         sha256 = "a640d1f97be316a09301dfc9347e3d929ad4d9a2336e3ca23c32c93b0ff7e5d0",
@@ -457,9 +455,9 @@ REPOSITORY_LOCATIONS = dict(
         manual_license_name = "libc/musl",
     ),
     rules_cc = dict(
-        sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
-        strip_prefix = "rules_cc-0.0.17",
-        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz"],
+        sha256 = "a2fdfde2ab9b2176bd6a33afca14458039023edb1dd2e73e6823810809df4027",
+        strip_prefix = "rules_cc-0.2.14",
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.2.14/rules_cc-0.2.14.tar.gz"],
     ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",
@@ -509,6 +507,12 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cpuinfo-5e63739504f0f8e18e941bd63b2d6d42536c7d90",
         urls = ["https://github.com/pytorch/cpuinfo/archive/5e63739504f0f8e18e941bd63b2d6d42536c7d90.tar.gz"],
     ),
+)
+
+REPOSITORY_LOCATIONS["with_cfg.bzl"] = dict(
+    sha256 = "c7af6227d24499438fa0bb96fe4034e163d8c807b06f7c0645f3654448268b84",
+    strip_prefix = "with_cfg.bzl-0.11.0",
+    urls = ["https://github.com/fmeum/with_cfg.bzl/releases/download/v0.11.0/with_cfg.bzl-v0.11.0.tar.gz"],
 )
 
 # To modify one of the forked repos below:
