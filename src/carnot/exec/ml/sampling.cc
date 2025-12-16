@@ -21,8 +21,8 @@
 #include <random>
 #include <vector>
 
+#include "Eigen/Core"
 #include "src/common/base/base.h"
-#include "third_party/eigen3/Eigen/Core"
 
 #include "src/carnot/exec/ml/sampling.h"
 
