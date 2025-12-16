@@ -25,7 +25,7 @@
 #include <string>
 
 #include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/enum_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"

@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <absl/strings/str_format.h>
 #include "src/common/base/error.h"

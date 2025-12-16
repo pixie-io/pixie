@@ -36,7 +36,7 @@
 #include <memory>
 #include <string>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"

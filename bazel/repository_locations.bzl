@@ -173,9 +173,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/nats-io/nats.c/archive/refs/tags/v3.3.0.tar.gz"],
     ),
     com_github_neargye_magic_enum = dict(
-        sha256 = "4fe6627407a656d0d73879c0346b251ccdcfb718c37bef5410ba172c7c7d5f9a",
-        strip_prefix = "magic_enum-0.7.0",
-        urls = ["https://github.com/Neargye/magic_enum/archive/refs/tags/v0.7.0.tar.gz"],
+        sha256 = "b403d3dad4ef542fdc3024fa37d3a6cedb4ad33c72e31b6d9bab89dcaf69edf7",
+        strip_prefix = "magic_enum-0.9.7",
+        urls = ["https://github.com/Neargye/magic_enum/archive/refs/tags/v0.9.7.tar.gz"],
     ),
     com_github_nlohmann_json = dict(
         sha256 = "87b5884741427220d3a33df1363ae0e8b898099fbc59f1c451113f6732891014",
