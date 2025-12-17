@@ -422,9 +422,9 @@ faker-airtravel==0.4 \
     --hash=sha256:1db3115f9ad5ef5b6da914702b00114c0c76695c3ee495fc02ab88b8a6eeae2c \
     --hash=sha256:7401fdd87ddfec5768dc85f831aa8fa801c4c41c6f607fe6aef423f2f7c4d9bf
     # via -r requirements.in
-filelock==3.12.2 \
-    --hash=sha256:002740518d8aa59a26b0c76e10fb8c6e15eae825d34b6fdf670333fd7b938d81 \
-    --hash=sha256:cbb791cdea2a72f23da6ac5b5269ab0a0d161e9ef0100e653b69049a7706d1ec
+filelock==3.20.1 \
+    --hash=sha256:15d9e9a67306188a44baa72f569d2bfd803076269365fdea0934385da4dc361a \
+    --hash=sha256:b8360948b351b80f420878d8516519a2204b07aefcdcfd24912a5d33127f188c
     # via
     #   gdown
     #   huggingface-hub
@@ -2183,7 +2183,6 @@ transformers[sentencepiece,torch]==4.30.0 \
     # via
     #   flair
     #   transformer-smaller-training-vocab
-    #   transformers
 typer==0.7.0 \
     --hash=sha256:b5e704f4e48ec263de1c0b3a2387cd405a13767d2f907f44c1a08cbad96f606d \
     --hash=sha256:ff797846578a9f2a201b53442aedeb543319466870fbe1c701eab66dd7681165
