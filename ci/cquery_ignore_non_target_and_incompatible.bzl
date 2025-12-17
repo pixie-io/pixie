@@ -17,8 +17,9 @@
 def format(target):
     build_opts = build_options(target)
 
-    # We only want to get targets that are in the target configuration. So we ignore exec and host targets.
-    if build_opts["//command_line_option:is exec configuration"] or build_opts["//command_line_option:is host configuration"]:
+    # We only want to get targets that are in the target configuration. So we ignore exec targets.
+    # Note: "is host configuration" was removed in Bazel 7 as host configuration was fully replaced by exec configuration.
+    if build_opts["//command_line_option:is exec configuration"]:
         return None
 
     # Ignore targets that are incompatible with the target configuration.

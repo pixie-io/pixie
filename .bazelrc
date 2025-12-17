@@ -1,5 +1,7 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
+common --noenable_bzlmod --enable_workspace
+
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
 
@@ -97,7 +99,7 @@ test:aarch64_sysroot --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,
 # Build for Clang using Libc++.
 build:clang --config=clang-base
 build:clang --//bazel:enable_libcpp
-build:clang --features=libc++ --features=-libstdc++
+build:clang --features=libc++ --features=-libstdc++ --host_features=libc++ --host_features=-libstdc++
 build:clang --build_tag_filters=-no_libcpp
 build:clang --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
 test:clang --config=tmp-sandbox
@@ -110,7 +112,7 @@ test:clang-libstdc++ --config=tmp-sandbox
 
 build:qemu-bpf --config=clang-base
 build:qemu-bpf --//bazel:enable_libcpp
-build:qemu-bpf --features=libc++ --features=-libstdc++
+build:qemu-bpf --features=libc++ --features=-libstdc++ --host_features=libc++ --host_features=-libstdc++
 build:qemu-bpf --build_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp
 build:qemu-bpf --test_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp,-disabled
 build:qemu-bpf --sandbox_fake_username

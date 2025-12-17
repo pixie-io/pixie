@@ -488,9 +488,9 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     unix_cc_toolchain_config = dict(
-        sha256 = "2c1d60ef4d586909f138c28409780e102e2ebd619e7d462ded26dce43a8f9ffb",
+        sha256 = "dfee9d4e56421497002c1bb932a1cf9323eca9273374419ca436e7d4b1421134",
         urls = [
-            "https://raw.githubusercontent.com/bazelbuild/bazel/5.3.1/tools/cpp/unix_cc_toolchain_config.bzl",
+            "https://raw.githubusercontent.com/bazelbuild/bazel/7.7.1/tools/cpp/unix_cc_toolchain_config.bzl",
         ],
     ),
     # GRPC and Protobuf pick different versions. Pick the newer one.

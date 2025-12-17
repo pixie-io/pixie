@@ -25,6 +25,13 @@ RUN_QEMU_SCRIPT=%runqemuscript%
 # Create a tmp directory that serves as the /test_fs sanbox dir inside qemu.
 tmpdir_for_sandbox=$(mktemp -d)
 
+# This file must be modified to signal to bazel that the qemu runner supports sharding.
+# Since this runner leverages bazel's test runner and only runs supported binaries
+# (googletest tests), we fulfill the requirement by touching this file.
+if [ -n "${TEST_SHARD_STATUS_FILE}" ]; then
+  touch "${TEST_SHARD_STATUS_FILE}"
+fi
+
 # shellcheck disable=SC2317
 function cleanup {
   retval=$?
