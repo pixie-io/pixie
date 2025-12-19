@@ -231,7 +231,7 @@ class UDTFTraits {
   static constexpr bool HasCorrectOutputRelationFnSignature() {
     return HasOutputRelationFn() &&
            CorrectOutputRelationTypeHelper<
-               std::invoke_result_t<decltype (&TUDTF::OutputRelation)>>::value;
+               std::invoke_result_t<decltype(&TUDTF::OutputRelation)>>::value;
   }
 
   /**
@@ -244,7 +244,7 @@ class UDTFTraits {
    * @return
    */
   static constexpr bool HasCorrectExectorFnReturnType() {
-    return HasExecutorFn() && std::is_same_v<std::invoke_result_t<decltype (&TUDTF::Executor)>,
+    return HasExecutorFn() && std::is_same_v<std::invoke_result_t<decltype(&TUDTF::Executor)>,
                                              udfspb::UDTFSourceExecutor>;
   }
 
