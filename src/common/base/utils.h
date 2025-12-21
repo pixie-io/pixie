@@ -363,7 +363,7 @@ constexpr auto ArrayTransform(const std::array<T, N>& arr, F&& f) {
 
 template <typename T, typename F, std::size_t N = 0>
 constexpr auto ArrayTransform(const std::array<T, 0>&, F&&) {
-  return std::array<typename std::result_of_t<F&(T)>, 0>{};
+  return std::array<typename std::invoke_result_t<F&, T>, 0>{};
 }
 
 // Attempts to cast raw value into an enum, and returns error if the value is not valid.
