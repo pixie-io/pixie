@@ -29,8 +29,8 @@ namespace testing {
 
 class Go1_22_TLSServerContainer : public ContainerRunner {
  public:
-  Go1_22_TLSServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+  explicit Go1_22_TLSServerContainer(std::string image_tar)
+      : ContainerRunner(::px::testing::BazelRunfilePath(image_tar), kContainerNamePrefix,
                         kReadyMessage) {}
 
   static constexpr std::string_view kBazelImageTar =
