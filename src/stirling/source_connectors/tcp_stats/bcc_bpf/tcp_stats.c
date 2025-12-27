@@ -98,17 +98,6 @@ static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, uint32_t id, int siz
   return 0;
 }
 
-int probe_ret_tcp_sendmsg(struct pt_regs* ctx) {
-  int size = PT_REGS_RC(ctx);
-  if (size > 0) {
-    uint64_t id = bpf_get_current_pid_tgid();
-    uint32_t tgid = id >> 32;
-    return tcp_sendstat(ctx, tgid, id, size);
-  } else {
-    return 0;
-  }
-}
-
 int probe_ret_tcp_sendpage(struct pt_regs* ctx) {
   int size = PT_REGS_RC(ctx);
   if (size > 0) {
@@ -128,10 +117,6 @@ static int tcp_send_entry(struct sock* sk) {
 
 int probe_entry_tcp_sendpage(struct pt_regs* ctx, struct sock* sk, struct page* page, int offset,
                              size_t size) {
-  return tcp_send_entry(sk);
-}
-
-int probe_entry_tcp_sendmsg(struct pt_regs* ctx, struct sock* sk, struct msghdr* msg, size_t size) {
   return tcp_send_entry(sk);
 }
 
@@ -225,4 +210,16 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
   event.size = 1;
   tcp_events.perf_submit(ctx, &event, sizeof(event));
   return 0;
+}
+
+KFUNC_PROBE(tcp_sendmsg, struct sock* sk) { return tcp_send_entry(sk); }
+
+KRETFUNC_PROBE(tcp_sendmsg, struct sock* sk, struct msghdr* msg, size_t size, int ret) {
+  if (ret > 0) {
+    uint64_t id = bpf_get_current_pid_tgid();
+    uint32_t tgid = id >> 32;
+    return tcp_sendstat((struct pt_regs*)(ctx), tgid, id, ret);
+  } else {
+    return 0;
+  }
 }

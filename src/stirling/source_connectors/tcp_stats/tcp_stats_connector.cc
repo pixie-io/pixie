@@ -40,15 +40,16 @@ constexpr uint32_t kPerfBufferPerCPUSizeBytes = 50 * 1024 * 1024;
 using ProbeType = bpf_tools::BPFProbeAttachType;
 
 const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
-    {{"tcp_sendmsg", ProbeType::kEntry, "probe_entry_tcp_sendmsg", /*is_syscall*/ false},
-     {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_tcp_sendmsg", /*is_syscall*/ false},
-     {"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
+    {{"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
      {"tcp_retransmit_skb", ProbeType::kEntry, "probe_entry_tcp_retransmit_skb",
       /*is_syscall*/ false}});
 
 const auto kSendPageProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
     {{"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
      {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false}});
+
+const auto kFuncSpecs = MakeArray<bpf_tools::KFuncSpec>(
+    {{"kfunc__vmlinux__tcp_sendmsg"}, {"kretfunc__vmlinux__tcp_sendmsg"}});
 
 void HandleTcpEvent(void* cb_cookie, void* data, int /*data_size*/) {
   auto* connector = reinterpret_cast<TCPStatsConnector*>(cb_cookie);
@@ -82,8 +83,23 @@ Status TCPStatsConnector::InitImpl() {
         "was removed in Kernel 6.5.",
         sendpage_attach_status.msg(), kernel_version.ToString());
   }
+
+  // We deploy kfunc probes for the tcp_sendmsg function to side step a probe insertion conflict
+  // with the socket tracer since it already deploys kprobes for the tcp_sendmsg function.
+  const auto kfunc_attach_status = bcc_->AttachKFuncs(kFuncSpecs);
+  if (!kfunc_attach_status.ok()) {
+    const auto kernel_version = system::GetCachedKernelVersion();
+    LOG(INFO) << absl::Substitute(
+        "Could not attach kfunc probes for tcp_sendmsg: $0, detected kernel version: $1. Note: "
+        "kfunc probes are supported on kernel version 5.5 and newer.",
+        kfunc_attach_status.msg(), kernel_version.ToString());
+  } else {
+    LOG(INFO) << absl::Substitute("Successfully deployed $0 kfunc probes.", kFuncSpecs.size());
+  }
+
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
+
   return Status::OK();
 }
 
