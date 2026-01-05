@@ -14,19 +14,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cgo_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_bindata")
 
 package(default_visibility = ["//src/e2e_test/vizier/planner:__subpackages__"])
 
-# gazelle:ignore
-pl_cgo_library(
-    name = "godumpschemas",
-    srcs = ["dumpschemas.go"],
-    cdeps = ["//src/e2e_test/vizier/planner/dump_schemas:dump_schemas"],
-    cgo = True,
-    importpath = "px.dev/pixie/src/e2e_test/vizier/planner/dump_schemas/godumpschemas",
-    deps = [
-        "//src/table_store/schemapb:schema_pl_go_proto",
-        "@com_github_gogo_protobuf//proto",
-    ],
+pl_bindata(
+    name = "schema_bindata",
+    srcs = ["//src/e2e_test/vizier/planner/dump_schemas:schema_pb"],
+    package = "schemas",
+    strip_bin_dir = True,
+)
+
+go_library(
+    name = "schemas",
+    # keep
+    srcs = [":schema_bindata"],
+    importpath = "px.dev/pixie/src/e2e_test/vizier/planner/dump_schemas/schemas",
 )
