@@ -14,20 +14,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
 package(default_visibility = ["//src/e2e_test/vizier/planner:__subpackages__"])
 
-pl_cc_library(
-    name = "dump_schemas",
-    srcs = [
-        "dump_schemas.cc",
-        "dump_schemas.h",
-    ],
-    hdrs = ["dump_schemas.h"],
+pl_cc_binary(
+    name = "export_schemas",
+    srcs = ["export_schemas.cc"],
+    stamp = -1,
     deps = [
-        "//src/shared/schema:cc_library",
         "//src/stirling:cc_library",
         "//src/table_store/schema:cc_library",
     ],
+)
+
+genrule(
+    name = "schema_pb",
+    outs = ["data/schema.pb"],
+    cmd = "$(location :export_schemas) --out_file_path $@ &>/dev/null",
+    tools = [":export_schemas"],
 )
