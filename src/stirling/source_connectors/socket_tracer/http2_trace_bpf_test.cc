@@ -90,12 +90,18 @@ struct Go1_22GRPCClientServerContainers {
 
 struct Go1_23GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_23_GRPCServerContainer;
-  using ClientContainer = ::px::stirling::testing::Go1_23_GRPCClientContainer;
+  // Go 1.23 client container is no longer built; use 1.24 client instead.
+  using ClientContainer = ::px::stirling::testing::Go1_24_GRPCClientContainer;
 };
 
 struct Go1_24GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_24_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_24_GRPCClientContainer;
+};
+
+struct Go1_25GRPCClientServerContainers {
+  using ServerContainer = ::px::stirling::testing::Go1_25_GRPCServerContainer;
+  using ClientContainer = ::px::stirling::testing::Go1_25_GRPCClientContainer;
 };
 
 struct GoBoringCryptoGRPCClientServerContainers {
@@ -106,7 +112,8 @@ struct GoBoringCryptoGRPCClientServerContainers {
 typedef ::testing::Types<GoBoringCryptoGRPCClientServerContainers, Go1_18GRPCClientServerContainers,
                          Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers,
                          Go1_21GRPCClientServerContainers, Go1_22GRPCClientServerContainers,
-                         Go1_23GRPCClientServerContainers, Go1_24GRPCClientServerContainers>
+                         Go1_23GRPCClientServerContainers, Go1_24GRPCClientServerContainers,
+                         Go1_25GRPCClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
