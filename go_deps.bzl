@@ -4426,6 +4426,7 @@ def pl_go_dependencies():
     go_repository(
         name = "org_golang_google_protobuf",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        build_file_proto_mode = "disable",
         importpath = "google.golang.org/protobuf",
         sum = "h1:82DV7MYdb8anAVi3qge1wSnMDrnKK7ebr+I0hHRN1BU=",
         version = "v1.36.3",
