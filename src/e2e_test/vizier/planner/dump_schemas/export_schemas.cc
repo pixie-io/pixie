@@ -16,15 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <fstream>
 #include <iostream>
 #include <string>
 
-#include "src/e2e_test/vizier/planner/dump_schemas/dump_schemas.h"
-#include "src/shared/schema/utils.h"
 #include "src/stirling/stirling.h"
 #include "src/table_store/schema/schema.h"
 
-char* DumpSchemas(int* resultLen) {
+DEFINE_string(out_file_path, "schema.pb", "The file to save the serialized Schema");
+
+int main(int argc, char** argv) {
+  px::EnvironmentGuard env_guard(&argc, argv);
+
   auto source_registry = px::stirling::CreateProdSourceRegistry();
   auto sources = source_registry->sources();
 
@@ -39,15 +42,14 @@ char* DumpSchemas(int* resultLen) {
       rel_map[schema.name()] = relation;
     }
   }
+
   px::table_store::schemapb::Schema schema_pb;
   PX_CHECK_OK(px::table_store::schema::Schema::ToProto(&schema_pb, rel_map));
-  std::string output;
-  schema_pb.SerializeToString(&output);
 
-  *resultLen = output.size();
-  char* ret = new char[output.size()];
-  memcpy(ret, output.data(), output.size());
-  return ret;
+  std::ofstream out_schema;
+  out_schema.open(FLAGS_out_file_path);
+  schema_pb.SerializeToOstream(&out_schema);
+  out_schema.close();
+
+  return 0;
 }
-
-void SchemaStrFree(char* str) { free(str); }
