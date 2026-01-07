@@ -1820,7 +1820,7 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5104096"
+      constant: "5104088"
     }
   }
   vars {
