@@ -30,19 +30,19 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-constexpr std::string_view kGo1_23_ClientPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_23_grpc_client";
-constexpr std::string_view kGo1_23_ServerPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_23_grpc_server";
-
 constexpr std::string_view kGo1_24_ClientPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
     "golang_1_24_grpc_client";
 constexpr std::string_view kGo1_24_ServerPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
     "golang_1_24_grpc_server";
+
+constexpr std::string_view kGo1_25_ClientPath =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
+    "golang_1_25_grpc_client";
+constexpr std::string_view kGo1_25_ServerPath =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+    "golang_1_25_grpc_server";
 
 DECLARE_bool(debug_dt_pipeline);
 namespace px {
@@ -122,8 +122,8 @@ class GoHTTPDynamicTraceTest
 };
 
 INSTANTIATE_TEST_SUITE_P(GoHTTPDynamicTraceTestInstances, GoHTTPDynamicTraceTest,
-                         ::testing::Values(std::make_pair(kGo1_23_ClientPath, kGo1_23_ServerPath),
-                                           std::make_pair(kGo1_24_ClientPath, kGo1_24_ServerPath)));
+                         ::testing::Values(std::make_pair(kGo1_24_ClientPath, kGo1_24_ServerPath),
+                                           std::make_pair(kGo1_25_ClientPath, kGo1_25_ServerPath)));
 
 constexpr char kGRPCTraceProgram[] = R"(
 tracepoints {

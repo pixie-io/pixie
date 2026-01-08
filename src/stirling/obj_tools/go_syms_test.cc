@@ -58,7 +58,7 @@ TEST(ReadGoBuildInfoTest, BuildinfoEndianAgnostic) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(auto pair, ReadGoBuildInfo(elf_reader.get()));
   auto version = pair.first;
-  EXPECT_THAT(version, StrEq("1.24.6"));
+  EXPECT_THAT(version, StrEq("1.24.11"));
 }
 
 TEST(ReadGoBuildInfoTest, BuildinfoLittleEndian) {

@@ -14,11 +14,37 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label", "pl_go_test_versions", "pl_supported_go_sdk_versions")
-
-pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
+load("//bazel:go_container.bzl", "go_container_libraries")
+load("//bazel:pl_build_system.bzl", "pl_all_supported_go_sdk_versions", "pl_cc_test_library", "pl_go_test_versions")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
+
+# Generate all Go container library permutations for supported Go versions.
+go_container_libraries(
+    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
+    container_type = "grpc_server",
+    prebuilt_container_versions = pl_go_test_versions,
+)
+
+# Stirling test cases usually test server side tracing. Therefore
+# we only need to provide the bazel SDK versions for the client containers.
+go_container_libraries(
+    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
+    container_type = "grpc_client",
+)
+
+go_container_libraries(
+    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
+    container_type = "tls_server",
+    prebuilt_container_versions = pl_go_test_versions,
+)
+
+# Stirling test cases usually test server side tracing. Therefore
+# we only need to provide the bazel SDK versions for the client containers.
+go_container_libraries(
+    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
+    container_type = "tls_client",
+)
 
 pl_cc_test_library(
     name = "bssl_container",
@@ -59,84 +85,6 @@ pl_cc_test_library(
     ],
     deps = ["//src/common/testing/test_utils:cc_library"],
 )
-
-[
-    pl_cc_test_library(
-        name = pl_go_sdk_version_template_to_label("go_%s_grpc_client_container", sdk_version),
-        srcs = [],
-        hdrs = [pl_go_sdk_version_template_to_label("go_%s_grpc_client_container.h", sdk_version)],
-        data = [
-            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_grpc_tls_pl/client:golang_%s_grpc_tls_client.tar", sdk_version),
-        ],
-        deps = ["//src/common/testing/test_utils:cc_library"],
-    )
-    for sdk_version in pl_all_supported_go_sdk_versions
-]
-
-[
-    pl_cc_test_library(
-        name = pl_go_sdk_version_template_to_label("go_%s_grpc_server_container", sdk_version),
-        srcs = [],
-        hdrs = [pl_go_sdk_version_template_to_label("go_%s_grpc_server_container.h", sdk_version)],
-        data = [
-            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_%s_grpc_tls_server.tar", sdk_version),
-        ],
-        deps = ["//src/common/testing/test_utils:cc_library"],
-    )
-    for sdk_version in pl_all_supported_go_sdk_versions
-]
-
-[
-    pl_cc_test_library(
-        name = pl_go_sdk_version_template_to_label("go_%s_grpc_server_container", sdk_version),
-        srcs = [],
-        hdrs = [pl_go_sdk_version_template_to_label("go_%s_grpc_server_container.h", sdk_version)],
-        data = [
-            pl_go_sdk_version_template_to_label("//src/stirling/source_connectors/socket_tracer/testing/containers:golang_%s_grpc_server_with_buildinfo.tar", sdk_version),
-        ],
-        deps = ["//src/common/testing/test_utils:cc_library"],
-    )
-    for sdk_version in pl_go_test_versions
-]
-
-[
-    pl_cc_test_library(
-        name = pl_go_sdk_version_template_to_label("go_%s_tls_client_container", sdk_version),
-        srcs = [],
-        hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_client_container.h", sdk_version)],
-        data = [
-            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_https/client:golang_%s_https_client.tar", sdk_version),
-        ],
-        deps = ["//src/common/testing/test_utils:cc_library"],
-    )
-    for sdk_version in pl_all_supported_go_sdk_versions
-]
-
-[
-    pl_cc_test_library(
-        name = pl_go_sdk_version_template_to_label("go_%s_tls_server_container", sdk_version),
-        srcs = [],
-        hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_server_container.h", sdk_version)],
-        data = [
-            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_https/server:golang_%s_https_server.tar", sdk_version),
-        ],
-        deps = ["//src/common/testing/test_utils:cc_library"],
-    )
-    for sdk_version in pl_all_supported_go_sdk_versions
-]
-
-[
-    pl_cc_test_library(
-        name = pl_go_sdk_version_template_to_label("go_%s_tls_server_container", sdk_version),
-        srcs = [],
-        hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_server_container.h", sdk_version)],
-        data = [
-            pl_go_sdk_version_template_to_label("//src/stirling/source_connectors/socket_tracer/testing/containers:golang_%s_https_server_with_buildinfo.tar", sdk_version),
-        ],
-        deps = ["//src/common/testing/test_utils:cc_library"],
-    )
-    for sdk_version in pl_go_test_versions
-]
 
 pl_cc_test_library(
     name = "golang_sqlx_container",

@@ -163,7 +163,7 @@ require (
 	github.com/goccy/go-yaml v1.9.8 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
@@ -276,7 +276,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/launchdarkly/go-jsonstream.v1 v1.0.1 // indirect
@@ -310,7 +310,6 @@ replace (
 	github.com/go-openapi/strfmt => github.com/go-openapi/strfmt v0.20.0
 	// Upgrade after https://github.com/golang/mock/pull/601 makes it into a release
 	github.com/golang/mock => github.com/golang/mock v1.5.0
-	github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
 	google.golang.org/api => google.golang.org/api v0.43.0
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa

@@ -1527,9 +1527,8 @@ def pl_go_dependencies():
         name = "com_github_golang_protobuf",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/golang/protobuf",
-        replace = "github.com/golang/protobuf",
-        sum = "h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=",
-        version = "v1.5.2",
+        sum = "h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=",
+        version = "v1.5.4",
     )
     go_repository(
         name = "com_github_golang_snappy",
@@ -4426,9 +4425,10 @@ def pl_go_dependencies():
     go_repository(
         name = "org_golang_google_protobuf",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        build_file_proto_mode = "disable",
         importpath = "google.golang.org/protobuf",
-        sum = "h1:7QBf+IK2gx70Ap/hDsOmam3GE0v9HicjfEdAxE62UoM=",
-        version = "v1.29.1",
+        sum = "h1:82DV7MYdb8anAVi3qge1wSnMDrnKK7ebr+I0hHRN1BU=",
+        version = "v1.36.3",
     )
     go_repository(
         name = "org_golang_x_crypto",
