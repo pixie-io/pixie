@@ -21,7 +21,6 @@ package(default_visibility = ["//src/e2e_test/vizier/planner:__subpackages__"])
 pl_cc_binary(
     name = "export_schemas",
     srcs = ["export_schemas.cc"],
-    stamp = -1,
     deps = [
         "//src/stirling:cc_library",
         "//src/table_store/schema:cc_library",
