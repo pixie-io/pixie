@@ -44,7 +44,7 @@ We are currently looking to fill the position for two end-user community members
 
 In general, the Board makes decisions by lazy consensus with a minimum of participation based on the importance of the decisions to be made. Conversations happen on public GitHub for most cases, and through private e-mail for more sensitive issues.
 
-To make a decision the Board discusses the topic, a proposal is made, and a suitable wait time occurs for Board members to either agree or veto. By consensus we mean that any Board member can veto a decision with justification. By lazy we mean that not all Board members must participate, and that absence is interpreted as assent. By a minimum of participation we mean that we require the participation of a certain number of individuals based on the importance of the issue; for non-contentious issues a single Board member may move forward after a suitable time, while for contentious issues we will often require a few, often from different institutions.
+To make a decision the Board discusses the topic, a proposal is made, and a suitable wait time occurs for Board members to either agree or veto. By consensus, we mean that any Board member can veto a decision with justification. By lazy we mean that not all Board members must participate, and that absence is interpreted as assent. By a minimum of participation we mean that we require the participation of a certain number of individuals based on the importance of the issue; for non-contentious issues a single Board member may move forward after a suitable time, while for contentious issues we will often require a few, often from different institutions.
 
 ### Private communications of the Board
 
