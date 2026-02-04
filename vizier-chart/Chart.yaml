@@ -1,4 +1,0 @@
-apiVersion: v2
-name: vizier-chart
-type: application
-version: 0.14.15

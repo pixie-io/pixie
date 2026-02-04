@@ -78,11 +78,6 @@ Status PEMManager::PostRegisterHookImpl() {
                                           stirling_.get(), table_store(), relation_info_manager());
   PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
                                             tracepoint_manager_));
-  file_source_manager_ =
-      std::make_shared<FileSourceManager>(dispatcher(), info(), agent_nats_connector(),
-                                          stirling_.get(), table_store(), relation_info_manager());
-  PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kFileSourceMessage,
-                                            file_source_manager_));
   return Status::OK();
 }
 
@@ -150,20 +145,20 @@ Status PEMManager::InitSchemas() {
       // Special case to set the max size of the http_events table differently from the other
       // tables. For now, the min cold batch size is set to 256kB to be consistent with previous
       // behaviour.
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, http_table_size, 256 * 1024);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       http_table_size, 256 * 1024);
     } else if (relation_info.name == "stirling_error") {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, stirling_error_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       stirling_error_table_size);
     } else if (relation_info.name == "probe_status") {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, probe_status_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       probe_status_table_size);
     } else if (relation_info.name == "proc_exit_events") {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, proc_exit_events_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       proc_exit_events_table_size);
     } else {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, other_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       other_table_size);
     }
 
     table_store()->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);

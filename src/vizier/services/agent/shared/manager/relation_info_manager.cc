@@ -54,9 +54,6 @@ void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* updat
       schema->set_tabletized(relation_info.tabletized);
       schema->set_tabletization_key(relation.GetColumnName(relation_info.tabletization_key_idx));
     }
-    if (relation_info.mutation_id.has_value()) {
-      schema->set_mutation_id(relation_info.mutation_id.value());
-    }
     for (size_t i = 0; i < relation.NumColumns(); ++i) {
       auto* column = schema->add_columns();
       column->set_name(relation.GetColumnName(i));

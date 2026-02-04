@@ -127,23 +127,11 @@ struct OTelSpan {
   int64_t span_kind;
 };
 
-struct OTelLog {
-  std::vector<OTelAttribute> attributes;
-
-  ColumnIR* time_column;
-  ColumnIR* observed_time_column = nullptr;
-  ColumnIR* body_column;
-
-  int64_t severity_number;
-  std::string severity_text;
-};
-
 struct OTelData {
   planpb::OTelEndpointConfig endpoint_config;
   std::vector<OTelAttribute> resource_attributes;
   std::vector<OTelMetric> metrics;
   std::vector<OTelSpan> spans;
-  std::vector<OTelLog> logs;
 };
 
 /**
@@ -151,10 +139,9 @@ struct OTelData {
  * Represents a configuration to transform a DataFrame into OpenTelemetry
  * data.
  */
-class OTelExportSinkIR : public SinkOperatorIR {
+class OTelExportSinkIR : public OperatorIR {
  public:
-  explicit OTelExportSinkIR(int64_t id, std::string mutation_id)
-      : SinkOperatorIR(id, IRNodeType::kOTelExportSink, mutation_id) {}
+  explicit OTelExportSinkIR(int64_t id) : OperatorIR(id, IRNodeType::kOTelExportSink) {}
 
   Status Init(OperatorIR* parent, const OTelData& data) {
     PX_RETURN_IF_ERROR(ProcessConfig(data));

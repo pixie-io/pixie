@@ -85,7 +85,7 @@ TEST_F(MemorySinkNodeTest, basic) {
                      false, 0);
 
   auto table = exec_state_->table_store()->GetTable("cpu_15s");
-  table_store::Cursor cursor(table);
+  table_store::Table::Cursor cursor(table);
   auto batch_or_s = cursor.GetNextRowBatch({0, 1});
   EXPECT_OK(batch_or_s);
   auto batch = batch_or_s.ConsumeValueOrDie();
@@ -104,7 +104,7 @@ TEST_F(MemorySinkNodeTest, basic) {
       .Close();
 
   // Update stop spec of the cursor to include the new row batch.
-  cursor.UpdateStopSpec(table_store::Cursor::StopSpec{});
+  cursor.UpdateStopSpec(table_store::Table::Cursor::StopSpec{});
   batch_or_s = cursor.GetNextRowBatch({0, 1});
   EXPECT_OK(batch_or_s);
   batch = batch_or_s.ConsumeValueOrDie();
@@ -147,7 +147,7 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch_not_eos) {
       .Close();
 
   auto table = exec_state_->table_store()->GetTable("cpu_15s");
-  table_store::Cursor cursor(table);
+  table_store::Table::Cursor cursor(table);
   auto batch_or_s = cursor.GetNextRowBatch({0, 1});
   EXPECT_OK(batch_or_s);
   auto batch = batch_or_s.ConsumeValueOrDie();

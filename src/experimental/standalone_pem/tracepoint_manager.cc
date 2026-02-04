@@ -178,9 +178,8 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
   // TODO(zasgar): Failure here can lead to an inconsistent schema state. We should
   // // figure out how to handle this as part of the data model refactor project.
   for (const auto& relation_info : relation_info_vec) {
-    table_store_->AddTable(
-        table_store::HotColdTable::Create(relation_info.name, relation_info.relation),
-        relation_info.name, relation_info.id);
+    table_store_->AddTable(table_store::Table::Create(relation_info.name, relation_info.relation),
+                           relation_info.name, relation_info.id);
   }
   return Status::OK();
 }

@@ -23,7 +23,6 @@ package px.carnot.planner.plannerpb;
 option go_package = "plannerpb";
 
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
-import "src/carnot/planner/file_source/ir/logical.proto";
 import "src/common/base/statuspb/status.proto";
 import "gogoproto/gogo.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
@@ -146,11 +145,6 @@ message ConfigUpdate {
   string agent_pod_name = 3;
 }
 
-message DeleteFileSource {
-  // The glob pattern to use to find files to read. Also doubles as the name of the file source.
-  string glob_pattern = 1;
-}
-
 // The definition of a mutation to perfom on Vizier. Mutations include operations
 // that add and delete tables to the database.
 message CompileMutation {
@@ -162,10 +156,6 @@ message CompileMutation {
     DeleteTracepoint delete_tracepoint = 3;
     // Mutation that sets a config.
     ConfigUpdate config_update = 4;
-    // Mutation that adds a file source/poller
-    carnot.planner.file_source.ir.FileSourceDeployment file_source = 5;
-    // Mutation that deletes a file source/poller
-    DeleteFileSource delete_file_source = 6;
   }
 }
 

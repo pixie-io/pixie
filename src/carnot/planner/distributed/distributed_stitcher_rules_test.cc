@@ -298,64 +298,6 @@ TEST_F(StitcherTest, three_pems_one_kelvin) {
   }
 }
 
-TEST_F(StitcherTest, three_pems_with_participating_kelvin) {
-  auto ps = LoadDistributedStatePb(testutils::kThreePEMsOneKelvinAllHasDataStoreDistributedState);
-  auto physical_plan = MakeDistributedPlan(ps);
-  auto topo_sort = physical_plan->dag().TopologicalSort();
-  ASSERT_EQ(topo_sort.size(), 5);
-  ASSERT_EQ(topo_sort[4], 0);
-
-  CarnotInstance* kelvin = physical_plan->Get(0);
-  std::string kelvin_qb_address = "kelvin";
-  ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
-
-  std::vector<CarnotInstance*> data_sources;
-  for (int64_t agent_id = 1; agent_id <= 4; ++agent_id) {
-    CarnotInstance* agent = physical_plan->Get(agent_id);
-    // Quick check to make sure agents are valid.
-    ASSERT_THAT(agent->carnot_info().query_broker_address(), HasSubstr("pem"));
-    data_sources.push_back(agent);
-  }
-  // Kelvin can be a data source sometimes.
-  data_sources.push_back(kelvin);
-  {
-    SCOPED_TRACE("three_pems_with_participating_kelvin");
-    TestBeforeSetSourceGroupGRPCAddress(data_sources, {kelvin});
-  }
-
-  // Execute the address rule.
-  DistributedSetSourceGroupGRPCAddressRule rule;
-  auto node_changed_or_s = rule.Execute(physical_plan.get());
-  ASSERT_OK(node_changed_or_s);
-  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
-
-  {
-    SCOPED_TRACE("three_pems_with_participating_kelvin");
-    TestGRPCAddressSet({kelvin});
-  }
-
-  // Associate the edges of the graph.
-  AssociateDistributedPlanEdgesRule distributed_edges_rule;
-  node_changed_or_s = distributed_edges_rule.Execute(physical_plan.get());
-  ASSERT_OK(node_changed_or_s);
-  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
-
-  {
-    SCOPED_TRACE("three_pems_with_participating_kelvin");
-    TestGRPCBridgesWiring(data_sources, {kelvin});
-  }
-
-  DistributedIRRule<GRPCSourceGroupConversionRule> distributed_grpc_source_conv_rule;
-  node_changed_or_s = distributed_grpc_source_conv_rule.Execute(physical_plan.get());
-  ASSERT_OK(node_changed_or_s);
-  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
-
-  {
-    SCOPED_TRACE("three_pems_with_participating_kelvin");
-    TestGRPCBridgesExpandedCorrectly(data_sources, {kelvin});
-  }
-}
-
 // Test to see whether we can stitch a graph to itself.
 TEST_F(StitcherTest, stitch_self_together_with_udtf) {
   auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
@@ -397,7 +339,7 @@ TEST_F(StitcherTest, stitch_self_together_with_udtf) {
 }
 
 // Test to see whether we can stitch a graph to itself.
-TEST_F(StitcherTest, stitch_all_together_with_udtf) {
+TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   // px._Test_MDState() is an all agent so it should run on every pem and kelvin.
   auto physical_plan = CoordinateQuery("import px\npx.display(px._Test_MD_State())", ps);
@@ -439,8 +381,6 @@ TEST_F(StitcherTest, stitch_all_together_with_udtf) {
   // connected.
   auto kelvin_plan = kelvin->plan();
   auto pem_plan = pem->plan();
-  LOG(INFO) << "Kelvin plan: " << kelvin_plan->DebugString();
-  LOG(INFO) << "PEM plan: " << pem_plan->DebugString();
 
   auto kelvin_grpc_sinks = kelvin_plan->FindNodesThatMatch(InternalGRPCSink());
   ASSERT_EQ(kelvin_grpc_sinks.size(), 1);

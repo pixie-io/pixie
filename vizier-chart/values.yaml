@@ -1,7 +1,0 @@
-deployKey: $PIXIE_DEPLOY_KEY
-clusterName: honeypixie
-cloudAddr: getcosmic.ai
-devCloudNamespace: plc
-namespace: pl
-imageTag: 2025-05-09_14-20-42.033_UTC
-imageRegistry: mbgurcay

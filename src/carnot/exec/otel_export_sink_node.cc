@@ -465,8 +465,7 @@ Status OTelExportSinkNode::ConsumeLogs(ExecState* exec_state, const RowBatch& rb
       AddAttributes(log->mutable_attributes(), log_pb.attributes(), rb, row_idx);
 
       auto time_col = rb.ColumnAt(log_pb.time_column_index()).get();
-      log->set_time_unix_nano(
-          types::GetValueFromArrowArray<types::TIME64NS>(time_col, row_idx));
+      log->set_time_unix_nano(types::GetValueFromArrowArray<types::TIME64NS>(time_col, row_idx));
       if (log_pb.observed_time_column_index() >= 0) {
         auto observed_time_col = rb.ColumnAt(log_pb.observed_time_column_index()).get();
         log->set_observed_time_unix_nano(

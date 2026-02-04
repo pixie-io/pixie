@@ -17,7 +17,7 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_bpf_test", "pl_cc_library")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "px_jattach", "stirling_profiler_java_args")
 
-package(default_visibility = ["//src/stirling:__subpackages__", "//src/vizier/services/agent/shared/manager:__subpackages__"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",
@@ -42,7 +42,6 @@ pl_cc_bpf_test(
     args = stirling_profiler_java_args,
     data = agent_libs + [
         px_jattach,
-        "testdata/test.json",
         "//src/stirling/source_connectors/perf_profiler/testing/java:java_image_base-java-profiler-test-image-omit-frame-pointer.tar",
     ],
     flaky = True,

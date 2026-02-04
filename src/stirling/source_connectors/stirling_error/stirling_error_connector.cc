@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
@@ -39,7 +39,7 @@ Status StirlingErrorConnector::InitImpl() {
 Status StirlingErrorConnector::StopImpl() { return Status::OK(); }
 
 void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 4U) << "StirlingErrorConnector has four data tables.";
+  DCHECK_EQ(data_tables_.size(), 2U) << "StirlingErrorConnector has two data tables.";
 
   if (data_tables_[kStirlingErrorTableNum] != nullptr) {
     TransferStirlingErrorTable(ctx, data_tables_[kStirlingErrorTableNum]);
@@ -47,10 +47,6 @@ void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx) {
 
   if (data_tables_[kProbeStatusTableNum] != nullptr) {
     TransferProbeStatusTable(ctx, data_tables_[kProbeStatusTableNum]);
-  }
-
-  if (data_tables_[kStreamStatusTableNum] != nullptr) {
-    TransferStreamStatusTable(ctx, data_tables_[kStreamStatusTableNum]);
   }
 }
 
@@ -79,19 +75,6 @@ void StirlingErrorConnector::TransferProbeStatusTable(ConnectorContext* ctx,
     r.Append<r.ColIndex("tracepoint")>(std::move(record.tracepoint));
     r.Append<r.ColIndex("status")>(static_cast<uint64_t>(record.status));
     r.Append<r.ColIndex("error")>(std::move(record.error));
-    r.Append<r.ColIndex("info")>(std::move(record.info));
-  }
-}
-
-void StirlingErrorConnector::TransferStreamStatusTable(ConnectorContext* ctx,
-                                                       DataTable* data_table) {
-  md::UPID upid = md::UPID(ctx->GetASID(), pid_, start_time_);
-  for (auto& record : monitor_.ConsumeStreamStatusRecords()) {
-    DataTable::RecordBuilder<&kStreamStatusTable> r(data_table, record.timestamp_ns);
-    r.Append<r.ColIndex("time_")>(static_cast<uint64_t>(record.timestamp_ns));
-    r.Append<r.ColIndex("upid")>(upid.value());
-    r.Append<r.ColIndex("stream_id")>(std::move(record.stream_id));
-    r.Append<r.ColIndex("bytes_sent")>(static_cast<uint64_t>(record.bytes_sent));
     r.Append<r.ColIndex("info")>(std::move(record.info));
   }
 }

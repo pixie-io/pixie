@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
-#include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -96,7 +95,7 @@ class OTelModule : public QLObject {
   inserted. All columns from the DataFrame will be mapped to corresponding
   columns in the ClickHouse table. Passed as the data argument to `px.export`.
 
-  :topic: clickhouse
+  :topic: otel
 
   Args:
     table (string): The name of the ClickHouse table to insert data into.
@@ -231,48 +230,6 @@ class OTelTrace : public QLObject {
   IR* graph_;
 };
 
-class OTelLog : public QLObject {
- public:
-  inline static constexpr char kOTelLogModule[] = "log";
-  static constexpr TypeDescriptor OTelLogModuleType = {
-      /* name */ kOTelLogModule,
-      /* type */ QLObjectType::kModule,
-  };
-  static StatusOr<std::shared_ptr<OTelLog>> Create(ASTVisitor* ast_visitor, IR* graph);
-
-  inline static constexpr char kLogOpID[] = "Log";
-  inline static constexpr char kLogOpDocstring[] = R"doc(
-  Defines the OpenTelemetry Log type.
-
-  Log describes how to transform a pixie DataFrame into the OpenTelemetry
-  Log type.
-
-  :topic: otel
-
-  Args:
-    time (Column): The column that marks the timestamp for the log, must be TIME64NS.
-    observed_time (Column, optional): The column that marks the XXX of the log, must be TIME64NS.
-    body (Column): The column that contains the log message to emit, must be STRING.
-    severity_number (int, optional): The OpenTelemetry SeverityNumber enum value to assign for the log, defaults to SEVERITY_NUMBER_INFO if not set.
-    severity_text (string, optional): The log level associated with the log, defaults to "info" if not set.
-      if not set.
-    attributes (Dict[string, Column|string], optional): A mapping of attribute name to a string or the column
-      that stores data about the attribute.
-  Returns:
-    OTelDataContainer: the mapping of DataFrame columns to OpenTelemetry Log fields. Can be passed
-      into `px.otel.Data()` as the data argument.
-  )doc";
-
- protected:
-  OTelLog(ASTVisitor* ast_visitor, IR* graph)
-      : QLObject(OTelLogModuleType, ast_visitor), graph_(graph) {}
-  Status Init();
-  Status AddSeverityNumberAttributes();
-
- private:
-  IR* graph_;
-};
-
 class EndpointConfig : public QLObject {
  public:
   struct ConnAttribute {
@@ -309,7 +266,6 @@ class EndpointConfig : public QLObject {
 };
 
 class OTelDataContainer : public QLObject {
- using OTelLogRecord = px::carnot::planner::OTelLog;
  public:
   static constexpr TypeDescriptor OTelDataContainerType = {
       /* name */ "OTelDataContainer",
@@ -317,20 +273,20 @@ class OTelDataContainer : public QLObject {
   };
 
   static StatusOr<std::shared_ptr<OTelDataContainer>> Create(
-      ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan, OTelLogRecord> data);
+      ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan> data);
 
   static bool IsOTelDataContainer(const QLObjectPtr& obj) {
     return obj->type() == OTelDataContainerType.type();
   }
 
-  const std::variant<OTelMetric, OTelSpan, OTelLogRecord>& data() const { return data_; }
+  const std::variant<OTelMetric, OTelSpan>& data() const { return data_; }
 
  protected:
-  OTelDataContainer(ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan, OTelLogRecord> data)
+  OTelDataContainer(ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan> data)
       : QLObject(OTelDataContainerType, ast_visitor), data_(std::move(data)) {}
 
  private:
-  std::variant<OTelMetric, OTelSpan, OTelLogRecord> data_;
+  std::variant<OTelMetric, OTelSpan> data_;
 };
 
 class ClickHouseRows : public QLObject {

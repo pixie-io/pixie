@@ -20,7 +20,7 @@
 #include <ctime>
 #include <memory>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/core/source_connector.h"
 
@@ -61,7 +61,7 @@ void SourceConnector::PushData(DataPushCallback agent_callback) {
       Status s = agent_callback(
           data_table->id(), record_batch.tablet_id,
           std::make_unique<types::ColumnWrapperRecordBatch>(std::move(record_batch.records)));
-      LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
+      LOG_IF(DFATAL, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
     }
   }
 }

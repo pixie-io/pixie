@@ -156,7 +156,6 @@ message Operator {
     // ClickHouseExportSinkOperator writes the input table to a ClickHouse database.
     ClickHouseExportSinkOperator clickhouse_sink_op = 16;
   }
-  map<string, string> context = 15;
 }
 
 // Fetches data from in-memory source.

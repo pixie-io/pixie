@@ -43,7 +43,6 @@ class Relation {
   Relation();
   // Constructor for Relation that initializes with a list of column types.
   explicit Relation(ColTypeArray col_types, ColNameArray col_names);
-  explicit Relation(ColTypeArray col_types, ColNameArray col_names, std::optional<std::string> mutation_id);
   explicit Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc);
   explicit Relation(ColTypeArray col_types, ColNameArray col_names,
                     ColSemanticTypeArray col_semantic_types);
@@ -119,15 +118,12 @@ class Relation {
     return out << relation.DebugString();
   }
 
-  std::optional<std::string> mutation_id() const { return mutation_id_; }
-
  private:
   ColTypeArray col_types_;
   ColNameArray col_names_;
   ColDescArray col_desc_;
   ColSemanticTypeArray col_semantic_types_;
   ColPatternTypeArray col_pattern_types_;
-  std::optional<std::string> mutation_id_;
 };
 
 }  // namespace schema

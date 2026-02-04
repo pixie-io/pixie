@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
-#include "src/carnot/planner/file_source/ir/logical.pb.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/plannerpb/service.pb.h"
 #include "src/carnot/planner/probes/label_selector_target.h"
@@ -167,20 +166,6 @@ class TracepointIR {
   std::shared_ptr<ProbeOutput> output_ = nullptr;
 };
 
-class FileSourceDeployment {
- public:
-  FileSourceDeployment(const std::string& glob_pattern, const std::string& table_name,
-                       int64_t ttl_ns)
-      : glob_pattern_(glob_pattern), table_name_(table_name), ttl_ns_(ttl_ns) {}
-
-  Status ToProto(file_source::ir::FileSourceDeployment pb) const;
-
- private:
-  std::string glob_pattern_;
-  std::string table_name_;
-  int64_t ttl_ns_;
-};
-
 class TracepointDeployment {
  public:
   TracepointDeployment(const std::string& trace_name, int64_t ttl_ns)
@@ -240,10 +225,6 @@ class MutationsIR {
    */
   std::shared_ptr<TracepointIR> StartProbe(const std::string& function_name);
 
-  void CreateFileSourceDeployment(const std::string& glob_pattern, const std::string& table_name,
-                                  int64_t ttl_ns);
-
-  void CreateDeleteFileSource(const std::string& glob_pattern);
   /**
    * @brief Create a TraceProgram for the MutationsIR w/ the specified UPID.
    *
@@ -350,19 +331,6 @@ class MutationsIR {
 
   std::vector<TracepointDeployment*> Deployments();
 
-  std::vector<file_source::ir::FileSourceDeployment> FileSourceDeployments();
-
-  /**
-   * @brief Deletes the file source passed in.
-   *
-   * @param file_source_to_delete
-   */
-  void DeleteFileSource(const std::string& file_source_to_delete) {
-    file_sources_to_delete_.push_back(file_source_to_delete);
-  }
-
-  const std::vector<std::string>& FileSourcesToDelete() { return file_sources_to_delete_; }
-
  private:
   // All the new tracepoints added as part of this mutation. DeploymentSpecs are protobufs because
   // we only modify these upon inserting the new tracepoint, while the Tracepoint definition is
@@ -380,9 +348,6 @@ class MutationsIR {
 
   // The updates to internal config that need to be done.
   std::vector<plannerpb::ConfigUpdate> config_updates_;
-
-  std::vector<file_source::ir::FileSourceDeployment> file_source_deployments_;
-  std::vector<std::string> file_sources_to_delete_;
 };
 
 }  // namespace compiler

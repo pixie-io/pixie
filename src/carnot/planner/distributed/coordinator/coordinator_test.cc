@@ -62,16 +62,6 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
     ASSERT_OK(rule.Execute(graph.get()));
   }
 
-  void MakeGraphWithMutation() {
-    auto mem_src = MakeMemSource(MakeRelationWithMutation());
-    compiler_state_->relation_map()->emplace("table", MakeRelationWithMutation());
-    graph->RecordMutationId({"mutation"});
-    MakeMemSink(mem_src, "out");
-
-    ResolveTypesRule rule(compiler_state_.get());
-    ASSERT_OK(rule.Execute(graph.get()));
-  }
-
   void VerifyHasDataSourcePlan(IR* plan) {
     auto mem_src_nodes = plan->FindNodesOfType(IRNodeType::kMemorySource);
     ASSERT_EQ(mem_src_nodes.size(), 1);
@@ -154,48 +144,6 @@ TEST_F(CoordinatorTest, three_pems_one_kelvin) {
   }
 }
 
-// TODO(ddelnano): Finish this test
-TEST_F(CoordinatorTest, three_pems_one_kelvin_with_mut) {
-  auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
-  auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
-
-  MakeGraphWithMutation();
-  auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
-
-  auto topo_sort = physical_plan->dag().TopologicalSort();
-  // Last item should be kelvin, id 0.
-  ASSERT_EQ(topo_sort.size(), 4);
-  ASSERT_EQ(topo_sort[3], 0);
-
-  auto kelvin_instance = physical_plan->Get(0);
-  EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
-  {
-    SCOPED_TRACE("three pems one kelvin -> " +
-                 kelvin_instance->carnot_info().query_broker_address());
-    VerifyKelvinMergerPlan(kelvin_instance->plan());
-  }
-
-  // Agents are 1,2,3.
-  for (int64_t i = 1; i <= 3; ++i) {
-    auto pem_instance = physical_plan->Get(i);
-    SCOPED_TRACE("three pems one kelvin -> " + pem_instance->carnot_info().query_broker_address());
-    EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
-    auto plan = pem_instance->plan();
-    VerifyPEMPlan(plan);
-
-    auto grpc_sink = plan->FindNodesOfType(IRNodeType::kGRPCSink);
-
-    EXPECT_EQ(1, grpc_sink.size());
-    planpb::Operator op;
-    auto grpc_sink_ir = static_cast<GRPCSinkIR*>(grpc_sink[0]);
-    // This unit test doesn't trigger the UpdateSink/AddDestinationIDMap code path, so trigger
-    // manually so the internal GRPC sink ToProto function works.
-    grpc_sink_ir->AddDestinationIDMap(0, i);
-    EXPECT_OK(grpc_sink_ir->ToProto(&op, i));
-    EXPECT_EQ(1, op.context().size());
-  }
-}
-
 TEST_F(CoordinatorTest, one_pem_three_kelvin) {
   auto ps = LoadDistributedStatePb(kOnePEMThreeKelvinsDistributedState);
   auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
@@ -209,39 +157,14 @@ TEST_F(CoordinatorTest, one_pem_three_kelvin) {
   auto kelvin_instance = physical_plan->Get(0);
   EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
   {
-    SCOPED_TRACE("one pem three kelvin -> kelvin plan");
+    SCOPED_TRACE("one pem one kelvin -> kelvin plan");
     VerifyKelvinMergerPlan(kelvin_instance->plan());
   }
 
   auto pem_instance = physical_plan->Get(1);
   EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
   {
-    SCOPED_TRACE("one pem three kelvin -> pem plan");
-    VerifyPEMPlan(pem_instance->plan());
-  }
-}
-
-TEST_F(CoordinatorTest, three_pem_one_kelvin_all_has_data_store) {
-  auto ps = LoadDistributedStatePb(testutils::kThreePEMsOneKelvinAllHasDataStoreDistributedState);
-  auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
-
-  MakeGraph();
-
-  auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
-  ASSERT_EQ(physical_plan->dag().nodes().size(), 5UL);
-  /* EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 1, 2, 4, 0)); */
-
-  auto kelvin_instance = physical_plan->Get(0);
-  EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
-  {
-    SCOPED_TRACE("one pem three kelvin -> kelvin plan");
-    VerifyKelvinMergerPlan(kelvin_instance->plan());
-  }
-
-  auto pem_instance = physical_plan->Get(1);
-  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
-  {
-    SCOPED_TRACE("one pem three kelvin -> pem plan");
+    SCOPED_TRACE("one pem one kelvin -> pem plan");
     VerifyPEMPlan(pem_instance->plan());
   }
 }

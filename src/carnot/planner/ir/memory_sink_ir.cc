@@ -31,7 +31,6 @@ Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
 }
 
 Status MemorySinkIR::ToProto(planpb::Operator* op) const {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::ToProto(op));
   auto pb = op->mutable_mem_sink_op();
   pb->set_name(name_);
   op->set_op_type(planpb::MEMORY_SINK_OPERATOR);
@@ -48,7 +47,6 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
 
 Status MemorySinkIR::CopyFromNodeImpl(const IRNode* node,
                                       absl::flat_hash_map<const IRNode*, IRNode*>*) {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::CopyFromNodeImpl(node, nullptr));
   const MemorySinkIR* sink_ir = static_cast<const MemorySinkIR*>(node);
   name_ = sink_ir->name_;
   out_columns_ = sink_ir->out_columns_;

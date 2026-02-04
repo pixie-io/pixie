@@ -49,7 +49,6 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/controllers"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/cronscript"
-	"px.dev/pixie/src/vizier/services/metadata/controllers/file_source"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	"px.dev/pixie/src/vizier/services/metadata/metadataenv"
@@ -272,12 +271,7 @@ func main() {
 	tracepointMgr := tracepoint.NewManager(tds, agtMgr, 30*time.Second)
 	defer tracepointMgr.Close()
 
-	fds := file_source.NewDatastore(dataStore)
-	// Initialize file source handler.
-	fsMgr := file_source.NewManager(fds, agtMgr, 30*time.Second)
-	defer fsMgr.Close()
-
-	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, fsMgr,
+	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr,
 		mdh, &isLeader)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -295,7 +289,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 	metrics.MustRegisterMetricsHandlerNoDefaultMetrics(mux)
 
-	svr := controllers.NewServer(env, dataStore, k8sMds, agtMgr, tracepointMgr, fsMgr)
+	svr := controllers.NewServer(env, dataStore, k8sMds, agtMgr, tracepointMgr)
 
 	csDs := cronscript.NewDatastore(dataStore)
 	cronScriptSvr := cronscript.New(csDs)
@@ -310,7 +304,6 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), svr)
 	metadatapb.RegisterMetadataTracepointServiceServer(s.GRPCServer(), svr)
-	metadatapb.RegisterMetadataFileSourceServiceServer(s.GRPCServer(), svr)
 	metadatapb.RegisterMetadataConfigServiceServer(s.GRPCServer(), svr)
 	metadatapb.RegisterCronScriptStoreServiceServer(s.GRPCServer(), cronScriptSvr)
 

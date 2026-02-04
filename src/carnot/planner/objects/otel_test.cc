@@ -46,11 +46,9 @@ class OTelExportTest : public QLObjectTest {
                          OTelModule::Create(compiler_state.get(), ast_visitor.get(), graph.get()));
     ASSERT_OK_AND_ASSIGN(auto otelmetric, OTelMetrics::Create(ast_visitor.get(), graph.get()));
     ASSERT_OK_AND_ASSIGN(auto oteltrace, OTelTrace::Create(ast_visitor.get(), graph.get()));
-    ASSERT_OK_AND_ASSIGN(auto otellog, OTelLog::Create(ast_visitor.get(), graph.get()));
     var_table->Add("otel", otel);
     var_table->Add("otelmetric", otelmetric);
     var_table->Add("oteltrace", oteltrace);
-    var_table->Add("otellog", otellog);
   }
 
   StatusOr<OTelExportSinkIR*> ParseOutOTelExportIR(const std::string& otel_export_expression,
@@ -470,101 +468,6 @@ otel_sink_op {
     span_id_column_index: 6
     parent_span_id_column_index: 7
     kind_value: 2
-  }
-})pb"},
-        {"log_basic",
-         R"pxl(
-otel.Data(
-  endpoint=otel.Endpoint(
-    url='0.0.0.0:55690',
-  ),
-  resource={
-      'service.name' : df.service,
-  },
-  data=[
-    otellog.Log(
-      time=df.start_time,
-      severity_number=4,
-      severity_text='info',
-      body=df.log_message,
-    ),
-  ]
-))pxl",
-         table_store::schema::Relation{
-             {types::TIME64NS, types::STRING, types::STRING},
-             {"start_time",  "service", "log_message"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE},
-         },
-         R"pb(
-op_type: OTEL_EXPORT_SINK_OPERATOR
-otel_sink_op {
-  endpoint_config {
-    url: "0.0.0.0:55690"
-    timeout: 5
-  }
-  resource {
-    attributes {
-      name: "service.name"
-      column {
-        column_type: STRING
-        column_index: 1
-      }
-    }
-  }
-  logs {
-    time_column_index: 0
-    observed_time_column_index: -1
-    body_column_index: 2
-    severity_number: 4
-    severity_text: "info"
-  }
-})pb"},
-        {"log_with_observed_time",
-         R"pxl(
-otel.Data(
-  endpoint=otel.Endpoint(
-    url='0.0.0.0:55690',
-  ),
-  resource={
-      'service.name' : df.service,
-  },
-  data=[
-    otellog.Log(
-      time=df.time_,
-      observed_time=df.end_time,
-      severity_number=4,
-      severity_text='info',
-      body=df.log_message,
-    ),
-  ]
-))pxl",
-         table_store::schema::Relation{
-             {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING},
-             {"time_",  "end_time", "service", "log_message"},
-             {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE},
-         },
-         R"pb(
-op_type: OTEL_EXPORT_SINK_OPERATOR
-otel_sink_op {
-  endpoint_config {
-    url: "0.0.0.0:55690"
-    timeout: 5
-  }
-  resource {
-    attributes {
-      name: "service.name"
-      column {
-        column_type: STRING
-        column_index: 2
-      }
-    }
-  }
-  logs {
-    time_column_index: 0
-    observed_time_column_index: 1
-    body_column_index: 3
-    severity_number: 4
-    severity_text: "info"
   }
 })pb"},
         {"all_attribute_types",

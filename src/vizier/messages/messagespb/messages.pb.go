@@ -13,7 +13,6 @@ import (
 	uuidpb "px.dev/pixie/src/api/proto/uuidpb"
 	distributedpb "px.dev/pixie/src/carnot/planner/distributedpb"
 	logicalpb "px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
-	ir "px.dev/pixie/src/carnot/planner/file_source/ir"
 	planpb "px.dev/pixie/src/carnot/planpb"
 	statuspb "px.dev/pixie/src/common/base/statuspb"
 	metadatapb "px.dev/pixie/src/shared/k8s/metadatapb"
@@ -45,7 +44,6 @@ type VizierMessage struct {
 	//	*VizierMessage_TracepointMessage
 	//	*VizierMessage_ConfigUpdateMessage
 	//	*VizierMessage_K8SMetadataMessage
-	//	*VizierMessage_FileSourceMessage
 	Msg isVizierMessage_Msg `protobuf_oneof:"msg"`
 }
 
@@ -115,9 +113,6 @@ type VizierMessage_ConfigUpdateMessage struct {
 type VizierMessage_K8SMetadataMessage struct {
 	K8SMetadataMessage *K8SMetadataMessage `protobuf:"bytes,12,opt,name=k8s_metadata_message,json=k8sMetadataMessage,proto3,oneof" json:"k8s_metadata_message,omitempty"`
 }
-type VizierMessage_FileSourceMessage struct {
-	FileSourceMessage *FileSourceMessage `protobuf:"bytes,13,opt,name=file_source_message,json=fileSourceMessage,proto3,oneof" json:"file_source_message,omitempty"`
-}
 
 func (*VizierMessage_RegisterAgentRequest) isVizierMessage_Msg()  {}
 func (*VizierMessage_RegisterAgentResponse) isVizierMessage_Msg() {}
@@ -128,7 +123,6 @@ func (*VizierMessage_ExecuteQueryRequest) isVizierMessage_Msg()   {}
 func (*VizierMessage_TracepointMessage) isVizierMessage_Msg()     {}
 func (*VizierMessage_ConfigUpdateMessage) isVizierMessage_Msg()   {}
 func (*VizierMessage_K8SMetadataMessage) isVizierMessage_Msg()    {}
-func (*VizierMessage_FileSourceMessage) isVizierMessage_Msg()     {}
 
 func (m *VizierMessage) GetMsg() isVizierMessage_Msg {
 	if m != nil {
@@ -200,13 +194,6 @@ func (m *VizierMessage) GetK8SMetadataMessage() *K8SMetadataMessage {
 	return nil
 }
 
-func (m *VizierMessage) GetFileSourceMessage() *FileSourceMessage {
-	if x, ok := m.GetMsg().(*VizierMessage_FileSourceMessage); ok {
-		return x.FileSourceMessage
-	}
-	return nil
-}
-
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*VizierMessage) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
@@ -219,7 +206,6 @@ func (*VizierMessage) XXX_OneofWrappers() []interface{} {
 		(*VizierMessage_TracepointMessage)(nil),
 		(*VizierMessage_ConfigUpdateMessage)(nil),
 		(*VizierMessage_K8SMetadataMessage)(nil),
-		(*VizierMessage_FileSourceMessage)(nil),
 	}
 }
 
@@ -321,104 +307,6 @@ func (*TracepointMessage) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-type FileSourceMessage struct {
-	// Types that are valid to be assigned to Msg:
-	//	*FileSourceMessage_FileSourceInfoUpdate
-	//	*FileSourceMessage_RemoveFileSourceRequest
-	//	*FileSourceMessage_RegisterFileSourceRequest
-	Msg isFileSourceMessage_Msg `protobuf_oneof:"msg"`
-}
-
-func (m *FileSourceMessage) Reset()      { *m = FileSourceMessage{} }
-func (*FileSourceMessage) ProtoMessage() {}
-func (*FileSourceMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{2}
-}
-func (m *FileSourceMessage) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *FileSourceMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_FileSourceMessage.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *FileSourceMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FileSourceMessage.Merge(m, src)
-}
-func (m *FileSourceMessage) XXX_Size() int {
-	return m.Size()
-}
-func (m *FileSourceMessage) XXX_DiscardUnknown() {
-	xxx_messageInfo_FileSourceMessage.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FileSourceMessage proto.InternalMessageInfo
-
-type isFileSourceMessage_Msg interface {
-	isFileSourceMessage_Msg()
-	Equal(interface{}) bool
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type FileSourceMessage_FileSourceInfoUpdate struct {
-	FileSourceInfoUpdate *FileSourceInfoUpdate `protobuf:"bytes,1,opt,name=file_source_info_update,json=fileSourceInfoUpdate,proto3,oneof" json:"file_source_info_update,omitempty"`
-}
-type FileSourceMessage_RemoveFileSourceRequest struct {
-	RemoveFileSourceRequest *RemoveFileSourceRequest `protobuf:"bytes,2,opt,name=remove_file_source_request,json=removeFileSourceRequest,proto3,oneof" json:"remove_file_source_request,omitempty"`
-}
-type FileSourceMessage_RegisterFileSourceRequest struct {
-	RegisterFileSourceRequest *RegisterFileSourceRequest `protobuf:"bytes,3,opt,name=register_file_source_request,json=registerFileSourceRequest,proto3,oneof" json:"register_file_source_request,omitempty"`
-}
-
-func (*FileSourceMessage_FileSourceInfoUpdate) isFileSourceMessage_Msg()      {}
-func (*FileSourceMessage_RemoveFileSourceRequest) isFileSourceMessage_Msg()   {}
-func (*FileSourceMessage_RegisterFileSourceRequest) isFileSourceMessage_Msg() {}
-
-func (m *FileSourceMessage) GetMsg() isFileSourceMessage_Msg {
-	if m != nil {
-		return m.Msg
-	}
-	return nil
-}
-
-func (m *FileSourceMessage) GetFileSourceInfoUpdate() *FileSourceInfoUpdate {
-	if x, ok := m.GetMsg().(*FileSourceMessage_FileSourceInfoUpdate); ok {
-		return x.FileSourceInfoUpdate
-	}
-	return nil
-}
-
-func (m *FileSourceMessage) GetRemoveFileSourceRequest() *RemoveFileSourceRequest {
-	if x, ok := m.GetMsg().(*FileSourceMessage_RemoveFileSourceRequest); ok {
-		return x.RemoveFileSourceRequest
-	}
-	return nil
-}
-
-func (m *FileSourceMessage) GetRegisterFileSourceRequest() *RegisterFileSourceRequest {
-	if x, ok := m.GetMsg().(*FileSourceMessage_RegisterFileSourceRequest); ok {
-		return x.RegisterFileSourceRequest
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*FileSourceMessage) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*FileSourceMessage_FileSourceInfoUpdate)(nil),
-		(*FileSourceMessage_RemoveFileSourceRequest)(nil),
-		(*FileSourceMessage_RegisterFileSourceRequest)(nil),
-	}
-}
-
 type ConfigUpdateMessage struct {
 	// Types that are valid to be assigned to Msg:
 	//	*ConfigUpdateMessage_ConfigUpdateRequest
@@ -428,7 +316,7 @@ type ConfigUpdateMessage struct {
 func (m *ConfigUpdateMessage) Reset()      { *m = ConfigUpdateMessage{} }
 func (*ConfigUpdateMessage) ProtoMessage() {}
 func (*ConfigUpdateMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{3}
+	return fileDescriptor_0046fd1b9991f89c, []int{2}
 }
 func (m *ConfigUpdateMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -502,7 +390,7 @@ type K8SMetadataMessage struct {
 func (m *K8SMetadataMessage) Reset()      { *m = K8SMetadataMessage{} }
 func (*K8SMetadataMessage) ProtoMessage() {}
 func (*K8SMetadataMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{4}
+	return fileDescriptor_0046fd1b9991f89c, []int{3}
 }
 func (m *K8SMetadataMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -597,7 +485,7 @@ type RegisterAgentRequest struct {
 func (m *RegisterAgentRequest) Reset()      { *m = RegisterAgentRequest{} }
 func (*RegisterAgentRequest) ProtoMessage() {}
 func (*RegisterAgentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{5}
+	return fileDescriptor_0046fd1b9991f89c, []int{4}
 }
 func (m *RegisterAgentRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -647,7 +535,7 @@ type RegisterAgentResponse struct {
 func (m *RegisterAgentResponse) Reset()      { *m = RegisterAgentResponse{} }
 func (*RegisterAgentResponse) ProtoMessage() {}
 func (*RegisterAgentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{6}
+	return fileDescriptor_0046fd1b9991f89c, []int{5}
 }
 func (m *RegisterAgentResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -690,7 +578,7 @@ type AgentDataInfo struct {
 func (m *AgentDataInfo) Reset()      { *m = AgentDataInfo{} }
 func (*AgentDataInfo) ProtoMessage() {}
 func (*AgentDataInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{7}
+	return fileDescriptor_0046fd1b9991f89c, []int{6}
 }
 func (m *AgentDataInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -737,7 +625,7 @@ type AgentUpdateInfo struct {
 func (m *AgentUpdateInfo) Reset()      { *m = AgentUpdateInfo{} }
 func (*AgentUpdateInfo) ProtoMessage() {}
 func (*AgentUpdateInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{8}
+	return fileDescriptor_0046fd1b9991f89c, []int{7}
 }
 func (m *AgentUpdateInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -811,7 +699,7 @@ type Heartbeat struct {
 func (m *Heartbeat) Reset()      { *m = Heartbeat{} }
 func (*Heartbeat) ProtoMessage() {}
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{9}
+	return fileDescriptor_0046fd1b9991f89c, []int{8}
 }
 func (m *Heartbeat) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -876,7 +764,7 @@ type MetadataUpdateInfo struct {
 func (m *MetadataUpdateInfo) Reset()      { *m = MetadataUpdateInfo{} }
 func (*MetadataUpdateInfo) ProtoMessage() {}
 func (*MetadataUpdateInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{10}
+	return fileDescriptor_0046fd1b9991f89c, []int{9}
 }
 func (m *MetadataUpdateInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -928,7 +816,7 @@ type HeartbeatAck struct {
 func (m *HeartbeatAck) Reset()      { *m = HeartbeatAck{} }
 func (*HeartbeatAck) ProtoMessage() {}
 func (*HeartbeatAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{11}
+	return fileDescriptor_0046fd1b9991f89c, []int{10}
 }
 func (m *HeartbeatAck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -985,7 +873,7 @@ type HeartbeatNack struct {
 func (m *HeartbeatNack) Reset()      { *m = HeartbeatNack{} }
 func (*HeartbeatNack) ProtoMessage() {}
 func (*HeartbeatNack) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{12}
+	return fileDescriptor_0046fd1b9991f89c, []int{11}
 }
 func (m *HeartbeatNack) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1030,7 +918,7 @@ type ExecuteQueryRequest struct {
 func (m *ExecuteQueryRequest) Reset()      { *m = ExecuteQueryRequest{} }
 func (*ExecuteQueryRequest) ProtoMessage() {}
 func (*ExecuteQueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{13}
+	return fileDescriptor_0046fd1b9991f89c, []int{12}
 }
 func (m *ExecuteQueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1088,7 +976,7 @@ type RegisterTracepointRequest struct {
 func (m *RegisterTracepointRequest) Reset()      { *m = RegisterTracepointRequest{} }
 func (*RegisterTracepointRequest) ProtoMessage() {}
 func (*RegisterTracepointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{14}
+	return fileDescriptor_0046fd1b9991f89c, []int{13}
 }
 func (m *RegisterTracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1141,7 +1029,7 @@ type TracepointInfoUpdate struct {
 func (m *TracepointInfoUpdate) Reset()      { *m = TracepointInfoUpdate{} }
 func (*TracepointInfoUpdate) ProtoMessage() {}
 func (*TracepointInfoUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{15}
+	return fileDescriptor_0046fd1b9991f89c, []int{14}
 }
 func (m *TracepointInfoUpdate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1205,7 +1093,7 @@ type RemoveTracepointRequest struct {
 func (m *RemoveTracepointRequest) Reset()      { *m = RemoveTracepointRequest{} }
 func (*RemoveTracepointRequest) ProtoMessage() {}
 func (*RemoveTracepointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{16}
+	return fileDescriptor_0046fd1b9991f89c, []int{15}
 }
 func (m *RemoveTracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1241,167 +1129,6 @@ func (m *RemoveTracepointRequest) GetID() *uuidpb.UUID {
 	return nil
 }
 
-type RegisterFileSourceRequest struct {
-	FileSourceDeployment *ir.FileSourceDeployment `protobuf:"bytes,1,opt,name=file_source_deployment,json=fileSourceDeployment,proto3" json:"file_source_deployment,omitempty"`
-	ID                   *uuidpb.UUID             `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
-}
-
-func (m *RegisterFileSourceRequest) Reset()      { *m = RegisterFileSourceRequest{} }
-func (*RegisterFileSourceRequest) ProtoMessage() {}
-func (*RegisterFileSourceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{17}
-}
-func (m *RegisterFileSourceRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RegisterFileSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RegisterFileSourceRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RegisterFileSourceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegisterFileSourceRequest.Merge(m, src)
-}
-func (m *RegisterFileSourceRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *RegisterFileSourceRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegisterFileSourceRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegisterFileSourceRequest proto.InternalMessageInfo
-
-func (m *RegisterFileSourceRequest) GetFileSourceDeployment() *ir.FileSourceDeployment {
-	if m != nil {
-		return m.FileSourceDeployment
-	}
-	return nil
-}
-
-func (m *RegisterFileSourceRequest) GetID() *uuidpb.UUID {
-	if m != nil {
-		return m.ID
-	}
-	return nil
-}
-
-type FileSourceInfoUpdate struct {
-	ID      *uuidpb.UUID            `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	State   statuspb.LifeCycleState `protobuf:"varint,2,opt,name=state,proto3,enum=px.statuspb.LifeCycleState" json:"state,omitempty"`
-	Status  *statuspb.Status        `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	AgentID *uuidpb.UUID            `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-}
-
-func (m *FileSourceInfoUpdate) Reset()      { *m = FileSourceInfoUpdate{} }
-func (*FileSourceInfoUpdate) ProtoMessage() {}
-func (*FileSourceInfoUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{18}
-}
-func (m *FileSourceInfoUpdate) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *FileSourceInfoUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_FileSourceInfoUpdate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *FileSourceInfoUpdate) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FileSourceInfoUpdate.Merge(m, src)
-}
-func (m *FileSourceInfoUpdate) XXX_Size() int {
-	return m.Size()
-}
-func (m *FileSourceInfoUpdate) XXX_DiscardUnknown() {
-	xxx_messageInfo_FileSourceInfoUpdate.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FileSourceInfoUpdate proto.InternalMessageInfo
-
-func (m *FileSourceInfoUpdate) GetID() *uuidpb.UUID {
-	if m != nil {
-		return m.ID
-	}
-	return nil
-}
-
-func (m *FileSourceInfoUpdate) GetState() statuspb.LifeCycleState {
-	if m != nil {
-		return m.State
-	}
-	return statuspb.UNKNOWN_STATE
-}
-
-func (m *FileSourceInfoUpdate) GetStatus() *statuspb.Status {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
-func (m *FileSourceInfoUpdate) GetAgentID() *uuidpb.UUID {
-	if m != nil {
-		return m.AgentID
-	}
-	return nil
-}
-
-type RemoveFileSourceRequest struct {
-	ID *uuidpb.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-}
-
-func (m *RemoveFileSourceRequest) Reset()      { *m = RemoveFileSourceRequest{} }
-func (*RemoveFileSourceRequest) ProtoMessage() {}
-func (*RemoveFileSourceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{19}
-}
-func (m *RemoveFileSourceRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RemoveFileSourceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RemoveFileSourceRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RemoveFileSourceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveFileSourceRequest.Merge(m, src)
-}
-func (m *RemoveFileSourceRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *RemoveFileSourceRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveFileSourceRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RemoveFileSourceRequest proto.InternalMessageInfo
-
-func (m *RemoveFileSourceRequest) GetID() *uuidpb.UUID {
-	if m != nil {
-		return m.ID
-	}
-	return nil
-}
-
 type ConfigUpdateRequest struct {
 	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -1410,7 +1137,7 @@ type ConfigUpdateRequest struct {
 func (m *ConfigUpdateRequest) Reset()      { *m = ConfigUpdateRequest{} }
 func (*ConfigUpdateRequest) ProtoMessage() {}
 func (*ConfigUpdateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{20}
+	return fileDescriptor_0046fd1b9991f89c, []int{16}
 }
 func (m *ConfigUpdateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1461,7 +1188,7 @@ type MetricsMessage struct {
 func (m *MetricsMessage) Reset()      { *m = MetricsMessage{} }
 func (*MetricsMessage) ProtoMessage() {}
 func (*MetricsMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0046fd1b9991f89c, []int{21}
+	return fileDescriptor_0046fd1b9991f89c, []int{17}
 }
 func (m *MetricsMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1507,7 +1234,6 @@ func (m *MetricsMessage) GetPodName() string {
 func init() {
 	proto.RegisterType((*VizierMessage)(nil), "px.vizier.messages.VizierMessage")
 	proto.RegisterType((*TracepointMessage)(nil), "px.vizier.messages.TracepointMessage")
-	proto.RegisterType((*FileSourceMessage)(nil), "px.vizier.messages.FileSourceMessage")
 	proto.RegisterType((*ConfigUpdateMessage)(nil), "px.vizier.messages.ConfigUpdateMessage")
 	proto.RegisterType((*K8SMetadataMessage)(nil), "px.vizier.messages.K8sMetadataMessage")
 	proto.RegisterType((*RegisterAgentRequest)(nil), "px.vizier.messages.RegisterAgentRequest")
@@ -1522,9 +1248,6 @@ func init() {
 	proto.RegisterType((*RegisterTracepointRequest)(nil), "px.vizier.messages.RegisterTracepointRequest")
 	proto.RegisterType((*TracepointInfoUpdate)(nil), "px.vizier.messages.TracepointInfoUpdate")
 	proto.RegisterType((*RemoveTracepointRequest)(nil), "px.vizier.messages.RemoveTracepointRequest")
-	proto.RegisterType((*RegisterFileSourceRequest)(nil), "px.vizier.messages.RegisterFileSourceRequest")
-	proto.RegisterType((*FileSourceInfoUpdate)(nil), "px.vizier.messages.FileSourceInfoUpdate")
-	proto.RegisterType((*RemoveFileSourceRequest)(nil), "px.vizier.messages.RemoveFileSourceRequest")
 	proto.RegisterType((*ConfigUpdateRequest)(nil), "px.vizier.messages.ConfigUpdateRequest")
 	proto.RegisterType((*MetricsMessage)(nil), "px.vizier.messages.MetricsMessage")
 }
@@ -1534,112 +1257,104 @@ func init() {
 }
 
 var fileDescriptor_0046fd1b9991f89c = []byte{
-	// 1680 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xdc, 0x58, 0x4d, 0x53, 0x1b, 0xcd,
-	0x11, 0xd6, 0x4a, 0x02, 0x44, 0xf3, 0x3d, 0x80, 0x11, 0x18, 0x0b, 0xa2, 0x94, 0x63, 0x6c, 0xc7,
-	0xab, 0x04, 0x27, 0x31, 0x55, 0x29, 0xbb, 0x62, 0xa1, 0xc4, 0x40, 0x82, 0xcb, 0x5e, 0xb0, 0x5d,
-	0x45, 0x55, 0x6a, 0x33, 0xda, 0x1d, 0x89, 0x0d, 0xda, 0x0f, 0xcf, 0xae, 0x08, 0x72, 0x2e, 0x39,
-	0xe6, 0x98, 0x43, 0x4e, 0xf9, 0x05, 0x39, 0xe7, 0x9e, 0x73, 0x72, 0xf4, 0x91, 0xaa, 0x54, 0x51,
-	0xb1, 0x7c, 0x49, 0xe5, 0xbd, 0xf8, 0x27, 0xbc, 0x35, 0x1f, 0xfb, 0x21, 0x76, 0x05, 0xf8, 0xfa,
-	0x9e, 0x98, 0xed, 0x79, 0xfa, 0xe9, 0x99, 0xa7, 0xa7, 0x67, 0x5a, 0xc0, 0x23, 0x9f, 0x1a, 0xb5,
-	0x53, 0xeb, 0x83, 0x45, 0x68, 0xcd, 0x26, 0xbe, 0x8f, 0xdb, 0xc4, 0x8f, 0x06, 0x5e, 0x33, 0x1a,
-	0xaa, 0x1e, 0x75, 0x03, 0x17, 0x21, 0xef, 0x4c, 0x15, 0x68, 0x35, 0x9c, 0x59, 0x59, 0x68, 0xbb,
-	0x6d, 0x97, 0x4f, 0xd7, 0xd8, 0x48, 0x20, 0x57, 0xd6, 0x18, 0x31, 0xf6, 0xac, 0x9a, 0x98, 0xe9,
-	0x76, 0x2d, 0xd3, 0x6b, 0xf2, 0x3f, 0x12, 0xf0, 0x84, 0x01, 0x0c, 0x4c, 0x1d, 0x37, 0xa8, 0x79,
-	0x1d, 0xec, 0x38, 0x84, 0xd6, 0x4c, 0xcb, 0x0f, 0xa8, 0xd5, 0xec, 0x06, 0x84, 0x81, 0x13, 0x5f,
-	0x3a, 0x43, 0x48, 0xc7, 0xa7, 0x59, 0x8e, 0x3d, 0x07, 0xdb, 0x96, 0xa1, 0x07, 0x14, 0x1b, 0x96,
-	0xd3, 0xae, 0x59, 0xb4, 0xd6, 0x71, 0xdb, 0x96, 0x81, 0x3b, 0x5e, 0x33, 0x1c, 0x49, 0xf7, 0x5a,
-	0x86, 0x7b, 0xcb, 0xea, 0x10, 0xdd, 0x77, 0xbb, 0xd4, 0x20, 0x09, 0x57, 0xe9, 0xb0, 0x7a, 0xc9,
-	0xc1, 0x6b, 0xd6, 0x12, 0xab, 0xb9, 0xcb, 0x67, 0x5d, 0xdb, 0x76, 0x9d, 0x5a, 0x13, 0xfb, 0xa4,
-	0xe6, 0x07, 0x38, 0xe8, 0x32, 0xe9, 0xc4, 0x40, 0xc2, 0x36, 0x18, 0xcc, 0x3f, 0xc6, 0x94, 0x98,
-	0xb5, 0x93, 0x2d, 0x26, 0x71, 0x80, 0x4d, 0x1c, 0x60, 0x2e, 0xb1, 0x18, 0x4a, 0xe4, 0x8f, 0x12,
-	0x19, 0xf1, 0x09, 0x3d, 0xb5, 0x0c, 0x12, 0xc3, 0x6b, 0x7e, 0xe0, 0x52, 0xc2, 0xc9, 0x5d, 0x4a,
-	0xa4, 0x87, 0x9a, 0xe5, 0x21, 0x63, 0xe1, 0x36, 0x71, 0x02, 0xaf, 0x29, 0xfe, 0x0a, 0x7c, 0xf5,
-	0xcf, 0x63, 0x30, 0xf5, 0x96, 0xc3, 0xf7, 0x45, 0x0e, 0xd1, 0xef, 0xe0, 0x16, 0x25, 0x6d, 0xcb,
-	0x0f, 0x08, 0xd5, 0x39, 0x52, 0xa7, 0xe4, 0x7d, 0x97, 0xf8, 0x41, 0x59, 0x59, 0x57, 0x36, 0x26,
-	0x36, 0x37, 0xd4, 0x74, 0xde, 0x55, 0x4d, 0x7a, 0x3c, 0x67, 0x0e, 0x9a, 0xc0, 0xef, 0xe4, 0xb4,
-	0x05, 0x9a, 0x61, 0x47, 0x06, 0x2c, 0xa5, 0x22, 0xf8, 0x9e, 0xeb, 0xf8, 0xa4, 0x9c, 0xe7, 0x21,
-	0xee, 0xdf, 0x20, 0x84, 0x70, 0xd8, 0xc9, 0x69, 0x8b, 0x34, 0x6b, 0x02, 0x3d, 0x85, 0xf1, 0x63,
-	0x82, 0x69, 0xd0, 0x24, 0x38, 0x28, 0x8f, 0x70, 0xda, 0x3b, 0x59, 0xb4, 0x3b, 0x21, 0x68, 0x27,
-	0xa7, 0xc5, 0x1e, 0xe8, 0x05, 0x4c, 0x45, 0x1f, 0x3a, 0x36, 0x4e, 0xca, 0xa3, 0x9c, 0x62, 0xfd,
-	0x4a, 0x8a, 0xe7, 0xc6, 0xc9, 0x4e, 0x4e, 0x9b, 0x3c, 0x4e, 0x7c, 0xa3, 0x3d, 0x98, 0x8e, 0x89,
-	0x1c, 0xc6, 0x34, 0xc6, 0x99, 0xbe, 0x77, 0x25, 0xd3, 0x4b, 0xcc, 0xa9, 0xe2, 0x35, 0x30, 0x03,
-	0xfa, 0x2d, 0x2c, 0x92, 0x33, 0x62, 0x74, 0x03, 0xa2, 0xbf, 0xef, 0x12, 0xda, 0x8b, 0x32, 0x53,
-	0xe2, 0x94, 0xf7, 0xb2, 0x28, 0x7f, 0x29, 0x1c, 0x5e, 0x33, 0x7c, 0x9c, 0x98, 0x79, 0x92, 0x36,
-	0xa3, 0xb7, 0x80, 0x58, 0xcd, 0x10, 0xcf, 0xb5, 0x9c, 0x40, 0x97, 0x0c, 0x65, 0xe0, 0xdc, 0x77,
-	0xb3, 0xb8, 0x0f, 0x23, 0xb4, 0x3c, 0x3c, 0x3b, 0x39, 0x6d, 0x2e, 0xb8, 0x6c, 0x64, 0xcb, 0x36,
-	0x5c, 0xa7, 0x65, 0xb5, 0xf5, 0xae, 0x67, 0xe2, 0x80, 0x44, 0xd4, 0x13, 0xc3, 0x97, 0xbd, 0xcd,
-	0x1d, 0xde, 0x70, 0x7c, 0x4c, 0x3e, 0x6f, 0xa4, 0xcd, 0xe8, 0x08, 0x16, 0x4e, 0xb6, 0x7c, 0x3d,
-	0x2c, 0x8b, 0x88, 0x7d, 0x92, 0xb3, 0xff, 0x20, 0x8b, 0xfd, 0xd7, 0x5b, 0xfe, 0xbe, 0x84, 0xc7,
-	0xe4, 0xe8, 0x24, 0x65, 0x45, 0xef, 0x60, 0x3e, 0x71, 0x1f, 0x44, 0xd4, 0x53, 0xc3, 0x35, 0xf9,
-	0x95, 0xd5, 0x21, 0x07, 0x1c, 0x9d, 0xd0, 0xa4, 0x75, 0xd9, 0x58, 0x1f, 0x81, 0x82, 0xed, 0xb7,
-	0xf7, 0x8a, 0xa5, 0xc2, 0x6c, 0x71, 0xaf, 0x58, 0x2a, 0xce, 0x8e, 0x54, 0xcf, 0xf3, 0x30, 0x97,
-	0x52, 0x94, 0x95, 0x63, 0x22, 0x29, 0x96, 0xd3, 0x72, 0xa5, 0x8a, 0x57, 0x95, 0x63, 0x4c, 0xb3,
-	0xeb, 0xb4, 0x5c, 0x21, 0x17, 0x2b, 0xc7, 0x20, 0xc3, 0x8e, 0x2c, 0x58, 0xa6, 0xc4, 0x76, 0x4f,
-	0x89, 0x9e, 0x08, 0x14, 0x9e, 0x2c, 0x51, 0x90, 0x0f, 0xb3, 0x0b, 0x92, 0x39, 0xc5, 0xa1, 0xe2,
-	0xd3, 0xb5, 0x44, 0xb3, 0xa7, 0x90, 0x0b, 0xb7, 0xa3, 0xca, 0xcf, 0x08, 0x56, 0xe0, 0xc1, 0x1e,
-	0x5d, 0x55, 0xfd, 0x59, 0xe1, 0x96, 0xe9, 0xb0, 0x49, 0x29, 0x73, 0xf5, 0x3f, 0x79, 0x98, 0x4b,
-	0x25, 0x06, 0x61, 0x58, 0x4a, 0x26, 0xf7, 0x86, 0xda, 0xc6, 0x3c, 0x83, 0xda, 0xb6, 0x32, 0xec,
-	0xe8, 0xf7, 0xb0, 0x22, 0xb5, 0x4d, 0x46, 0xba, 0xb1, 0xb8, 0x71, 0xac, 0x94, 0xb8, 0xa9, 0x29,
-	0xe4, 0xc1, 0x6a, 0x24, 0x6e, 0x56, 0xb4, 0x1b, 0xa8, 0x9b, 0x15, 0x2f, 0x52, 0x37, 0x35, 0x19,
-	0xaa, 0xfb, 0x47, 0x98, 0xcf, 0x28, 0xd7, 0x74, 0xd9, 0x0f, 0xbe, 0x23, 0xd7, 0x96, 0x7d, 0xe2,
-	0xb6, 0x32, 0xd2, 0xe6, 0x30, 0xf8, 0xff, 0xf3, 0x80, 0xd2, 0xe5, 0x8c, 0x8e, 0x60, 0x7e, 0xe0,
-	0x52, 0x48, 0xe7, 0x55, 0x3c, 0x8a, 0xea, 0xc9, 0x96, 0xaf, 0xc6, 0x0f, 0xb0, 0xaa, 0x11, 0xa1,
-	0x5a, 0x94, 0xd7, 0xb9, 0xc4, 0xad, 0x20, 0x93, 0x7a, 0x0a, 0xab, 0xb6, 0xe5, 0xfb, 0x96, 0xd3,
-	0xd6, 0x07, 0x62, 0x0c, 0xa6, 0xf5, 0xf1, 0xf0, 0x20, 0xfb, 0xc2, 0x3b, 0xb1, 0xec, 0x84, 0xdc,
-	0xf6, 0xb0, 0x49, 0xd4, 0x83, 0x3b, 0x43, 0xe2, 0xca, 0xd7, 0x53, 0x64, 0xf8, 0x27, 0x5f, 0x17,
-	0x38, 0x7a, 0x48, 0x57, 0xec, 0xa1, 0xb3, 0xa1, 0xd8, 0x1f, 0x60, 0x21, 0xeb, 0xa5, 0x47, 0xcf,
-	0xa0, 0xc8, 0xaa, 0x47, 0xca, 0xfb, 0x20, 0x91, 0xd9, 0xb0, 0x07, 0x09, 0x17, 0x24, 0x7a, 0x0f,
-	0xee, 0xcc, 0xca, 0x44, 0xe3, 0x7e, 0x68, 0x15, 0x8a, 0xd8, 0xb7, 0x4c, 0xbe, 0x81, 0xa9, 0x7a,
-	0xa9, 0x7f, 0xb1, 0x56, 0x7c, 0x7e, 0xb0, 0xdb, 0xd0, 0xb8, 0x75, 0xaf, 0x58, 0xca, 0xcf, 0x16,
-	0xaa, 0x3f, 0x87, 0xc5, 0xcc, 0x16, 0x20, 0x72, 0x56, 0xae, 0x70, 0x36, 0x60, 0x8a, 0x3b, 0x35,
-	0x70, 0x80, 0x59, 0x5c, 0xa4, 0xc1, 0x54, 0xa4, 0x5f, 0x62, 0xe9, 0xbc, 0x3a, 0x44, 0x7f, 0xa7,
-	0xca, 0x86, 0x50, 0x1d, 0x68, 0x44, 0xd5, 0x50, 0x1a, 0xbe, 0xfa, 0x49, 0x3b, 0xf1, 0x55, 0xfd,
-	0x26, 0x0f, 0x33, 0x3c, 0x8a, 0x38, 0x27, 0x3c, 0xce, 0x33, 0x18, 0xf5, 0x8d, 0x63, 0x62, 0xe3,
-	0x72, 0x7e, 0xbd, 0x70, 0xe9, 0x39, 0x8a, 0xb4, 0x89, 0xba, 0xbe, 0x43, 0xdc, 0xec, 0x70, 0x3f,
-	0x4d, 0x7a, 0xa1, 0xd7, 0x30, 0xe3, 0x51, 0xd7, 0x20, 0xbe, 0xaf, 0x1b, 0x94, 0xe0, 0x80, 0x98,
-	0xe5, 0x22, 0x27, 0xba, 0xe2, 0x0c, 0xbf, 0x12, 0x0e, 0xdb, 0x02, 0xaf, 0x4d, 0x7b, 0x03, 0xdf,
-	0xe8, 0x08, 0x50, 0x48, 0x19, 0x10, 0x6a, 0x5b, 0x0e, 0x67, 0x1d, 0xe1, 0xac, 0x0f, 0xaf, 0x65,
-	0x3d, 0x8c, 0x5c, 0xb4, 0x39, 0xef, 0xb2, 0x09, 0xfd, 0x10, 0x90, 0xe9, 0x12, 0x3f, 0xac, 0x78,
-	0xb9, 0x75, 0xd6, 0x3b, 0x95, 0xb4, 0x59, 0x36, 0x23, 0xa4, 0x39, 0x10, 0x9b, 0xfb, 0x29, 0x14,
-	0x19, 0xf9, 0x55, 0x1d, 0xd1, 0x40, 0xd6, 0x34, 0x0e, 0x17, 0x8f, 0x66, 0xf5, 0x5f, 0x0a, 0x8c,
-	0x47, 0xfd, 0x12, 0x7a, 0x02, 0x25, 0xd1, 0x4a, 0xca, 0x83, 0x30, 0xb1, 0x39, 0xc3, 0xe8, 0xc4,
-	0x4f, 0x0d, 0xf5, 0xcd, 0x9b, 0xdd, 0x46, 0x7d, 0xa2, 0x7f, 0xb1, 0x36, 0x26, 0x4e, 0x5e, 0x43,
-	0x1b, 0xe3, 0xe8, 0x5d, 0x13, 0x21, 0x28, 0x06, 0x96, 0x2d, 0x3a, 0xcf, 0x82, 0xc6, 0xc7, 0xa8,
-	0x01, 0x13, 0x72, 0x03, 0xfc, 0x68, 0x88, 0xb2, 0xfa, 0xfe, 0xd0, 0xe5, 0xc5, 0xe9, 0xd6, 0xa0,
-	0x1b, 0xa7, 0xfe, 0x1e, 0xcc, 0xf8, 0xac, 0x3e, 0x1c, 0x83, 0xe8, 0x4e, 0xd7, 0x6e, 0x12, 0x5a,
-	0x2e, 0xf2, 0x20, 0xd3, 0xa1, 0xf9, 0x25, 0xb7, 0x56, 0x7b, 0x80, 0x06, 0x6f, 0x18, 0xee, 0xbe,
-	0x09, 0x93, 0xf2, 0x80, 0xe8, 0x86, 0x65, 0x52, 0xbe, 0xc0, 0xf1, 0xfa, 0x4c, 0xff, 0x62, 0x6d,
-	0xe2, 0x40, 0xd8, 0xb7, 0x77, 0x1b, 0x9a, 0x36, 0x21, 0x41, 0xdb, 0x96, 0x49, 0xd1, 0x7d, 0x18,
-	0xf7, 0x5c, 0x93, 0xe3, 0xfd, 0x72, 0x61, 0xbd, 0xb0, 0x31, 0x5e, 0x9f, 0xec, 0x5f, 0xac, 0x95,
-	0x5e, 0xb9, 0x26, 0x03, 0xfb, 0x5a, 0xc9, 0x73, 0x4d, 0x86, 0xf4, 0xf7, 0x8a, 0x25, 0x65, 0x36,
-	0x5f, 0xfd, 0xab, 0x02, 0x93, 0xc9, 0xf6, 0x35, 0x92, 0x43, 0x49, 0xc8, 0x91, 0xb1, 0x91, 0x7c,
-	0xd6, 0x46, 0xd0, 0x8b, 0x2c, 0xdd, 0x32, 0x1b, 0xb0, 0xf4, 0x7e, 0x93, 0xd2, 0x55, 0x6b, 0x30,
-	0x35, 0xd0, 0x0a, 0xa3, 0x0a, 0x00, 0x25, 0xe1, 0x43, 0xc4, 0x17, 0x57, 0xd2, 0x12, 0x96, 0xea,
-	0xdf, 0x14, 0x98, 0xcf, 0xe8, 0x74, 0xd9, 0xb1, 0x10, 0x9d, 0xf2, 0x35, 0xc7, 0x82, 0x3b, 0xb1,
-	0x63, 0xc1, 0xd1, 0xbb, 0x26, 0x7a, 0x00, 0x45, 0x56, 0xff, 0x72, 0x0f, 0xb7, 0x2e, 0x5d, 0x0b,
-	0xac, 0x1c, 0x3a, 0xd8, 0xd1, 0x38, 0x06, 0x95, 0x61, 0x0c, 0x3b, 0xb8, 0xd3, 0xfb, 0x40, 0x78,
-	0x82, 0x4b, 0x5a, 0xf8, 0x29, 0x2f, 0x9f, 0x7f, 0x2a, 0xb0, 0x3c, 0xb4, 0x7f, 0x41, 0x7f, 0x80,
-	0xc5, 0x44, 0x2b, 0x64, 0x12, 0xaf, 0xe3, 0xf6, 0x6c, 0xe2, 0x84, 0xcf, 0x64, 0x3d, 0xeb, 0x46,
-	0x1a, 0xfc, 0x85, 0xab, 0x5a, 0x54, 0x0d, 0x7f, 0xa6, 0xc6, 0xfc, 0x8d, 0x88, 0x29, 0xd9, 0xf7,
-	0xc5, 0x56, 0x74, 0x0f, 0xf2, 0x96, 0x29, 0x1f, 0xab, 0x94, 0x2a, 0xa3, 0xfd, 0x8b, 0xb5, 0xfc,
-	0x6e, 0x43, 0xcb, 0x5b, 0x66, 0xf5, 0x5c, 0x81, 0x85, 0xac, 0x8e, 0x52, 0x32, 0x28, 0xd7, 0x32,
-	0xa0, 0x1f, 0xc3, 0x08, 0xfb, 0x05, 0x2c, 0xaa, 0x6c, 0x7a, 0xf3, 0x36, 0xbf, 0x65, 0xe4, 0x6f,
-	0x63, 0xf5, 0x37, 0x56, 0x8b, 0x6c, 0xf7, 0x8c, 0x0e, 0x39, 0x60, 0x10, 0x4d, 0x20, 0xd1, 0x43,
-	0x18, 0x15, 0x08, 0x99, 0x82, 0xf9, 0x01, 0x9f, 0x03, 0x3e, 0xd0, 0x24, 0x64, 0xa0, 0xfa, 0x8b,
-	0x5f, 0x51, 0xfd, 0xd5, 0x3a, 0x2c, 0x0d, 0x69, 0x63, 0x6f, 0xbc, 0xb9, 0xea, 0x3f, 0x12, 0xe9,
-	0x4d, 0x77, 0x65, 0x1d, 0xb8, 0x95, 0x6c, 0xc6, 0x52, 0xf9, 0xfd, 0x59, 0x46, 0x7e, 0x13, 0x0e,
-	0x2c, 0xb7, 0x31, 0x69, 0x32, 0xa7, 0xad, 0x0c, 0xeb, 0xd7, 0xe5, 0x34, 0xab, 0x93, 0xfd, 0x2e,
-	0xe5, 0x34, 0x9d, 0x8c, 0x1b, 0xe7, 0xf4, 0xe9, 0x60, 0x4b, 0x1b, 0xfa, 0xcf, 0x42, 0xe1, 0x84,
-	0xf4, 0x38, 0xc1, 0xb8, 0xc6, 0x86, 0x68, 0x01, 0x46, 0x4e, 0x71, 0xa7, 0x2b, 0x54, 0x18, 0xd7,
-	0xc4, 0x47, 0xf5, 0x1d, 0x4c, 0xef, 0x93, 0x80, 0x5a, 0x86, 0x1f, 0xf6, 0xa3, 0x0f, 0x80, 0xbd,
-	0x96, 0x36, 0x6b, 0xda, 0x98, 0x59, 0x0f, 0xc8, 0x59, 0x20, 0x79, 0xd8, 0x03, 0x6f, 0x4b, 0xf8,
-	0x21, 0x39, 0x0b, 0xd0, 0x32, 0xb0, 0x6b, 0x5a, 0x77, 0xb0, 0x1d, 0xd2, 0x8e, 0x79, 0xae, 0xf9,
-	0x12, 0xdb, 0xa4, 0xfe, 0x8b, 0x8f, 0x9f, 0x2a, 0xb9, 0xf3, 0x4f, 0x95, 0xdc, 0x97, 0x4f, 0x15,
-	0xe5, 0x4f, 0xfd, 0x8a, 0xf2, 0xf7, 0x7e, 0x45, 0xf9, 0x77, 0xbf, 0xa2, 0x7c, 0xec, 0x57, 0x94,
-	0xff, 0xf6, 0x2b, 0xca, 0xff, 0xfa, 0x95, 0xdc, 0x97, 0x7e, 0x45, 0xf9, 0xcb, 0xe7, 0x4a, 0xee,
-	0xe3, 0xe7, 0x4a, 0xee, 0xfc, 0x73, 0x25, 0x77, 0x04, 0xf1, 0x3f, 0xf1, 0x9a, 0xa3, 0xfc, 0xff,
-	0x3e, 0x8f, 0xbf, 0x0d, 0x00, 0x00, 0xff, 0xff, 0xb3, 0xac, 0xf1, 0xdd, 0xed, 0x13, 0x00, 0x00,
+	// 1544 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x58, 0x4b, 0x6f, 0x1b, 0x47,
+	0x12, 0xe6, 0x90, 0x94, 0x44, 0x95, 0xde, 0x2d, 0xc9, 0xa6, 0xfc, 0xa0, 0xb4, 0x5c, 0x78, 0x2d,
+	0xdb, 0xeb, 0xe1, 0xae, 0xbc, 0x0b, 0x0b, 0x58, 0xd8, 0x58, 0x53, 0x5c, 0x58, 0xd2, 0x46, 0x86,
+	0x3d, 0x92, 0x1d, 0x40, 0x40, 0x30, 0x69, 0xce, 0xb4, 0xa8, 0x81, 0x38, 0x0f, 0x77, 0x0f, 0x15,
+	0xd1, 0xb9, 0xe4, 0x27, 0xe4, 0x90, 0x53, 0x7e, 0x41, 0x6e, 0xf9, 0x05, 0x39, 0x27, 0x47, 0x1f,
+	0x75, 0x12, 0x62, 0xfa, 0x12, 0x24, 0x17, 0xff, 0x84, 0xa0, 0x1f, 0xf3, 0xa0, 0x38, 0x94, 0xec,
+	0x93, 0x7a, 0xaa, 0xbf, 0xfa, 0xaa, 0xbb, 0x1e, 0x5d, 0x45, 0xc1, 0x7d, 0x46, 0xad, 0xda, 0xb1,
+	0xf3, 0xc6, 0x21, 0xb4, 0xe6, 0x12, 0xc6, 0x70, 0x8b, 0xb0, 0x78, 0x11, 0x34, 0xe3, 0xa5, 0x1e,
+	0x50, 0x3f, 0xf4, 0x11, 0x0a, 0x4e, 0x74, 0x89, 0xd6, 0xa3, 0x9d, 0x6b, 0x0b, 0x2d, 0xbf, 0xe5,
+	0x8b, 0xed, 0x1a, 0x5f, 0x49, 0xe4, 0xb5, 0x65, 0x4e, 0x8c, 0x03, 0xa7, 0x26, 0x77, 0x3a, 0x1d,
+	0xc7, 0x0e, 0x9a, 0xe2, 0x8f, 0x02, 0x3c, 0xe4, 0x00, 0x0b, 0x53, 0xcf, 0x0f, 0x6b, 0x41, 0x1b,
+	0x7b, 0x1e, 0xa1, 0x35, 0xdb, 0x61, 0x21, 0x75, 0x9a, 0x9d, 0x90, 0x70, 0x70, 0xea, 0xcb, 0xe4,
+	0x08, 0xa5, 0xf8, 0x28, 0x4b, 0xb1, 0xeb, 0x61, 0xd7, 0xb1, 0xcc, 0x90, 0x62, 0xcb, 0xf1, 0x5a,
+	0x35, 0x87, 0xd6, 0xda, 0x7e, 0xcb, 0xb1, 0x70, 0x3b, 0x68, 0x46, 0x2b, 0xa5, 0x7e, 0xe3, 0x9c,
+	0x7a, 0xd0, 0xac, 0xa5, 0xc8, 0x6f, 0x89, 0x5d, 0xdf, 0x75, 0x7d, 0xaf, 0xd6, 0xc4, 0x8c, 0xd4,
+	0x58, 0x88, 0xc3, 0x0e, 0xf7, 0x84, 0x5c, 0x28, 0xd8, 0x2a, 0x87, 0xb1, 0x43, 0x4c, 0x89, 0x5d,
+	0x3b, 0x5a, 0xe7, 0x1e, 0x0b, 0xb1, 0x8d, 0x43, 0x2c, 0x3c, 0x26, 0x97, 0x0a, 0xf9, 0x8f, 0x94,
+	0x83, 0x19, 0xa1, 0xc7, 0x8e, 0x45, 0x12, 0x78, 0x8d, 0x85, 0x3e, 0x25, 0x82, 0xdc, 0xa7, 0x44,
+	0x69, 0xe8, 0x59, 0x1a, 0xca, 0x16, 0x6e, 0x11, 0x2f, 0x0c, 0x9a, 0xf2, 0xaf, 0xc4, 0x57, 0x7f,
+	0x1c, 0x85, 0xa9, 0x57, 0x02, 0xbe, 0x23, 0x43, 0x82, 0xbe, 0x84, 0x2b, 0x94, 0xb4, 0x1c, 0x16,
+	0x12, 0x6a, 0x0a, 0xa4, 0x49, 0xc9, 0xeb, 0x0e, 0x61, 0x61, 0x59, 0x5b, 0xd1, 0x56, 0x27, 0xd6,
+	0x56, 0xf5, 0xc1, 0x30, 0xea, 0x86, 0xd2, 0x78, 0xc2, 0x15, 0x0c, 0x89, 0xdf, 0xcc, 0x19, 0x0b,
+	0x34, 0x43, 0x8e, 0x2c, 0xb8, 0x3a, 0x60, 0x81, 0x05, 0xbe, 0xc7, 0x48, 0x39, 0x2f, 0x4c, 0xdc,
+	0xf9, 0x08, 0x13, 0x52, 0x61, 0x33, 0x67, 0x2c, 0xd2, 0xac, 0x0d, 0xf4, 0x08, 0xc6, 0x0f, 0x09,
+	0xa6, 0x61, 0x93, 0xe0, 0xb0, 0x3c, 0x22, 0x68, 0x6f, 0x66, 0xd1, 0x6e, 0x46, 0xa0, 0xcd, 0x9c,
+	0x91, 0x68, 0xa0, 0xa7, 0x30, 0x15, 0x7f, 0x98, 0xd8, 0x3a, 0x2a, 0x8f, 0x0a, 0x8a, 0x95, 0x0b,
+	0x29, 0x9e, 0x58, 0x47, 0x9b, 0x39, 0x63, 0xf2, 0x30, 0xf5, 0x8d, 0xb6, 0x61, 0x3a, 0x21, 0xf2,
+	0x38, 0xd3, 0x98, 0x60, 0xfa, 0xcb, 0x85, 0x4c, 0xcf, 0xb0, 0xa0, 0x4a, 0xce, 0xc0, 0x05, 0xe8,
+	0x0b, 0x58, 0x24, 0x27, 0xc4, 0xea, 0x84, 0xc4, 0x7c, 0xdd, 0x21, 0xb4, 0x1b, 0x47, 0xa6, 0x24,
+	0x28, 0x6f, 0x67, 0x51, 0xfe, 0x4f, 0x2a, 0xbc, 0xe0, 0xf8, 0x24, 0x30, 0xf3, 0x64, 0x50, 0x8c,
+	0x5e, 0x01, 0xe2, 0x25, 0x40, 0x02, 0xdf, 0xf1, 0x42, 0x53, 0x31, 0x94, 0x41, 0x70, 0xdf, 0xca,
+	0xe2, 0xde, 0x8b, 0xd1, 0x2a, 0x79, 0x36, 0x73, 0xc6, 0x5c, 0x78, 0x5e, 0xc8, 0x8f, 0x6d, 0xf9,
+	0xde, 0x81, 0xd3, 0x32, 0x3b, 0x81, 0x8d, 0x43, 0x12, 0x53, 0x4f, 0x0c, 0x3f, 0xf6, 0x86, 0x50,
+	0x78, 0x29, 0xf0, 0x09, 0xf9, 0xbc, 0x35, 0x28, 0x46, 0xfb, 0xb0, 0x70, 0xb4, 0xce, 0xcc, 0xa8,
+	0x2c, 0x62, 0xf6, 0x49, 0xc1, 0xfe, 0xb7, 0x2c, 0xf6, 0xff, 0xaf, 0xb3, 0x1d, 0x05, 0x4f, 0xc8,
+	0xd1, 0xd1, 0x80, 0xb4, 0x3e, 0x02, 0x05, 0x97, 0xb5, 0xb6, 0x8b, 0xa5, 0xc2, 0x6c, 0x71, 0xbb,
+	0x58, 0x2a, 0xce, 0x8e, 0x54, 0x4f, 0xf3, 0x30, 0x37, 0x70, 0x71, 0x5e, 0x35, 0x29, 0xdf, 0x39,
+	0xde, 0x81, 0xaf, 0x2e, 0x7b, 0x51, 0xd5, 0x24, 0x34, 0x5b, 0xde, 0x81, 0x2f, 0x6f, 0xc5, 0xab,
+	0x26, 0xcc, 0x90, 0x23, 0x07, 0x96, 0x28, 0x71, 0xfd, 0x63, 0x62, 0xa6, 0x0c, 0x45, 0x09, 0x20,
+	0xeb, 0xe6, 0x5e, 0x76, 0xdd, 0x70, 0xa5, 0xc4, 0x54, 0x92, 0x04, 0x57, 0x69, 0xf6, 0x16, 0xf2,
+	0xe1, 0x7a, 0x5c, 0xa0, 0x19, 0xc6, 0x0a, 0xc2, 0xd8, 0xfd, 0x8b, 0x8a, 0x34, 0xcb, 0xdc, 0x12,
+	0x1d, 0xb6, 0xa9, 0xdc, 0x5c, 0xfd, 0x1a, 0xe6, 0x33, 0xe2, 0x3e, 0x98, 0x3f, 0xfd, 0x0f, 0xd2,
+	0xa5, 0xf9, 0x93, 0x4a, 0x7b, 0x6b, 0x50, 0x1c, 0x19, 0xff, 0x3d, 0x0f, 0x68, 0x30, 0x2f, 0xd0,
+	0x3e, 0xcc, 0xf7, 0x65, 0xd7, 0x60, 0x54, 0xe5, 0xeb, 0xaa, 0x1f, 0xad, 0x33, 0x3d, 0x79, 0xc9,
+	0x75, 0x83, 0x30, 0xbf, 0x43, 0x2d, 0x12, 0x47, 0x75, 0x2e, 0x95, 0x5e, 0x2a, 0xa4, 0xc7, 0x70,
+	0xc3, 0x75, 0x18, 0x73, 0xbc, 0x96, 0xd9, 0x67, 0xa3, 0x3f, 0xaa, 0x0f, 0x86, 0x1b, 0xd9, 0x91,
+	0xda, 0xa9, 0x63, 0xa7, 0xdc, 0xed, 0x0e, 0xdb, 0x44, 0x5d, 0xb8, 0x39, 0xc4, 0xae, 0x7a, 0x86,
+	0x65, 0x84, 0xff, 0xf5, 0x69, 0x86, 0xe3, 0x17, 0xf9, 0x9a, 0x3b, 0x74, 0x37, 0x72, 0xf6, 0x1b,
+	0x58, 0xc8, 0x6a, 0x19, 0xe8, 0x31, 0x14, 0x79, 0xed, 0x28, 0xf7, 0xde, 0x4d, 0x45, 0x36, 0x6a,
+	0x66, 0xd1, 0x81, 0x64, 0x13, 0x13, 0xca, 0xbc, 0x48, 0x0c, 0xa1, 0x87, 0x6e, 0x40, 0x11, 0x33,
+	0xc7, 0x16, 0x17, 0x98, 0xaa, 0x97, 0x7a, 0x67, 0xcb, 0xc5, 0x27, 0xbb, 0x5b, 0x0d, 0x43, 0x48,
+	0xb7, 0x8b, 0xa5, 0xfc, 0x6c, 0xa1, 0xfa, 0x1f, 0x58, 0xcc, 0xec, 0x25, 0xb1, 0xb2, 0x76, 0x81,
+	0xb2, 0x05, 0x53, 0x42, 0xa9, 0x81, 0x43, 0xcc, 0xed, 0x22, 0x03, 0xa6, 0x62, 0xff, 0xa5, 0x8e,
+	0x2e, 0xaa, 0x43, 0x0e, 0x0a, 0xba, 0x9a, 0x33, 0xf4, 0xbe, 0x01, 0x45, 0x8f, 0x5c, 0x23, 0x4e,
+	0x3f, 0xe9, 0xa6, 0xbe, 0xaa, 0x7f, 0xe4, 0x61, 0x46, 0x58, 0x91, 0x79, 0x22, 0xec, 0x3c, 0x86,
+	0x51, 0x66, 0x1d, 0x12, 0x17, 0x97, 0xf3, 0x2b, 0x85, 0x73, 0xef, 0x5a, 0xec, 0x9b, 0x78, 0x7c,
+	0xd8, 0xc3, 0xcd, 0xb6, 0xd0, 0x33, 0x94, 0x16, 0x7a, 0x01, 0x33, 0x01, 0xf5, 0x2d, 0xc2, 0x98,
+	0x69, 0x51, 0x82, 0x43, 0x62, 0x97, 0x8b, 0x82, 0xe8, 0x82, 0x1c, 0x7e, 0x2e, 0x15, 0x36, 0x24,
+	0xde, 0x98, 0x0e, 0xfa, 0xbe, 0xd1, 0x3e, 0xa0, 0x88, 0x32, 0x24, 0xd4, 0x75, 0x3c, 0xc1, 0x3a,
+	0x22, 0x58, 0xef, 0x5d, 0xca, 0xba, 0x17, 0xab, 0x18, 0x73, 0xc1, 0x79, 0x11, 0xfa, 0x3b, 0x20,
+	0xdb, 0x27, 0x2c, 0xaa, 0x78, 0x75, 0x75, 0xde, 0x84, 0x4b, 0xc6, 0x2c, 0xdf, 0x91, 0xae, 0xd9,
+	0x95, 0x97, 0xfb, 0x37, 0x14, 0x39, 0xf9, 0x45, 0xad, 0xb5, 0x2f, 0x6a, 0x86, 0x80, 0xcb, 0x67,
+	0xbd, 0xfa, 0xb3, 0x06, 0xe3, 0x71, 0xe3, 0x45, 0x0f, 0xa1, 0x24, 0x67, 0x12, 0x95, 0x08, 0x13,
+	0x6b, 0x33, 0x9c, 0x4e, 0x8e, 0xa0, 0xfa, 0xcb, 0x97, 0x5b, 0x8d, 0xfa, 0x44, 0xef, 0x6c, 0x79,
+	0x4c, 0x66, 0x5e, 0xc3, 0x18, 0x13, 0xe8, 0x2d, 0x1b, 0x21, 0x28, 0x86, 0x8e, 0x2b, 0x47, 0x98,
+	0x82, 0x21, 0xd6, 0xa8, 0x01, 0x13, 0xea, 0x02, 0x22, 0x35, 0x64, 0x59, 0xfd, 0x75, 0xe8, 0xf1,
+	0x92, 0x70, 0x1b, 0xd0, 0x49, 0x42, 0x7f, 0x1b, 0x66, 0x18, 0xaf, 0x0f, 0xcf, 0x22, 0xa6, 0xd7,
+	0x71, 0x9b, 0x84, 0x96, 0x8b, 0xc2, 0xc8, 0x74, 0x24, 0x7e, 0x26, 0xa4, 0xd5, 0x2e, 0xa0, 0xfe,
+	0x17, 0x46, 0xa8, 0xaf, 0xc1, 0xa4, 0x4a, 0x10, 0xd3, 0x72, 0x6c, 0x2a, 0x0e, 0x38, 0x5e, 0x9f,
+	0xe9, 0x9d, 0x2d, 0x4f, 0xec, 0x4a, 0xf9, 0xc6, 0x56, 0xc3, 0x30, 0x26, 0x14, 0x68, 0xc3, 0xb1,
+	0x29, 0xba, 0x03, 0xe3, 0x81, 0x6f, 0x0b, 0x3c, 0x2b, 0x17, 0x56, 0x0a, 0xab, 0xe3, 0xf5, 0xc9,
+	0xde, 0xd9, 0x72, 0xe9, 0xb9, 0x6f, 0x73, 0x30, 0x33, 0x4a, 0x81, 0x6f, 0x73, 0x24, 0xdb, 0x2e,
+	0x96, 0xb4, 0xd9, 0x7c, 0xf5, 0x3b, 0x0d, 0x26, 0xd3, 0x73, 0x50, 0xec, 0x0e, 0x2d, 0xe5, 0x8e,
+	0x8c, 0x8b, 0xe4, 0xb3, 0x2e, 0x82, 0x9e, 0x66, 0xf9, 0x2d, 0xb3, 0x93, 0x0f, 0xde, 0x37, 0xed,
+	0xba, 0x6a, 0x0d, 0xa6, 0xfa, 0x66, 0x2a, 0x54, 0x01, 0xa0, 0x24, 0x6a, 0x44, 0xe2, 0x70, 0x25,
+	0x23, 0x25, 0xa9, 0x7e, 0xaf, 0xc1, 0x7c, 0xc6, 0xc8, 0xc4, 0xd3, 0x42, 0x8e, 0x5c, 0x97, 0xa4,
+	0x85, 0x50, 0xe2, 0x69, 0x21, 0xd0, 0x5b, 0x36, 0xba, 0x0b, 0x45, 0x5e, 0xff, 0xea, 0x0e, 0x57,
+	0xce, 0x3d, 0x0b, 0xbc, 0x1c, 0xda, 0xd8, 0x33, 0x04, 0x06, 0x95, 0x61, 0x0c, 0x7b, 0xb8, 0xdd,
+	0x7d, 0x43, 0x44, 0x80, 0x4b, 0x46, 0xf4, 0xa9, 0x1e, 0x9f, 0x9f, 0x34, 0x58, 0x1a, 0xda, 0x61,
+	0xd1, 0x57, 0xb0, 0x98, 0x6a, 0xd6, 0x36, 0x09, 0xda, 0x7e, 0xd7, 0x25, 0x5e, 0xd4, 0x26, 0xeb,
+	0x59, 0x2f, 0x52, 0xff, 0x2f, 0x1f, 0xdd, 0xa1, 0x7a, 0xf4, 0x7b, 0x27, 0xe1, 0x6f, 0xc4, 0x4c,
+	0xe9, 0xc9, 0x24, 0x91, 0xa2, 0xdb, 0x90, 0x77, 0x6c, 0xd5, 0xac, 0x06, 0xbc, 0x32, 0xda, 0x3b,
+	0x5b, 0xce, 0x6f, 0x35, 0x8c, 0xbc, 0x63, 0x57, 0x4f, 0x35, 0x58, 0xc8, 0x9a, 0x79, 0x14, 0x83,
+	0x76, 0x29, 0x03, 0xfa, 0x27, 0x8c, 0xf0, 0x9f, 0x52, 0xb2, 0xca, 0xa6, 0xd7, 0xae, 0x8b, 0x57,
+	0x46, 0xfd, 0xc8, 0xd2, 0x3f, 0x73, 0x0e, 0xc8, 0x46, 0xd7, 0x6a, 0x93, 0x5d, 0x0e, 0x31, 0x24,
+	0x12, 0xdd, 0x83, 0x51, 0x89, 0x50, 0x21, 0x98, 0xef, 0xd3, 0xd9, 0x15, 0x0b, 0x43, 0x41, 0xfa,
+	0xaa, 0xbf, 0xf8, 0x09, 0xd5, 0x5f, 0xad, 0xc3, 0xd5, 0x21, 0x83, 0xd6, 0x47, 0x5f, 0xae, 0xfa,
+	0xa8, 0x7f, 0xfc, 0x89, 0xf4, 0x67, 0xa1, 0x70, 0x44, 0xba, 0x82, 0x60, 0xdc, 0xe0, 0x4b, 0xb4,
+	0x00, 0x23, 0xc7, 0xb8, 0xdd, 0x91, 0x5e, 0x18, 0x37, 0xe4, 0x47, 0xf5, 0x73, 0x98, 0xde, 0x21,
+	0x21, 0x75, 0x2c, 0x16, 0xcd, 0x2e, 0x77, 0x81, 0xbf, 0xac, 0x2e, 0x6f, 0xf0, 0x5c, 0x6c, 0x86,
+	0xe4, 0x24, 0x54, 0x3c, 0xbc, 0x19, 0xb8, 0x0a, 0xbe, 0x47, 0x4e, 0x42, 0xb4, 0x04, 0xbc, 0xa4,
+	0x4d, 0x0f, 0xbb, 0x11, 0xed, 0x58, 0xe0, 0xdb, 0xcf, 0xb0, 0x4b, 0xea, 0xff, 0x7d, 0xfb, 0xae,
+	0x92, 0x3b, 0x7d, 0x57, 0xc9, 0x7d, 0x78, 0x57, 0xd1, 0xbe, 0xe9, 0x55, 0xb4, 0x1f, 0x7a, 0x15,
+	0xed, 0x97, 0x5e, 0x45, 0x7b, 0xdb, 0xab, 0x68, 0xbf, 0xf6, 0x2a, 0xda, 0x6f, 0xbd, 0x4a, 0xee,
+	0x43, 0xaf, 0xa2, 0x7d, 0xfb, 0xbe, 0x92, 0x7b, 0xfb, 0xbe, 0x92, 0x3b, 0x7d, 0x5f, 0xc9, 0xed,
+	0x43, 0xf2, 0x8f, 0x80, 0xe6, 0xa8, 0xf8, 0xb1, 0xf9, 0xe0, 0xcf, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0x5c, 0x2e, 0x01, 0x20, 0x31, 0x10, 0x00, 0x00,
 }
 
 func (this *VizierMessage) Equal(that interface{}) bool {
@@ -1888,30 +1603,6 @@ func (this *VizierMessage_K8SMetadataMessage) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VizierMessage_FileSourceMessage) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*VizierMessage_FileSourceMessage)
-	if !ok {
-		that2, ok := that.(VizierMessage_FileSourceMessage)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.FileSourceMessage.Equal(that1.FileSourceMessage) {
-		return false
-	}
-	return true
-}
 func (this *TracepointMessage) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -2010,108 +1701,6 @@ func (this *TracepointMessage_RegisterTracepointRequest) Equal(that interface{})
 		return false
 	}
 	if !this.RegisterTracepointRequest.Equal(that1.RegisterTracepointRequest) {
-		return false
-	}
-	return true
-}
-func (this *FileSourceMessage) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FileSourceMessage)
-	if !ok {
-		that2, ok := that.(FileSourceMessage)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if that1.Msg == nil {
-		if this.Msg != nil {
-			return false
-		}
-	} else if this.Msg == nil {
-		return false
-	} else if !this.Msg.Equal(that1.Msg) {
-		return false
-	}
-	return true
-}
-func (this *FileSourceMessage_FileSourceInfoUpdate) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FileSourceMessage_FileSourceInfoUpdate)
-	if !ok {
-		that2, ok := that.(FileSourceMessage_FileSourceInfoUpdate)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.FileSourceInfoUpdate.Equal(that1.FileSourceInfoUpdate) {
-		return false
-	}
-	return true
-}
-func (this *FileSourceMessage_RemoveFileSourceRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FileSourceMessage_RemoveFileSourceRequest)
-	if !ok {
-		that2, ok := that.(FileSourceMessage_RemoveFileSourceRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.RemoveFileSourceRequest.Equal(that1.RemoveFileSourceRequest) {
-		return false
-	}
-	return true
-}
-func (this *FileSourceMessage_RegisterFileSourceRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FileSourceMessage_RegisterFileSourceRequest)
-	if !ok {
-		that2, ok := that.(FileSourceMessage_RegisterFileSourceRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.RegisterFileSourceRequest.Equal(that1.RegisterFileSourceRequest) {
 		return false
 	}
 	return true
@@ -2631,90 +2220,6 @@ func (this *RemoveTracepointRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *RegisterFileSourceRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*RegisterFileSourceRequest)
-	if !ok {
-		that2, ok := that.(RegisterFileSourceRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.FileSourceDeployment.Equal(that1.FileSourceDeployment) {
-		return false
-	}
-	if !this.ID.Equal(that1.ID) {
-		return false
-	}
-	return true
-}
-func (this *FileSourceInfoUpdate) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FileSourceInfoUpdate)
-	if !ok {
-		that2, ok := that.(FileSourceInfoUpdate)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.ID.Equal(that1.ID) {
-		return false
-	}
-	if this.State != that1.State {
-		return false
-	}
-	if !this.Status.Equal(that1.Status) {
-		return false
-	}
-	if !this.AgentID.Equal(that1.AgentID) {
-		return false
-	}
-	return true
-}
-func (this *RemoveFileSourceRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*RemoveFileSourceRequest)
-	if !ok {
-		that2, ok := that.(RemoveFileSourceRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.ID.Equal(that1.ID) {
-		return false
-	}
-	return true
-}
 func (this *ConfigUpdateRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -2773,7 +2278,7 @@ func (this *VizierMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 14)
+	s := make([]string, 0, 13)
 	s = append(s, "&messagespb.VizierMessage{")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
@@ -2853,14 +2358,6 @@ func (this *VizierMessage_K8SMetadataMessage) GoString() string {
 		`K8SMetadataMessage:` + fmt.Sprintf("%#v", this.K8SMetadataMessage) + `}`}, ", ")
 	return s
 }
-func (this *VizierMessage_FileSourceMessage) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&messagespb.VizierMessage_FileSourceMessage{` +
-		`FileSourceMessage:` + fmt.Sprintf("%#v", this.FileSourceMessage) + `}`}, ", ")
-	return s
-}
 func (this *TracepointMessage) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2895,42 +2392,6 @@ func (this *TracepointMessage_RegisterTracepointRequest) GoString() string {
 	}
 	s := strings.Join([]string{`&messagespb.TracepointMessage_RegisterTracepointRequest{` +
 		`RegisterTracepointRequest:` + fmt.Sprintf("%#v", this.RegisterTracepointRequest) + `}`}, ", ")
-	return s
-}
-func (this *FileSourceMessage) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&messagespb.FileSourceMessage{")
-	if this.Msg != nil {
-		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *FileSourceMessage_FileSourceInfoUpdate) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&messagespb.FileSourceMessage_FileSourceInfoUpdate{` +
-		`FileSourceInfoUpdate:` + fmt.Sprintf("%#v", this.FileSourceInfoUpdate) + `}`}, ", ")
-	return s
-}
-func (this *FileSourceMessage_RemoveFileSourceRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&messagespb.FileSourceMessage_RemoveFileSourceRequest{` +
-		`RemoveFileSourceRequest:` + fmt.Sprintf("%#v", this.RemoveFileSourceRequest) + `}`}, ", ")
-	return s
-}
-func (this *FileSourceMessage_RegisterFileSourceRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&messagespb.FileSourceMessage_RegisterFileSourceRequest{` +
-		`RegisterFileSourceRequest:` + fmt.Sprintf("%#v", this.RegisterFileSourceRequest) + `}`}, ", ")
 	return s
 }
 func (this *ConfigUpdateMessage) GoString() string {
@@ -3154,52 +2615,6 @@ func (this *RemoveTracepointRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&messagespb.RemoveTracepointRequest{")
-	if this.ID != nil {
-		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *RegisterFileSourceRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&messagespb.RegisterFileSourceRequest{")
-	if this.FileSourceDeployment != nil {
-		s = append(s, "FileSourceDeployment: "+fmt.Sprintf("%#v", this.FileSourceDeployment)+",\n")
-	}
-	if this.ID != nil {
-		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *FileSourceInfoUpdate) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 8)
-	s = append(s, "&messagespb.FileSourceInfoUpdate{")
-	if this.ID != nil {
-		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
-	}
-	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
-	if this.Status != nil {
-		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
-	}
-	if this.AgentID != nil {
-		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *RemoveFileSourceRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&messagespb.RemoveFileSourceRequest{")
 	if this.ID != nil {
 		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	}
@@ -3457,27 +2872,6 @@ func (m *VizierMessage_K8SMetadataMessage) MarshalToSizedBuffer(dAtA []byte) (in
 	}
 	return len(dAtA) - i, nil
 }
-func (m *VizierMessage_FileSourceMessage) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VizierMessage_FileSourceMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.FileSourceMessage != nil {
-		{
-			size, err := m.FileSourceMessage.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x6a
-	}
-	return len(dAtA) - i, nil
-}
 func (m *TracepointMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -3562,101 +2956,6 @@ func (m *TracepointMessage_RegisterTracepointRequest) MarshalToSizedBuffer(dAtA 
 	if m.RegisterTracepointRequest != nil {
 		{
 			size, err := m.RegisterTracepointRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *FileSourceMessage) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *FileSourceMessage) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FileSourceMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Msg != nil {
-		{
-			size := m.Msg.Size()
-			i -= size
-			if _, err := m.Msg.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *FileSourceMessage_FileSourceInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FileSourceMessage_FileSourceInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.FileSourceInfoUpdate != nil {
-		{
-			size, err := m.FileSourceInfoUpdate.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-func (m *FileSourceMessage_RemoveFileSourceRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FileSourceMessage_RemoveFileSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.RemoveFileSourceRequest != nil {
-		{
-			size, err := m.RemoveFileSourceRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	return len(dAtA) - i, nil
-}
-func (m *FileSourceMessage_RegisterFileSourceRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FileSourceMessage_RegisterFileSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.RegisterFileSourceRequest != nil {
-		{
-			size, err := m.RegisterFileSourceRequest.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -4383,152 +3682,6 @@ func (m *RemoveTracepointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
-func (m *RegisterFileSourceRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RegisterFileSourceRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RegisterFileSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ID != nil {
-		{
-			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.FileSourceDeployment != nil {
-		{
-			size, err := m.FileSourceDeployment.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *FileSourceInfoUpdate) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *FileSourceInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FileSourceInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.AgentID != nil {
-		{
-			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.State != 0 {
-		i = encodeVarintMessages(dAtA, i, uint64(m.State))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.ID != nil {
-		{
-			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *RemoveFileSourceRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RemoveFileSourceRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RemoveFileSourceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ID != nil {
-		{
-			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *ConfigUpdateRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -4734,18 +3887,6 @@ func (m *VizierMessage_K8SMetadataMessage) Size() (n int) {
 	}
 	return n
 }
-func (m *VizierMessage_FileSourceMessage) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.FileSourceMessage != nil {
-		l = m.FileSourceMessage.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
 func (m *TracepointMessage) Size() (n int) {
 	if m == nil {
 		return 0
@@ -4790,54 +3931,6 @@ func (m *TracepointMessage_RegisterTracepointRequest) Size() (n int) {
 	_ = l
 	if m.RegisterTracepointRequest != nil {
 		l = m.RegisterTracepointRequest.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-func (m *FileSourceMessage) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Msg != nil {
-		n += m.Msg.Size()
-	}
-	return n
-}
-
-func (m *FileSourceMessage_FileSourceInfoUpdate) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.FileSourceInfoUpdate != nil {
-		l = m.FileSourceInfoUpdate.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-func (m *FileSourceMessage_RemoveFileSourceRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.RemoveFileSourceRequest != nil {
-		l = m.RemoveFileSourceRequest.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-func (m *FileSourceMessage_RegisterFileSourceRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.RegisterFileSourceRequest != nil {
-		l = m.RegisterFileSourceRequest.Size()
 		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
@@ -5136,60 +4229,6 @@ func (m *RemoveTracepointRequest) Size() (n int) {
 	return n
 }
 
-func (m *RegisterFileSourceRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.FileSourceDeployment != nil {
-		l = m.FileSourceDeployment.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	if m.ID != nil {
-		l = m.ID.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-
-func (m *FileSourceInfoUpdate) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ID != nil {
-		l = m.ID.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	if m.State != 0 {
-		n += 1 + sovMessages(uint64(m.State))
-	}
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	if m.AgentID != nil {
-		l = m.AgentID.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-
-func (m *RemoveFileSourceRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ID != nil {
-		l = m.ID.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-
 func (m *ConfigUpdateRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -5330,16 +4369,6 @@ func (this *VizierMessage_K8SMetadataMessage) String() string {
 	}, "")
 	return s
 }
-func (this *VizierMessage_FileSourceMessage) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&VizierMessage_FileSourceMessage{`,
-		`FileSourceMessage:` + strings.Replace(fmt.Sprintf("%v", this.FileSourceMessage), "FileSourceMessage", "FileSourceMessage", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *TracepointMessage) String() string {
 	if this == nil {
 		return "nil"
@@ -5376,46 +4405,6 @@ func (this *TracepointMessage_RegisterTracepointRequest) String() string {
 	}
 	s := strings.Join([]string{`&TracepointMessage_RegisterTracepointRequest{`,
 		`RegisterTracepointRequest:` + strings.Replace(fmt.Sprintf("%v", this.RegisterTracepointRequest), "RegisterTracepointRequest", "RegisterTracepointRequest", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *FileSourceMessage) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&FileSourceMessage{`,
-		`Msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *FileSourceMessage_FileSourceInfoUpdate) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&FileSourceMessage_FileSourceInfoUpdate{`,
-		`FileSourceInfoUpdate:` + strings.Replace(fmt.Sprintf("%v", this.FileSourceInfoUpdate), "FileSourceInfoUpdate", "FileSourceInfoUpdate", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *FileSourceMessage_RemoveFileSourceRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&FileSourceMessage_RemoveFileSourceRequest{`,
-		`RemoveFileSourceRequest:` + strings.Replace(fmt.Sprintf("%v", this.RemoveFileSourceRequest), "RemoveFileSourceRequest", "RemoveFileSourceRequest", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *FileSourceMessage_RegisterFileSourceRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&FileSourceMessage_RegisterFileSourceRequest{`,
-		`RegisterFileSourceRequest:` + strings.Replace(fmt.Sprintf("%v", this.RegisterFileSourceRequest), "RegisterFileSourceRequest", "RegisterFileSourceRequest", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5627,40 +4616,6 @@ func (this *RemoveTracepointRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RemoveTracepointRequest{`,
-		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "uuidpb.UUID", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *RegisterFileSourceRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&RegisterFileSourceRequest{`,
-		`FileSourceDeployment:` + strings.Replace(fmt.Sprintf("%v", this.FileSourceDeployment), "FileSourceDeployment", "ir.FileSourceDeployment", 1) + `,`,
-		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "uuidpb.UUID", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *FileSourceInfoUpdate) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&FileSourceInfoUpdate{`,
-		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "uuidpb.UUID", 1) + `,`,
-		`State:` + fmt.Sprintf("%v", this.State) + `,`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "statuspb.Status", 1) + `,`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "uuidpb.UUID", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *RemoveFileSourceRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&RemoveFileSourceRequest{`,
 		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "uuidpb.UUID", 1) + `,`,
 		`}`,
 	}, "")
@@ -6040,41 +4995,6 @@ func (m *VizierMessage) Unmarshal(dAtA []byte) error {
 			}
 			m.Msg = &VizierMessage_K8SMetadataMessage{v}
 			iNdEx = postIndex
-		case 13:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSourceMessage", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &FileSourceMessage{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Msg = &VizierMessage_FileSourceMessage{v}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMessages(dAtA[iNdEx:])
@@ -6229,161 +5149,6 @@ func (m *TracepointMessage) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			m.Msg = &TracepointMessage_RegisterTracepointRequest{v}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipMessages(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *FileSourceMessage) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowMessages
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: FileSourceMessage: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FileSourceMessage: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSourceInfoUpdate", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &FileSourceInfoUpdate{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Msg = &FileSourceMessage_FileSourceInfoUpdate{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RemoveFileSourceRequest", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &RemoveFileSourceRequest{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Msg = &FileSourceMessage_RemoveFileSourceRequest{v}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RegisterFileSourceRequest", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &RegisterFileSourceRequest{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Msg = &FileSourceMessage_RegisterFileSourceRequest{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -8050,391 +6815,6 @@ func (m *RemoveTracepointRequest) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: RemoveTracepointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ID == nil {
-				m.ID = &uuidpb.UUID{}
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipMessages(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RegisterFileSourceRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowMessages
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RegisterFileSourceRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RegisterFileSourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSourceDeployment", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.FileSourceDeployment == nil {
-				m.FileSourceDeployment = &ir.FileSourceDeployment{}
-			}
-			if err := m.FileSourceDeployment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ID == nil {
-				m.ID = &uuidpb.UUID{}
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipMessages(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *FileSourceInfoUpdate) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowMessages
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: FileSourceInfoUpdate: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FileSourceInfoUpdate: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ID == nil {
-				m.ID = &uuidpb.UUID{}
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
-			}
-			m.State = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.State |= statuspb.LifeCycleState(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Status == nil {
-				m.Status = &statuspb.Status{}
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.AgentID == nil {
-				m.AgentID = &uuidpb.UUID{}
-			}
-			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipMessages(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RemoveFileSourceRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowMessages
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RemoveFileSourceRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RemoveFileSourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

@@ -32,8 +32,8 @@ namespace px {
 namespace carnot {
 namespace exec {
 
-using StartSpec = table_store::Cursor::StartSpec;
-using StopSpec = table_store::Cursor::StopSpec;
+using StartSpec = Table::Cursor::StartSpec;
+using StopSpec = Table::Cursor::StopSpec;
 
 std::string MemorySourceNode::DebugStringImpl() {
   return absl::Substitute("Exec::MemorySourceNode: <name: $0, output: $1>", plan_node_->TableName(),
@@ -85,7 +85,7 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
       stop_spec.type = StopSpec::StopType::CurrentEndOfTable;
     }
   }
-  cursor_ = std::make_unique<table_store::Cursor>(table_, start_spec, stop_spec);
+  cursor_ = std::make_unique<Table::Cursor>(table_, start_spec, stop_spec);
 
   return Status::OK();
 }

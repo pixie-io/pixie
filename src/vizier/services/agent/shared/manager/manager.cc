@@ -87,13 +87,6 @@ Manager::MDTPServiceSPtr CreateMDTPStub(const std::shared_ptr<grpc::Channel>& ch
   return std::make_shared<Manager::MDTPService::Stub>(chan);
 }
 
-Manager::MDFSServiceSPtr CreateMDFSStub(const std::shared_ptr<grpc::Channel>& chan) {
-  if (chan == nullptr) {
-    return nullptr;
-  }
-  return std::make_shared<Manager::MDFSService::Stub>(chan);
-}
-
 std::shared_ptr<services::metadata::CronScriptStoreService::Stub> CreateCronScriptStub(
     const std::shared_ptr<grpc::Channel>& chan) {
   if (chan == nullptr) {
@@ -115,7 +108,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       relation_info_manager_(std::make_unique<RelationInfoManager>()),
       mds_channel_(grpc::CreateChannel(std::string(mds_url), grpc_channel_creds_)),
       func_context_(this, CreateMDSStub(mds_channel_), CreateMDTPStub(mds_channel_),
-                    CreateMDFSStub(mds_channel_), CreateCronScriptStub(mds_channel_), table_store_,
+                    CreateCronScriptStub(mds_channel_), table_store_,
                     [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }),
       memory_metrics_(&GetMetricsRegistry(), "agent_id", agent_id.str()) {
   // Register Vizier specific and carnot builtin functions.
@@ -236,10 +229,6 @@ Status Manager::RegisterBackgroundHelpers() {
   heartbeat_handler_ = std::make_shared<HeartbeatMessageHandler>(
       dispatcher_.get(), mds_manager_.get(), relation_info_manager_.get(), &info_,
       agent_nats_connector_.get());
-  if (info_.capabilities.stores_data()) {
-    LOG(INFO) << "Creating results table";
-    PX_RETURN_IF_ERROR(heartbeat_handler_->CreateSinkResultsTable(table_store()));
-  }
 
   auto heartbeat_nack_handler = std::make_shared<HeartbeatNackMessageHandler>(
       dispatcher_.get(), &info_, agent_nats_connector_.get(),
@@ -299,11 +288,8 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   LOG_IF(FATAL, info_.asid != 0) << "Attempted to register existing agent with new ASID";
   info_.asid = asid;
 
-  const std::string proc_pid_path = std::string("/proc/") + std::to_string(info_.pid);
-  PX_ASSIGN_OR_RETURN(auto start_time, system::GetPIDStartTimeTicks(proc_pid_path));
-
   mds_manager_ = std::make_unique<px::md::AgentMetadataStateManagerImpl>(
-      info_.hostname, info_.asid, info_.pid, start_time, info_.pod_name, info_.agent_id,
+      info_.hostname, info_.asid, info_.pid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), px::system::Config::GetInstance(),
       agent_metadata_filter_.get(), sole::rebuild(FLAGS_vizier_id), FLAGS_vizier_name,
       FLAGS_vizier_namespace, time_system_.get());

@@ -211,7 +211,7 @@ px.display(df, 'range_output'))pxl";
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
   std::vector<types::Int64Value> col2_out1;
-  table_store::Cursor cursor(big_table_.get());
+  table_store::Table::Cursor cursor(big_table_.get());
   auto batch = cursor.GetNextRowBatch({0}).ConsumeValueOrDie();
   for (int64_t i = 0; i < batch->ColumnAt(0)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 12) {

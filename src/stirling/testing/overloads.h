@@ -19,7 +19,7 @@
 #pragma once
 
 #include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/utils/monitor.h"
 #include "src/stirling/utils/tcp_stats.h"
@@ -51,16 +51,6 @@ inline void PrintTo(const ProbeStatusRecord& r, std::ostream* os) {
       "info: $5}",
       r.timestamp_ns, r.source_connector, r.tracepoint, magic_enum::enum_name(r.status), r.error,
       r.info);
-}
-
-inline bool operator==(const StreamStatusRecord& a, const StreamStatusRecord& b) {
-  return (a.stream_id == b.stream_id) && (a.bytes_sent == b.bytes_sent) && (a.info == b.info);
-}
-
-inline void PrintTo(const StreamStatusRecord& r, std::ostream* os) {
-  *os << absl::Substitute(
-      "StreamStatusRecord{timestamp_ns: $0, stream_id: $1, bytes_sent: $2, info: $3}",
-      r.timestamp_ns, r.stream_id, r.bytes_sent, r.info);
 }
 
 inline bool operator==(const TcpStatsRecord& a, const TcpStatsRecord& b) {

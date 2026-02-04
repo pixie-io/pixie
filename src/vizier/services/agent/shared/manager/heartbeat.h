@@ -21,19 +21,12 @@
 #include <memory>
 
 #include "src/vizier/services/agent/shared/manager/manager.h"
-#include "src/table_store/table_store.h"
-#include "src/shared/schema/utils.h"
-#include "src/stirling/source_connectors/stirling_error/sink_results_table.h"
-#include "src/stirling/core/pub_sub_manager.h"
 
 namespace px {
 namespace vizier {
 namespace agent {
 
 class HeartbeatMessageHandler : public Manager::MessageHandler {
-
- const std::string kSinkResultsTableName = "sink_results";
-
  public:
   HeartbeatMessageHandler() = delete;
   HeartbeatMessageHandler(px::event::Dispatcher* dispatcher,
@@ -46,20 +39,6 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
   void DisableHeartbeats();
   void EnableHeartbeats();
-
-  Status CreateSinkResultsTable(table_store::TableStore* table_store) {
-    auto mgr = std::make_unique<stirling::InfoClassManager>(stirling::kSinkResultsTable);
-    std::vector<std::unique_ptr<stirling::InfoClassManager>> mgrs;
-    mgrs.push_back(std::move(mgr));
-    stirling::stirlingpb::Publish publish_pb;
-    PopulatePublishProto(&publish_pb, mgrs);
-    auto relation_info_vec = ConvertPublishPBToRelationInfo(publish_pb);
-    auto relation_info = relation_info_vec[0];
-    auto table = table_store::HotColdTable::Create(relation_info.name, relation_info.relation);
-    table_store->AddTable(std::move(table), relation_info.name, relation_info.id);
-    PX_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
-    return Status::OK();
-  }
 
  private:
   void ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info);

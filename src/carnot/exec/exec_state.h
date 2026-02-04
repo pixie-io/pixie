@@ -73,9 +73,8 @@ class ExecState {
       udf::Registry* func_registry, std::shared_ptr<table_store::TableStore> table_store,
       const ResultSinkStubGenerator& stub_generator,
       const MetricsStubGenerator& metrics_stub_generator,
-      const TraceStubGenerator& trace_stub_generator,
-      const LogsStubGenerator& logs_stub_generator, const sole::uuid& query_id,
-      udf::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
+      const TraceStubGenerator& trace_stub_generator, const LogsStubGenerator& logs_stub_generator,
+      const sole::uuid& query_id, udf::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
       std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {},
       ExecMetrics* exec_metrics = nullptr)
       : func_registry_(func_registry),
@@ -88,8 +87,7 @@ class ExecState {
         model_pool_(model_pool),
         grpc_router_(grpc_router),
         add_auth_to_grpc_client_context_func_(add_auth_func),
-        exec_metrics_(exec_metrics),
-        time_now_(px::CurrentTimeNS()) {}
+        exec_metrics_(exec_metrics) {}
 
   ~ExecState() {
     if (grpc_router_ != nullptr) {
@@ -213,8 +211,6 @@ class ExecState {
     metadata_state_ = metadata_state;
   }
 
-  md::UPID GetAgentUPID() const { return metadata_state_->agent_upid(); }
-
   GRPCRouter* grpc_router() { return grpc_router_; }
 
   void AddAuthToGRPCClientContext(grpc::ClientContext* ctx) {
@@ -223,8 +219,6 @@ class ExecState {
   }
 
   ExecMetrics* exec_metrics() { return exec_metrics_; }
-
-  types::Time64NSValue time_now() const { return time_now_; }
 
  private:
   udf::Registry* func_registry_;

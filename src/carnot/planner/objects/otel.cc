@@ -41,8 +41,6 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-using OTelLogRecord = px::carnot::planner::OTelLog;
-
 StatusOr<std::shared_ptr<OTelModule>> OTelModule::Create(CompilerState* compiler_state,
                                                          ASTVisitor* ast_visitor, IR* ir) {
   auto otel_module = std::shared_ptr<OTelModule>(new OTelModule(ast_visitor));
@@ -58,12 +56,6 @@ StatusOr<std::shared_ptr<OTelMetrics>> OTelMetrics::Create(ASTVisitor* ast_visit
 
 StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor, IR* graph) {
   auto otel_trace = std::shared_ptr<OTelTrace>(new OTelTrace(ast_visitor, graph));
-  PX_RETURN_IF_ERROR(otel_trace->Init());
-  return otel_trace;
-}
-
-StatusOr<std::shared_ptr<OTelLog>> OTelLog::Create(ASTVisitor* ast_visitor, IR* graph) {
-  auto otel_trace = std::shared_ptr<OTelLog>(new OTelLog(ast_visitor, graph));
   PX_RETURN_IF_ERROR(otel_trace->Init());
   return otel_trace;
 }
@@ -112,7 +104,7 @@ Status ParseEndpointConfig(CompilerState* compiler_state, const QLObjectPtr& end
 }
 
 StatusOr<std::shared_ptr<OTelDataContainer>> OTelDataContainer::Create(
-    ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan, OTelLogRecord> data) {
+    ASTVisitor* ast_visitor, std::variant<OTelMetric, OTelSpan> data) {
   return std::shared_ptr<OTelDataContainer>(new OTelDataContainer(ast_visitor, std::move(data)));
 }
 
@@ -299,7 +291,6 @@ StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const py
     std::visit(overloaded{
                    [&otel_data](const OTelMetric& metric) { otel_data.metrics.push_back(metric); },
                    [&otel_data](const OTelSpan& span) { otel_data.spans.push_back(span); },
-                   [&otel_data](const OTelLogRecord& log) { otel_data.logs.push_back(log); },
                },
                container->data());
   }
@@ -376,9 +367,6 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
   PX_ASSIGN_OR_RETURN(auto trace, OTelTrace::Create(ast_visitor(), ir));
   PX_RETURN_IF_ERROR(AssignAttribute("trace", trace));
-
-  PX_ASSIGN_OR_RETURN(auto log, OTelLog::Create(ast_visitor(), ir));
-  PX_RETURN_IF_ERROR(AssignAttribute("log", log));
 
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> endpoint_fn,
@@ -528,71 +516,6 @@ Status OTelTrace::Init() {
   PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_CONSUMER));
 
-  return Status::OK();
-}
-
-Status OTelLog::AddSeverityNumberAttributes() {
-  auto ast = std::make_shared<pypa::Ast>(pypa::AstType::Number);
-  const google::protobuf::EnumDescriptor* severity_num_desc = ::opentelemetry::proto::logs::v1::SeverityNumber_descriptor();
-  if (!severity_num_desc) {
-    // TODO(ddelnano): return an error
-  }
-  for (int i = 0; i < severity_num_desc->value_count(); ++i) {
-    const google::protobuf::EnumValueDescriptor* value_desc = severity_num_desc->value(i);
-    PX_ASSIGN_OR_RETURN(IntIR * severity_number,
-                        graph_->CreateNode<IntIR>(ast, static_cast<int64_t>(value_desc->number())));
-    PX_ASSIGN_OR_RETURN(auto value, ExprObject::Create(severity_number, ast_visitor()));
-    PX_RETURN_IF_ERROR(AssignAttribute(value_desc->name(), value));
-  }
-  PX_UNUSED(graph_);
-  return Status::OK();
-}
-
-StatusOr<QLObjectPtr> LogDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
-                                     ASTVisitor* visitor) {
-  OTelLogRecord log;
-
-  PX_ASSIGN_OR_RETURN(log.time_column, GetArgAs<ColumnIR>(ast, args, "time"));
-  if (!NoneObject::IsNoneObject(args.GetArg("observed_time"))) {
-    PX_ASSIGN_OR_RETURN(log.observed_time_column, GetArgAs<ColumnIR>(ast, args, "observed_time"));
-  }
-
-  PX_ASSIGN_OR_RETURN(log.body_column, GetArgAs<ColumnIR>(ast, args, "body"));
-  PX_ASSIGN_OR_RETURN(auto severity_number, GetArgAs<IntIR>(ast, args, "severity_number"));
-  log.severity_number = severity_number->val();
-
-  PX_ASSIGN_OR_RETURN(auto severity_text, GetArgAsString(ast, args, "severity_text"));
-  log.severity_text = severity_text;
-
-  QLObjectPtr attributes = args.GetArg("attributes");
-  if (!DictObject::IsDict(attributes)) {
-    return attributes->CreateError("Expected attributes to be a dictionary, received $0",
-                                   attributes->name());
-  }
-
-  PX_ASSIGN_OR_RETURN(log.attributes, ParseAttributes(static_cast<DictObject*>(attributes.get())));
-
-  return OTelDataContainer::Create(visitor, std::move(log));
-}
-
-Status OTelLog::Init() {
-  // Setup methods.
-  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> span_fn,
-                      FuncObject::Create(kLogOpID,
-                                         {"time", "observed_time", "body", "attributes", "severity_number", "severity_text"},
-                                         {{"observed_time", "None"},
-                                          {"severity_number", "px.otel.log.SEVERITY_NUMBER_INFO"},
-                                          {"severity_text", "info"},
-                                          {"attributes", "{}"}},
-                                         /* has_variable_len_args */ false,
-                                         /* has_variable_len_kwargs */ false,
-                                         std::bind(&LogDefinition, std::placeholders::_1,
-                                                   std::placeholders::_2, std::placeholders::_3),
-                                         ast_visitor()));
-  PX_RETURN_IF_ERROR(span_fn->SetDocString(kLogOpDocstring));
-  AddMethod(kLogOpID, span_fn);
-
-  PX_RETURN_IF_ERROR(AddSeverityNumberAttributes());
   return Status::OK();
 }
 

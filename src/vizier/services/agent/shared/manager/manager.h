@@ -92,8 +92,6 @@ class Manager : public BaseManager {
   using MDSServiceSPtr = std::shared_ptr<Manager::MDSService::Stub>;
   using MDTPService = services::metadata::MetadataTracepointService;
   using MDTPServiceSPtr = std::shared_ptr<Manager::MDTPService::Stub>;
-  using MDFSService = services::metadata::MetadataFileSourceService;
-  using MDFSServiceSPtr = std::shared_ptr<Manager::MDFSService::Stub>;
   using ResultSinkStub = px::carnotpb::ResultSinkService::StubInterface;
 
   Manager() = delete;

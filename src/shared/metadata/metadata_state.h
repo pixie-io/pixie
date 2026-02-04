@@ -341,14 +341,13 @@ class K8sMetadataState : NotCopyable {
 class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
-  AgentMetadataState(std::string_view hostname, uint32_t asid, uint32_t pid, uint64_t start_time, AgentID agent_id,
+  AgentMetadataState(std::string_view hostname, uint32_t asid, uint32_t pid, AgentID agent_id,
                      std::string_view pod_name, sole::uuid vizier_id, std::string_view vizier_name,
                      std::string_view vizier_namespace, event::TimeSystem* time_system)
       : hostname_(std::string(hostname)),
         pod_name_(std::string(pod_name)),
         asid_(asid),
         pid_(pid),
-        start_time_(start_time),
         agent_id_(agent_id),
         vizier_id_(vizier_id),
         vizier_name_(std::string(vizier_name)),
@@ -361,7 +360,6 @@ class AgentMetadataState : NotCopyable {
   uint32_t pid() const { return pid_; }
   const std::string& pod_name() const { return pod_name_; }
   const sole::uuid& agent_id() const { return agent_id_; }
-  const md::UPID agent_upid() const { return md::UPID(asid_, pid_, start_time_); }
 
   const sole::uuid& vizier_id() const { return vizier_id_; }
   const std::string& vizier_name() const { return vizier_name_; }
@@ -435,7 +433,6 @@ class AgentMetadataState : NotCopyable {
   std::string pod_name_;
   uint32_t asid_;
   uint32_t pid_;
-  uint64_t start_time_;
   AgentID agent_id_;
 
   sole::uuid vizier_id_;

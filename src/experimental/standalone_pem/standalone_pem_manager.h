@@ -23,7 +23,6 @@
 
 #include "src/carnot/carnot.h"
 #include "src/common/event/event.h"
-#include "src/experimental/standalone_pem/file_source_manager.h"
 #include "src/experimental/standalone_pem/sink_server.h"
 #include "src/experimental/standalone_pem/tracepoint_manager.h"
 #include "src/experimental/standalone_pem/vizier_server.h"
@@ -32,7 +31,6 @@
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/services/agent/shared/base/base_manager.h"
 #include "src/vizier/services/agent/shared/base/info.h"
-#include "src/vizier/services/metadata/local/local_metadata_service.h"
 
 namespace px {
 namespace vizier {
@@ -74,9 +72,6 @@ class StandalonePEMManager : public BaseManager {
 
   std::shared_ptr<table_store::TableStore> table_store_;
 
-  // Metadata gRPC server must be initialized before func_context_
-  std::unique_ptr<services::metadata::LocalMetadataGRPCServer> metadata_grpc_server_;
-
   // Factory context for vizier functions.
   funcs::VizierFuncFactoryContext func_context_;
 
@@ -92,9 +87,6 @@ class StandalonePEMManager : public BaseManager {
 
   // Tracepoints
   std::unique_ptr<TracepointManager> tracepoint_manager_;
-
-  // FileSource manager
-  std::unique_ptr<FileSourceManager> file_source_manager_;
 };
 
 }  // namespace agent

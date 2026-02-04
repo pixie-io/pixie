@@ -122,10 +122,6 @@ class Stirling : public NotCopyable {
    * Returns the status of the probe registration for the trace identified by the input ID.
    */
   virtual StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) = 0;
-  virtual StatusOr<stirlingpb::Publish> GetFileSourceInfo(sole::uuid trace_id) = 0;
-
-  virtual void RegisterFileSource(sole::uuid id, std::string file_name) = 0;
-  virtual Status RemoveFileSource(sole::uuid id) = 0;
 
   /**
    * Remove a dynamically created tracepoint.

@@ -194,15 +194,8 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
   remote_carnot->AddPlan(remote_plan);
   distributed_plan->AddPlan(std::move(remote_plan_uptr));
 
-  auto remote_agent_id = remote_carnot->carnot_info().agent_id();
   std::vector<int64_t> source_node_ids;
   for (const auto& [i, data_store_info] : Enumerate(data_store_nodes_)) {
-    auto agent_id = data_store_info.agent_id();
-    // For cases where the remote agent also has a data store, we don't need to add a source.
-    // This ensures that the MemorySource will be executed locally without an unnecessary GRPCSink/Source pair.
-    if (agent_id == remote_agent_id) {
-      continue;
-    }
     PX_ASSIGN_OR_RETURN(int64_t source_node_id, distributed_plan->AddCarnot(data_store_info));
     distributed_plan->AddEdge(source_node_id, remote_node_id);
     source_node_ids.push_back(source_node_id);

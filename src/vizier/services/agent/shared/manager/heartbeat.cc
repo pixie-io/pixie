@@ -100,8 +100,7 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
   auto* update_info = hb->mutable_update_info();
 
   ConsumeAgentPIDUpdates(update_info);
-  auto capabilities = agent_info()->capabilities;
-  if ((capabilities.collects_data() || capabilities.stores_data()) &&
+  if (agent_info()->capabilities.collects_data() &&
       (!sent_schema_ || relation_info_manager_->has_updates())) {
     sent_schema_ = true;
     relation_info_manager_->AddSchemaToUpdateInfo(update_info);

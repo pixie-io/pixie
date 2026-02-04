@@ -23,7 +23,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
-	"px.dev/pixie/src/vizier/services/metadata/controllers/file_source"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 )
@@ -53,8 +52,9 @@ type MessageBusController struct {
 
 // NewMessageBusController creates a new controller for handling NATS messages.
 func NewMessageBusController(conn *nats.Conn, agtMgr agent.Manager,
-	tpMgr *tracepoint.Manager, fsMgr *file_source.Manager, k8smetaHandler *k8smeta.Handler,
-	isLeader *bool) (*MessageBusController, error) {
+	tpMgr *tracepoint.Manager, k8smetaHandler *k8smeta.Handler,
+	isLeader *bool,
+) (*MessageBusController, error) {
 	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
 	subscriptions := make([]*nats.Subscription, 0)
@@ -67,7 +67,7 @@ func NewMessageBusController(conn *nats.Conn, agtMgr agent.Manager,
 		subscriptions: subscriptions,
 	}
 
-	err := mc.registerListeners(agtMgr, tpMgr, fsMgr, k8smetaHandler)
+	err := mc.registerListeners(agtMgr, tpMgr, k8smetaHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -110,9 +110,9 @@ func (mc *MessageBusController) handleMessages() {
 	}
 }
 
-func (mc *MessageBusController) registerListeners(agtMgr agent.Manager, tpMgr *tracepoint.Manager, fsMgr *file_source.Manager, k8smetaHandler *k8smeta.Handler) error {
+func (mc *MessageBusController) registerListeners(agtMgr agent.Manager, tpMgr *tracepoint.Manager, k8smetaHandler *k8smeta.Handler) error {
 	// Register AgentTopicListener.
-	atl, err := NewAgentTopicListener(agtMgr, tpMgr, fsMgr, mc.sendMessage)
+	atl, err := NewAgentTopicListener(agtMgr, tpMgr, mc.sendMessage)
 	if err != nil {
 		return err
 	}

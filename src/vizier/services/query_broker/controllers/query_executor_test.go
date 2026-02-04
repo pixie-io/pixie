@@ -409,7 +409,7 @@ func runTestCase(t *testing.T, test *queryExecTestCase) {
 	}
 
 	dp := &fakeDataPrivacy{}
-	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, dp, nc, nil, nil, nil, rf, planner, test.MutExecFactory)
+	queryExec := controllers.NewQueryExecutor("qb_address", "qb_hostname", at, dp, nc, nil, nil, rf, planner, test.MutExecFactory)
 	consumer := newTestConsumer(test.ConsumeErrs)
 
 	assert.Equal(t, test.QueryExecExpectedRunError, queryExec.Run(context.Background(), test.Req, consumer))
@@ -806,7 +806,7 @@ func buildMutationFailedQueryTestCase(t *testing.T) queryExecTestCase {
 		QueryExecExpectedWaitError: err,
 		StreamResultsErr:           err,
 		StreamResultsCallExpected:  true,
-		MutExecFactory: func(planner controllers.Planner, client metadatapb.MetadataTracepointServiceClient, client2 metadatapb.MetadataFileSourceServiceClient, client3 metadatapb.MetadataConfigServiceClient, state *distributedpb.DistributedState) controllers.MutationExecutor {
+		MutExecFactory: func(planner controllers.Planner, client metadatapb.MetadataTracepointServiceClient, client2 metadatapb.MetadataConfigServiceClient, state *distributedpb.DistributedState) controllers.MutationExecutor {
 			return &fakeMutationExecutor{
 				MutInfo:       mutInfo,
 				ExecuteStatus: nil,

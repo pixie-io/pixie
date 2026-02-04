@@ -43,10 +43,9 @@ namespace planner {
  * 1. SetDistributedID(string): Set the name of the node same as the query broker.
  * 2. SetDestinationAddress(string): the GRPC address where batches should be sent.
  */
-class GRPCSinkIR : public SinkOperatorIR {
+class GRPCSinkIR : public OperatorIR {
  public:
-  explicit GRPCSinkIR(int64_t id, std::string mutation_id)
-      : SinkOperatorIR(id, IRNodeType::kGRPCSink, mutation_id) {}
+  explicit GRPCSinkIR(int64_t id) : OperatorIR(id, IRNodeType::kGRPCSink) {}
 
   enum GRPCSinkType {
     kTypeNotSet = 0,
@@ -109,17 +108,6 @@ class GRPCSinkIR : public SinkOperatorIR {
   // If needed, specify the ssl target name override for the GRPC sink destination.
   void SetDestinationSSLTargetName(std::string_view ssl_targetname) {
     destination_ssl_targetname_ = ssl_targetname;
-  }
-
-  std::string DebugString() const override {
-    auto sink_op_str = SinkOperatorIR::DebugString();
-    std::vector<int64_t> agent_ids;
-    for (const auto& [agent_id, _] : agent_id_to_destination_id_) {
-      agent_ids.push_back(agent_id);
-    }
-    return absl::Substitute("$0(id=$1, destination_id=$2, destination_address=$3, sink_type=$4, agent_ids=$5 sink_op=$6)",
-                            type_string(), id(), destination_id_, destination_address_,
-                            sink_type_, absl::StrJoin(agent_ids, ","), sink_op_str);
   }
 
   const std::string& destination_address() const { return destination_address_; }

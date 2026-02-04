@@ -19,16 +19,11 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "service_pl_proto",
     srcs = ["service.proto"],
-    visibility = [
-        "//src/carnot:__subpackages__",
-        "//src/experimental:__subpackages__",
-        "//src/vizier:__subpackages__",
-    ],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_proto",
-        "//src/carnot/planner/file_source/ir:logical_pl_proto",
         "//src/common/base/statuspb:status_pl_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_proto",
         "//src/shared/types/typespb:types_pl_proto",
@@ -42,16 +37,11 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "service_pl_cc_proto",
     proto = ":service_pl_proto",
-    visibility = [
-        "//src/carnot:__subpackages__",
-        "//src/experimental:__subpackages__",
-        "//src/vizier:__subpackages__",
-    ],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_cc_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
-        "//src/carnot/planner/file_source/ir:logical_pl_cc_proto",
         "//src/common/base/statuspb:status_pl_cc_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
@@ -71,7 +61,6 @@ pl_go_proto_library(
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
-        "//src/carnot/planner/file_source/ir:logical_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/types/typespb:types_pl_go_proto",

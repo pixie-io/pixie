@@ -35,19 +35,13 @@ table_store::schema::Relation InfoClassProtoToRelation(
 
 RelationInfo ConvertInfoClassPBToRelationInfo(
     const stirling::stirlingpb::InfoClass& info_class_pb) {
-  auto schema = info_class_pb.schema();
-  std::optional<std::string> mutation_id;
-  if (schema.mutation_id() != "") {
-    mutation_id = schema.mutation_id();
-  }
   if (info_class_pb.schema().tabletized()) {
-    return RelationInfo(schema.name(), info_class_pb.id(), schema.desc(),
-                        schema.tabletization_key(), mutation_id,
+    return RelationInfo(info_class_pb.schema().name(), info_class_pb.id(),
+                        info_class_pb.schema().desc(), info_class_pb.schema().tabletization_key(),
                         InfoClassProtoToRelation(info_class_pb));
   }
   return RelationInfo(info_class_pb.schema().name(), info_class_pb.id(),
-                      info_class_pb.schema().desc(), mutation_id,
-                      InfoClassProtoToRelation(info_class_pb));
+                      info_class_pb.schema().desc(), InfoClassProtoToRelation(info_class_pb));
 }
 
 }  // namespace

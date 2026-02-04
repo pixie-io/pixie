@@ -34,7 +34,7 @@ static inline std::unique_ptr<Table> MakeTable(int64_t max_size, int64_t compact
   schema::Relation rel(
       std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::FLOAT64}),
       std::vector<std::string>({"time_", "float"}));
-  return std::make_unique<HotColdTable>("test_table", rel, max_size, compaction_size);
+  return std::make_unique<Table>("test_table", rel, max_size, compaction_size);
 }
 
 static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int64_t batch_size,
@@ -82,7 +82,7 @@ static inline int64_t FillTableCold(Table* table, int64_t table_size, int64_t ba
   return time_counter;
 }
 
-static inline void ReadFullTable(Cursor* cursor) {
+static inline void ReadFullTable(Table::Cursor* cursor) {
   while (!cursor->Done()) {
     benchmark::DoNotOptimize(cursor->GetNextRowBatch({0, 1}));
   }
@@ -98,14 +98,14 @@ static void BM_TableReadAllHot(benchmark::State& state) {
 
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
-  Cursor cursor(table.get());
+  Table::Cursor cursor(table.get());
 
   for (auto _ : state) {
     ReadFullTable(&cursor);
     state.PauseTiming();
     table = MakeTable(table_size, compaction_size);
     FillTableHot(table.get(), table_size, batch_length);
-    cursor = Cursor(table.get());
+    cursor = Table::Cursor(table.get());
     state.ResumeTiming();
   }
 
@@ -120,25 +120,25 @@ static void BM_TableReadAllCold(benchmark::State& state) {
   auto table = MakeTable(table_size, compaction_size);
   FillTableCold(table.get(), table_size, batch_length);
   CHECK_EQ(table->GetTableStats().bytes, table_size);
-  Cursor cursor(table.get());
+  Table::Cursor cursor(table.get());
 
   for (auto _ : state) {
     ReadFullTable(&cursor);
 
     state.PauseTiming();
-    cursor = Cursor(table.get());
+    cursor = Table::Cursor(table.get());
     state.ResumeTiming();
   }
 
   state.SetBytesProcessed(state.iterations() * table_size);
 }
 
-Cursor GetLastBatchCursor(Table* table, int64_t last_time, int64_t batch_length,
-                          const std::vector<int64_t>& cols) {
-  Cursor cursor(
-      table,
-      Cursor::StartSpec{Cursor::StartSpec::StartType::StartAtTime, last_time - 2 * batch_length},
-      Cursor::StopSpec{});
+Table::Cursor GetLastBatchCursor(Table* table, int64_t last_time, int64_t batch_length,
+                                 const std::vector<int64_t>& cols) {
+  Table::Cursor cursor(table,
+                       Table::Cursor::StartSpec{Table::Cursor::StartSpec::StartType::StartAtTime,
+                                                last_time - 2 * batch_length},
+                       Table::Cursor::StopSpec{});
   // Advance the cursor so that it points to the last batch and has BatchHints set.
   cursor.GetNextRowBatch(cols);
   return cursor;
@@ -238,7 +238,7 @@ static void BM_TableWriteFull(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableCompaction(benchmark::State& state) {
   int64_t compaction_size = 64 * 1024;
-  int64_t table_size = HotColdTable::kMaxBatchesPerCompactionCall * compaction_size;
+  int64_t table_size = Table::kMaxBatchesPerCompactionCall * compaction_size;
   int64_t batch_length = 256;
   auto table = MakeTable(table_size, compaction_size);
   // Fill table first to make sure each compaction hits kMaxBatchesPerCompaction.
@@ -254,7 +254,7 @@ static void BM_TableCompaction(benchmark::State& state) {
   }
 
   state.SetBytesProcessed(state.iterations() * compaction_size *
-                          HotColdTable::kMaxBatchesPerCompactionCall);
+                          Table::kMaxBatchesPerCompactionCall);
 }
 
 // NOLINTNEXTLINE : runtime/references.
@@ -262,7 +262,7 @@ static void BM_TableThreaded(benchmark::State& state) {
   schema::Relation rel({types::DataType::TIME64NS}, {"time_"});
   schema::RowDescriptor rd({types::DataType::TIME64NS});
   std::shared_ptr<Table> table_ptr =
-      std::make_shared<HotColdTable>("test_table", rel, 16 * 1024 * 1024, 5 * 1024);
+      std::make_shared<Table>("test_table", rel, 16 * 1024 * 1024, 5 * 1024);
 
   int64_t batch_size = 1024;
   int64_t num_batches = 16 * 1024;
@@ -309,7 +309,7 @@ static void BM_TableThreaded(benchmark::State& state) {
 
     int64_t batch_counter = 0;
     while (batch_counter < (num_batches / num_read_threads)) {
-      Cursor cursor(table_ptr.get());
+      Table::Cursor cursor(table_ptr.get());
       auto start = std::chrono::high_resolution_clock::now();
       auto batch_or_s = cursor.GetNextRowBatch({0});
       auto end = std::chrono::high_resolution_clock::now();

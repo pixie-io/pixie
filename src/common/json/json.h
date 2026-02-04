@@ -126,27 +126,6 @@ std::string ToJSONString(const T& x) {
   return sb.GetString();
 }
 
-inline std::string RapidJSONTypeToString(rapidjson::Type type) {
-  switch (type) {
-    case rapidjson::kNullType:
-      return "Null";
-    case rapidjson::kFalseType:
-      return "False";
-    case rapidjson::kTrueType:
-      return "True";
-    case rapidjson::kObjectType:
-      return "Object";
-    case rapidjson::kArrayType:
-      return "Array";
-    case rapidjson::kStringType:
-      return "String";
-    case rapidjson::kNumberType:
-      return "Number";
-    default:
-      return "Unknown";
-  }
-}
-
 /*
  * Exposes a limited set of APIs to build JSON string, with mixed data structures; which could not
  * be processed by the above ToJSONString().

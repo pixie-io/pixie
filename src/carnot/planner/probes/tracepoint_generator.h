@@ -33,12 +33,6 @@ namespace compiler {
 StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
     std::string_view query);
 
-/**
- * Take a file source specification in PXL format, and compiles it to a logical file source
- * deployment.
- */
-StatusOr<file_source::ir::FileSourceDeployment> CompileFileSource(std::string_view query);
-
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

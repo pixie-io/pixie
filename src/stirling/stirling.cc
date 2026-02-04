@@ -46,7 +46,6 @@
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 #include "src/stirling/source_connectors/dynamic_bpftrace/utils.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
-#include "src/stirling/source_connectors/file_source/file_source_connector.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_connector.h"
 #include "src/stirling/source_connectors/network_stats/network_stats_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
@@ -201,11 +200,8 @@ class StirlingImpl final : public Stirling {
   void RegisterTracepoint(
       sole::uuid uuid,
       std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) override;
-  void RegisterFileSource(sole::uuid id, std::string file_name) override;
   StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) override;
-  StatusOr<stirlingpb::Publish> GetFileSourceInfo(sole::uuid trace_id) override;
   Status RemoveTracepoint(sole::uuid trace_id) override;
-  Status RemoveFileSource(sole::uuid trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
   void RegisterAgentMetadataCallback(AgentMetadataCallback f) override {
@@ -228,12 +224,9 @@ class StirlingImpl final : public Stirling {
   void UpdateDynamicTraceStatus(const sole::uuid& uuid,
                                 const StatusOr<stirlingpb::Publish>& status);
 
-  void UpdateFileSourceStatus(const sole::uuid& uuid, const StatusOr<stirlingpb::Publish>& status);
-
  private:
   // Adds a source to Stirling, and updates all state accordingly.
-  Status AddSource(std::unique_ptr<SourceConnector> source,
-                   std::optional<std::string> mutation_id = {});
+  Status AddSource(std::unique_ptr<SourceConnector> source);
 
   // Removes a source and all its info classes from stirling.
   Status RemoveSource(std::string_view source_name);
@@ -245,11 +238,6 @@ class StirlingImpl final : public Stirling {
 
   // Destroys a dynamic tracing source created by DeployDynamicTraceConnector.
   void DestroyDynamicTraceConnector(sole::uuid trace_id);
-
-  // Creates and deploys file source connector
-  void DeployFileSourceConnector(sole::uuid trace_id, std::string file_name);
-
-  void DestroyFileSourceConnector(sole::uuid id);
 
   // Main run implementation.
   void RunCore();
@@ -289,10 +277,6 @@ class StirlingImpl final : public Stirling {
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 
-  absl::base_internal::SpinLock file_source_status_map_lock_;
-  absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> file_source_status_map_
-      ABSL_GUARDED_BY(file_source_status_map_lock_);
-
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 
   struct DynamicTraceInfo {
@@ -303,15 +287,6 @@ class StirlingImpl final : public Stirling {
 
   absl::flat_hash_map<sole::uuid, DynamicTraceInfo> trace_id_info_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
-
-  struct FileSourceInfo {
-    std::string source_connector;
-    std::string file_name;
-    std::string output_table;
-  };
-
-  absl::flat_hash_map<sole::uuid, FileSourceInfo> file_source_info_map_
-      ABSL_GUARDED_BY(file_source_status_map_lock_);
 
   // RunCoreStats tracks how much work is accomplished in each run core iteration,
   // and it also keeps a histogram of sleep durations.
@@ -452,8 +427,7 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   return std::unique_ptr<ConnectorContext>(new SystemWideStandaloneContext());
 }
 
-Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source,
-                               std::optional<std::string> mutation_id) {
+Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
   PX_RETURN_IF_ERROR(source->Init());
 
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
@@ -464,9 +438,6 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source,
     LOG(INFO) << absl::Substitute("Adding info class: [$0/$1]", source->name(), schema.name());
     auto mgr = std::make_unique<InfoClassManager>(schema);
     mgr->SetSourceConnector(source.get());
-    if (mutation_id.has_value()) {
-      mgr->SetMutationId(mutation_id.value());
-    }
     data_tables.push_back(mgr->data_table());
     info_class_mgrs_.push_back(std::move(mgr));
   }
@@ -528,13 +499,6 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 namespace {
 
 constexpr char kDynTraceSourcePrefix[] = "DT_";
-constexpr char kFileSourcePrefix[] = "LOG_";
-
-StatusOr<std::unique_ptr<SourceConnector>> CreateFileSourceConnector(sole::uuid id,
-                                                                     std::string file_name) {
-  auto name = absl::StrCat(kFileSourcePrefix, id.str());
-  return FileSourceConnector::Create(name, file_name);
-}
 
 StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
     sole::uuid trace_id,
@@ -571,82 +535,6 @@ StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
 
 }  // namespace
 
-void StirlingImpl::UpdateFileSourceStatus(const sole::uuid& id,
-                                          const StatusOr<stirlingpb::Publish>& s) {
-  absl::base_internal::SpinLockHolder lock(&file_source_status_map_lock_);
-  file_source_status_map_[id] = s;
-
-  // Find program name and log dynamic trace status update to Stirling Monitor.
-  auto it = file_source_info_map_.find(id);
-  if (it != file_source_info_map_.end()) {
-    FileSourceInfo& file_source_info = it->second;
-
-    // Build info JSON with trace_id and output_table.
-    ::px::utils::JSONObjectBuilder builder;
-    builder.WriteKV("trace_id", id.str());
-    if (s.ok()) {
-      builder.WriteKV("output_table", file_source_info.output_table);
-    }
-
-    monitor_.AppendSourceStatusRecord(file_source_info.source_connector, s.status(),
-                                      builder.GetString());
-
-    // Clean up map if status is not ok. When status is RESOURCE_UNAVAILABLE, either deployment
-    // or removal is pending, so don't clean up.
-    if (!s.ok() && s.code() != statuspb::Code::RESOURCE_UNAVAILABLE) {
-      file_source_info_map_.erase(id);
-    }
-  }
-}
-
-void StirlingImpl::DeployFileSourceConnector(sole::uuid id, std::string file_name) {
-  auto timer = ElapsedTimer();
-  timer.Start();
-
-  // Try creating the DynamicTraceConnector--which compiles BCC code.
-  // On failure, set status and exit.
-  auto source_or_s = CreateFileSourceConnector(id, file_name);
-  if (!source_or_s.ok()) {
-    Status ret_status(px::statuspb::Code::INTERNAL, source_or_s.msg());
-    UpdateFileSourceStatus(id, ret_status);
-    LOG(INFO) << ret_status.ToString();
-    return;
-  }
-  auto source = source_or_s.ConsumeValueOrDie();
-
-  LOG(INFO) << absl::Substitute("FileSourceConnector [$0] created in $1 ms.", source->name(),
-                                timer.ElapsedTime_us() / 1000.0);
-
-  // Cache table schema name as source will be moved below.
-  std::string output_name(source->table_schemas()[0].name());
-
-  {
-    absl::base_internal::SpinLockHolder lock(&file_source_status_map_lock_);
-    auto it = file_source_info_map_.find(id);
-    if (it != file_source_info_map_.end()) {
-      file_source_info_map_[id].output_table = output_name;
-    }
-  }
-
-  timer.Start();
-  auto s = AddSource(std::move(source), id.str());
-  if (!s.ok()) {
-    UpdateFileSourceStatus(id, s);
-    LOG(INFO) << s.ToString();
-    return;
-  }
-  LOG(INFO) << absl::Substitute("FileSourceConnector [$0] created in $1 ms.", id.str(),
-                                timer.ElapsedTime_us() / 1000.0);
-
-  stirlingpb::Publish publication;
-  {
-    absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-    PopulatePublishProto(&publication, info_class_mgrs_, output_name);
-  }
-
-  UpdateFileSourceStatus(id, publication);
-}
-
 void StirlingImpl::DeployDynamicTraceConnector(
     sole::uuid trace_id,
     std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) {
@@ -675,7 +563,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
-  RETURN_IF_ERROR(AddSource(std::move(source), trace_id.str()));
+  RETURN_IF_ERROR(AddSource(std::move(source)));
   LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Deployed BPF program in $1 ms.", trace_id.str(),
                                 timer.ElapsedTime_us() / 1000.0);
 
@@ -703,29 +591,6 @@ void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
     dynamic_trace_status_map_.erase(trace_id);
     trace_id_info_map_.erase(trace_id);
-  }
-}
-
-void StirlingImpl::DestroyFileSourceConnector(sole::uuid trace_id) {
-  auto timer = ElapsedTimer();
-  timer.Start();
-
-  // Remove from stirling.
-  auto s = RemoveSource(kFileSourcePrefix + trace_id.str());
-  if (!s.ok()) {
-    UpdateFileSourceStatus(trace_id, s);
-    LOG(INFO) << s.ToString();
-    return;
-  }
-
-  LOG(INFO) << absl::Substitute("FileSource [$0]: Removed file polling $1 ms.", trace_id.str(),
-                                timer.ElapsedTime_us() / 1000.0);
-
-  // Remove from map.
-  {
-    absl::base_internal::SpinLockHolder lock(&file_source_status_map_lock_);
-    file_source_status_map_.erase(trace_id);
-    file_source_info_map_.erase(trace_id);
   }
 }
 
@@ -787,29 +652,6 @@ void StirlingImpl::RegisterTracepoint(
   t.detach();
 }
 
-void StirlingImpl::RegisterFileSource(sole::uuid id, std::string file_name) {
-  // Temporary: Check if the target exists on this PEM, otherwise return NotFound.
-  // TODO(oazizi): Need to think of a better way of doing this.
-  //               Need to differentiate errors caused by the binary not being on the host vs
-  //               other errors. Also should consider races with binary creation/deletion.
-  {
-    absl::base_internal::SpinLockHolder lock(&file_source_status_map_lock_);
-    std::string source_connector = "file_source";
-    file_source_info_map_[id] = {.source_connector = std::move(source_connector),
-                                 .file_name = file_name,
-                                 .output_table = ""};
-  }
-
-  // Initialize the status of this trace to pending.
-  {
-    absl::base_internal::SpinLockHolder lock(&file_source_status_map_lock_);
-    file_source_status_map_[id] = error::ResourceUnavailable("Waiting for file polling to start.");
-  }
-
-  auto t = std::thread(&StirlingImpl::DeployFileSourceConnector, this, id, file_name);
-  t.detach();
-}
-
 StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_id) {
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
 
@@ -822,33 +664,11 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_i
   return s;
 }
 
-StatusOr<stirlingpb::Publish> StirlingImpl::GetFileSourceInfo(sole::uuid trace_id) {
-  absl::base_internal::SpinLockHolder lock(&file_source_status_map_lock_);
-
-  auto iter = file_source_status_map_.find(trace_id);
-  if (iter == file_source_status_map_.end()) {
-    return error::NotFound("FileSource $0 not found.", trace_id.str());
-  }
-
-  StatusOr<stirlingpb::Publish> s = iter->second;
-  return s;
-}
-
 Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
   // Change the status of this trace to pending while we delete it.
   UpdateDynamicTraceStatus(trace_id, error::ResourceUnavailable("Probe removal in progress."));
 
   auto t = std::thread(&StirlingImpl::DestroyDynamicTraceConnector, this, trace_id);
-  t.detach();
-
-  return Status::OK();
-}
-
-Status StirlingImpl::RemoveFileSource(sole::uuid trace_id) {
-  // Change the status of this trace to pending while we delete it.
-  UpdateFileSourceStatus(trace_id, error::ResourceUnavailable("file source removal in progress."));
-
-  auto t = std::thread(&StirlingImpl::DestroyFileSourceConnector, this, trace_id);
   t.detach();
 
   return Status::OK();

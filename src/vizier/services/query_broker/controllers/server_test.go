@@ -267,7 +267,7 @@ func TestCheckHealth(t *testing.T) {
 			}
 
 			dp := &fakeDataPrivacy{}
-			s, err := controllers.NewServerWithForwarderAndPlanner(nil, nil, dp, nil, nil, nil, nil, nil, nil, queryExecFactory)
+			s, err := controllers.NewServerWithForwarderAndPlanner(nil, nil, dp, nil, nil, nil, nil, nil, queryExecFactory)
 			require.NoError(t, err)
 
 			err = s.CheckHealth(context.Background())
@@ -392,7 +392,7 @@ func TestExecuteScript(t *testing.T) {
 			}
 
 			dp := &fakeDataPrivacy{}
-			s, err := controllers.NewServerWithForwarderAndPlanner(nil, nil, dp, nil, nil, nil, nil, nil, nil, queryExecFactory)
+			s, err := controllers.NewServerWithForwarderAndPlanner(nil, nil, dp, nil, nil, nil, nil, nil, queryExecFactory)
 			require.NoError(t, err)
 
 			// Set up mocks.
@@ -456,7 +456,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	}
 
 	dp := &fakeDataPrivacy{}
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nil, nc, nil, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 	defer s.Close()
 
@@ -547,7 +547,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	}
 
 	dp := &fakeDataPrivacy{}
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nil, nc, nil, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 	defer s.Close()
 
@@ -631,7 +631,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	}
 
 	dp := &fakeDataPrivacy{}
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nil, nc, nil, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 	defer s.Close()
 
@@ -709,7 +709,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 
 	dp := &fakeDataPrivacy{}
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nil, nc, nil, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, dp, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 	defer s.Close()
 

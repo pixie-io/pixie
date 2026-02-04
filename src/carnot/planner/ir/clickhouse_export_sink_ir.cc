@@ -67,7 +67,6 @@ StatusOr<planpb::ClickHouseConfig> ClickHouseExportSinkIR::ParseClickHouseDSN(co
 }
 
 Status ClickHouseExportSinkIR::ToProto(planpb::Operator* op) const {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::ToProto(op));
   op->set_op_type(planpb::CLICKHOUSE_EXPORT_SINK_OPERATOR);
   auto clickhouse_op = op->mutable_clickhouse_sink_op();
 

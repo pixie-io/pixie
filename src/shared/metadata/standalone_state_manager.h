@@ -35,9 +35,9 @@ namespace md {
  */
 class StandaloneAgentMetadataStateManager : public AgentMetadataStateManager {
  public:
-  StandaloneAgentMetadataStateManager(std::string_view hostname, uint32_t asid, uint32_t pid, uint64_t start_time,
+  StandaloneAgentMetadataStateManager(std::string_view hostname, uint32_t asid, uint32_t pid,
                                       sole::uuid agent_id, event::TimeSystem* time_system) {
-    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, pid, start_time, agent_id,
+    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id,
                                                                  /*pod_name=*/"", sole::uuid(),
                                                                  "standalone_pem", "", time_system);
   }

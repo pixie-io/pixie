@@ -32,7 +32,6 @@ pl_cc_library(
         "//src/stirling/source_connectors/cpu_stat_bpftrace:__pkg__",
         "//src/stirling/source_connectors/dynamic_bpftrace:__pkg__",
         "//src/stirling/source_connectors/dynamic_tracer:__pkg__",
-        "//src/stirling/source_connectors/file_source:__pkg__",
         "//src/stirling/source_connectors/jvm_stats:__pkg__",
         "//src/stirling/source_connectors/network_stats:__pkg__",
         "//src/stirling/source_connectors/perf_profiler:__pkg__",

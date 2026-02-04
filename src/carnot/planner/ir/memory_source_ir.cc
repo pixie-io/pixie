@@ -29,7 +29,6 @@ std::string MemorySourceIR::DebugString() const {
 }
 
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::ToProto(op));
   auto pb = op->mutable_mem_source_op();
   op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
   pb->set_name(table_name_);

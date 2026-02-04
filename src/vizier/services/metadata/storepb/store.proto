@@ -26,7 +26,6 @@ import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
-import "src/carnot/planner/file_source/ir/logical.proto";
 import "src/common/base/statuspb/status.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/shared/types/typespb/types.proto";
@@ -47,33 +46,11 @@ message TracepointInfo {
   px.statuspb.LifeCycleState expected_state = 4;
 }
 
-// Information about the status of a specific file source
-message FileSourceInfo {
-  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
-  // The file source deployment.
-  px.carnot.planner.file_source.ir.FileSourceDeployment file_source = 2;
-  // The name of the file source, not unique.
-  string name = 3;
-  // The desired state of the file source, either running or terminated. The actual
-  // state of the file source is derived by the states of the individual agent file sources.
-  px.statuspb.LifeCycleState expected_state = 4;
-}
-
 // The agent's registration status for a particular tracepoint.
 message AgentTracepointStatus {
   // The state of the tracepoint.
   px.statuspb.LifeCycleState state = 1;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
-  px.statuspb.Status status = 2;
-  uuidpb.UUID id = 3 [ (gogoproto.customname) = "ID" ];
-  uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
-}
-
-// The agent's registration status for a particular file source.
-message AgentFileSourceStatus {
-  // The state of the file source.
-  px.statuspb.LifeCycleState state = 1;
-  // The status of the file source, specified if the state of the file source is not healthy.
   px.statuspb.Status status = 2;
   uuidpb.UUID id = 3 [ (gogoproto.customname) = "ID" ];
   uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
@@ -106,8 +83,6 @@ message TableInfo {
   bool tabletized = 5;
   // The tabletization key of this schema.
   string tabletization_key = 6;
-  // ID of the mutation that created this schema, empty if unrelated to a mutation.
-  string mutation_id = 8;
 }
 
 // ComputedSchema describes the schema available on Vizier.

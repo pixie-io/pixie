@@ -28,7 +28,6 @@ import "src/api/proto/uuidpb/uuid.proto";
 // AgentCapabilities describes functions that the agent has available.
 message AgentCapabilities {
   bool collects_data = 1;
-  bool stores_data = 2;
 }
 
 message AgentParameters {

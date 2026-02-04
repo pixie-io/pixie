@@ -569,7 +569,7 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t now, int64_t retention_t
 
 std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
   auto state =
-      std::make_shared<AgentMetadataState>(hostname_, asid_, pid_, start_time_, agent_id_, pod_name_, vizier_id_,
+      std::make_shared<AgentMetadataState>(hostname_, asid_, pid_, agent_id_, pod_name_, vizier_id_,
                                            vizier_name_, vizier_namespace_, time_system_);
   state->last_update_ts_ns_ = last_update_ts_ns_;
   state->epoch_id_ = epoch_id_;
