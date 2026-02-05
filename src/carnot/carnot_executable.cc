@@ -40,7 +40,6 @@
 #include "src/table_store/table_store.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
-#include "src/vizier/services/metadata/local/local_metadata_service.h"
 #include "src/stirling/source_connectors/socket_tracer/http_table.h"
 
 // Example clickhouse test usage:
