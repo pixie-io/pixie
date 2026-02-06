@@ -579,13 +579,10 @@ int main(int argc, char* argv[]) {
   auto table_store = std::make_shared<px::table_store::TableStore>();
   auto result_server = px::carnot::exec::LocalGRPCResultSinkServer();
 
-  // Create metadata service stub for table schemas
-  auto metadata_grpc_server = std::make_unique<px::vizier::services::metadata::LocalMetadataGRPCServer>(table_store.get());
-
   // Create vizier func factory context with metadata stub
   px::vizier::funcs::VizierFuncFactoryContext func_context(
       nullptr,  // agent_manager
-      metadata_grpc_server->StubGenerator(),  // mds_stub
+      nullptr,
       nullptr,  // mdtp_stub
       nullptr,  // cronscript_stub
       table_store,
