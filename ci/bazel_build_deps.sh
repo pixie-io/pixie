@@ -179,54 +179,30 @@ cc_bpf_tests="kind(cc_.*, ${bpf_tests})"
 
 
 # Clang:opt (includes non-cc targets: go targets, //src/ui/..., etc.)
-echo "Running: clang:opt buildables..." >&2
-query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt || { echo "FAILED: clang:opt buildables query"; exit 1; }
-echo "Done: clang:opt buildables" >&2
-echo "Running: clang:opt tests..." >&2
-query_compatible_targets "clang" "${tests} ${bpf_excludes}" > bazel_tests_clang_opt || { echo "FAILED: clang:opt tests query"; exit 1; }
-echo "Done: clang:opt tests" >&2
+query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt 2>/dev/null
+query_compatible_targets "clang" "${tests} ${bpf_excludes}" > bazel_tests_clang_opt 2>/dev/null
 
 # Clang:dbg
-echo "Running: clang:dbg buildables..." >&2
-query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg || { echo "FAILED: clang:dbg buildables query"; exit 1; }
-echo "Done: clang:dbg buildables" >&2
-echo "Running: clang:dbg tests..." >&2
-query_compatible_targets "clang" "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg || { echo "FAILED: clang:dbg tests query"; exit 1; }
-echo "Done: clang:dbg tests" >&2
+query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg 2>/dev/null
+query_compatible_targets "clang" "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg 2>/dev/null
 
 # GCC:opt
-echo "Running: gcc:opt buildables..." >&2
-query_compatible_targets "gcc" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt || { echo "FAILED: gcc:opt buildables query"; exit 1; }
-echo "Done: gcc:opt buildables" >&2
-echo "Running: gcc:opt tests..." >&2
-query_compatible_targets "gcc" "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt || { echo "FAILED: gcc:opt tests query"; exit 1; }
-echo "Done: gcc:opt tests" >&2
+query_compatible_targets "gcc" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt 2>/dev/null
+query_compatible_targets "gcc" "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt 2>/dev/null
 
 # Sanitizer (Limit to C++ only).
 # TODO(james): technically we should set the configs to asan, msan, and tsan and produce different files for each.
-echo "Running: sanitizer buildables..." >&2
-query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer || { echo "FAILED: sanitizer buildables query"; exit 1; }
-echo "Done: sanitizer buildables" >&2
-echo "Running: sanitizer tests..." >&2
-query_compatible_targets "clang" "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer || { echo "FAILED: sanitizer tests query"; exit 1; }
-echo "Done: sanitizer tests" >&2 
+query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer 2>/dev/null
+query_compatible_targets "clang" "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer 2>/dev/null
 
 if [[ "${run_bpf_targets}" = "true" ]]; then
   # BPF.
-  echo "Running: bpf buildables..." >&2
-  query_compatible_targets "bpf" "${bpf_buildables}" > bazel_buildables_bpf || { echo "FAILED: bpf buildables query"; exit 1; }
-  echo "Done: bpf buildables" >&2
-  echo "Running: bpf tests..." >&2
-  query_compatible_targets "bpf" "${bpf_tests}" > bazel_tests_bpf || { echo "FAILED: bpf tests query"; exit 1; }
-  echo "Done: bpf tests" >&2
+  query_compatible_targets "bpf" "${bpf_buildables}" > bazel_buildables_bpf 2>/dev/null
+  query_compatible_targets "bpf" "${bpf_tests}" > bazel_tests_bpf 2>/dev/null
 
   # BPF Sanitizer (C/C++ Only, excludes shell tests).
-  echo "Running: bpf sanitizer buildables..." >&2
-  query_compatible_targets "bpf" "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer || { echo "FAILED: bpf sanitizer buildables query"; exit 1; }
-  echo "Done: bpf sanitizer buildables" >&2
-  echo "Running: bpf sanitizer tests..." >&2
-  query_compatible_targets "bpf" "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer || { echo "FAILED: bpf sanitizer tests query"; exit 1; }
-  echo "Done: bpf sanitizer tests" >&2
+  query_compatible_targets "bpf" "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer 2>/dev/null
+  query_compatible_targets "bpf" "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer 2>/dev/null
 else
   # BPF.
   cat /dev/null > bazel_buildables_bpf
@@ -238,17 +214,9 @@ else
 fi
 
 # Should we run clang-tidy?
-echo "Running: clang-tidy buildables..." >&2
-query_compatible_targets "clang" "${cc_buildables}" > bazel_buildables_clang_tidy || { echo "FAILED: clang-tidy buildables query"; exit 1; }
-echo "Done: clang-tidy buildables" >&2
-echo "Running: clang-tidy tests..." >&2
-query_compatible_targets "clang" "${cc_tests}" > bazel_tests_clang_tidy || { echo "FAILED: clang-tidy tests query"; exit 1; }
-echo "Done: clang-tidy tests" >&2
+query_compatible_targets "clang" "${cc_buildables}" > bazel_buildables_clang_tidy 2>/dev/null
+query_compatible_targets "clang" "${cc_tests}" > bazel_tests_clang_tidy 2>/dev/null
 
 # Should we run golang race detection?
-echo "Running: go race buildables..." >&2
-query_compatible_targets "clang" "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race || { echo "FAILED: go race buildables query"; exit 1; }
-echo "Done: go race buildables" >&2
-echo "Running: go race tests..." >&2
-query_compatible_targets "clang" "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race || { echo "FAILED: go race tests query"; exit 1; }
-echo "Done: go race tests" >&2 
+query_compatible_targets "clang" "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race 2>/dev/null
+query_compatible_targets "clang" "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race 2>/dev/null
