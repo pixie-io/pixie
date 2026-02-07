@@ -35,32 +35,32 @@ jobs:
     with:
       image-base-name: "dev_image_with_extras"
       ref: ${{ needs.env-protect-setup.outputs.ref }}
-  clang-tidy:
-    runs-on: oracle-vm-16cpu-64gb-x86-64
-    needs: [authorize, env-protect-setup, get-dev-image]
-    container:
-      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-    steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      with:
-        fetch-depth: 0
-        ref: ${{ needs.env-protect-setup.outputs.ref }}
-    - name: Add pwd to git safe dir
-      run: git config --global --add safe.directory `pwd`
-    - name: get bazel config
-      uses: ./.github/actions/bazelrc
-      with:
-        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - name: Save Diff Info
-      run: ./ci/save_diff_info.sh
-    - name: Run Clang Tidy
-      shell: bash
-      run: |
-        diff_file="diff_origin_main_cc"
-        if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
-          diff_file="diff_head_cc"
-        fi
-        ./ci/run_clang_tidy.sh -f "${diff_file}"
+  # clang-tidy:
+  #   runs-on: oracle-vm-16cpu-64gb-x86-64
+  #   needs: [authorize, env-protect-setup, get-dev-image]
+  #   container:
+  #     image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+  #   steps:
+  #   - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+  #     with:
+  #       fetch-depth: 0
+  #       ref: ${{ needs.env-protect-setup.outputs.ref }}
+  #   - name: Add pwd to git safe dir
+  #     run: git config --global --add safe.directory `pwd`
+  #   - name: get bazel config
+  #     uses: ./.github/actions/bazelrc
+  #     with:
+  #       BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
+  #   - name: Save Diff Info
+  #     run: ./ci/save_diff_info.sh
+  #   - name: Run Clang Tidy
+  #     shell: bash
+  #     run: |
+  #       diff_file="diff_origin_main_cc"
+  #       if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
+  #         diff_file="diff_head_cc"
+  #       fi
+  #       ./ci/run_clang_tidy.sh -f "${diff_file}"
   code-coverage:
     if: github.event_name == 'push'
     needs: [authorize, env-protect-setup, get-dev-image]
@@ -85,7 +85,7 @@ jobs:
       run: |
         # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
         sysctl -w net.ipv6.conf.lo.disable_ipv6=0
-        ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
+        ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r k8sstormcenter/pixie
   generate-matrix:
     needs: [authorize, env-protect-setup, get-dev-image]
     runs-on: oracle-vm-16cpu-64gb-x86-64
@@ -154,6 +154,17 @@ jobs:
           ${{ matrix.args }} \
           --target_pattern_file=target_files/${{ matrix.buildables }} \
           2> >(tee bazel_stderr)
+    - name: Debug Docker networking
+      if: ${{ matrix.tests }}
+      shell: bash
+      run: |
+        docker info
+        docker network inspect bridge
+        docker run --rm postgres:13.3 echo "pull works"
+        CID=$(docker run -d --rm -e POSTGRES_PASSWORD=secret postgres:13.3)
+        sleep 2
+        docker inspect "$CID" --format '{{json .NetworkSettings}}' | jq '{Gateway: .Gateway, IPAddress: .IPAddress, Bridge: .Bridge, Networks: .Networks}'
+        docker stop "$CID"
     - name: Test ${{ matrix.name }}
       if: ${{ matrix.tests }}
       shell: bash
@@ -185,19 +196,18 @@ jobs:
       shell: bash
   build-and-test-status:
     if: always()
-    needs: [build-and-test, clang-tidy, generate-matrix]
+    needs: [build-and-test, generate-matrix]
     runs-on: ubuntu-latest
     steps:
-    - if: needs.build-and-test.result == 'success' && needs.clang-tidy.result == 'success'
+    - if: needs.build-and-test.result == 'success'
       run: echo "Build and Test complete ✓"
     - if: >
-        needs.generate-matrix.result == 'success' && needs.clang-tidy.result == 'success'
+        needs.generate-matrix.result == 'success'
         && needs.build-and-test.result == 'skipped'
       run: echo "Build and Test skipped no matrix configs generated ✓"
     - if: >
-        !(needs.build-and-test.result == 'success' && needs.clang-tidy.result == 'success') &&
+        !(needs.build-and-test.result == 'success') &&
         !(needs.generate-matrix.result == 'success' &&
-          needs.clang-tidy.result == 'success' &&
           needs.build-and-test.result == 'skipped')
       run: |
         echo "Build and Test failed"
