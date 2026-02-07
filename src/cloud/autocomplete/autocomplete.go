@@ -436,9 +436,11 @@ func (cmd *Command) ToFormatString(action cloudpb.AutocompleteActionType, s Sugg
 			for k := range knownTypes {
 				scriptTypes = append(scriptTypes, k)
 			}
-			res, err := s.GetSuggestions([]*SuggestionRequest{{orgID, clusterUID, "",
+			res, err := s.GetSuggestions([]*SuggestionRequest{{
+				orgID, clusterUID, "",
 				[]cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
-				scriptTypes}})
+				scriptTypes,
+			}})
 			if err == nil {
 				cmd.TabStops[curTabStop].Suggestions = res[0].Suggestions
 			}

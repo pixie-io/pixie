@@ -316,7 +316,8 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
                              ContainerType::kContainerd));
 }
 
-TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
+TEST(LegacyCGroupPathResolverTest, Cgroup2Format) {
+  PX_SET_FOR_SCOPE(FLAGS_test_only_force_cgroup2_mode, true);
   ASSERT_OK_AND_ASSIGN(
       auto path_resolver,
       LegacyCGroupPathResolver::Create(GetSysFsPathFromTestDataFile(
@@ -326,7 +327,6 @@ TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
           "cgroup.procs",
           "testdata/sysfs3")));
 
-  FLAGS_force_cgroup2_mode = true;
   EXPECT_EQ(
       GetPathToTestDataFile(
           "testdata/sysfs3/cgroup/kubepods.slice/kubepods-besteffort.slice/"
@@ -378,6 +378,17 @@ TEST(CGroupPathResolver, Cgroup2Format) {
       "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
 }
+
+/**
+ * TODO(ddelnano): Refactor the cgroup resolver code so that logic within AutoDiscoverCGroupPath
+ * and CGroupBasePaths can be tested. OVH's managed k8s failed to work with our logic because
+ * it enables cgroup v1 and v2 while the PEM existed in a v2 cgroup. Ideally our tests would
+ * cover the following scenarios for both LegacyCGroupPathResolver and CGroupPathResolver:
+ * 1. cgroup1 only
+ * 2. cgroup2 only
+ * 3. cgroup1+cgroup2 w/ cgroup1 failing (gh#XXX bug)
+ * 4. cgroup1+cgroup2 w/ cgroup1 succeeding
+ */
 
 }  // namespace md
 }  // namespace px

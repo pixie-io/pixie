@@ -78,6 +78,14 @@ constexpr DataElement kLatencyNS = {
     types::PatternType::METRIC_GAUGE,
 };
 
+constexpr DataElement kEncrypted = {
+    "encrypted",
+    "If the protocol trace happened over an encrypted connection",
+    types::DataType::BOOLEAN,
+    types::SemanticType::ST_NONE,
+    types::PatternType::GENERAL_ENUM,
+};
+
 constexpr DataElement kPXInfo = {
     "px_info_",
     "Pixie messages regarding the record (e.g. warnings)",

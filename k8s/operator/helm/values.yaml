@@ -8,6 +8,7 @@ deployOLM: ""
 # The namespace that olm should run in. If olm has already been deployed
 # to the cluster, this should be the namespace that olm is already running in.
 olmNamespace: "olm"
+olmNodeSelector: {}
 # The namespace which olm operators should run in. If olm has already
 # been deployed to the cluster, this should be the namespace that the olm operators
 # are running in.
@@ -21,6 +22,8 @@ olmCatalogSource:
   annotations: {}
   # Optional custom labels to add to deployed pods managed by CatalogSource object.
   labels: {}
+  # Node selectors to apply for pods managed by CatalogSource object
+  nodeSelector: {}
 ## Vizier configuration
 # The name of the Vizier instance deployed to the cluster.
 name: "pixie"

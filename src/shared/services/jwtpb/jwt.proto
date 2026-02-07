@@ -22,7 +22,7 @@ package px.common;
 
 option go_package = "jwtpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 
 // Store the basic JWT claim information.
 message JWTClaims {

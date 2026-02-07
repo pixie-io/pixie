@@ -52,7 +52,7 @@ func ConcatYAMLs(y1 string, y2 string) string {
 // ExtractYAMLs writes the generated YAMLs to a tar at the given path in the given format.
 func ExtractYAMLs(yamls []*YAMLFile, extractPath string, yamlDir string, format ExtractYAMLFormat) error {
 	writeYAML := func(w *tar.Writer, name string, contents string) error {
-		if err := w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 0777}); err != nil {
+		if err := w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 0o777}); err != nil {
 			return err
 		}
 		if _, err := w.Write([]byte(contents)); err != nil {
@@ -62,7 +62,7 @@ func ExtractYAMLs(yamls []*YAMLFile, extractPath string, yamlDir string, format 
 	}
 
 	filePath := path.Join(extractPath, "yamls.tar")
-	writer, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)
+	writer, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed trying  to open extract_yaml path: %s", err)
 	}

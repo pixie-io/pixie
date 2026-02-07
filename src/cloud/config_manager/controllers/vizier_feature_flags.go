@@ -124,7 +124,8 @@ func AddFeatureFlagsToTemplate(client VizierFeatureFlagClient, orgID uuid.UUID, 
 
 // AddFeatureFlagToTemplate adds an individual feature flag to the Vizier template.
 func AddFeatureFlagToTemplate(client VizierFeatureFlagClient, orgID uuid.UUID, featureFlag string, pemFlag string, defaultVal interface{},
-	tmplValues *vizieryamls.VizierTmplValues) {
+	tmplValues *vizieryamls.VizierTmplValues,
+) {
 	if _, hasValue := tmplValues.CustomPEMFlags[pemFlag]; !hasValue {
 		switch dv := defaultVal.(type) {
 		case bool:

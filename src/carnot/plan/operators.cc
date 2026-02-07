@@ -29,7 +29,7 @@
 #include <absl/strings/str_join.h>
 #include <absl/strings/substitute.h>
 #include <google/protobuf/text_format.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"

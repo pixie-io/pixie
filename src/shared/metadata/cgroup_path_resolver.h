@@ -27,7 +27,7 @@
 #include "src/common/system/system.h"
 #include "src/shared/metadata/k8s_objects.h"
 
-DECLARE_bool(force_cgroup2_mode);
+DECLARE_bool(test_only_force_cgroup2_mode);
 
 namespace px {
 namespace md {

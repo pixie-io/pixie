@@ -338,7 +338,6 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
   AddMethod(kEndpointOpID, endpoint_fn);
   PX_RETURN_IF_ERROR(endpoint_fn->SetDocString(kEndpointOpDocstring));
-  return Status::OK();
 
   return Status::OK();
 }

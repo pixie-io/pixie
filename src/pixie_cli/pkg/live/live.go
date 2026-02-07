@@ -59,9 +59,7 @@ const (
 	modalTypeAutocomplete
 )
 
-var (
-	errMissingScript = errors.New("No script provided")
-)
+var errMissingScript = errors.New("No script provided")
 
 type sortType int
 
@@ -123,7 +121,8 @@ type Modal interface {
 
 // New creates a new live view.
 func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudpb.AutocompleteServiceClient,
-	execScript *script.ExecutableScript, useNewAC, useEncryption bool, clusterID uuid.UUID) (*View, error) {
+	execScript *script.ExecutableScript, useNewAC, useEncryption bool, clusterID uuid.UUID,
+) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------
 	//  | View Information ...                   |
@@ -314,6 +313,7 @@ func (v *View) clearErrorIfAny() {
 		v.pages.RemovePage("error")
 	}
 }
+
 func (v *View) execCompleteWithError(err error) {
 	v.searchClear()
 	v.closeModal()
@@ -490,7 +490,7 @@ func (v *View) createTviewTable(t components.TableView, formatter vizier.DataFor
 	})
 
 	table.SetSelectionChangedFunc(func(row, column int) {
-		//fmt.Printf("%+v  %+v\n", row, column)
+		// fmt.Printf("%+v  %+v\n", row, column)
 		// Switch the sort state.
 		if row == 0 {
 			cs := v.s.sortState[v.s.selectedTable][column]

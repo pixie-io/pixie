@@ -15,7 +15,6 @@ runs:
   using: "composite"
   steps:
   - name: Not pull_request_target
-    # yamllint disable rule:indentation
     if: github.event_name != 'pull_request_target'
     shell: bash
     run: |
@@ -29,21 +28,18 @@ runs:
         github.event.pull_request.author_association == 'OWNER' ||
         github.event.pull_request.author_association == 'MEMBER'
       )
-    # yamllint enable rule:indentation
     shell: bash
     run: |
       echo "" > env_name
       echo "${{ github.event.pull_request.head.sha }}" >> ref
       echo "${{ github.event.pull_request.head.sha }}" >> sha
   - name: Require external environment authorization.
-    # yamllint disable rule:indentation
     if: >-
       github.event_name == 'pull_request_target' &&
       !(
         github.event.pull_request.author_association == 'OWNER' ||
         github.event.pull_request.author_association == 'MEMBER'
       )
-    # yamllint enable rule:indentation
     shell: bash
     run: |
       echo "pr-actions-approval" > env_name

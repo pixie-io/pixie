@@ -14,16 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label")
-
-# TODO(vihang): load this from pl_build_system once we remove go 1.16
-pl_supported_go_sdk_versions = [
-    "1.17",
-    "1.18",
-    "1.19",
-    "1.20",
-    "1.21",
-]
+load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label", "pl_go_test_versions", "pl_supported_go_sdk_versions")
 
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 
@@ -97,6 +88,19 @@ pl_cc_test_library(
 
 [
     pl_cc_test_library(
+        name = pl_go_sdk_version_template_to_label("go_%s_grpc_server_container", sdk_version),
+        srcs = [],
+        hdrs = [pl_go_sdk_version_template_to_label("go_%s_grpc_server_container.h", sdk_version)],
+        data = [
+            pl_go_sdk_version_template_to_label("//src/stirling/source_connectors/socket_tracer/testing/containers:golang_%s_grpc_server_with_buildinfo.tar", sdk_version),
+        ],
+        deps = ["//src/common/testing/test_utils:cc_library"],
+    )
+    for sdk_version in pl_go_test_versions
+]
+
+[
+    pl_cc_test_library(
         name = pl_go_sdk_version_template_to_label("go_%s_tls_client_container", sdk_version),
         srcs = [],
         hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_client_container.h", sdk_version)],
@@ -119,6 +123,19 @@ pl_cc_test_library(
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
     for sdk_version in pl_all_supported_go_sdk_versions
+]
+
+[
+    pl_cc_test_library(
+        name = pl_go_sdk_version_template_to_label("go_%s_tls_server_container", sdk_version),
+        srcs = [],
+        hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_server_container.h", sdk_version)],
+        data = [
+            pl_go_sdk_version_template_to_label("//src/stirling/source_connectors/socket_tracer/testing/containers:golang_%s_https_server_with_buildinfo.tar", sdk_version),
+        ],
+        deps = ["//src/common/testing/test_utils:cc_library"],
+    )
+    for sdk_version in pl_go_test_versions
 ]
 
 pl_cc_test_library(
@@ -301,9 +318,9 @@ pl_cc_test_library(
 )
 
 pl_cc_test_library(
-    name = "python_3_10_container",
+    name = "python_min_310_container",
     srcs = [],
-    hdrs = ["python_3_10_container.h"],
+    hdrs = ["python_min_310_container.h"],
     data = [
         "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:python_min_310_https_server.tar",
     ],

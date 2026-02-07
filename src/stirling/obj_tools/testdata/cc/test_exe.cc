@@ -72,6 +72,17 @@ ABCStruct64 ABCSumMixed(ABCStruct32 x, ABCStruct64 y, int32_t z_a, int64_t z_b, 
   return ABCStruct64{x.a + y.a + z_a + w.a, x.b + y.b + z_b + w.b, x.c + y.c + z_c + w.c};
 }
 
+void OuterStructFunc(OuterStruct x) {
+  x.O0++;
+  x.O1.M0.L0 = !x.O1.M0.L0;
+  x.O1.M0.L1++;
+  x.O1.M0.L2++;
+  x.O1.M1 = !x.O1.M1;
+  x.O1.M2.L0 = !x.O1.M2.L0;
+  x.O1.M2.L1++;
+  x.O1.M2.L2++;
+}
+
 void SomeFunctionWithPointerArgs(int* a, ABCStruct32* x) {
   x->a = *a;
   a++;
@@ -113,6 +124,7 @@ int main() {
 
     sleep(1);
   }
+  OuterStructFunc(OuterStruct{1, MidStruct{{true, 2, nullptr}, false, {true, 3, nullptr}}});
 
   return 0;
 }

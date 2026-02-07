@@ -26,6 +26,6 @@ go_library(
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
     ],
 )

@@ -1,0 +1,5 @@
+---
+short: Differential Flame Graph
+long: >
+  This live view shows a differential CPU flame graph. This is helpful in identifying what code
+  paths have changed between deployments, different container instances, etc.

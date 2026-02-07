@@ -54,8 +54,7 @@ func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key strin
 	return uuid.Nil, uuid.Nil, uuid.Nil, vzerrors.ErrDeploymentKeyNotFound
 }
 
-type fakeProvisioner struct {
-}
+type fakeProvisioner struct{}
 
 func (f *fakeProvisioner) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, string, error) {
 	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster1" && clusterName == "test" {

@@ -30,9 +30,11 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-const uuidStr = "ea8aa095-697f-49f1-b127-d50e5b6e2645"
-const hi uint64 = 0xea8aa095697f49f1
-const lo uint64 = 0xb127d50e5b6e2645
+const (
+	uuidStr        = "ea8aa095-697f-49f1-b127-d50e5b6e2645"
+	hi      uint64 = 0xea8aa095697f49f1
+	lo      uint64 = 0xb127d50e5b6e2645
+)
 
 var enc = binary.BigEndian
 

@@ -179,6 +179,12 @@ class DwarfReader {
                                           std::optional<llvm::dwarf::Tag> type = {});
 
   /**
+   * Detects the source language and compiler from a DW_TAG_compile_unit's attributes.
+   */
+  StatusOr<std::pair<llvm::dwarf::SourceLanguage, std::string>> DetectSourceLanguageFromCUDIE(
+      const llvm::DWARFDie& die);
+
+  /**
    * Return the size of a struct.
    */
   StatusOr<uint64_t> GetStructByteSize(std::string_view struct_name);
@@ -291,15 +297,9 @@ class DwarfReader {
 
   bool IsValid() const { return dwarf_context_->getNumCompileUnits() != 0; }
 
-  const llvm::dwarf::SourceLanguage& source_language() const { return source_language_; }
-  const std::string& compiler() const { return compiler_; }
-
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
               std::unique_ptr<llvm::DWARFContext> dwarf_context);
-
-  // Detects the source language of the dwarf content being read.
-  Status DetectSourceLanguage();
 
   // Builds an index for certain commonly used DIE types (e.g. structs and functions).
   // When making multiple DwarfReader calls, this speeds up the process at the cost of some memory.
@@ -316,12 +316,6 @@ class DwarfReader {
 
   void InsertToDIEMap(std::string name, llvm::dwarf::Tag tag, llvm::DWARFDie die);
   std::optional<llvm::DWARFDie> FindInDIEMap(const std::string& name, llvm::dwarf::Tag tag) const;
-
-  // Records the source language of the DWARF information.
-  llvm::dwarf::SourceLanguage source_language_;
-
-  // Records the name of the compiler that produces this file.
-  std::string compiler_;
 
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;

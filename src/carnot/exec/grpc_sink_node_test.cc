@@ -68,8 +68,8 @@ class GRPCSinkNodeTest : public ::testing::Test {
                const std::string&) -> std::unique_ptr<ResultSinkService::StubInterface> {
           return std::move(mock_unique_);
         },
-        MockMetricsStubGenerator, MockTraceStubGenerator, sole::uuid4(), nullptr, nullptr,
-        [this](grpc::ClientContext*) { add_metadata_called_ = true; });
+        MockMetricsStubGenerator, MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(),
+        nullptr, nullptr, [this](grpc::ClientContext*) { add_metadata_called_ = true; });
 
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});

@@ -253,18 +253,19 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 			mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
 				VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
 			}).Return(&vzmgrpb.GetVizierInfosResponse{
-				VizierInfos: []*cvmsgspb.VizierInfo{{
-					VizierID:             clusterID,
-					Status:               cvmsgspb.VZ_ST_HEALTHY,
-					LastHeartbeatNs:      int64(1305646598000000000),
-					Config:               &cvmsgspb.VizierConfig{},
-					VizierVersion:        "1.2.3",
-					ClusterUID:           "a UID",
-					ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
-					ClusterVersion:       "5.6.7",
-					NumNodes:             5,
-					NumInstrumentedNodes: 3,
-				},
+				VizierInfos: []*cvmsgspb.VizierInfo{
+					{
+						VizierID:             clusterID,
+						Status:               cvmsgspb.VZ_ST_HEALTHY,
+						LastHeartbeatNs:      int64(1305646598000000000),
+						Config:               &cvmsgspb.VizierConfig{},
+						VizierVersion:        "1.2.3",
+						ClusterUID:           "a UID",
+						ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
+						ClusterVersion:       "5.6.7",
+						NumNodes:             5,
+						NumInstrumentedNodes: 3,
+					},
 					{
 						VizierID:             clusterID,
 						Status:               cvmsgspb.VZ_ST_HEALTHY,
@@ -330,18 +331,19 @@ func TestVizierClusterInfo_GetClusterInfo_Homoglyphs(t *testing.T) {
 			mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
 				VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
 			}).Return(&vzmgrpb.GetVizierInfosResponse{
-				VizierInfos: []*cvmsgspb.VizierInfo{{
-					VizierID:             clusterID,
-					Status:               cvmsgspb.VZ_ST_HEALTHY,
-					LastHeartbeatNs:      int64(1305646598000000000),
-					Config:               &cvmsgspb.VizierConfig{},
-					VizierVersion:        "1.2.3",
-					ClusterUID:           "a UID",
-					ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
-					ClusterVersion:       "5.6.7",
-					NumNodes:             5,
-					NumInstrumentedNodes: 3,
-				},
+				VizierInfos: []*cvmsgspb.VizierInfo{
+					{
+						VizierID:             clusterID,
+						Status:               cvmsgspb.VZ_ST_HEALTHY,
+						LastHeartbeatNs:      int64(1305646598000000000),
+						Config:               &cvmsgspb.VizierConfig{},
+						VizierVersion:        "1.2.3",
+						ClusterUID:           "a UID",
+						ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
+						ClusterVersion:       "5.6.7",
+						NumNodes:             5,
+						NumInstrumentedNodes: 3,
+					},
 					{
 						VizierID:             clusterID,
 						Status:               cvmsgspb.VZ_ST_HEALTHY,
@@ -401,16 +403,17 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 			mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
 				VizierIDs: []*uuidpb.UUID{clusterID},
 			}).Return(&vzmgrpb.GetVizierInfosResponse{
-				VizierInfos: []*cvmsgspb.VizierInfo{{
-					VizierID:        clusterID,
-					Status:          cvmsgspb.VZ_ST_HEALTHY,
-					LastHeartbeatNs: int64(1305646598000000000),
-					Config:          &cvmsgspb.VizierConfig{},
-					VizierVersion:   "1.2.3",
-					ClusterUID:      "a UID",
-					ClusterName:     "some cluster",
-					ClusterVersion:  "5.6.7",
-				},
+				VizierInfos: []*cvmsgspb.VizierInfo{
+					{
+						VizierID:        clusterID,
+						Status:          cvmsgspb.VZ_ST_HEALTHY,
+						LastHeartbeatNs: int64(1305646598000000000),
+						Config:          &cvmsgspb.VizierConfig{},
+						VizierVersion:   "1.2.3",
+						ClusterUID:      "a UID",
+						ClusterName:     "some cluster",
+						ClusterVersion:  "5.6.7",
+					},
 				},
 			}, nil)
 

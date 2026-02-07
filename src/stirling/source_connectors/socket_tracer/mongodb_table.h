@@ -37,6 +37,7 @@ static constexpr DataElement kMongoDBElements[] = {
         canonical_data_elements::kLocalAddr,
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
+        canonical_data_elements::kEncrypted,
         {"req_cmd", "MongoDB request command",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,

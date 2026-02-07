@@ -80,6 +80,7 @@ func (w *parser) ArgMatch(s string) bool {
 
 	return allRe.MatchString(s) && w.isTabbedLine(s)
 }
+
 func (w *parser) ReturnMatch(s string) bool {
 	allRe := re.MustCompile(w.ReturnReStr())
 
@@ -373,8 +374,10 @@ func parseDocstring(docString string) (*FunctionDocstring, error) {
 	return p.parsedDoc, nil
 }
 
-const topicRegex = `:topic: (?P<topic>[^\s]*)\n`
-const opnameRegex = `:opname: (?P<opname>.*)\n`
+const (
+	topicRegex  = `:topic: (?P<topic>[^\s]*)\n`
+	opnameRegex = `:opname: (?P<opname>.*)\n`
+)
 
 // getTag finds the tag in the docstring if it exists.
 func getTag(docstring, tagRegex string) string {

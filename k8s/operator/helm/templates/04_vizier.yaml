@@ -7,7 +7,9 @@ spec:
   {{- if .Values.version }}
   version: {{ .Values.version }}
   {{- end }}
+  {{- if .Values.deployKey }}
   deployKey: {{ .Values.deployKey }}
+  {{- end }}
   {{- if .Values.customDeployKeySecret }}
   customDeployKeySecret: {{ .Values.customDeployKeySecret }}
   {{- end }}

@@ -42,6 +42,8 @@
 // 000021_org_add_invite_signing_key.up.sql
 // 000022_users_drop_usernames.down.sql
 // 000022_users_drop_usernames.up.sql
+// 000023_convert_profile_picture_to_text.down.sql
+// 000023_convert_profile_picture_to_text.up.sql
 package schema
 
 import (
@@ -958,6 +960,46 @@ func _000022_users_drop_usernamesUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000023_convert_profile_picture_to_textDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\x80\x88\x38\xfb\xfb\x84\xfa\xfa\x29\x14\x14\xe5\xa7\x65\xe6\xa4\xc6\x17\x64\x26\x97\x94\x16\xa5\x2a\x84\x44\x06\xb8\x2a\x84\x39\x06\x39\x7b\x38\x06\x29\x68\x18\x1a\x18\x99\x68\x5a\x73\x01\x02\x00\x00\xff\xff\x4e\x14\xb9\x01\x44\x00\x00\x00")
+
+func _000023_convert_profile_picture_to_textDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000023_convert_profile_picture_to_textDownSql,
+		"000023_convert_profile_picture_to_text.down.sql",
+	)
+}
+
+func _000023_convert_profile_picture_to_textDownSql() (*asset, error) {
+	bytes, err := _000023_convert_profile_picture_to_textDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000023_convert_profile_picture_to_text.down.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000023_convert_profile_picture_to_textUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\x80\x88\x38\xfb\xfb\x84\xfa\xfa\x29\x14\x14\xe5\xa7\x65\xe6\xa4\xc6\x17\x64\x26\x97\x94\x16\xa5\x2a\x84\x44\x06\xb8\x2a\x84\xb8\x46\x84\x58\x73\x01\x02\x00\x00\xff\xff\x32\xe0\x0f\x7d\x3a\x00\x00\x00")
+
+func _000023_convert_profile_picture_to_textUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000023_convert_profile_picture_to_textUpSql,
+		"000023_convert_profile_picture_to_text.up.sql",
+	)
+}
+
+func _000023_convert_profile_picture_to_textUpSql() (*asset, error) {
+	bytes, err := _000023_convert_profile_picture_to_textUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000023_convert_profile_picture_to_text.up.sql", size: 58, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1052,6 +1094,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000021_org_add_invite_signing_key.up.sql":               _000021_org_add_invite_signing_keyUpSql,
 	"000022_users_drop_usernames.down.sql":                   _000022_users_drop_usernamesDownSql,
 	"000022_users_drop_usernames.up.sql":                     _000022_users_drop_usernamesUpSql,
+	"000023_convert_profile_picture_to_text.down.sql":        _000023_convert_profile_picture_to_textDownSql,
+	"000023_convert_profile_picture_to_text.up.sql":          _000023_convert_profile_picture_to_textUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1137,6 +1181,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000021_org_add_invite_signing_key.up.sql":               &bintree{_000021_org_add_invite_signing_keyUpSql, map[string]*bintree{}},
 	"000022_users_drop_usernames.down.sql":                   &bintree{_000022_users_drop_usernamesDownSql, map[string]*bintree{}},
 	"000022_users_drop_usernames.up.sql":                     &bintree{_000022_users_drop_usernamesUpSql, map[string]*bintree{}},
+	"000023_convert_profile_picture_to_text.down.sql":        &bintree{_000023_convert_profile_picture_to_textDownSql, map[string]*bintree{}},
+	"000023_convert_profile_picture_to_text.up.sql":          &bintree{_000023_convert_profile_picture_to_textUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

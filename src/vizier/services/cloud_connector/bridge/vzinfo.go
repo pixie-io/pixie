@@ -52,8 +52,10 @@ import (
 
 const k8sStateUpdatePeriod = 10 * time.Second
 
-const privateImageRepo = "gcr.io/pixie-oss/pixie-dev"
-const publicImageRepo = "gcr.io/pixie-oss/pixie-prod"
+const (
+	privateImageRepo = "gcr.io/pixie-oss/pixie-dev"
+	publicImageRepo  = "gcr.io/pixie-oss/pixie-prod"
+)
 
 // K8sState describes the Kubernetes state of the Vizier instance.
 type K8sState struct {

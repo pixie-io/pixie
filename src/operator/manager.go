@@ -32,12 +32,9 @@ import (
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/operator/controllers"
 	"px.dev/pixie/src/utils/shared/k8s"
-	// +kubebuilder:scaffold:imports
 )
 
-var (
-	scheme = runtime.NewScheme()
-)
+var scheme = runtime.NewScheme()
 
 const (
 	leaderElectionID = "27ad4010.px.dev"

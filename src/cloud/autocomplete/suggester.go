@@ -158,7 +158,6 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	}
 
 	resp, err := ms.Do(context.Background())
-
 	if err != nil {
 		return nil, err
 	}
@@ -173,9 +172,10 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			scriptArgMap[s.ScriptName] = make([]cloudpb.AutocompleteEntityKind, 0)
 			for _, a := range s.Vis.Variables {
 				aKind := cloudpb.AEK_UNKNOWN
-				if a.Type == vispb.PX_POD {
+				switch a.Type {
+				case vispb.PX_POD:
 					aKind = cloudpb.AEK_POD
-				} else if a.Type == vispb.PX_SERVICE {
+				case vispb.PX_SERVICE:
 					aKind = cloudpb.AEK_SVC
 				}
 
@@ -273,7 +273,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			// TODO(michellenguyen): Remove namespace handling when we create a new index and ensure there are no more
 			// documents with namespace.
 			resName := res.Name
-			if res.NS != "" && !(md.EsMDType(res.Kind) == md.EsMDTypeNamespace || md.EsMDType(res.Kind) == md.EsMDTypeNode) {
+			if res.NS != "" && !(md.EsMDType(res.Kind) == md.EsMDTypeNamespace || md.EsMDType(res.Kind) == md.EsMDTypeNode) { //nolint:staticcheck
 				resName = fmt.Sprintf("%s/%s", res.NS, res.Name)
 			}
 

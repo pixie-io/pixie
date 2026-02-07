@@ -19,7 +19,7 @@
 #pragma once
 
 #include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/utils/monitor.h"
 #include "src/stirling/utils/tcp_stats.h"

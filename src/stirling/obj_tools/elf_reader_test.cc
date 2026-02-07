@@ -40,10 +40,60 @@ using ::testing::UnorderedElementsAre;
 
 using ::px::operator<<;
 
-StatusOr<int64_t> NmSymbolNameToAddr(const std::string& path, const std::string& symbol_name) {
+// Models ELF section output information from objdump -h.
+// ELFIO::section's do not contain virtual memory addresses like ELFIO::segment's do
+// so this struct is used to store the information from objdump.
+// Example objdump output:
+//
+// $ objdump -j .bss -h bazel-bin/src/stirling/obj_tools/testdata/cc/test_exe/test_exe
+//
+// bazel-bin/src/stirling/obj_tools/testdata/cc/test_exe/test_exe:     file format elf64-x86-64
+//
+// Sections:
+// Idx Name          Size      VMA               LMA               File off  Algn
+//  27 .bss          00002068  00000000000bd100  00000000000bd100  000ba100  2**5
+//                    ALLOC
+struct Section {
+  std::string name;
+  int64_t size;
+  int64_t vma;
+  int64_t lma;
+  int64_t file_offset;
+};
+
+// TODO(ddelnano): Make this function hermetic by providing the objdump output via bazel
+StatusOr<Section> ObjdumpSectionNameToAddr(const std::string& path,
+                                           const std::string& section_name) {
+  Section section;
+  std::string objdump_out =
+      px::Exec(absl::StrCat("objdump -h -j ", section_name, " ", path)).ValueOrDie();
+  std::vector<absl::string_view> objdump_out_lines = absl::StrSplit(objdump_out, '\n');
+  for (auto& line : objdump_out_lines) {
+    if (line.find(section_name) != std::string::npos) {
+      std::vector<absl::string_view> line_split = absl::StrSplit(line, ' ', absl::SkipWhitespace());
+      CHECK(!line_split.empty());
+
+      section.name = std::string(line_split[1]);
+      section.size = std::stol(std::string(line_split[2]), nullptr, 16);
+      section.vma = std::stol(std::string(line_split[3]), nullptr, 16);
+      section.lma = std::stol(std::string(line_split[4]), nullptr, 16);
+      section.file_offset = std::stol(std::string(line_split[5]), nullptr, 16);
+      break;
+    }
+  }
+
+  if (section.name != section_name) {
+    return error::Internal("Unable to find section with name $0", section_name);
+  }
+
+  return section;
+}
+
+StatusOr<int64_t> NmSymbolNameToAddr(const std::string& nm_output_path,
+                                     const std::string& symbol_name) {
   // Extract the address from nm as the gold standard.
   int64_t symbol_addr = -1;
-  std::string nm_out = px::Exec(absl::StrCat("nm ", path)).ValueOrDie();
+  PX_ASSIGN_OR_RETURN(auto nm_out, px::ReadFileToString(nm_output_path));
   std::vector<absl::string_view> nm_out_lines = absl::StrSplit(nm_out, '\n');
   for (auto& line : nm_out_lines) {
     if (line.find(symbol_name) != std::string::npos) {
@@ -114,8 +164,9 @@ TEST(ElfReaderTest, ListFuncSymbolsSuffixMatch) {
 
 TEST(ElfReaderTest, SymbolAddress) {
   const std::string path = kTestExeFixture.Path().string();
+  const std::string nm_output_path = kTestExeFixture.NmOutputPath().string();
   const std::string kSymbolName = "CanYouFindThis";
-  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(nm_output_path, kSymbolName));
 
   // Actual tests of SymbolAddress begins here.
 
@@ -133,10 +184,22 @@ TEST(ElfReaderTest, SymbolAddress) {
   }
 }
 
+TEST(ElfReaderTest, VirtualAddrToBinaryAddr) {
+  const std::string path = kTestExeFixture.Path().string();
+  const std::string kDataSection = ".data";
+  ASSERT_OK_AND_ASSIGN(const Section section, ObjdumpSectionNameToAddr(path, kDataSection));
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+  const int64_t offset = 1;
+  ASSERT_OK_AND_ASSIGN(auto binary_addr, elf_reader->VirtualAddrToBinaryAddr(section.vma + offset));
+  EXPECT_EQ(binary_addr, section.file_offset + offset);
+}
+
 TEST(ElfReaderTest, AddrToSymbol) {
   const std::string path = kTestExeFixture.Path().string();
+  const std::string nm_output_path = kTestExeFixture.NmOutputPath().string();
   const std::string kSymbolName = "CanYouFindThis";
-  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(nm_output_path, kSymbolName));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -156,8 +219,9 @@ TEST(ElfReaderTest, AddrToSymbol) {
 
 TEST(ElfReaderTest, InstrAddrToSymbol) {
   const std::string path = kTestExeFixture.Path().string();
+  const std::string nm_output_path = kTestExeFixture.NmOutputPath().string();
   const std::string kSymbolName = "CanYouFindThis";
-  ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
+  ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(nm_output_path, kSymbolName));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -239,13 +303,16 @@ TEST(ElfReaderTest, FuncByteCode) {
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
   const std::string kPath =
-      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_19_binary");
+      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_24_binary");
+  const std::string kGoBinNmOutput =
+      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_24_nm_output");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
 // Coverage build might alter the resultant binary.
 #ifndef PL_COVERAGE
-  ASSERT_OK_AND_ASSIGN(auto expected_addr, NmSymbolNameToAddr(kPath, "runtime.buildVersion"));
+  ASSERT_OK_AND_ASSIGN(auto expected_addr,
+                       NmSymbolNameToAddr(kGoBinNmOutput, "runtime.buildVersion"));
   EXPECT_EQ(symbol.address, expected_addr);
 #endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";

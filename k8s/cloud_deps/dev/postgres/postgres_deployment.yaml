@@ -14,7 +14,10 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:14-alpine@sha256:446abaf8831c54f57212c0ae52f5df84e69eeb2767e2376d07bed9c9742b1243
+        # TODO(ddelnano): This image was rebuilt from https://github.com/docker-library/postgres 14-alpine
+        # to remediate a critical vulnerability. Switch back to upstream once fixed.
+        # yamllint disable-line rule:line-length
+        image: ghcr.io/pixie-io/postgres:14-alpine-pl1@sha256:237c5fcf79b230979e12fe02f46e0ad29565b4ecb7cb15047197cbb9a6549e8d
         ports:
         - containerPort: 5432
         env:

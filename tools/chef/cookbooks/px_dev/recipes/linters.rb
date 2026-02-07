@@ -26,7 +26,7 @@ execute 'install js linters' do
 end
 
 execute 'install py linters' do
-  command 'python3 -m pip install flake8 flake8-mypy yamllint --no-cache-dir && python3 -m pip cache purge'
+  command 'python3 -m pip install --break-system-packages flake8 mypy yamllint --no-cache-dir && python3 -m pip cache purge'
 end
 
 common_remote_bin 'prototool'
@@ -47,8 +47,8 @@ template '/opt/px_dev/bin/bazel' do
   action :create
 end
 
-common_remote_bin 'bazel' do
-  bin_name 'bazel_core'
+common_remote_bin 'bazelisk' do
+  bin_name 'bazelisk'
 end
 
 if platform_family?('debian')

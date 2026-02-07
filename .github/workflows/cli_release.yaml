@@ -15,14 +15,14 @@ jobs:
       image-base-name: "dev_image_with_extras"
   build-release:
     name: Build Release
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     env:
       ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
     - name: Add pwd to git safe dir
@@ -62,7 +62,7 @@ jobs:
         ./ci/save_version_info.sh
         ./ci/cli_build_release.sh
     - name: Upload Github Artifacts
-      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: linux-artifacts
         path: artifacts/
@@ -73,7 +73,7 @@ jobs:
         MANIFEST_UPDATES: ""
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       run: ./ci/update_artifact_manifest.sh
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: artifact-upload-log
         path: ${{ env.ARTIFACT_UPLOAD_LOG }}
@@ -82,17 +82,17 @@ jobs:
     runs-on: macos-latest
     needs: build-release
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: Install gon
-      run: brew install mitchellh/gon/gon
+      run: brew install Bearer/tap/gon
     - name: Sign CLI release
       env:
         REF: ${{ github.event.ref }}
-        AC_PASSWD: ${{ secrets.APPLE_ID_PASSWORD }}
+        AC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         CERT_BASE64: ${{ secrets.APPLE_SIGN_CERT_B64 }}
         CERT_PASSWORD: ${{ secrets.APPLE_SIGN_CERT_PASSWORD }}
@@ -104,7 +104,7 @@ jobs:
         mkdir -p "artifacts/"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         ./ci/cli_merge_sign.sh
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: macos-artifacts
         path: artifacts/
@@ -117,13 +117,13 @@ jobs:
     env:
       MANIFEST_UPDATES: "manifest_updates.json"
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
       with:
         name: macos-artifacts
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
       with:
         name: artifact-upload-log
     - name: Import GPG key
@@ -135,6 +135,9 @@ jobs:
       uses: ./.github/actions/gcloud_creds
       with:
         SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
+    - name: Add pwd to git safe dir
+      run: |
+        git config --global --add safe.directory `pwd`
     - name: Upload signed CLI
       env:
         REF: ${{ github.event.ref }}
@@ -147,11 +150,11 @@ jobs:
         mkdir -p "artifacts/"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         ./ci/cli_upload_signed.sh
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
-        name: macos-artifacts
+        name: macos-signed-artifacts
         path: artifacts/
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: manifest-updates
         path: ${{ env.MANIFEST_UPDATES }}
@@ -162,16 +165,15 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
     - name: Create Release
       env:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         export TAG_NAME="${REF#*/tags/}"
         # actions/checkout doesn't get the tag annotation properly.
@@ -185,9 +187,8 @@ jobs:
           --title "CLI ${TAG_NAME#release/cli/}" \
           --notes $'Pixie CLI Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" linux-artifacts/* macos-artifacts/*
-      # yamllint enable rule:indentation
   update-gh-artifacts-manifest:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: oracle-8cpu-32gb-x86-64
     needs: [get-dev-image, create-github-release]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -195,10 +196,10 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         ref: gh-pages
         path: gh-pages
@@ -220,7 +221,7 @@ jobs:
         git config --global user.email 'build@pixielabs.ai'
         git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
         git config --global commit.gpgsign true
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
       id: download-artifact
       with:
         name: manifest-updates

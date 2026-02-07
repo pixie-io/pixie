@@ -60,6 +60,12 @@ filegroup(
 )
 
 filegroup(
+    name = "toolchain_nm_files",
+    srcs = [":nm"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "toolchain_strip_files",
     srcs = [":strip"],
     visibility = ["//visibility:public"],
@@ -110,6 +116,7 @@ filegroup(
         "as",
         "cov",
         "objcopy",
+        "nm",
         "strip",
         "dwp",
     ]
@@ -124,6 +131,7 @@ filegroup(
         ":toolchain_dwp_files",
         ":toolchain_linker_files",
         ":toolchain_objcopy_files",
+        ":toolchain_nm_files",
         ":toolchain_strip_files",
     ],
     visibility = ["//visibility:public"],

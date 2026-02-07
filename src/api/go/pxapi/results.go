@@ -181,7 +181,6 @@ func (s *ScriptResults) run() error {
 	ctx := s.c.Context()
 	for {
 		resp, err := s.c.Recv()
-
 		if err != nil {
 			if err == io.EOF {
 				// Stream has terminated.

@@ -66,7 +66,7 @@ class BorrowPool {
   }
 
  private:
-  std::vector<StoredPtrType> pool_ GUARDED_BY(pool_lock_);
+  std::vector<StoredPtrType> pool_ ABSL_GUARDED_BY(pool_lock_);
   absl::base_internal::SpinLock pool_lock_;
 };
 

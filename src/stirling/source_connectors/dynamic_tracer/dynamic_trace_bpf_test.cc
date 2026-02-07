@@ -30,13 +30,21 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-constexpr std::string_view kClientPath =
+constexpr std::string_view kGo1_23_ClientPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
-    "golang_1_16_grpc_client";
-constexpr std::string_view kServerPath =
+    "golang_1_23_grpc_client";
+constexpr std::string_view kGo1_23_ServerPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server";
+    "golang_1_23_grpc_server";
 
+constexpr std::string_view kGo1_24_ClientPath =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
+    "golang_1_24_grpc_client";
+constexpr std::string_view kGo1_24_ServerPath =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+    "golang_1_24_grpc_server";
+
+DECLARE_bool(debug_dt_pipeline);
 namespace px {
 namespace stirling {
 
@@ -53,11 +61,12 @@ using ::testing::StrEq;
 using LogicalProgram = ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
 // TODO(yzhao): Create test fixture that wraps the test binaries.
-class GoHTTPDynamicTraceTest : public ::testing::Test {
+class GoHTTPDynamicTraceTest
+    : public ::testing::TestWithParam<std::pair<std::string, std::string>> {
  protected:
   void SetUp() override {
-    client_path_ = px::testing::BazelRunfilePath(kClientPath).string();
-    server_path_ = px::testing::BazelRunfilePath(kServerPath).string();
+    client_path_ = px::testing::BazelRunfilePath(GetParam().first).string();
+    server_path_ = px::testing::BazelRunfilePath(GetParam().second).string();
 
     ASSERT_TRUE(fs::Exists(server_path_));
     ASSERT_TRUE(fs::Exists(client_path_));
@@ -111,6 +120,10 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
   LogicalProgram logical_program_;
   std::unique_ptr<SourceConnector> connector_;
 };
+
+INSTANTIATE_TEST_SUITE_P(GoHTTPDynamicTraceTestInstances, GoHTTPDynamicTraceTest,
+                         ::testing::Values(std::make_pair(kGo1_23_ClientPath, kGo1_23_ServerPath),
+                                           std::make_pair(kGo1_24_ClientPath, kGo1_24_ServerPath)));
 
 constexpr char kGRPCTraceProgram[] = R"(
 tracepoints {
@@ -175,7 +188,7 @@ tracepoints {
 }
 )";
 
-TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
+TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kGRPCTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
@@ -199,7 +212,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   }
 }
 
-TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
+TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
   ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kReturnValueTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 

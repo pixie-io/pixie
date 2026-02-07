@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
-	_ "github.com/golang-migrate/migrate/source/go_bindata"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	_ "github.com/golang-migrate/migrate/source/go_bindata"       //nolint:staticcheck
+	bindata "github.com/golang-migrate/migrate/source/go_bindata" //nolint:staticcheck
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -36,8 +36,10 @@ import (
 	"px.dev/pixie/src/shared/services/pgtest"
 )
 
-var testOrgID1 = uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
-var testOrgID2 = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
+var (
+	testOrgID1 = uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+	testOrgID2 = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
+)
 
 func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE from projects`)

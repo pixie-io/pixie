@@ -25,9 +25,11 @@ import (
 )
 
 // emptyQueueTimeout is the time we wait before we consider a queue to be empty.
-const emptyQueueTimeout = 200 * time.Millisecond
-const publishRetryInterval = 25 * time.Millisecond
-const publishTimeout = 1 * time.Minute
+const (
+	emptyQueueTimeout    = 200 * time.Millisecond
+	publishRetryInterval = 25 * time.Millisecond
+	publishTimeout       = 1 * time.Minute
+)
 
 // V2CDurableStream is the stream config for Durable v2c messages.
 var V2CDurableStream = &nats.StreamConfig{

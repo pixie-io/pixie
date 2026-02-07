@@ -215,6 +215,10 @@ template void DataStream::ProcessBytesToFrames<protocols::amqp::channel_id, prot
 template void DataStream::ProcessBytesToFrames<
     protocols::mongodb::stream_id_t, protocols::mongodb::Frame, protocols::mongodb::StateWrapper>(
     message_type_t type, protocols::mongodb::StateWrapper* state);
+
+template void DataStream::ProcessBytesToFrames<protocols::tls::stream_id_t, protocols::tls::Frame,
+                                               protocols::NoState>(message_type_t type,
+                                                                   protocols::NoState* state);
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;

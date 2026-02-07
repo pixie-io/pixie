@@ -32,6 +32,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/types.h"
 
 namespace px {
 namespace stirling {
@@ -124,6 +125,35 @@ inline std::vector<std::string> GetLocalAddrs(const types::ColumnWrapperRecordBa
     addrs.push_back(rb[kHTTPLocalAddrIdx]->Get<types::StringValue>(idx));
   }
   return addrs;
+}
+
+inline std::vector<bool> GetEncrypted(const types::ColumnWrapperRecordBatch& rb,
+                                      const int encrypted_idx, const std::vector<size_t>& indices) {
+  std::vector<bool> encrypted;
+  for (size_t idx : indices) {
+    encrypted.push_back(rb[encrypted_idx]->Get<types::BoolValue>(idx).val);
+  }
+  return encrypted;
+}
+
+inline std::vector<std::string> GetLocalAddrs(const types::ColumnWrapperRecordBatch& rb,
+                                              const int local_addr_idx,
+                                              const std::vector<size_t>& indices) {
+  std::vector<std::string> laddrs;
+  for (size_t idx : indices) {
+    laddrs.push_back(rb[local_addr_idx]->Get<types::StringValue>(idx));
+  }
+  return laddrs;
+}
+
+inline std::vector<int64_t> GetLocalPorts(const types::ColumnWrapperRecordBatch& rb,
+                                          const int local_port_idx,
+                                          const std::vector<size_t>& indices) {
+  std::vector<int64_t> ports;
+  for (size_t idx : indices) {
+    ports.push_back(rb[local_port_idx]->Get<types::Int64Value>(idx).val);
+  }
+  return ports;
 }
 
 inline std::vector<int64_t> GetRemotePorts(const types::ColumnWrapperRecordBatch& rb,

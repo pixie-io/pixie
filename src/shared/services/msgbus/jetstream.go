@@ -118,7 +118,6 @@ func (s *jetStreamStreamer) PersistentSubscribe(subject, persistentName string, 
 		nats.AckWait(s.ackWait),
 		nats.DeliverAll(),
 	)
-
 	if err != nil {
 		return nil, err
 	}

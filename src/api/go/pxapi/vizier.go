@@ -22,7 +22,6 @@ import (
 	"context"
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
-
 	"px.dev/pixie/src/api/proto/vizierpb"
 )
 

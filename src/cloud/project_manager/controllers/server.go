@@ -131,7 +131,6 @@ func (s *Server) GetProjectForOrg(ctx context.Context, req *uuidpb.UUID) (*proje
 	}
 
 	projectInfo, err := s.datastore.GetProjectForOrg(parsedOrgID)
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

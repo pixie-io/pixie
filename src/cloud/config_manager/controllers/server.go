@@ -157,7 +157,8 @@ func AddDefaultTableStoreSize(pemMemoryRequest string, customPEMFlags map[string
 
 // GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
 func (s *Server) GetConfigForVizier(ctx context.Context,
-	in *cpb.ConfigForVizierRequest) (*cpb.ConfigForVizierResponse, error) {
+	in *cpb.ConfigForVizierRequest,
+) (*cpb.ConfigForVizierResponse, error) {
 	log.Info("Fetching config for Vizier")
 
 	templatedYAMLs, err := fetchVizierTemplates(ctx, "", in.VzSpec.Version, s.atClient)
@@ -301,7 +302,8 @@ func getSentryDSN(vizierVersion string) string {
 // fetchVizierTemplates gets a download link, untars file, and
 // converts to yaml maps.
 func fetchVizierTemplates(ctx context.Context, authToken,
-	versionStr string, atClient atpb.ArtifactTrackerClient) ([]*yamls.YAMLFile, error) {
+	versionStr string, atClient atpb.ArtifactTrackerClient,
+) ([]*yamls.YAMLFile, error) {
 	req := &atpb.GetDownloadLinkRequest{
 		ArtifactName: "vizier",
 		VersionStr:   versionStr,

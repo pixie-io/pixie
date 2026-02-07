@@ -33,7 +33,7 @@
     "(^src/ui/src/types/generated/)",
     "(^src/ui/src/types/schema\\.ts$)",
     "(^third_party/cpplint/cpplint.py$)",
-    "(^third_party/github.com/gogo/protobuf/gogoproto/gogo.proto$)",
+    "(^third_party/gogoproto/gogo.proto$)",
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
     "(go\\.sum$)"
@@ -118,6 +118,15 @@
         "(\\.pxl$)"
       ]
     },
+    "mypy": {
+      "type": "script-and-regex",
+      "include": [
+        "(\\.py$)",
+        "(\\.pxl$)"
+      ],
+      "script-and-regex.script": "mypy --config-file=mypy.ini",
+      "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<severity>error|warning): (?P<message>.*)$/m"
+    },
     "gazelle": {
       "type": "script-and-regex",
       "include": [
@@ -127,12 +136,6 @@
       "script-and-regex.script": "./tools/linters/gazelle.sh",
       "script-and-regex.regex": "/^(?P<severity>[[:alpha:]]+)\n(?P<file>[^\n]+)\n(?P<message>[^\n]+)\n((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s"
     },
-    "goimports": {
-      "type": "goimports",
-      "include": [
-        "(\\.go$)"
-      ]
-    },
     "golangci-lint": {
       "type": "golangci-lint",
       "include": [
@@ -140,7 +143,7 @@
       ],
       "flags": [
         "--timeout=5m0s",
-        "--out-format=checkstyle"
+        "--output.checkstyle.path=stdout"
       ]
     },
     "jshint-ui": {
@@ -204,7 +207,8 @@
       "type": "spelling",
       "exclude": [
         "(.*\\.crt$)",
-        "(.*\\.key$)"
+        "(.*\\.key$)",
+        "(^k8s\/operator\/helm\/crds\/olm_crd.yaml$)"
       ]
     },
     "text": {

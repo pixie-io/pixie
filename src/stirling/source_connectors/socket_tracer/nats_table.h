@@ -34,6 +34,7 @@ constexpr DataElement kNATSElements[] = {
         canonical_data_elements::kLocalAddr,
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
+        canonical_data_elements::kEncrypted,
         {"cmd", "The name of the command.",
          types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
         // For PUB, MSG commands, the parameters and the paylod are included in the 'body' as

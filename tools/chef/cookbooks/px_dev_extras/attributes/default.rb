@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-default['bazel']['zsh_completions']  =
-  "https://raw.githubusercontent.com/bazelbuild/bazel/6.0.0/scripts/zsh_completion/_bazel"
-default['bazel']['zcomp_sha256']     = '4094dc84add2f23823bc341186adf6b8487fbd5d4164bd52d98891c41511eba4'
+# Fetch bazel version from Pixie's .bazelversion on main branch
+bazel_version = Chef::HTTP.new('https://raw.githubusercontent.com').get('/pixie-io/pixie/main/.bazelversion').strip
+default['bazel']['zsh_completions'] =
+  "https://raw.githubusercontent.com/bazelbuild/bazel/#{bazel_version}/scripts/zsh_completion/_bazel"

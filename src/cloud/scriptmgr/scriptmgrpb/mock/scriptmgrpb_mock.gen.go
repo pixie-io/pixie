@@ -36,6 +36,26 @@ func (m *MockScriptMgrServiceClient) EXPECT() *MockScriptMgrServiceClientMockRec
 	return m.recorder
 }
 
+// CheckScriptExists mocks base method.
+func (m *MockScriptMgrServiceClient) CheckScriptExists(ctx context.Context, in *scriptmgrpb.CheckScriptExistsReq, opts ...grpc.CallOption) (*scriptmgrpb.CheckScriptExistsResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CheckScriptExists", varargs...)
+	ret0, _ := ret[0].(*scriptmgrpb.CheckScriptExistsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckScriptExists indicates an expected call of CheckScriptExists.
+func (mr *MockScriptMgrServiceClientMockRecorder) CheckScriptExists(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckScriptExists", reflect.TypeOf((*MockScriptMgrServiceClient)(nil).CheckScriptExists), varargs...)
+}
+
 // GetLiveViewContents mocks base method.
 func (m *MockScriptMgrServiceClient) GetLiveViewContents(ctx context.Context, in *scriptmgrpb.GetLiveViewContentsReq, opts ...grpc.CallOption) (*scriptmgrpb.GetLiveViewContentsResp, error) {
 	m.ctrl.T.Helper()
@@ -137,6 +157,21 @@ func NewMockScriptMgrServiceServer(ctrl *gomock.Controller) *MockScriptMgrServic
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockScriptMgrServiceServer) EXPECT() *MockScriptMgrServiceServerMockRecorder {
 	return m.recorder
+}
+
+// CheckScriptExists mocks base method.
+func (m *MockScriptMgrServiceServer) CheckScriptExists(arg0 context.Context, arg1 *scriptmgrpb.CheckScriptExistsReq) (*scriptmgrpb.CheckScriptExistsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckScriptExists", arg0, arg1)
+	ret0, _ := ret[0].(*scriptmgrpb.CheckScriptExistsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckScriptExists indicates an expected call of CheckScriptExists.
+func (mr *MockScriptMgrServiceServerMockRecorder) CheckScriptExists(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckScriptExists", reflect.TypeOf((*MockScriptMgrServiceServer)(nil).CheckScriptExists), arg0, arg1)
 }
 
 // GetLiveViewContents mocks base method.

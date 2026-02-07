@@ -53,7 +53,8 @@ type MessageBusController struct {
 // NewMessageBusController creates a new controller for handling NATS messages.
 func NewMessageBusController(conn *nats.Conn, agtMgr agent.Manager,
 	tpMgr *tracepoint.Manager, k8smetaHandler *k8smeta.Handler,
-	isLeader *bool) (*MessageBusController, error) {
+	isLeader *bool,
+) (*MessageBusController, error) {
 	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
 	subscriptions := make([]*nats.Subscription, 0)

@@ -52,7 +52,8 @@ func makeInitiateConnectionRequest(queryID uuid.UUID) *carnotpb.TransferResultCh
 }
 
 func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, tableID string,
-	eos bool) (*vizierpb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
+	eos bool,
+) (*vizierpb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
 	rb := new(schemapb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, rb); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
@@ -81,7 +82,8 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 }
 
 func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*vizierpb.QueryExecutionStats,
-	*carnotpb.TransferResultChunkRequest) {
+	*carnotpb.TransferResultChunkRequest,
+) {
 	execStats := &queryresultspb.QueryExecutionStats{
 		Timing: &queryresultspb.QueryTimingInfo{
 			ExecutionTimeNs:   5010,

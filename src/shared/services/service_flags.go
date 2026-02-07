@@ -37,9 +37,7 @@ import (
 	version "px.dev/pixie/src/shared/goversion"
 )
 
-var (
-	commonSetup sync.Once
-)
+var commonSetup sync.Once
 
 func init() {
 	// Enable the k8s DNS resolver to lookup services.

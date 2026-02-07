@@ -22,7 +22,7 @@ package px.vizier.messages;
 
 option go_package = "messagespb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";

@@ -20,6 +20,7 @@ ENV['PATH'] = "/opt/google-cloud-sdk/bin:#{ENV['PATH']}"
 
 include_recipe 'px_dev_extras::mac_os_x'
 include_recipe 'px_dev_extras::gperftools'
+include_recipe 'px_dev_extras::packaging'
 
 pkg_list = [
   'cmake',
@@ -41,8 +42,8 @@ end
 
 remote_file '/usr/local/share/zsh/site-functions/_bazel' do
   source node['bazel']['zsh_completions']
-  mode 0644
-  checksum node['bazel']['zcomp_sha256']
+  mode '0644'
+  action :create
 end
 
 common_remote_bin 'faq'

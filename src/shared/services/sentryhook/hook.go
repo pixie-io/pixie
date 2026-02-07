@@ -26,17 +26,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	levelMap = map[log.Level]sentry.Level{
-		log.TraceLevel: sentry.LevelDebug,
-		log.DebugLevel: sentry.LevelDebug,
-		log.InfoLevel:  sentry.LevelInfo,
-		log.WarnLevel:  sentry.LevelWarning,
-		log.ErrorLevel: sentry.LevelError,
-		log.FatalLevel: sentry.LevelFatal,
-		log.PanicLevel: sentry.LevelFatal,
-	}
-)
+var levelMap = map[log.Level]sentry.Level{
+	log.TraceLevel: sentry.LevelDebug,
+	log.DebugLevel: sentry.LevelDebug,
+	log.InfoLevel:  sentry.LevelInfo,
+	log.WarnLevel:  sentry.LevelWarning,
+	log.ErrorLevel: sentry.LevelError,
+	log.FatalLevel: sentry.LevelFatal,
+	log.PanicLevel: sentry.LevelFatal,
+}
 
 // Converter converts log entry to sentry.
 type Converter func(entry *log.Entry, event *sentry.Event, hub *sentry.Hub)

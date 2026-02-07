@@ -16,10 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <fstream>
+#include <string>
+
+#include <google/protobuf/text_format.h>
+
 #include "src/carnot/planner/docs/doc_extractor.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
-
-#include <fstream>
 
 namespace px {
 namespace carnot {
@@ -79,8 +82,11 @@ int main(int argc, char** argv) {
   }
   auto docs = docs_or_s.ConsumeValueOrDie();
 
+  std::string text_output;
+  google::protobuf::TextFormat::PrintToString(docs, &text_output);
+
   std::ofstream output_file;
   output_file.open(FLAGS_output_file);
-  output_file << docs.DebugString();
+  output_file << text_output;
   output_file.close();
 }

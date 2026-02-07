@@ -19,6 +19,7 @@ FROM ubuntu:18.04@sha256:8aa9c2798215f99544d1ce7439ea9c3a6dfd82de607da1cec3a8a2f
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --fix-missing
 RUN apt-get install -y ruby ruby-dev rubygems build-essential
+RUN gem install dotenv -v 2.8.1
 RUN gem install --no-document fpm
 
 RUN apt-get install -y bison build-essential flex git libedit-dev lsb \
@@ -176,6 +177,42 @@ RUN /scripts/build_llvm.sh \
   --target_libcxx_path /opt/libcxx-15.0-x86_64-sysroot \
   --sysroot /sysroots/x86_64 \
   --target_arch x86_64
+
+# x86_64 sysroot with ASAN instrumentation.
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-x86_64-sysroot-asan \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0-x86_64-sysroot \
+  --sysroot /sysroots/x86_64 \
+  --target_arch x86_64 \
+  --build_with_asan
+
+# x86_64 sysroot with MSAN instrumentation.
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-x86_64-sysroot-msan \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0-x86_64-sysroot \
+  --sysroot /sysroots/x86_64 \
+  --target_arch x86_64 \
+  --build_with_msan
+
+# x86_64 sysroot with TSAN instrumentation.
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-x86_64-sysroot-tsan \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0-x86_64-sysroot \
+  --sysroot /sysroots/x86_64 \
+  --target_arch x86_64 \
+  --build_with_tsan
 
 # aarch64 sysroot
 RUN /scripts/build_llvm.sh \

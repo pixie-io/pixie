@@ -2,7 +2,7 @@ workspace(name = "px")
 
 load("//:workspace.bzl", "check_min_bazel_version")
 
-check_min_bazel_version("6.0.0")
+check_min_bazel_version("6.2.0")
 
 load("//bazel:repositories.bzl", "pl_cc_toolchain_deps", "pl_deps")
 
@@ -19,6 +19,14 @@ pl_register_cc_toolchains()
 # Install Pixie Labs Dependencies.
 pl_deps()
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
+load("@rules_cc//cc:extensions.bzl", "compatibility_proxy_repo")
+
+compatibility_proxy_repo()
+
 # Order is important. Try to go from most basic/primitive to higher level packages.
 # - go_rules_dependencies
 # - protobuf_deps
@@ -33,7 +41,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.21.0",
+    version = "1.24.6",
 )
 
 go_rules_dependencies()
@@ -45,6 +53,10 @@ go_register_toolchains()
 # gazelle:repository_macro go_deps.bzl%pl_go_dependencies
 pl_go_dependencies()
 
+load("@rules_java//java:rules_java_deps.bzl", "rules_java_dependencies")
+
+rules_java_dependencies()
+
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
@@ -53,17 +65,34 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
 
+load("@io_bazel_rules_scala//scala:deps.bzl", "rules_scala_dependencies")
+
+rules_scala_dependencies()
+
 load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
 
-scala_version = "2.13.6"
+scala_version = "2.13.16"
 
 scala_config(scala_version = scala_version)
 
-load("@io_bazel_rules_scala//scala:scala.bzl", "scala_repositories")
+load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains", "scala_toolchains")
 
-scala_repositories()
-
-load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
+scala_toolchains(
+    fetch_sources = True,
+    twitter_scrooge = {
+        "libthrift": "@thrift_deps//:org_apache_thrift_libthrift",
+        # Use scrooge_core_with_finagle to include finagle on the compile classpath
+        # for generated thrift service code. Must use @px// prefix to reference
+        # the main workspace from within the generated @rules_scala_toolchains repo.
+        "scrooge_core": "@px//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_core_with_finagle",
+        "scrooge_generator": "@thrift_deps//:com_twitter_scrooge_generator_2_13",
+        "util_core": "@thrift_deps//:com_twitter_util_core_2_13",
+        "util_logging": "@thrift_deps//:com_twitter_util_logging_2_13",
+        "javax_annotation_api": "@thrift_deps//:javax_annotation_javax_annotation_api",
+        "mustache": "@thrift_deps//:com_github_spullara_mustache_java_compiler",
+        "scopt": "@thrift_deps//:com_github_scopt_scopt_2_13",
+    },
+)
 
 scala_register_toolchains()
 
@@ -79,6 +108,10 @@ apple_support_dependencies()
 load("//bazel:pl_workspace.bzl", "pl_container_images", "pl_model_files", "pl_workspace_setup")
 
 pl_workspace_setup()
+
+load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
+
+py_repositories()
 
 # The pip_deps rule cannot be loaded until we load all the basic packages in the Pixie
 # workspace. Also, bazel requires that loads are done at the top level (not in a function), so
@@ -136,16 +169,18 @@ tf_workspace0()
 
 pl_model_files()
 
-load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-
 python_register_toolchains(
-    name = "python3_10",
+    name = "python3_12",
+    # Allow the root user to build the code base since this is a current requirement for
+    # building in a containerized environment. See https://github.com/bazelbuild/rules_python/pull/713
+    # for more details.
+    ignore_root_user_error = True,
     # Available versions are listed in @rules_python//python:versions.bzl.
     # We recommend using the same version your team is already standardized on.
-    python_version = "3.10",
+    python_version = "3.12",
 )
 
-load("@python3_10//:defs.bzl", "interpreter")
+load("@python3_12//:defs.bzl", "interpreter")
 
 # Setup the environment for the open-source python API.
 pip_parse(
@@ -160,6 +195,7 @@ vizier_api_install_deps()
 
 pip_parse(
     name = "pxapi_python_doc_deps",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/api/python/doc:requirements.bazel.txt",
 )
 
@@ -176,26 +212,6 @@ load("@thrift_deps//:defs.bzl", thrift_pinned_maven_install = "pinned_maven_inst
 
 thrift_pinned_maven_install()
 
-# twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
-# These bind statements ensure that the correct versions of finagle libthrift, scrooge core
-# and scrooge generator are used to ensure successful compilation.
-# See https://github.com/bazelbuild/rules_scala/issues/592 and
-# https://github.com/bazelbuild/rules_scala/pull/847 for more details.
-bind(
-    name = "io_bazel_rules_scala/dependency/thrift/scrooge_core",
-    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars",
-)
-
-bind(
-    name = "io_bazel_rules_scala/dependency/thrift/scrooge_generator",
-    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars",
-)
-
-bind(
-    name = "io_bazel_rules_scala/dependency/thrift/libthrift",
-    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:thrift_jars",
-)
-
 # gazelle:repo bazel_gazelle
 # Gazelle depes need to be loaded last to make sure they don't override our dependencies.
 # The first one wins when it comes to package declaration.
@@ -203,35 +219,9 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies(go_sdk = "go_sdk")
 
-# Download alternative go toolchains after all other dependencies, so that they aren't used by external dependencies.
 go_download_sdk(
-    name = "go_sdk_1_16",
-    version = "1.16.15",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_17",
-    version = "1.17.13",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_18",
-    version = "1.18.10",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_19",
-    version = "1.19.10",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_20",
-    version = "1.20.5",
-)
-
-go_download_sdk(
-    name = "go_sdk_1_21",
-    version = "1.21.0",
+    name = "go_sdk_1_23",
+    version = "1.23.12",
 )
 
 # The go_sdk_boringcrypto SDK is used for testing boringcrypto specific functionality (TLS tracing).
@@ -244,12 +234,12 @@ go_download_sdk(
 go_download_sdk(
     name = "go_sdk_boringcrypto",
     experiments = ["boringcrypto"],
-    # TODO(james): update this to 1.21.0, once there is a 1.21.1 release.
-    version = "1.20.4",
+    version = "1.23.11",
 )
 
 pip_parse(
     name = "amqp_gen_reqs",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.bazel.txt",
 )
 
@@ -259,6 +249,7 @@ amp_gen_install_deps()
 
 pip_parse(
     name = "protocol_inference",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/protocol_inference:requirements.bazel.txt",
 )
 
@@ -275,6 +266,7 @@ py_image_repos()
 
 pip_parse(
     name = "amqp_bpf_test_requirements",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.bazel.txt",
 )
 
@@ -300,6 +292,7 @@ px_deps_pinned_maven_install()
 
 pip_parse(
     name = "mongodb_bpf_test_requirements",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/mongodb:requirements.bazel.txt",
 )
 

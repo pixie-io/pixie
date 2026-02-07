@@ -51,8 +51,10 @@ import (
 
 const manifestFile = "manifest.json"
 
-var errNamespaceAlreadyExists = errors.New("namespace already exists")
-var errCertMgrDoesNotExist = errors.New("cert-manager does not exist")
+var (
+	errNamespaceAlreadyExists = errors.New("namespace already exists")
+	errCertMgrDoesNotExist    = errors.New("cert-manager does not exist")
+)
 
 func init() {
 	DemoCmd.PersistentFlags().String("artifacts", "https://storage.googleapis.com/pixie-prod-artifacts/prod-demo-apps", "The path to the demo apps")

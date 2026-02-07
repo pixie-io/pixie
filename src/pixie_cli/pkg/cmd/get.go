@@ -126,8 +126,10 @@ var GetViziersCmd = &cobra.Command{
 							time.Since(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
 				}
 			}
-			_ = w.Write([]interface{}{vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion,
-				prettyVersion(vz.OperatorVersion), prettyVersion(vz.VizierVersion), lastHeartbeat, vz.Status, vz.StatusMessage})
+			_ = w.Write([]interface{}{
+				vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion,
+				prettyVersion(vz.OperatorVersion), prettyVersion(vz.VizierVersion), lastHeartbeat, vz.Status, vz.StatusMessage,
+			})
 		}
 	},
 }

@@ -481,7 +481,6 @@ func generateVzYAMLs(yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 	}...)
 
 	persistentYAML, err := yamls.TemplatizeK8sYAML(yamlMap[vizierMetadataPersistYAMLPath], tmplOptions)
-
 	if err != nil {
 		return nil, err
 	}

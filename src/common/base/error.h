@@ -21,7 +21,7 @@
 #include <string>
 
 #include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/status.h"
 #include "src/common/base/statuspb/status.pb.h"

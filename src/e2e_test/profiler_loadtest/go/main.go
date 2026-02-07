@@ -24,12 +24,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strconv"
 	"time"
-
-	"net/http"
-	_ "net/http/pprof"
 )
 
 type env struct {

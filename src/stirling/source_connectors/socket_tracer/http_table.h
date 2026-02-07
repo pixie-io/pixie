@@ -46,6 +46,7 @@ constexpr DataElement kHTTPElements[] = {
         canonical_data_elements::kLocalAddr,
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
+        canonical_data_elements::kEncrypted,
         {"major_version", "HTTP major version, can be 1 or 2",
          types::DataType::INT64,
          types::SemanticType::ST_NONE,
@@ -117,6 +118,7 @@ constexpr int kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
 constexpr int kHTTPLocalAddrIdx = kHTTPTable.ColIndex("local_addr");
 constexpr int kHTTPLocalPortIdx = kHTTPTable.ColIndex("local_port");
 constexpr int kHTTPTraceRoleIdx = kHTTPTable.ColIndex("trace_role");
+constexpr int kHTTPEncryptedIdx = kHTTPTable.ColIndex("encrypted");
 constexpr int kHTTPMajorVersionIdx = kHTTPTable.ColIndex("major_version");
 constexpr int kHTTPMinorVersionIdx = kHTTPTable.ColIndex("minor_version");
 constexpr int kHTTPContentTypeIdx = kHTTPTable.ColIndex("content_type");

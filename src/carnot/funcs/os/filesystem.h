@@ -42,7 +42,7 @@ inline std::string GetSharedLibraries(md::UPID upid) {
   for (const auto& p : std::filesystem::directory_iterator(fpath)) {
     if (std::filesystem::is_symlink(p)) {
       auto symlink = std::filesystem::read_symlink(p);
-      libraries.push_back(symlink.u8string());
+      libraries.push_back(symlink.string());
     }
   }
 

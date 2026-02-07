@@ -482,3 +482,27 @@ TEST(ProtocolInferenceTest, AMQPResponse) {
   EXPECT_EQ(protocol_message.protocol, kProtocolAMQP);
   EXPECT_EQ(protocol_message.type, kResponse);
 }
+
+TEST(ProtocolInferenceTest, TLSRequest) {
+  struct conn_info_t conn_info = {};
+  // TLS Client Hello
+  constexpr uint8_t kReqFrame[] = {
+      0x16, 0x03, 0x01, 0x00, 0x01, 0x01, 0x00, 0x01, 0xfc, 0x03, 0x03, 0x7b, 0x7b, 0x7b,
+  };
+  auto protocol_message =
+      infer_protocol(reinterpret_cast<const char*>(kReqFrame), sizeof(kReqFrame), &conn_info);
+  EXPECT_EQ(protocol_message.protocol, kProtocolTLS);
+  EXPECT_EQ(protocol_message.type, kRequest);
+}
+
+TEST(ProtocolInferenceTest, TLSResponse) {
+  struct conn_info_t conn_info = {};
+  // TLS Server Hello
+  constexpr uint8_t kRespFrame[] = {
+      0x16, 0x03, 0x01, 0x00, 0x01, 0x02, 0x00, 0x00, 0xfc, 0x03, 0x03, 0x7b, 0x7b, 0x7b,
+  };
+  auto protocol_message =
+      infer_protocol(reinterpret_cast<const char*>(kRespFrame), sizeof(kRespFrame), &conn_info);
+  EXPECT_EQ(protocol_message.protocol, kProtocolTLS);
+  EXPECT_EQ(protocol_message.type, kResponse);
+}

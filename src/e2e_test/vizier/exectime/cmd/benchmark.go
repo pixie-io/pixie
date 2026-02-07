@@ -273,13 +273,15 @@ func isMutation(s *script.ExecutableScript) bool {
 	return strings.Contains(s.ScriptString, "pxtrace")
 }
 
-type distributionMap map[string]Distribution
-type distributionContainer struct {
-	Type      string
-	TimeDist  *TimeDistribution  `json:",omitempty"`
-	BytesDist *BytesDistribution `json:",omitempty"`
-	ErrorDist *ErrorDistribution `json:",omitempty"`
-}
+type (
+	distributionMap       map[string]Distribution
+	distributionContainer struct {
+		Type      string
+		TimeDist  *TimeDistribution  `json:",omitempty"`
+		BytesDist *BytesDistribution `json:",omitempty"`
+		ErrorDist *ErrorDistribution `json:",omitempty"`
+	}
+)
 
 func (dm *distributionMap) MarshalJSON() ([]byte, error) {
 	containers := make(map[string]*distributionContainer, len(*dm))
@@ -331,8 +333,7 @@ type ScriptExecData struct {
 }
 
 // stdoutTableWriter writes the execStats out to a table in stdout. Implements ExecStatsWriter.
-type stdoutTableWriter struct {
-}
+type stdoutTableWriter struct{}
 
 func sortByKeys(data *map[string]*ScriptExecData) []*ScriptExecData {
 	sorted := make([]string, 0)
@@ -412,7 +413,6 @@ px.display(df[['pod', 'service', 'namespace', 'node']])
 	// Accumulate the streamed data and block until all data is received.
 	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory, nil)
 	err = tw.Finish()
-
 	if err != nil {
 		log.WithError(err).Infof("Error '%s' on '%s'", vizier.FormatErrorMessage(err), execScript.ScriptName)
 		return nil, err

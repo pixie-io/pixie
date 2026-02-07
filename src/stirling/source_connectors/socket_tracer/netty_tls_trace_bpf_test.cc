@@ -39,14 +39,14 @@ namespace stirling {
 
 namespace mux = protocols::mux;
 
-using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::EqMuxRecord;
+using ::px::stirling::testing::GetEncrypted;
 using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
+using ::testing::IsTrue;
 using ::testing::StrEq;
-using ::testing::UnorderedElementsAre;
 
 class ThriftMuxServerContainerWrapper : public ::px::stirling::testing::ThriftMuxServerContainer {};
 
@@ -153,15 +153,18 @@ TYPED_TEST(NettyTLSTraceTest, mtls_thriftmux_client) {
   this->StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = this->ConsumeRecords(SocketTraceConnector::kMuxTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
-  std::vector<mux::Record> server_records =
-      GetTargetRecords<mux::Record>(record_batch, this->server_.process_pid());
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+
+  const std::vector<size_t> indices =
+      testing::FindRecordIdxMatchesPID(rb, kMuxUPIDIdx, this->server_.process_pid());
+  std::vector<mux::Record> server_records = ToRecordVector<mux::Record>(rb, indices);
 
   mux::Record tinitCheck = RecordWithType(mux::Type::kRerrOld);
   mux::Record tinit = RecordWithType(mux::Type::kTinit);
   mux::Record pingRecord = RecordWithType(mux::Type::kTping);
   mux::Record dispatchRecord = RecordWithType(mux::Type::kTdispatch);
 
+  EXPECT_THAT(GetEncrypted(rb, kMuxEncryptedIdx, indices), Contains(IsTrue()));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinitCheck)));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinit)));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(pingRecord)));

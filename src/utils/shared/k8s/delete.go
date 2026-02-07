@@ -185,6 +185,13 @@ func (o *ObjectDeleter) runDelete(r *resource.Result) (int, error) {
 		if err != nil {
 			return err
 		}
+		// In newer versions of k8s, the resource name can be empty. This causes
+		// the delete to fail since it can't watch for the resource. See
+		// https://github.com/pixie-io/pixie/issues/2029 for more details.
+		if info.Name == "" {
+			log.Debugf("Skipping resource with empty name: %+v\n", info)
+			return nil
+		}
 		deletedInfos = append(deletedInfos, info)
 		found++
 
@@ -246,7 +253,6 @@ func (o *ObjectDeleter) deleteResource(info *resource.Info, deleteOptions *metav
 	deleteResponse, err := resource.
 		NewHelper(info.Client, info.Mapping).
 		DeleteWithOptions(info.Namespace, info.Name, deleteOptions)
-
 	if err != nil {
 		return nil, cmdutil.AddSourceToErr("deleting", info.Source, err)
 	}

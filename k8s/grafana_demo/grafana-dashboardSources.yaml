@@ -4,7 +4,6 @@ kind: ConfigMap
 metadata:
   name: grafana-dashboards
 data:
-  # yamllint disable rule:indentation
   dashboards.yaml: |-
     apiVersion: 1
     providers:
@@ -15,4 +14,3 @@ data:
       orgId: 1
       type: "file"
       allowUiUpdates: false
-  # yamllint enable rule:indentation

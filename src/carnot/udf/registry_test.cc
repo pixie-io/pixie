@@ -421,6 +421,7 @@ udtfs {
     semantic_type: ST_NONE
     default_value {
       int64_value: 123
+      data_type: INT64
     }
   }
   args {

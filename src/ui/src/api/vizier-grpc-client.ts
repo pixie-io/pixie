@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClientReadableStream } from 'grpc-web';
+import { ClientReadableStream, StatusCode } from 'grpc-web';
 import { compactDecrypt } from 'jose';
 import * as pako from 'pako';
 import { Observable, of, from } from 'rxjs';
@@ -31,7 +31,7 @@ import {
 } from 'app/types/generated/vizierapi_pb';
 import { VizierServiceClient } from 'app/types/generated/VizierapiServiceClientPb';
 
-import { GRPCStatusCode, VizierQueryError } from './vizier';
+import { VizierQueryError } from './vizier';
 import { VizierTable } from './vizier-table';
 
 const noop = () => {};
@@ -380,7 +380,7 @@ export class VizierGRPCClient {
           });
           call.on('error', (grpcError) => {
             let error: VizierQueryError;
-            if (grpcError.code === GRPCStatusCode.Unavailable) {
+            if (grpcError.code === StatusCode.UNAVAILABLE) {
               error = new VizierQueryError('unavailable', grpcError.message);
             } else {
               error = new VizierQueryError('server', grpcError.message);

@@ -24,11 +24,6 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
-
-	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
-
-	"px.dev/pixie/src/common/base/statuspb"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +33,9 @@ import (
 	"px.dev/pixie/src/carnot/carnotpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planpb"
+	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 	mock_controllers "px.dev/pixie/src/vizier/services/query_broker/controllers/mock"
 	"px.dev/pixie/src/vizier/services/query_broker/tracker"
@@ -292,7 +289,8 @@ type fakeResultForwarder struct {
 // RegisterQuery registers a query.
 func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
 	compilationTimeNs int64,
-	queryPlanOpts *controllers.QueryPlanOpts, queryName string) error {
+	queryPlanOpts *controllers.QueryPlanOpts, queryName string,
+) error {
 	f.QueryRegistered = queryID
 	f.TableIDMap = tableIDMap
 	f.StreamedQueryPlanOpts = queryPlanOpts
@@ -301,7 +299,8 @@ func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[st
 
 // StreamResults streams the results to the resultCh.
 func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan<- *vizierpb.ExecuteScriptResponse) error {
+	resultCh chan<- *vizierpb.ExecuteScriptResponse,
+) error {
 	f.QueryStreamed = queryID
 
 	for _, expectedResult := range f.ClientResultsToSend {

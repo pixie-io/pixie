@@ -347,10 +347,9 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
               i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time
               FROM vizier_cluster_info as i, vizier_cluster as c
-              WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id='%s'`
-	strQuery = fmt.Sprintf(strQuery, orgIDstr)
+              WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id=?`
 
-	query, args, err := sqlx.In(strQuery, ids)
+	query, args, err := sqlx.In(strQuery, ids, orgIDstr)
 	if err != nil {
 		return nil, err
 	}

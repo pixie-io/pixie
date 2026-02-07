@@ -16,7 +16,7 @@
 
 
 if node.platform_family?('debian')
-  apt_package ['python3-pip', 'python3.10', 'python3.10-dev'] do
+  apt_package ['python3-pip', 'python3.12', 'python3.12-dev'] do
     action :upgrade
   end
 

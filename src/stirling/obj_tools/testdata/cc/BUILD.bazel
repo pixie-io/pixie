@@ -41,10 +41,21 @@ cc_clang_binary(
     ],
 )
 
+genrule(
+    name = "test_exe_nm_output_target",
+    srcs = [":test_exe"],
+    outs = ["test_exe_nm_output"],
+    cmd = "$(NM) $(location :test_exe) > $(location test_exe_nm_output)",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+)
+
 cc_library(
     name = "test_exe_fixture",
     hdrs = ["test_exe_fixture.h"],
-    data = [":test_exe"],
+    data = [
+        ":test_exe",
+        ":test_exe_nm_output",
+    ],
     deps = ["//src/common/exec:cc_library"],
 )
 

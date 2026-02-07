@@ -92,21 +92,25 @@ void DefaultToScalarValue(const UDTFArg&, planpb::ScalarValue*) {
 template <>
 void DefaultToScalarValue<types::BOOLEAN>(const UDTFArg& arg, planpb::ScalarValue* out) {
   out->set_bool_value(arg.GetDefaultValue<types::BOOLEAN>().val);
+  out->set_data_type(types::BOOLEAN);
 }
 
 template <>
 void DefaultToScalarValue<types::INT64>(const UDTFArg& arg, planpb::ScalarValue* out) {
   out->set_int64_value(arg.GetDefaultValue<types::INT64>().val);
+  out->set_data_type(types::INT64);
 }
 
 template <>
 void DefaultToScalarValue<types::TIME64NS>(const UDTFArg& arg, planpb::ScalarValue* out) {
   out->set_time64_ns_value(arg.GetDefaultValue<types::TIME64NS>().val);
+  out->set_data_type(types::TIME64NS);
 }
 
 template <>
 void DefaultToScalarValue<types::FLOAT64>(const UDTFArg& arg, planpb::ScalarValue* out) {
   out->set_float64_value(arg.GetDefaultValue<types::FLOAT64>().val);
+  out->set_data_type(types::FLOAT64);
 }
 
 template <>
@@ -116,11 +120,13 @@ void DefaultToScalarValue<types::UINT128>(const UDTFArg& arg, planpb::ScalarValu
 
   out_val->set_high(casted_arg.High64());
   out_val->set_high(casted_arg.Low64());
+  out->set_data_type(types::UINT128);
 }
 
 template <>
 void DefaultToScalarValue<types::STRING>(const UDTFArg& arg, planpb::ScalarValue* out) {
   out->set_string_value(std::string(arg.GetDefaultValue<types::STRING>()));
+  out->set_data_type(types::STRING);
 }
 }  // namespace
 

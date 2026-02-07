@@ -176,12 +176,14 @@ func createDeploymentObject() *storepb.K8SResource {
 	}
 }
 
-type ResourceStore map[int64]*storepb.K8SResourceUpdate
-type InMemoryStore struct {
-	ResourceStoreByTopic map[string]ResourceStore
-	RVStore              map[string]int64
-	FullResourceStore    map[int64]*storepb.K8SResource
-}
+type (
+	ResourceStore map[int64]*storepb.K8SResourceUpdate
+	InMemoryStore struct {
+		ResourceStoreByTopic map[string]ResourceStore
+		RVStore              map[string]int64
+		FullResourceStore    map[int64]*storepb.K8SResource
+	}
+)
 
 func (s *InMemoryStore) AddResourceUpdateForTopic(uv int64, topic string, r *storepb.K8SResourceUpdate) error {
 	if _, ok := s.ResourceStoreByTopic[topic]; !ok {
@@ -501,10 +503,11 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 		// Reset prevUpdateVersion for proto comparison.
 		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion = 0
 
-		if prevUpdateVersion == 3 {
+		switch prevUpdateVersion {
+		case 3:
 			assert.Equal(t, expectedNodeMsg, m)
 			wg.Done()
-		} else if prevUpdateVersion == 4 {
+		case 4:
 			assert.Equal(t, expectedNSMsg, m)
 			wg.Done()
 		}
@@ -520,10 +523,11 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 		// Reset prevUpdateVersion for proto comparison.
 		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion = 0
 
-		if prevUpdateVersion == 3 {
+		switch prevUpdateVersion {
+		case 3:
 			assert.Equal(t, expectedNodeMsg, m)
 			wg.Done()
-		} else if prevUpdateVersion == 4 {
+		case 4:
 			assert.Equal(t, expectedNSMsg, m)
 			wg.Done()
 		}

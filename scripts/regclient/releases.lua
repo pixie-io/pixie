@@ -9,7 +9,7 @@ function releases.mirror(path)
   -- loop through tags on each image
   for _, t in ipairs(tags) do
     local major, _, _, ext = utils.parseVersion(t)
-    if major ~= nil and string.sub(ext, 1, 1) ~= "-" then
+    if (major ~= nil and string.sub(ext, 1, 1) ~= "-") or string.sub(t, -4) == '.sig' then
       srcRef:tag(t)
       -- loop through destinations
       for _, destination in ipairs(mirrors.destinationRegistries) do

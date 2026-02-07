@@ -2977,6 +2977,38 @@ class IPToPodIDUDF : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_KELVIN; }
 };
 
+/**
+ * This UDF is a compiler internal function. It should only be used on local IP addresses
+ * since this function is forced to run on PEMs. In cases where the IP could be a remote address,
+ * then it is more correct to have the function run on Kelvin (IPToPodIDUDF or IPToPodIDAtTimeUDF).
+ */
+class UPIDtoPodNameLocalAddrFallback : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the pod name from UPID or from local addr if first lookup fails
+   */
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value, StringValue pod_ip,
+                   Time64NSValue time) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr) {
+      auto pod_id = md->k8s_metadata_state().PodIDByIPAtTime(pod_ip, time.val);
+      pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+      if (pod_info == nullptr) {
+        return "";
+      }
+    }
+    return absl::Substitute("$0/$1", pod_info->ns(), pod_info->name());
+  }
+
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<UPIDtoPodNameLocalAddrFallback>(
+        types::ST_POD_NAME, {types::ST_NONE, types::ST_NONE, types::ST_NONE})};
+  }
+};
+
 class IPToPodIDAtTimeUDF : public ScalarUDF {
  public:
   /**

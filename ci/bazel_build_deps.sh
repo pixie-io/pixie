@@ -133,7 +133,7 @@ function compute_targets() {
     fi
   done
 
-  targets+=("rdeps(//..., set(${changed_files[*]}))")
+  targets+=("rdeps(//..., set(${changed_files[*]}))  intersect //...")
 }
 
 function check_bpf_trigger() {

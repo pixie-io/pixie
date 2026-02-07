@@ -66,6 +66,7 @@ func TestProtoToToken_Standard(t *testing.T) {
 	assert.Equal(t, int64(5), token.NotBefore().Unix())
 	assert.Equal(t, "subject", token.Subject())
 }
+
 func TestProtoToToken_User(t *testing.T) {
 	p := getStandardClaimsPb()
 	p.Scopes = []string{"user"}

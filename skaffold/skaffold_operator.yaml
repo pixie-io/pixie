@@ -22,3 +22,9 @@ profiles:
     path: /build/local
     value:
       push: false
+- name: x86_64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=x86_64_sysroot

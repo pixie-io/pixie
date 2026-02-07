@@ -77,6 +77,9 @@ Status OTelExportSinkNode::OpenImpl(ExecState* exec_state) {
   if (plan_node_->spans().size()) {
     trace_service_stub_ = exec_state->TraceServiceStub(plan_node_->url(), plan_node_->insecure());
   }
+  if (plan_node_->logs().size()) {
+    logs_service_stub_ = exec_state->LogsServiceStub(plan_node_->url(), plan_node_->insecure());
+  }
   return Status::OK();
 }
 
@@ -233,9 +236,9 @@ Status OTelExportSinkNode::ConsumeMetrics(ExecState* exec_state, const RowBatch&
     // TODO(philkuz) optimize by pooling metrics by resource within a batch.
     // TODO(philkuz) optimize by pooling data per metric per resource.
 
-    auto library_metrics = resource_metrics.add_instrumentation_library_metrics();
+    auto scope_metrics = resource_metrics.add_scope_metrics();
     for (const auto& metric_pb : plan_node_->metrics()) {
-      auto metric = library_metrics->add_metrics();
+      auto metric = scope_metrics->add_metrics();
       metric->set_name(metric_pb.name());
       metric->set_description(metric_pb.description());
       metric->set_unit(metric_pb.unit());
@@ -340,7 +343,7 @@ Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& r
   }
   context.set_compression_algorithm(GRPC_COMPRESS_GZIP);
 
-  metrics_response_.Clear();
+  trace_response_.Clear();
   opentelemetry::proto::collector::trace::v1::ExportTraceServiceRequest request;
 
   for (int64_t row_idx = 0; row_idx < rb.ColumnAt(0)->length(); ++row_idx) {
@@ -349,9 +352,9 @@ Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& r
     auto resource = resource_spans.mutable_resource();
     AddAttributes(resource->mutable_attributes(), plan_node_->resource_attributes_normal_encoding(),
                   rb, row_idx);
-    auto library_spans = resource_spans.add_instrumentation_library_spans();
+    auto scope_spans = resource_spans.add_scope_spans();
     for (const auto& span_pb : plan_node_->spans()) {
-      auto span = library_spans->add_spans();
+      auto span = scope_spans->add_spans();
       if (span_pb.has_name_string()) {
         span->set_name(span_pb.name_string());
       } else {
@@ -438,12 +441,78 @@ Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& r
   return Status::OK();
 }
 
+using ::opentelemetry::proto::logs::v1::ResourceLogs;
+Status OTelExportSinkNode::ConsumeLogs(ExecState* exec_state, const RowBatch& rb) {
+  grpc::ClientContext context;
+  for (const auto& header : plan_node_->endpoint_headers()) {
+    context.AddMetadata(header.first, header.second);
+  }
+  context.set_compression_algorithm(GRPC_COMPRESS_GZIP);
+
+  logs_response_.Clear();
+  opentelemetry::proto::collector::logs::v1::ExportLogsServiceRequest request;
+
+  for (int64_t row_idx = 0; row_idx < rb.ColumnAt(0)->length(); ++row_idx) {
+    // TODO(ddelnano) aggregate spans by resource.
+    ::opentelemetry::proto::logs::v1::ResourceLogs resource_logs;
+    auto resource = resource_logs.mutable_resource();
+    AddAttributes(resource->mutable_attributes(), plan_node_->resource_attributes_normal_encoding(),
+                  rb, row_idx);
+    auto scope_logs = resource_logs.add_scope_logs();
+    for (const auto& log_pb : plan_node_->logs()) {
+      auto log = scope_logs->add_log_records();
+
+      AddAttributes(log->mutable_attributes(), log_pb.attributes(), rb, row_idx);
+
+      auto time_col = rb.ColumnAt(log_pb.time_column_index()).get();
+      log->set_time_unix_nano(types::GetValueFromArrowArray<types::TIME64NS>(time_col, row_idx));
+      if (log_pb.observed_time_column_index() >= 0) {
+        auto observed_time_col = rb.ColumnAt(log_pb.observed_time_column_index()).get();
+        log->set_observed_time_unix_nano(
+            types::GetValueFromArrowArray<types::TIME64NS>(observed_time_col, row_idx));
+      } else {
+        log->set_observed_time_unix_nano(
+            types::GetValueFromArrowArray<types::TIME64NS>(time_col, row_idx));
+      }
+      log->set_severity_number(
+          static_cast<::opentelemetry::proto::logs::v1::SeverityNumber>(log_pb.severity_number()));
+      log->set_severity_text(log_pb.severity_text());
+      log->mutable_body()->set_string_value(types::GetValueFromArrowArray<types::STRING>(
+          rb.ColumnAt(log_pb.body_column_index()).get(), row_idx));
+    }
+
+    ReplicateData<ResourceLogs>(
+        plan_node_->resource_attributes_optional_json_encoded(),
+        [&request](ResourceLogs log) { *request.add_resource_logs() = std::move(log); },
+        std::move(resource_logs), rb, row_idx);
+  }
+  // Set timeout, to avoid blocking on query.
+  if (plan_node_->timeout() > 0) {
+    std::chrono::system_clock::time_point deadline =
+        std::chrono::system_clock::now() + std::chrono::seconds{plan_node_->timeout()};
+    context.set_deadline(deadline);
+  }
+
+  grpc::Status status = logs_service_stub_->Export(&context, request, &logs_response_);
+  if (!status.ok()) {
+    if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
+      exec_state->exec_metrics()->otlp_spans_timeout_counter.Increment();
+    }
+
+    return FormatOTelStatus(plan_node_->id(), status);
+  }
+  return Status::OK();
+}
+
 Status OTelExportSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   if (plan_node_->metrics().size()) {
     PX_RETURN_IF_ERROR(ConsumeMetrics(exec_state, rb));
   }
   if (plan_node_->spans().size()) {
     PX_RETURN_IF_ERROR(ConsumeSpans(exec_state, rb));
+  }
+  if (plan_node_->logs().size()) {
+    PX_RETURN_IF_ERROR(ConsumeLogs(exec_state, rb));
   }
   if (rb.eos()) {
     sent_eos_ = true;

@@ -131,7 +131,6 @@ func (q *QueryResolver) RetentionPluginInfo(ctx context.Context, args retentionP
 		PluginId: args.ID,
 		Version:  args.PluginVersion,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +158,6 @@ func (q *QueryResolver) OrgRetentionPluginConfig(ctx context.Context, args reten
 	resp, err := q.Env.PluginServer.GetOrgRetentionPluginConfig(ctx, &cloudpb.GetOrgRetentionPluginConfigRequest{
 		PluginId: args.ID,
 	})
-
 	if err != nil {
 		return configs, err
 	}
@@ -180,7 +178,6 @@ func (q *QueryResolver) RetentionPluginConfig(ctx context.Context, args retentio
 	resp, err := q.Env.PluginServer.GetOrgRetentionPluginConfig(ctx, &cloudpb.GetOrgRetentionPluginConfigRequest{
 		PluginId: args.ID,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +256,6 @@ func (q *QueryResolver) UpdateRetentionPluginConfig(ctx context.Context, args up
 	}
 
 	_, err := q.Env.PluginServer.UpdateRetentionPluginConfig(ctx, req)
-
 	if err != nil {
 		return false, err
 	}

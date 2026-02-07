@@ -22,10 +22,10 @@ end
 default['owner'] = 'root'
 default['group'] = 'root'
 
-default['bazel']['download_path'] =
-  "https://github.com/bazelbuild/bazel/releases/download/6.2.0/bazel-6.2.0-linux-x86_64"
-default['bazel']['sha256'] =
-  '3d11c26fb9ba12c833844450bb90165b176e8a19cb5cf5923f3cec855837f17c'
+default['bazelisk']['download_path'] =
+  "https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-linux-amd64"
+default['bazelisk']['sha256'] =
+  'e1508323f347ad1465a887bc5d2bfb91cffc232d11e8e997b623227c6b32fb76'
 
 default['codecov']['download_path'] =
   'https://uploader.codecov.io/v0.2.3/linux/codecov'
@@ -33,14 +33,14 @@ default['codecov']['sha256'] =
   '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
 
 default['golang']['download_path'] =
-  'https://go.dev/dl/go1.21.0.linux-amd64.tar.gz'
+  'https://go.dev/dl/go1.24.6.linux-amd64.tar.gz'
 default['golang']['sha256'] =
-  'd0398903a16ba2232b389fb31032ddf57cac34efda306a0eebac34f0965a0742'
+  'bbca37cc395c974ffa4893ee35819ad23ebb27426df87af92e93a9ec66ef8712'
 
 default['golangci-lint']['download_path'] =
-  'https://github.com/golangci/golangci-lint/releases/download/v1.51.1/golangci-lint-1.51.1-linux-amd64.tar.gz'
+  'https://github.com/golangci/golangci-lint/releases/download/v2.3.1/golangci-lint-2.3.1-linux-amd64.tar.gz'
 default['golangci-lint']['sha256'] =
-  '17aeb26c76820c22efa0e1838b0ab93e90cfedef43fbfc9a2f33f27eb9e5e070'
+  '57c3a4c56b8363f7f1f695ac957b0bb474aca00c490bc5e949669a6c2ba5c432'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar.xz'

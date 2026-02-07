@@ -53,18 +53,18 @@ class PEMManager : public Manager {
  protected:
   PEMManager() = delete;
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
-             std::string_view nats_url, px::system::KernelVersion kernel_version)
+             std::string_view nats_url, px::system::KernelInfo kernel_info)
       : PEMManager(agent_id, pod_name, host_ip, nats_url,
                    px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag()),
-                   kernel_version) {}
+                   kernel_info) {}
 
   // Constructor which creates the HostInfo for an agent (runs once per node).
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
              std::string_view nats_url, std::unique_ptr<stirling::Stirling> stirling,
-             px::system::KernelVersion kernel_version)
+             px::system::KernelInfo kernel_info)
       : Manager(agent_id, pod_name, host_ip, /*grpc_server_port*/ 0, PEMManager::Capabilities(),
                 PEMManager::Parameters(), nats_url,
-                /*mds_url*/ "", kernel_version),
+                /*mds_url*/ "", kernel_info),
         stirling_(std::move(stirling)),
         node_available_memory_(prometheus::BuildGauge()
                                    .Name("node_available_memory")

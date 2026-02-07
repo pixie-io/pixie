@@ -35,7 +35,7 @@ go_library(
         "//src/api/go/pxapi/utils",
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//credentials",
         "@org_golang_google_grpc//credentials/insecure",

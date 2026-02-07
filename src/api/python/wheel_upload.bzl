@@ -23,7 +23,7 @@ def _impl(ctx):
         "#!/bin/bash -e",
         "python3 -m venv venv",
         "source venv/bin/activate",
-        "pip install -q twine==3.4.1",
+        "pip install -q twine==6.1.0",
     ]
 
     upload_cmd = [

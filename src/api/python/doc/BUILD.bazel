@@ -26,6 +26,7 @@ py_binary(
     imports = [
         "../",
     ],
+    python_version = "PY3",
     srcs_version = "PY3",
     deps = [
         "//src/api/python/pxapi:pxapi_library",

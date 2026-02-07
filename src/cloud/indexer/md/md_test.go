@@ -38,9 +38,11 @@ import (
 
 const indexName = "test_md_index"
 
-var elasticClient *elastic.Client
-var vzID uuid.UUID
-var orgID uuid.UUID
+var (
+	elasticClient *elastic.Client
+	vzID          uuid.UUID
+	orgID         uuid.UUID
+)
 
 func TestMain(m *testing.M) {
 	es, cleanup, err := docker.SetupElastic()

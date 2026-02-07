@@ -45,7 +45,7 @@ func init() {
 	RunCmd.Flags().BoolP("e2e_encryption", "e", true, "Enable E2E encryption")
 	RunCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
 	RunCmd.Flags().StringP("cluster", "c", "", "ID of the cluster to run on. "+
-		"Use 'px get viziers', or visit Admin console: work.withpixie.ai/admin, to find the ID")
+		"Use 'px get viziers' to find the ID")
 	RunCmd.Flags().MarkHidden("all-clusters")
 
 	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
@@ -198,7 +198,6 @@ func createNewCobraCommand() *cobra.Command {
 			ctx, cleanup := utils.WithSignalCancellable(context.Background())
 			defer cleanup()
 			err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format, useEncryption)
-
 			if err != nil {
 				vzErr, ok := err.(*vizier.ScriptExecutionError)
 				switch {

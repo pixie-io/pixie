@@ -62,7 +62,8 @@ func (u *UserServiceServer) GetUser(ctx context.Context, req *uuidpb.UUID) (*clo
 
 // GetUserSettings will retrieve settings given the user ID.
 func (u *UserServiceServer) GetUserSettings(ctx context.Context, req *cloudpb.GetUserSettingsRequest) (*cloudpb.GetUserSettingsResponse,
-	error) {
+	error,
+) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -84,7 +85,8 @@ func (u *UserServiceServer) GetUserSettings(ctx context.Context, req *cloudpb.Ge
 
 // UpdateUserSettings will update the settings for the given user.
 func (u *UserServiceServer) UpdateUserSettings(ctx context.Context, req *cloudpb.UpdateUserSettingsRequest) (*cloudpb.UpdateUserSettingsResponse,
-	error) {
+	error,
+) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -105,7 +107,8 @@ func (u *UserServiceServer) UpdateUserSettings(ctx context.Context, req *cloudpb
 
 // UpdateUser will update user information.
 func (u *UserServiceServer) UpdateUser(ctx context.Context, req *cloudpb.UpdateUserRequest) (*cloudpb.UserInfo,
-	error) {
+	error,
+) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -162,7 +165,8 @@ func (u *UserServiceServer) UpdateUser(ctx context.Context, req *cloudpb.UpdateU
 
 // GetUserAttributes will retrieve attributes given the user ID.
 func (u *UserServiceServer) GetUserAttributes(ctx context.Context, req *cloudpb.GetUserAttributesRequest) (*cloudpb.GetUserAttributesResponse,
-	error) {
+	error,
+) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -184,7 +188,8 @@ func (u *UserServiceServer) GetUserAttributes(ctx context.Context, req *cloudpb.
 
 // SetUserAttributes will update the attributes for the given user.
 func (u *UserServiceServer) SetUserAttributes(ctx context.Context, req *cloudpb.SetUserAttributesRequest) (*cloudpb.SetUserAttributesResponse,
-	error) {
+	error,
+) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err

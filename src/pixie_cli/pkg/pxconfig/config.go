@@ -40,7 +40,7 @@ var (
 )
 
 func writeDefaultConfig(path string) (*ConfigInfo, error) {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
 		return nil, err
 	}

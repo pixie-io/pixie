@@ -60,6 +60,46 @@ static __inline enum message_type_t infer_http_message(const char* buf, size_t c
   return kUnknown;
 }
 
+static __inline enum message_type_t infer_tls_message(const char* buf, size_t count) {
+  if (count < 6) {
+    return kUnknown;
+  }
+
+  uint8_t content_type = buf[0];
+  // TLS content types correspond to the following:
+  // 0x14: ChangeCipherSpec
+  // 0x15: Alert
+  // 0x16: Handshake
+  // 0x17: ApplicationData
+  // 0x18: Heartbeat
+  if (content_type != 0x16) {
+    return kUnknown;
+  }
+
+  uint16_t legacy_version = buf[1] << 8 | buf[2];
+  // TLS versions correspond to the following:
+  // 0x0300: SSL 3.0
+  // 0x0301: TLS 1.0
+  // 0x0302: TLS 1.1
+  // 0x0303: TLS 1.2
+  // 0x0304: TLS 1.3
+  if (legacy_version < 0x0300 || legacy_version > 0x0304) {
+    return kUnknown;
+  }
+
+  uint8_t handshake_type = buf[5];
+  // Check for ServerHello
+  if (handshake_type == 2) {
+    return kResponse;
+  }
+  // Check for ClientHello
+  if (handshake_type == 1) {
+    return kRequest;
+  }
+
+  return kUnknown;
+}
+
 // Cassandra frame:
 //      0         8        16        24        32         40
 //      +---------+---------+---------+---------+---------+
@@ -699,7 +739,16 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   //               role by considering which side called accept() vs connect(). Once the clean-up
   //               above is done, the code below can be turned into a chained ternary.
   // PROTOCOL_LIST: Requires update on new protocols.
-  if (ENABLE_HTTP_TRACING && (inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
+  //
+  // TODO(ddelnano): TLS tracing should be handled differently in the future as we want to be able
+  // to trace the handshake and the application data separately (gh#2095). The current connection
+  // tracker model only works with one or the other, meaning if TLS tracing is enabled, tracing the
+  // plaintext within an encrypted conn will not work. ENABLE_TLS_TRACING will default to false
+  // until this is revisted.
+  if (ENABLE_TLS_TRACING && (inferred_message.type = infer_tls_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolTLS;
+  } else if (ENABLE_HTTP_TRACING &&
+             (inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolHTTP;
   } else if (ENABLE_CQL_TRACING &&
              (inferred_message.type = infer_cql_message(buf, count)) != kUnknown) {

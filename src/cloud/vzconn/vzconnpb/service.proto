@@ -22,7 +22,7 @@ package px.services;
 
 option go_package = "vzconnpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 

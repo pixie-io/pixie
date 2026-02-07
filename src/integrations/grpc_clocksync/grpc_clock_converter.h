@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include "src/common/clock/clock_conversion.h"
 #include "src/integrations/grpc_clocksync/proto/clocksync.grpc.pb.h"
 

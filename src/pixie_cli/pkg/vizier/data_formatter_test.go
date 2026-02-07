@@ -126,6 +126,7 @@ func TestScriptReferences(t *testing.T) {
 
 	assert.Equal(t, "px-sock-shop/load-test-799f9dffff-s6m2c", formatter.FormatValue(0, `{"label":"px-sock-shop/load-test-799f9dffff-s6m2c","script":"px/pod","args":{"start_time":"-5m","pod":"px-sock-shop/load-test-799f9dffff-s6m2c"}}`))
 }
+
 func TestBytes(t *testing.T) {
 	relation := &vizierpb.Relation{
 		Columns: []*vizierpb.Relation_ColumnInfo{

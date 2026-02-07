@@ -79,12 +79,12 @@ static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, uint32_t id, int siz
   event.upid.start_time_ticks = get_tgid_start_time();
 
   if (family == AF_INET) {
-    event.local_addr.in4.sin_port = ntohs(lport);
+    event.local_addr.in4.sin_port = htons(lport);
     event.remote_addr.in4.sin_port = rport;
     BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in4.sin_addr.s_addr, &sk_common->skc_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
   } else if (family == AF_INET6) {
-    event.local_addr.in6.sin6_port = ntohs(lport);
+    event.local_addr.in6.sin6_port = htons(lport);
     event.remote_addr.in6.sin6_port = rport;
     BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in6.sin6_addr, &sk_common->skc_v6_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &sk_common->skc_v6_daddr);
@@ -158,12 +158,12 @@ int probe_entry_tcp_cleanup_rbuf(struct pt_regs* ctx, struct sock* sk, int copie
   event.local_addr.sa.sa_family = family;
 
   if (family == AF_INET) {
-    event.local_addr.in4.sin_port = ntohs(lport);
+    event.local_addr.in4.sin_port = htons(lport);
     event.remote_addr.in4.sin_port = rport;
     BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in4.sin_addr.s_addr, &sk->__sk_common.skc_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &sk->__sk_common.skc_daddr);
   } else if (family == AF_INET6) {
-    event.local_addr.in6.sin6_port = ntohs(lport);
+    event.local_addr.in6.sin6_port = htons(lport);
     event.remote_addr.in6.sin6_port = rport;
     BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in6.sin6_addr, &sk->__sk_common.skc_v6_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &sk->__sk_common.skc_v6_daddr);
@@ -196,6 +196,8 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
 
   int lport = -1;
   int rport = -1;
+  // skc_num is stored in host byte order. The rest of our user space processing
+  // assumes network byte order so convert it here.
   BPF_PROBE_READ_KERNEL_VAR(lport, &skp->__sk_common.skc_num);
   BPF_PROBE_READ_KERNEL_VAR(rport, &skp->__sk_common.skc_dport);
 
@@ -204,13 +206,13 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
   event.local_addr.sa.sa_family = family;
 
   if (family == AF_INET) {
-    event.local_addr.in4.sin_port = ntohs(lport);
+    event.local_addr.in4.sin_port = htons(lport);
     event.remote_addr.in4.sin_port = rport;
     BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in4.sin_addr.s_addr,
                               &skp->__sk_common.skc_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &skp->__sk_common.skc_daddr);
   } else if (family == AF_INET6) {
-    event.local_addr.in6.sin6_port = ntohs(lport);
+    event.local_addr.in6.sin6_port = htons(lport);
     event.remote_addr.in6.sin6_port = rport;
     BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in6.sin6_addr, &skp->__sk_common.skc_v6_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &skp->__sk_common.skc_v6_daddr);

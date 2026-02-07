@@ -185,7 +185,8 @@ func (o *OrganizationServiceServer) UpdateOrg(ctx context.Context, req *cloudpb.
 
 // GetUsersInOrg will get users given an org id.
 func (o *OrganizationServiceServer) GetUsersInOrg(ctx context.Context, req *cloudpb.GetUsersInOrgRequest) (*cloudpb.GetUsersInOrgResponse,
-	error) {
+	error,
+) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err

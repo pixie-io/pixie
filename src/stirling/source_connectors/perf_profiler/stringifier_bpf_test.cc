@@ -208,8 +208,8 @@ TEST_F(StringifierTest, MemoizationTest) {
                                          .probe_fn = "stack_trace_sampler"};
 
   // kprobe spec. to attach our BPF program, stack_trace_sampler, to syscall getpid.
-  constexpr bpf_tools::KProbeSpec kPidKprobe{"getpid", bpf_tools::BPFProbeAttachType::kEntry,
-                                             "stack_trace_sampler"};
+  const bpf_tools::KProbeSpec kPidKprobe{"getpid", bpf_tools::BPFProbeAttachType::kEntry,
+                                         "stack_trace_sampler"};
 
   // Attach uprobes & kprobes for this test case:
   ASSERT_OK(bcc_wrapper_->AttachKProbe(kPidKprobe));

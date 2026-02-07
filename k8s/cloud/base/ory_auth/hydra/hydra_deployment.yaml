@@ -154,7 +154,6 @@ spec:
       - name: client-create-or-update
         imagePullPolicy: IfNotPresent
         image: oryd/hydra:v1.9.2-alpine@sha256:faa6ca02e77e0a08f66bfa7470a5e06d80e6e68c9c35410c65a4ea7b501aea61
-        # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           URL="https://localhost:4445/health/ready";
           until [
@@ -183,7 +182,6 @@ spec:
             --skip-tls-verify;
           sleep infinity;
         ']
-        # yamllint enable rule:indentation
         envFrom:
         - configMapRef:
             name: pl-domain-config

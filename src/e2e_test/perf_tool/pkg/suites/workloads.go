@@ -141,6 +141,7 @@ func SockShopWorkload() *pb.WorkloadSpec {
 		Healthchecks: HTTPHealthChecks("px-sock-shop", true),
 	}
 }
+
 func K8ssandraWorkload() *pb.WorkloadSpec {
 	return &pb.WorkloadSpec{
 		Name: "px-python-demo",

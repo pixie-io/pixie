@@ -217,7 +217,7 @@ func TestOrgSettingsResolver_OrgUsers(t *testing.T) {
 			defer cleanup()
 			ctx := test.ctx
 
-			//mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+			// mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 			mockClients.MockOrg.EXPECT().
 				GetUsersInOrg(gomock.Any(), &cloudpb.GetUsersInOrgRequest{
 					OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),

@@ -1,0 +1,17 @@
+---
+version: 1
+creds:
+- registry: gcr.io
+- registry: docker.io
+- registry: ghcr.io
+- registry: quay.io
+defaults:
+  interval: 60m
+  timeout: 10m
+scripts:
+- name: sync demo images
+  script: |
+    local deps = require 'deps'
+    for ns, images in pairs(deps.demoImages) do
+      deps.mirrorImgs(images, ns)
+    end

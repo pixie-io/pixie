@@ -49,6 +49,23 @@ Application DetectApplication(const std::filesystem::path& exe) {
   return Application::kUnknown;
 }
 
+// This method returns the main nodejs application file from a command line. See the following
+// examples below:
+//
+// "node /usr/bin/test.js" -> "test.js"
+// "node --node-memory-debug /usr/bin/test.js" -> "test.js"
+// "node /usr/bin/test" -> std::nullopt
+std::optional<std::string> GetNodeApplicationFilename(std::string_view cmdline) {
+  std::vector<std::string> cmdline_parts = absl::StrSplit(cmdline, ' ');
+  for (const auto& part : cmdline_parts) {
+    if (absl::EndsWith(part, ".js")) {
+      std::filesystem::path path(part);
+      return path.filename();
+    }
+  }
+  return {};
+}
+
 bool operator<(const SemVer& lhs, const SemVer& rhs) {
   std::vector<int> lhs_vec = {lhs.major, lhs.minor, lhs.patch};
   std::vector<int> rhs_vec = {rhs.major, rhs.minor, rhs.patch};

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: carts-db
-        image: mongo:4@sha256:8665d6b3b8e022cceae38fda41f6f4b50eaf84380c930bcf9b3a78f220b9f75c
+        image: ghcr.io/pixie-io/px-sock-shop-mongo:4@sha256:8665d6b3b8e022cceae38fda41f6f4b50eaf84380c930bcf9b3a78f220b9f75c
         ports:
         - name: mongo
           containerPort: 27017
@@ -75,7 +75,7 @@ spec:
     spec:
       containers:
       - name: carts
-        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/carts:latest
+        image: ghcr.io/pixie-io/px-sock-shop-carts:latest@sha256:dee4cc373d22e022db85d12ba8ffaa504a93d801f19d48db6fe37d530f3b8f05
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
@@ -160,7 +160,7 @@ spec:
     spec:
       containers:
       - name: catalogue-db
-        image: weaveworksdemos/catalogue-db:0.3.0@sha256:7ba74ec9adf88f6625b8d85d3323d1ee5232b39877e1590021ea485cf9457251
+        image: ghcr.io/pixie-io/px-sock-shop-catalogue-db:0.3.0@sha256:7ba74ec9adf88f6625b8d85d3323d1ee5232b39877e1590021ea485cf9457251
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: fake_password
@@ -206,7 +206,7 @@ spec:
     spec:
       containers:
       - name: catalogue
-        image: weaveworksdemos/catalogue:0.3.5@sha256:0147a65b7116569439eefb1a6dbed455fe022464ef70e0c3cab75bc4a226b39b
+        image: ghcr.io/pixie-io/px-sock-shop-catalogue:0.3.5@sha256:0147a65b7116569439eefb1a6dbed455fe022464ef70e0c3cab75bc4a226b39b
         command: ["/app"]
         args:
         - -port=80
@@ -277,7 +277,7 @@ spec:
     spec:
       containers:
       - name: front-end
-        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/front-end:latest
+        image: ghcr.io/pixie-io/px-sock-shop-front-end:0.3.12@sha256:26a2d9b6b291dee2dca32fca3f5bff6c2fa07bb5954359afcbc8001cc70eac71
         resources:
           limits:
             cpu: 300m
@@ -349,7 +349,7 @@ spec:
     spec:
       containers:
       - name: orders-db
-        image: mongo:4@sha256:8665d6b3b8e022cceae38fda41f6f4b50eaf84380c930bcf9b3a78f220b9f75c
+        image: ghcr.io/pixie-io/px-sock-shop-mongo:4@sha256:8665d6b3b8e022cceae38fda41f6f4b50eaf84380c930bcf9b3a78f220b9f75c
         ports:
         - name: mongo
           containerPort: 27017
@@ -406,7 +406,7 @@ spec:
     spec:
       containers:
       - name: orders
-        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/orders:latest
+        image: ghcr.io/pixie-io/px-sock-shop-orders:latest@sha256:433a589dd7b2b5ecd08005760d1ddca884f31e86870a1d563bd6f696bef078a6
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
@@ -491,7 +491,7 @@ spec:
     spec:
       containers:
       - name: payment
-        image: weaveworksdemos/payment:0.4.3@sha256:5ab1c9877480a018d4dda10d6dfa382776e6bca9fc1c60bacbb80903fde8cfe0
+        image: ghcr.io/pixie-io/px-sock-shop-payment:0.4.3@sha256:5ab1c9877480a018d4dda10d6dfa382776e6bca9fc1c60bacbb80903fde8cfe0
         resources:
           limits:
             cpu: 100m
@@ -559,7 +559,7 @@ spec:
     spec:
       containers:
       - name: queue-master
-        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/queue-master:latest
+        image: ghcr.io/pixie-io/px-sock-shop-queue-master:latest@sha256:d52117018089a83b8e3c631b861ca390fd4ab64f3ab3ee5a3a1247f49e35c0e7
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
@@ -632,7 +632,7 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: rabbitmq:3.6.8-management@sha256:0297618bd60270f03665448b02b3b1110dfc51fae60a3c6804005169f0904dad
+        image: ghcr.io/pixie-io/px-sock-shop-rabbitmq:3.6.8-management@sha256:0297618bd60270f03665448b02b3b1110dfc51fae60a3c6804005169f0904dad
         ports:
         - containerPort: 15672
           name: management
@@ -649,7 +649,7 @@ spec:
               - DAC_OVERRIDE
           readOnlyRootFilesystem: true
       - name: rabbitmq-exporter
-        image: kbudde/rabbitmq-exporter
+        image: ghcr.io/pixie-io/px-sock-shop-rabbitmq-exporter:latest@sha256:12f27d6d84e6dbdd72c6bc2605e48af9910517394483c1dfa3230e49d3e32107
         ports:
         - containerPort: 9090
           name: exporter
@@ -697,7 +697,7 @@ spec:
     spec:
       containers:
       - name: session-db
-        image: redis:alpine@sha256:da0cc759968a286f9fa8e3a0d8faca70e4dcf8ffc25fd290a041c59a9eb725c7
+        image: ghcr.io/pixie-io/px-sock-shop-redis:alpine@sha256:da0cc759968a286f9fa8e3a0d8faca70e4dcf8ffc25fd290a041c59a9eb725c7
         ports:
         - name: redis
           containerPort: 6379
@@ -747,7 +747,7 @@ spec:
     spec:
       containers:
       - name: shipping
-        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/shipping:latest
+        image: ghcr.io/pixie-io/px-sock-shop-shipping:latest@sha256:3b1365606ac36aa8f71fb2fe39e33124dafd37d74b16b8b603ac321e6afb4c8e
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
@@ -837,7 +837,7 @@ spec:
     spec:
       containers:
       - name: user-db
-        image: weaveworksdemos/user-db:0.3.0@sha256:695bc22c11396c7ae747118c56e619f3b3295d9d4cbec999d30230b3f399a389
+        image: ghcr.io/pixie-io/px-sock-shop-user-db:0.3.0@sha256:695bc22c11396c7ae747118c56e619f3b3295d9d4cbec999d30230b3f399a389
 
         ports:
         - name: mongo
@@ -895,7 +895,7 @@ spec:
     spec:
       containers:
       - name: user
-        image: weaveworksdemos/user:0.4.7@sha256:2ffccc332963c89e035fea52201012208bf62df43a55fe461ad6598a5c757ab7
+        image: ghcr.io/pixie-io/px-sock-shop-user:0.4.7@sha256:2ffccc332963c89e035fea52201012208bf62df43a55fe461ad6598a5c757ab7
         resources:
           limits:
             cpu: 300m

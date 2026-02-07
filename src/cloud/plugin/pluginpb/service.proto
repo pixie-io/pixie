@@ -22,7 +22,7 @@ package px.services.internal;
 
 option go_package = "pluginpb";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 

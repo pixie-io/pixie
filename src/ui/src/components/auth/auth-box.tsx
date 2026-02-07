@@ -25,6 +25,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import pixieAnalytics from 'app/utils/analytics';
 import { WithChildren } from 'app/utils/react-boilerplate';
+import { privacyUri, termsUri } from 'configurable/tos-privacy';
 
 import { PixienautBox } from './pixienaut-box';
 
@@ -113,9 +114,9 @@ export const AuthBox: React.FC<WithChildren<AuthBoxProps>> = React.memo((props) 
           <>
             <Typography variant='subtitle2' className={classes.disclaimer}>
               By signing up, you&apos;re agreeing to&nbsp;
-              <a href='https://pixielabs.ai/terms/'>Terms of Service</a>
+              <a href={termsUri}>Terms of Service</a>
               &nbsp;and&nbsp;
-              <a href='https://pixielabs.ai/privacy'>Privacy Policy</a>
+              <a href={privacyUri}>Privacy Policy</a>
               .
             </Typography>
           </>

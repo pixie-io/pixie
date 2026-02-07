@@ -18,8 +18,10 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
@@ -33,11 +35,31 @@ namespace obj_tools {
 // Returns true if the executable is built by Golang.
 bool IsGoExecutable(ElfReader* elf_reader);
 
-// Returns the build version of a Golang executable. The executable is read through the input
-// elf_reader.
-// TODO(yzhao): We'll use this to determine the corresponding Golang executable's TLS data
-// structures and their offsets.
-StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader);
+struct Module {
+  std::string path;
+  std::string version;
+  std::string sum;
+  std::unique_ptr<Module> replace = nullptr;
+};
+
+struct BuildInfo {
+  std::string path;
+  Module main;
+  std::vector<Module> deps;
+  std::vector<std::pair<std::string, std::string>> settings;
+};
+
+StatusOr<BuildInfo> ReadModInfo(const std::string& mod);
+// Returns the build version and buildinfo of a Golang executable. The executable is read through
+// the input elf_reader.
+StatusOr<std::pair<std::string, BuildInfo>> ReadGoBuildInfo(ElfReader* elf_reader);
+
+// Returns the build version by reading the runtime.buildVersion symbol from a Golang executable.
+// This is a fallback method for older Go binaries (Go 1.11 and earlier) that don't have the
+// .go.buildinfo section. The version string has the "go" prefix stripped (e.g., "1.11.13").
+// Note: This function does not work correctly with 32-bit binaries due to gostring structure size
+// differences.
+StatusOr<std::pair<std::string, BuildInfo>> ReadBuildVersion(ElfReader* elf_reader);
 
 // Describes a Golang type that implement an interface.
 struct IntfImplTypeInfo {

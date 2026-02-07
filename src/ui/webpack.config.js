@@ -302,6 +302,7 @@ module.exports = (env, argv) => {
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(yamls.ld.data.PL_LD_CLIENT_ID),
       __CONFIG_SCRIPT_BUNDLE_URLS__: JSON.stringify(yamls.scriptBundle.data.SCRIPT_BUNDLE_URLS),
       __CONFIG_SCRIPT_BUNDLE_DEV__: JSON.parse(yamls.scriptBundle.data.SCRIPT_BUNDLE_DEV),
+      __CONFIG_SCRIPT_MODIFICATION_DISABLED__: JSON.parse(yamls.scriptBundle.data.PL_SCRIPT_MODIFICATION_DISABLED),
       __SEGMENT_ANALYTICS_JS_DOMAIN__: `"segment.${yamls.domain.data.PL_DOMAIN_NAME}"`,
     }),
   );

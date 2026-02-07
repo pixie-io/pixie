@@ -30,7 +30,6 @@ func ExecCommand(name string, args ...string) error {
 	var stderr bytes.Buffer
 	kcmd.Stderr = &stderr
 	err := kcmd.Run()
-
 	if err != nil {
 		return errors.New(stderr.String())
 	}

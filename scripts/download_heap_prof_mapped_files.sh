@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -19,18 +19,61 @@
 usage() {
   echo "This script downloads all of the files listed in the mappings section of a heap profile."
   echo ""
-  echo "Usage: $0 <heap_profile> <node_name> [<gcloud ssh opts>...]"
+  echo "Usage: $0 <heap_profile> <node_name> [--gcloud-common-args] [--gcloud-ssh-args...]"
+  echo "<heap_profile> : the path to the heap profile file (in pprof format) to analyze."
+  echo "<node_name> : the name of the node to connect to (e.g., the name of a Vizier agent node)."
+  echo "[--gcloud-common-args] : common arguments to pass to gcloud commands, such as --project."
+  echo "[--gcloud-ssh-args] : additional arguments to pass to gcloud compute ssh commands, such as --internal-ip."
   exit 1
 }
-set -e
 
-heap_profile="$1"
-node_name="$2"
-output_dir=/tmp/prof_bins
+parse_args() {
+  if [ $# -lt 2 ]; then
+    usage
+  fi
 
-if [ -z "$heap_profile" ] || [ -z "$node_name" ]; then
-  usage
-fi
+  heap_profile="$1"
+  shift
+
+  node_name="$1"
+  shift
+
+  while test $# -gt 0; do
+    case "$1" in
+      --gcloud-common-args=*)
+        GCLOUD_COMMON_ARGS="${1#*=}"
+        shift
+        ;;
+      --gcloud-common-args)
+        GCLOUD_COMMON_ARGS="$2"
+        shift
+        shift
+        ;;
+      --gcloud-ssh-args=*)
+        GCLOUD_SSH_ARGS="${1#*=}"
+        shift
+        ;;
+      --gcloud-ssh-args)
+        GCLOUD_SSH_ARGS="$2"
+        shift
+        shift
+        ;;
+      *) usage ;;
+    esac
+  done;
+}
+
+
+check_args() {
+  if [ -z "$heap_profile" ] || [ -z "$node_name" ]; then
+    usage
+  fi
+}
+
+parse_args "${@}"
+check_args
+
+output_dir="${heap_profile%.txt}"
 
 # Create the output directory at the beginning of the script.
 mkdir -p "$output_dir"
@@ -44,7 +87,8 @@ mkdir -p "$output_dir"
 mappings=$(awk 'BEGIN{m=0} /MAPPED_LIBRARIES/{m=1} { if(m) { print $6 }}' "$heap_profile" | grep "^/" | sort | uniq)
 
 err_file="$output_dir/gcloud_error.log"
-procs=$(gcloud compute ssh --command='ps ax' "$node_name" "${@:3}" 2> "$err_file") || cat "$err_file" && rm "$err_file"
+zone=$(gcloud compute instances list "${GCLOUD_COMMON_ARGS}" --filter="$node_name" --format="table(name, zone)"| tail -n 1 | awk '{print $2}')
+procs=$(gcloud compute ssh --zone "$zone" --command='ps ax' "$node_name" "${GCLOUD_COMMON_ARGS}" "${GCLOUD_SSH_ARGS}" 2> "$err_file") || cat "$err_file" && rm "$err_file"
 
 # Find the mapping that corresponds to a process on the node.
 # We assume that the process was started by running one of the files in the mappings
@@ -52,7 +96,7 @@ procs=$(gcloud compute ssh --command='ps ax' "$node_name" "${@:3}" 2> "$err_file
 for fname in $mappings
 do
   bname=$(basename "$fname")
-  matching_proc=$(echo "$procs" | grep "$bname" || true)
+  matching_proc=$(echo "$procs" | grep -E "$bname$" || true)
   if [[ -n "$matching_proc" ]]; then
     pid=$(echo "$matching_proc" | awk '{ print $1 }')
     matched_file="$fname"
@@ -79,15 +123,15 @@ output_on_err() {
 }
 
 # Create tar archive on node.
-output_on_err gcloud compute ssh --command="$create_tar_cmd" "$node_name" "${@:3}"
+output_on_err gcloud compute ssh  --zone "$zone" --command="$create_tar_cmd" "$node_name" "${GCLOUD_COMMON_ARGS}" "${GCLOUD_SSH_ARGS}"
 
 # Copy archive to local machine.
-output_on_err gcloud compute scp "${@:3}" "$USER@$node_name:~/$tar_file" "/tmp/$tar_file"
+output_on_err gcloud compute scp --zone "$zone" "${GCLOUD_COMMON_ARGS}" "${GCLOUD_SSH_ARGS}" "$USER@$node_name:~/$tar_file" "${output_dir}/$tar_file"
 
 # Cleanup tar archive on node.
-output_on_err gcloud compute ssh --command="rm ~/$tar_file" "$node_name" "${@:3}"
+output_on_err gcloud compute ssh --zone "$zone" --command="rm ~/$tar_file" "$node_name" "${GCLOUD_COMMON_ARGS}" "${GCLOUD_SSH_ARGS}"
 
-tar --strip-components=1 -C "$output_dir" -xzf "/tmp/$tar_file"
+tar --strip-components=1 -C "$output_dir" -xzf "${output_dir}/$tar_file"
 
 echo "Dumped mapped binaries to $output_dir"
 echo "Run 'PPROF_BINARY_PATH=$output_dir pprof -http=localhost:8888 $heap_profile' to visualize the profile."

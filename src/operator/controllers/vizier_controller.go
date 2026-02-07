@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -47,13 +48,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vizierconfigpb"
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/status"
-	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
@@ -72,6 +71,11 @@ const (
 // defaultClassAnnotationKey is the key in the annotation map which indicates
 // a storage class is default.
 var defaultClassAnnotationKeys = []string{"storageclass.kubernetes.io/is-default-class", "storageclass.beta.kubernetes.io/is-default-class"}
+
+// The k8s API kinds that should be excluded from a Vizier's nodeSelector setting.
+// Resources such as DaemonSets should run on all nodes of the cluster, so applying
+// the nodeSelector uniformly across all pods leads to unexpected behavior.
+var nodeSelectorExcludedKinds = []string{"DaemonSet"}
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
@@ -493,13 +497,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
-	// Get the Vizier's ID from the cluster's secrets.
-	vizierID, err := getVizierID(r.Clientset, req.Namespace)
-	if err != nil {
-		log.WithError(err).Error("Failed to retrieve the Vizier ID from the cluster's secrets")
-	}
-
-	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, r.K8sVersion, vizierID, vz, cloudClient)
+	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, r.K8sVersion, vz, cloudClient)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate configs for Vizier YAMLs")
 		return err
@@ -811,14 +809,14 @@ func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceLi
 
 // generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
 // Pixie Cloud.
-func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string, vizierID *uuidpb.UUID, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
-	error) {
+func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
+	error,
+) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
 	req := &cloudpb.ConfigForVizierRequest{
 		Namespace:  ns,
 		K8sVersion: k8sVersion,
-		VizierID:   vizierID,
 		VzSpec: &vizierconfigpb.VizierSpec{
 			Version:               vz.Spec.Version,
 			DeployKey:             vz.Spec.DeployKey,
@@ -986,6 +984,8 @@ func convertTolerations(tolerations []v1.Toleration) []*vizierconfigpb.Toleratio
 }
 
 func updatePodSpec(nodeSelector map[string]string, tolerations []v1.Toleration, securityCtx *v1alpha1.PodSecurityContext, res map[string]interface{}) {
+	kind, kOk := res["kind"].(string)
+
 	podSpec := make(map[string]interface{})
 	md, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template", "spec")
 	if ok && err == nil {
@@ -994,18 +994,21 @@ func updatePodSpec(nodeSelector map[string]string, tolerations []v1.Toleration, 
 		}
 	}
 
-	castedNodeSelector := make(map[string]interface{})
-	ns, ok := podSpec["nodeSelector"].(map[string]interface{})
-	if ok {
-		castedNodeSelector = ns
-	}
-	for k, v := range nodeSelector {
-		if _, ok := castedNodeSelector[k]; ok {
-			continue
+	if kOk && !slices.Contains(nodeSelectorExcludedKinds, kind) {
+		castedNodeSelector := make(map[string]interface{})
+		ns, ok := podSpec["nodeSelector"].(map[string]interface{})
+		if ok {
+			castedNodeSelector = ns
 		}
-		castedNodeSelector[k] = v
+		for k, v := range nodeSelector {
+			if _, ok := castedNodeSelector[k]; ok {
+				continue
+			}
+			castedNodeSelector[k] = v
+		}
+		podSpec["nodeSelector"] = castedNodeSelector
 	}
-	podSpec["nodeSelector"] = castedNodeSelector
+
 	podSpec["tolerations"] = tolerations
 
 	// Add securityContext only if enabled.
@@ -1130,37 +1133,6 @@ func getClusterUID(clientset *kubernetes.Clientset) (string, error) {
 		return "", err
 	}
 	return string(ksNS.UID), nil
-}
-
-// getVizierID gets the ID of the cluster the Vizier is in.
-func getVizierID(clientset *kubernetes.Clientset, namespace string) (*uuidpb.UUID, error) {
-	op := func() (*uuidpb.UUID, error) {
-		var vizierID *uuidpb.UUID
-		s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
-		if s == nil {
-			return nil, errors.New("Missing cluster secrets, retrying again")
-		}
-		if id, ok := s.Data["cluster-id"]; ok {
-			vizierID = utils.ProtoFromUUIDStrOrNil(string(id))
-			if vizierID == nil {
-				return nil, errors.New("Couldn't convert ID to proto")
-			}
-		}
-
-		return vizierID, nil
-	}
-
-	expBackoff := backoff.NewExponentialBackOff()
-	expBackoff.InitialInterval = 10 * time.Second
-	expBackoff.Multiplier = 2
-	expBackoff.MaxElapsedTime = 10 * time.Minute
-
-	vizierID, err := backoff.RetryWithData(op, expBackoff)
-	if err != nil {
-		return nil, errors.New("Timed out waiting for the Vizier ID")
-	}
-
-	return vizierID, nil
 }
 
 // getConfigForOperator is responsible retrieving the Operator config from from Pixie Cloud.

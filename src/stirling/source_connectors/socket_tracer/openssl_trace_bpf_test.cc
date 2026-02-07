@@ -34,7 +34,7 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_12_3_1_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_14_18_1_alpine_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_client_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/python_3_10_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/python_min_310_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/ruby_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
@@ -52,6 +52,7 @@ using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
+using ::testing::IsTrue;
 using ::testing::StrEq;
 using ::testing::Types;
 using ::testing::UnorderedElementsAre;
@@ -85,7 +86,9 @@ class Node14_18_1AlpineContainerWrapper
   int32_t PID() const { return process_pid(); }
 };
 
-class Python310ContainerWrapper : public ::px::stirling::testing::Python310Container {
+// Python 3.10 and later use SSL_write_ex and SSL_read_ex. This test case is itended to cover
+// this case. See https://github.com/pixie-io/pixie/issues/1113 for more details.
+class PythonMin310ContainerWrapper : public ::px::stirling::testing::PythonMin310Container {
  public:
   int32_t PID() const { return process_pid(); }
 };
@@ -96,6 +99,7 @@ struct TraceRecords {
   std::vector<http::Record> http_records;
   std::vector<std::string> remote_address;
   std::vector<std::string> local_address;
+  std::vector<bool> encrypted;
 };
 
 template <typename TServerContainer>
@@ -127,9 +131,12 @@ class OpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing 
         ToRecordVector<http::Record>(record_batch, server_record_indices);
     std::vector<std::string> remote_addresses =
         testing::GetRemoteAddrs(record_batch, server_record_indices);
-    std::vector<std::string> local_address =
+    std::vector<std::string> local_addresses =
         testing::GetLocalAddrs(record_batch, server_record_indices);
-    return {std::move(http_records), std::move(remote_addresses), std::move(local_address)};
+    std::vector<bool> encrypted =
+        testing::GetEncrypted(record_batch, kHTTPEncryptedIdx, server_record_indices);
+    return {std::move(http_records), std::move(remote_addresses), std::move(local_addresses),
+            std::move(encrypted)};
   }
 
   TServerContainer server_;
@@ -176,7 +183,7 @@ http::Record GetExpectedHTTPRecord() {
 
 using OpenSSLServerImplementations =
     Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-          NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
+          NginxOpenSSL_3_0_8_ContainerWrapper, PythonMin310ContainerWrapper,
           Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
@@ -205,6 +212,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
   // Due to loopback, the local address is the same as the remote address.
   EXPECT_THAT(records.local_address, UnorderedElementsAre(StrEq("127.0.0.1")));
+  EXPECT_THAT(records.encrypted, UnorderedElementsAre(IsTrue()));
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
@@ -249,6 +257,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
                                    EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address,
               UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
+  EXPECT_THAT(records.encrypted, UnorderedElementsAre(IsTrue(), IsTrue(), IsTrue()));
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
@@ -269,6 +278,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
+  EXPECT_THAT(records.encrypted, UnorderedElementsAre(IsTrue()));
 }
 
 }  // namespace stirling

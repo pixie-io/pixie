@@ -6633,6 +6633,7 @@ export const px = $root.px = (() => {
              * @property {string|null} [pidColumn] StackTraceFlameGraph pidColumn
              * @property {string|null} [nodeColumn] StackTraceFlameGraph nodeColumn
              * @property {string|null} [percentageLabel] StackTraceFlameGraph percentageLabel
+             * @property {string|null} [differenceColumn] StackTraceFlameGraph differenceColumn
              */
 
             /**
@@ -6723,6 +6724,14 @@ export const px = $root.px = (() => {
             StackTraceFlameGraph.prototype.percentageLabel = "";
 
             /**
+             * StackTraceFlameGraph differenceColumn.
+             * @member {string} differenceColumn
+             * @memberof px.vispb.StackTraceFlameGraph
+             * @instance
+             */
+            StackTraceFlameGraph.prototype.differenceColumn = "";
+
+            /**
              * Creates a new StackTraceFlameGraph instance using the specified properties.
              * @function create
              * @memberof px.vispb.StackTraceFlameGraph
@@ -6764,6 +6773,8 @@ export const px = $root.px = (() => {
                     writer.uint32(/* id 8, wireType 2 =*/66).string(message.nodeColumn);
                 if (message.percentageLabel != null && Object.hasOwnProperty.call(message, "percentageLabel"))
                     writer.uint32(/* id 9, wireType 2 =*/74).string(message.percentageLabel);
+                if (message.differenceColumn != null && Object.hasOwnProperty.call(message, "differenceColumn"))
+                    writer.uint32(/* id 10, wireType 2 =*/82).string(message.differenceColumn);
                 return writer;
             };
 
@@ -6824,6 +6835,9 @@ export const px = $root.px = (() => {
                         break;
                     case 9:
                         message.percentageLabel = reader.string();
+                        break;
+                    case 10:
+                        message.differenceColumn = reader.string();
                         break;
                     default:
                         reader.skipType(tag & 7);
@@ -6887,6 +6901,9 @@ export const px = $root.px = (() => {
                 if (message.percentageLabel != null && message.hasOwnProperty("percentageLabel"))
                     if (!$util.isString(message.percentageLabel))
                         return "percentageLabel: string expected";
+                if (message.differenceColumn != null && message.hasOwnProperty("differenceColumn"))
+                    if (!$util.isString(message.differenceColumn))
+                        return "differenceColumn: string expected";
                 return null;
             };
 
@@ -6920,6 +6937,8 @@ export const px = $root.px = (() => {
                     message.nodeColumn = String(object.nodeColumn);
                 if (object.percentageLabel != null)
                     message.percentageLabel = String(object.percentageLabel);
+                if (object.differenceColumn != null)
+                    message.differenceColumn = String(object.differenceColumn);
                 return message;
             };
 
@@ -6946,6 +6965,7 @@ export const px = $root.px = (() => {
                     object.pidColumn = "";
                     object.nodeColumn = "";
                     object.percentageLabel = "";
+                    object.differenceColumn = "";
                 }
                 if (message.stacktraceColumn != null && message.hasOwnProperty("stacktraceColumn"))
                     object.stacktraceColumn = message.stacktraceColumn;
@@ -6965,6 +6985,8 @@ export const px = $root.px = (() => {
                     object.nodeColumn = message.nodeColumn;
                 if (message.percentageLabel != null && message.hasOwnProperty("percentageLabel"))
                     object.percentageLabel = message.percentageLabel;
+                if (message.differenceColumn != null && message.hasOwnProperty("differenceColumn"))
+                    object.differenceColumn = message.differenceColumn;
                 return object;
             };
 

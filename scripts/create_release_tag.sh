@@ -140,6 +140,12 @@ function generate_changelog {
 
         log=$(git log --format=%B -n 1 "$commit")
 
+        # PR title line will be suffixed with (#<PR number>)
+        prTitle=$(echo $log | head -n1)
+        if [[ $prTitle =~ \(\#([0-9]+)\) ]]; then
+          prNum=${BASH_REMATCH[1]}
+        fi
+
         # Get the type of change (cleanup|bug|feature).
         typeRe='Type of change: /kind ([A-Za-z]+)'
         if [[ $log =~ $typeRe ]]; then
@@ -147,27 +153,38 @@ function generate_changelog {
         fi
 
         # Get release notes.
-        notesRe="\`\`\`release-note\s*(.*)\`\`\`"
-        if [[ $log =~ $notesRe ]]; then
-          releaseNote=${BASH_REMATCH[1]}
-        fi
+        releaseNote=$(echo "$log" |  awk '
+        BEGIN { output = ""; capturing = 0 }
+        /Changelog Message:/ { capturing = 1 }
+        /---------/ { capturing = 0 }
+        /Signed-off-by/ { capturing = 0 }
+        capturing {
+          print $0
+        }
+        ' | sed 's/Changelog Message: //')
 
         declare -a cleanup_changelog
         declare -a bug_changelog
         declare -a feature_changelog
 
         if [[ -n $releaseNote ]]; then
+          fullReleaseNote="(#$prNum) $releaseNote"
           case $changeType in
           "cleanup")
-            cleanup_changelog+=("$releaseNote")
+            cleanup_changelog+=("$fullReleaseNote")
             ;;
           "bug")
-            bug_changelog+=("$releaseNote")
+            bug_changelog+=("$fullReleaseNote")
+            ;;
+          "bugfix")
+            bug_changelog+=("$fullReleaseNote")
             ;;
           "feature")
-            feature_changelog+=("$releaseNote")
+            feature_changelog+=("$fullReleaseNote")
             ;;
           *)
+            # If the type change is wrong, fail so that invalid entries can be fixed
+            exit 1
             ;;
           esac
         fi
@@ -248,6 +265,7 @@ if [ "$RELEASE" != "true" ]; then
   new_version_str=$(update_pre "$new_version_str" "$commit_count" "$sanitized_branch")
 fi
 
+echo "Generating changelog from ${prev_tag}..release/${ARTIFACT_TYPE}/v${new_version_str}"
 changelog=$(generate_changelog "$prev_tag" "$BAZEL_TARGET")
 
 new_tag="release/$ARTIFACT_TYPE/v"$new_version_str

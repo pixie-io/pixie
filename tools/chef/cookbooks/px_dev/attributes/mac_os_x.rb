@@ -23,10 +23,10 @@ end
 default['owner'] = node['current_user']
 default['group'] = 'wheel'
 
-default['bazel']['download_path'] =
-  "https://github.com/bazelbuild/bazel/releases/download/6.2.0/bazel-6.2.0-darwin-x86_64"
-default['bazel']['sha256'] =
-  'd2356012843ce3a2fbba89f88191673a6ad2f7716cc46ad43ec1bcee78d36b44'
+default['bazelisk']['download_path'] =
+  "https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-darwin-amd64"
+default['bazelisk']['sha256'] =
+  '8fcd7ba828f673ba4b1529425e01e15ac42599ef566c17f320d8cbfe7b96a167'
 
 default['codecov']['download_path'] =
   'https://uploader.codecov.io/v0.2.3/macos/codecov'
@@ -34,14 +34,14 @@ default['codecov']['sha256'] =
   '8d3709d957c7115610e764621569728be102d213fee15bc1d1aa9d465eb2c258'
 
 default['golang']['download_path'] =
-  'https://go.dev/dl/go1.21.0.darwin-amd64.tar.gz'
+  'https://go.dev/dl/go1.24.6.darwin-amd64.tar.gz'
 default['golang']['sha256'] =
-  'b314de9f704ab122c077d2ec8e67e3670affe8865479d1f01991e7ac55d65e70'
+  '4a8d7a32052f223e71faab424a69430455b27b3fff5f4e651f9d97c3e51a8746'
 
 default['golangci-lint']['download_path'] =
-  'https://github.com/golangci/golangci-lint/releases/download/v1.51.1/golangci-lint-1.51.1-darwin-amd64.tar.gz'
+  'https://github.com/golangci/golangci-lint/releases/download/v2.3.1/golangci-lint-2.3.1-darwin-amd64.tar.gz'
 default['golangci-lint']['sha256'] =
-  'fba08acc4027f69f07cef48fbff70b8a7ecdfaa1c2aba9ad3fb31d60d9f5d4bc'
+  '2f4412ffa77cb58ab3a7d065e1fff01ab714bb2b6fa06ad16ed793b6fc8d534d'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v18.16.0/node-v18.16.0-darwin-x64.tar.gz'

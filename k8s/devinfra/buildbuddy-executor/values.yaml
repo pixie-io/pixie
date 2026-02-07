@@ -1,43 +1,62 @@
 ---
-replicas: 48
+replicas: 16
+
+autoscaler:
+  enabled: true
+  minReplicas: 8
+  maxReplicas: 48
+  metrics:
+  - type: ContainerResource
+    containerResource:
+      name: cpu
+      container: buildbuddy-executor
+      target:
+        # These executors idle at a very low CPU usage, so any utilization should trigger some scaling.
+        type: Utilization
+        averageUtilization: 20
+
 resources:
   limits:
     memory: 8Gi
     cpu: null
   requests:
-    cpu: null
+    cpu: 4
 config:
+  server_type: buildbuddy-executor
   executor:
     app_target: "grpcs://remote.buildbuddy.io:443"
-    api_key: $BB_EXECUTOR_API_KEY
+    api_key: "${API_KEY}"
+    default_isolation_type: none
     docker_socket: ""
+    enable_podman: false
+    enable_oci: false
     enable_bare_runner: true
-    local_cache_size_bytes: 375000000000  # 375GB
+    local_cache_size_bytes: 20000000000  # 20GB
     millicpu: 4000
 
 extraInitContainers:
 - name: download-executor
   # yamllint disable-line rule:line-length
-  image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
-  # yamllint disable rule:indentation rule:line-length
+  image: ghcr.io/pixie-io/pixie-oss-pixie-dev-public-curl:8.15.0@sha256:4026b29997dc7c823b51c164b71e2b51e0fd95cce4601f78202c513d97da2922
+  # yamllint disable rule:line-length
   command: ['sh', '-c', 'set -e;
-    curl -fsSL https://github.com/buildbuddy-io/buildbuddy/releases/download/v2.12.42/executor-enterprise-linux-amd64 > /bb-executor/executor;
-    chmod +x /bb-executor/executor']
-  # yamllint enable rule:indentation rule:line-length
+    curl -fsSL https://github.com/buildbuddy-io/buildbuddy/releases/download/v2.154.0/executor-enterprise-linux-amd64 > /bb-executor/executor;
+    chmod +x /bb-executor/executor'
+  ]
+  # yamllint enable rule:line-length
   volumeMounts:
   - name: bb-executor
     mountPath: /bb-executor
 
 image:
-  repository: gcr.io/pixie-oss/pixie-dev-public/dev_image
+  repository: ghcr.io/pixie-io/dev_image
   tag: '$IMAGE_TAG'
 
 # Some clusters don't have ipv6 enabled, but we need it for some tests.
 customExecutorCommand:
 - /bin/sh
 - -c
-- 'sysctl -w net.ipv6.conf.lo.disable_ipv6=0 &&
-   /bb-executor/executor --server_type=buildbuddy-executor'
+- 'sysctl -w net.ipv6.conf.lo.disable_ipv6=0 && /bb-executor/executor'
 
 poolName: '"$IMAGE_TAG"'
 
@@ -55,6 +74,12 @@ extraVolumes:
   emptyDir: {}
 - name: tmp
   emptyDir: {}
+extraEnvVars:
+- name: API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: buildbuddy-executor-api-key
+      key: api-key
 
 containerSecurityContext:
   privileged: true
@@ -81,11 +106,9 @@ extraContainers:
   volumeMounts:
   - name: tmp
     mountPath: /tmp
-  # yamllint disable rule:indentation
   command: ['/bin/bash', '-c', 'set -xe;
     while true; do
       find /tmp -maxdepth 1 \( -type d -mmin +360 -not -path "/tmp" \) -exec rm -rf {} \; ;
       sleep 60;
     done;'
   ]
-  # yamllint enable rule:indentation

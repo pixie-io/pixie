@@ -18,7 +18,7 @@
 
 #include <absl/strings/str_replace.h>
 #include <gtest/gtest.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/base.h"
 

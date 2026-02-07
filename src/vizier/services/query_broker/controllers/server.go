@@ -96,7 +96,8 @@ type QueryExecutorFactory func(*Server, MutationExecFactory) QueryExecutor
 // NewServer creates GRPC handlers.
 func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, dataPrivacy DataPrivacy,
 	mds metadatapb.MetadataTracepointServiceClient, mdconf metadatapb.MetadataConfigServiceClient,
-	natsConn *nats.Conn, queryExecFactory QueryExecutorFactory) (*Server, error) {
+	natsConn *nats.Conn, queryExecFactory QueryExecutorFactory,
+) (*Server, error) {
 	var udfInfo udfspb.UDFInfo
 	if err := loadUDFInfo(&udfInfo); err != nil {
 		return nil, err
@@ -119,7 +120,8 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	mdconf metadatapb.MetadataConfigServiceClient,
 	natsConn *nats.Conn,
 	planner Planner,
-	queryExecFactory QueryExecutorFactory) (*Server, error) {
+	queryExecFactory QueryExecutorFactory,
+) (*Server, error) {
 	s := &Server{
 		env:               env,
 		agentsTracker:     agentsTracker,
@@ -380,7 +382,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 				// Stop the client stream, if it still exists in the result forwarder.
 				// It may have already been cancelled before this point.
 				log.Errorf("TransferResultChunk cancelling client stream for query %s: %s", queryID.String(), message)
-				clientStreamErr := fmt.Errorf(message)
+				clientStreamErr := fmt.Errorf("%s", message)
 				s.resultForwarder.ProducerCancelStream(queryID, clientStreamErr)
 			}
 		}

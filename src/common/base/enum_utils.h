@@ -21,7 +21,7 @@
 #include <map>
 #include <utility>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace px {
 

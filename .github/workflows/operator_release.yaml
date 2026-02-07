@@ -15,7 +15,7 @@ jobs:
       image-base-name: "dev_image_with_extras"
   build-release:
     name: Build Release
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -23,7 +23,7 @@ jobs:
       MANIFEST_UPDATES: "manifest_updates.json"
       ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
     - name: Add pwd to git safe dir
@@ -67,15 +67,15 @@ jobs:
         MANIFEST_UPDATES: ""
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       run: ./ci/update_artifact_manifest.sh
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: manifest-updates
         path: ${{ env.MANIFEST_UPDATES }}
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: operator-artifacts
         path: artifacts/
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: index-artifacts
         path: index.yaml
@@ -86,16 +86,15 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
     - name: Create Release
       env:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
       shell: bash
-      # yamllint disable rule:indentation
       run: |
         export TAG_NAME="${REF#*/tags/}"
         # actions/checkout doesn't get the tag annotation properly.
@@ -118,11 +117,11 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
         ref: gh-pages
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
     - name: Setup git
       shell: bash
       env:
@@ -136,16 +135,14 @@ jobs:
         TAG_NAME: ${{ github.event.release.tag_name }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
-      # yamllint disable rule:indentation
       run: |
         cp index-artifacts/index.yaml helm_charts/operator/index.yaml
         git add helm_charts/operator/index.yaml
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
         git commit -s -m "Release Helm chart ${VERSION}"
         git push origin "gh-pages"
-      # yamllint enable rule:indentation
   update-gh-artifacts-manifest:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: oracle-8cpu-32gb-x86-64
     needs: [get-dev-image, create-github-release]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -153,10 +150,10 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         fetch-depth: 0
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         ref: gh-pages
         path: gh-pages
@@ -178,7 +175,7 @@ jobs:
         git config --global user.email 'build@pixielabs.ai'
         git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
         git config --global commit.gpgsign true
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
       id: download-artifact
       with:
         name: manifest-updates

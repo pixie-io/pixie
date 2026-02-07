@@ -34,8 +34,10 @@ import (
 )
 
 // For p50, p99, etc.
-var latencyRegex = regexp.MustCompile(`(?i)^latency`)
-var cpuRegex = regexp.MustCompile(`(?i)^cpu`)
+var (
+	latencyRegex = regexp.MustCompile(`(?i)^latency`)
+	cpuRegex     = regexp.MustCompile(`(?i)^cpu`)
+)
 
 const nanosPerSecond = float64(1000 * 1000 * 1000)
 

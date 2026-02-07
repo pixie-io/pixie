@@ -12,4 +12,4 @@ scripts:
 - name: sync container_images.bzl
   script: |
     local deps = require 'deps'
-    deps.mirrorImgs()
+    deps.mirrorImgs(deps.depImages)

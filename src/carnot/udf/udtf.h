@@ -185,7 +185,7 @@ class UDTFTraits {
   template <class Q = TUDTF>
   typename std::enable_if_t<UDTFTraits<Q>::HasInitArgsFn(),
                             bool> static constexpr HasCorrectInitArgsSignature() {
-    return CorrectInitArgsTypeHelper<std::result_of_t<decltype (&TUDTF::InitArgs)()>>::value;
+    return CorrectInitArgsTypeHelper<std::invoke_result_t<decltype(&TUDTF::InitArgs)>>::value;
   }
 
   template <class Q = TUDTF>
@@ -231,7 +231,7 @@ class UDTFTraits {
   static constexpr bool HasCorrectOutputRelationFnSignature() {
     return HasOutputRelationFn() &&
            CorrectOutputRelationTypeHelper<
-               std::result_of_t<decltype (&TUDTF::OutputRelation)()>>::value;
+               std::invoke_result_t<decltype(&TUDTF::OutputRelation)>>::value;
   }
 
   /**
@@ -244,7 +244,7 @@ class UDTFTraits {
    * @return
    */
   static constexpr bool HasCorrectExectorFnReturnType() {
-    return HasExecutorFn() && std::is_same_v<std::result_of_t<decltype (&TUDTF::Executor)()>,
+    return HasExecutorFn() && std::is_same_v<std::invoke_result_t<decltype(&TUDTF::Executor)>,
                                              udfspb::UDTFSourceExecutor>;
   }
 

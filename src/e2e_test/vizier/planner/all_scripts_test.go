@@ -35,15 +35,14 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/carnot/planner/compilerpb"
-	"px.dev/pixie/src/e2e_test/vizier/planner/dump_schemas/godumpschemas"
-
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/carnot/goplanner"
+	"px.dev/pixie/src/carnot/planner/compilerpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/udfspb"
+	"px.dev/pixie/src/e2e_test/vizier/planner/dump_schemas/schemas"
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
 	funcs "px.dev/pixie/src/vizier/funcs/go"
@@ -208,7 +207,16 @@ func scriptToQueryRequest(s *script) (*plannerpb.QueryRequest, error) {
 }
 
 func loadSchemas() (*schemapb.Schema, error) {
-	return godumpschemas.DumpSchemas()
+	schema := &schemapb.Schema{}
+	b, err := schemas.Asset("src/e2e_test/vizier/planner/dump_schemas/data/schema.pb")
+	if err != nil {
+		return nil, err
+	}
+	err = proto.Unmarshal(b, schema)
+	if err != nil {
+		return nil, err
+	}
+	return schema, nil
 }
 
 func makePEMCarnotInfo(id uuid.UUID) *distributedpb.CarnotInfo {

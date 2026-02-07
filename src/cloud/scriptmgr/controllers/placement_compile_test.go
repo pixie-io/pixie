@@ -215,6 +215,7 @@ const badServiceNameArgInFnPlacement = `{
     }
   }
 }`
+
 const badGlobalArgPlacement = `{
   "name": "service-latencies",
   "args": {

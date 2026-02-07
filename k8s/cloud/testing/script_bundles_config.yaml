@@ -10,3 +10,4 @@ data:
     "https://artifacts.px.dev/pxl_scripts/bundle.json"
     ]
   SCRIPT_BUNDLE_DEV: "false"
+  PL_SCRIPT_MODIFICATION_DISABLED: "false"

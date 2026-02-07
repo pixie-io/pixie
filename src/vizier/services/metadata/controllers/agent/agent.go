@@ -243,7 +243,6 @@ func (m *ManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 	// We cannot lock the entire call to `deleteAgentWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
 	err := m.agtStore.DeleteAgent(agentID)
-
 	if err != nil {
 		log.WithError(err).Warnf("Failed to delete agent %s", agentID.String())
 		return err
@@ -277,7 +276,6 @@ func (m *ManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.A
 	// We cannot lock the entire call to `createAgentWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
 	err := m.agtStore.CreateAgent(agentID, agentInfo)
-
 	if err != nil {
 		log.WithError(err).Warnf("Failed to create agent %s", agentID.String())
 		return err
@@ -311,7 +309,6 @@ func (m *ManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.A
 	// We cannot lock the entire call to `updateAgentWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
 	err := m.agtStore.UpdateAgent(agentID, agentInfo)
-
 	if err != nil {
 		log.WithError(err).Warnf("Failed to update agent %s", agentID.String())
 		return err
@@ -345,7 +342,6 @@ func (m *ManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInf
 	// We cannot lock the entire call to `updateAgentDataInfoWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
 	err := m.agtStore.UpdateAgentDataInfo(agentID, agentDataInfo)
-
 	if err != nil {
 		log.WithError(err).Warnf("Failed to update agent data info for agent %s", agentID.String())
 		return err
@@ -603,7 +599,8 @@ func (m *ManagerImpl) UpdateConfig(ns string, podName string, key string, value 
 // if the input cursor has never read the initial state before, the full initial agent state is read out.
 // Afterwards, the changes to the agent state are read out as a delta to the previous state.
 func (m *ManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_servicepb.AgentUpdate,
-	*storepb.ComputedSchema, error) {
+	*storepb.ComputedSchema, error,
+) {
 	schemaUpdated := false
 	var updatedAgentsUpdates []*metadata_servicepb.AgentUpdate
 

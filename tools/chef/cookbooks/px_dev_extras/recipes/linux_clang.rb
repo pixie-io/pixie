@@ -18,6 +18,22 @@ if ! platform_family?('debian')
   return
 end
 
+remote_file '/tmp/libtinfo5.deb' do
+  source node['libtinfo5']['deb']
+  mode '0644'
+  checksum node['libtinfo5']['deb_sha256']
+end
+
+dpkg_package 'libtinfo5' do
+  source '/tmp/libtinfo5.deb'
+  action :install
+  version node['libtinfo5']['version']
+end
+
+file '/tmp/libtinfo5.deb' do
+  action :delete
+end
+
 remote_file '/tmp/clang.deb' do
   source node['clang']['deb']
   mode '0644'

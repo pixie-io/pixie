@@ -16,15 +16,17 @@
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
-kernel_build_date = 20230620214456
+kernel_build_date = 20240826223635
 kernel_catalog = {
-    "4.14.254": "857030b52d0a48bc95ab544439cf52da07bce8cc2b9bef2e0382f02c182fab78",
-    "4.19.254": "5203a52b48a966ddfc8564ed2d0fd1e84f20ef417cbb5d41eb0b1c8413e4853d",
-    "5.10.173": "8c746c5ee94964323ca69533950370f595426efd671bfed85473e5a4b570ec26",
-    "5.15.101": "e18b8c5e91e3856dd6705a324ec7ebb2f1be5ff503c1322f5ddc6c44255272e4",
-    "5.4.235": "828f69979065800a4f214a1be369ab9756fdc2c586bd5bbfcc6d2a0f501601d5",
-    "6.1.18": "31f125451a70249e206a1eba555e432d5e08d173a4ab9d675f0b5d57f879f81b",
+    "4.14.254": "007c1d9d7385c7aa9df8434b3c2a2c38963c88391d9f4b88d5ac67bbccbbccef",
+    "4.19.254": "946d914990ae5b2f6dae6ac0ecbc81c1f63df84832ecd7563c18e7dc99986d2f",
+    "5.4.254": "fbae23c3da8af04c2a039bff7a5926f71041506cd150d02209f1b1b10cd38329",
+    "5.10.224": "d5b3cd7282f0533fe1e2574a73f9164bc90fae1098fe0284cf37a2995ce0e762",
+    "5.15.165": "0b70925e4497d74d99fd43544b259c5ed2dbc4c91c4cf702f872698a2bf7d80d",
+    "6.1.106": "fa03bd44bd6a5a7e1dcf1ee6a1790add4f2297d85cfffdc61b52f123eda27dc7",
+    "6.8.12": "06db1941423384c4b956d1e7a46a888a5647d15504ee31fe8ae8bdff264f1678",
 }
+
 
 def kernel_version_to_name(version):
     return "linux_build_{}_x86_64".format(version.replace(".", "_"))
@@ -35,7 +37,6 @@ def qemu_kernel_deps():
             name = kernel_version_to_name(version),
             urls = [
                 "https://github.com/pixie-io/dev-artifacts/releases/download/kernel-build%2F{}/linux-build-{}.tar.gz".format(kernel_build_date, version),
-                "https://storage.googleapis.com/pixie-dev-public/kernel-build/{}/linux-build-{}.tar.gz".format(kernel_build_date, version),
             ],
             sha256 = sha,
             downloaded_file_path = "linux-build.tar.gz",

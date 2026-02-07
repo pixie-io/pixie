@@ -66,6 +66,10 @@ func isMetricsEndpoint(input string) bool {
 	return strings.HasPrefix(input, "/metrics")
 }
 
+func isPprofEndpoint(input string) bool {
+	return strings.HasPrefix(input, "/debug")
+}
+
 // WithBearerAuthMiddleware checks for valid bearer auth or rejects the request.
 // This middleware should be use on all services (except auth/api) to validate our tokens.
 func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
@@ -77,6 +81,11 @@ func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
 		}
 		if isMetricsEndpoint(r.URL.Path) {
 			// Skip auth for metric endpoints.
+			next.ServeHTTP(w, r)
+			return
+		}
+		if isPprofEndpoint(r.URL.Path) {
+			// Skip auth for pprof endpoints.
 			next.ServeHTTP(w, r)
 			return
 		}

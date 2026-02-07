@@ -1056,10 +1056,11 @@ func TestMonitor_getVizierVersionState(t *testing.T) {
 				}).
 				Return(&cloudpb.ArtifactSet{
 					Name: "vizier",
-					Artifact: []*cloudpb.Artifact{{
-						VersionStr: test.latestVersion,
-						Timestamp:  &types.Timestamp{Seconds: 10},
-					},
+					Artifact: []*cloudpb.Artifact{
+						{
+							VersionStr: test.latestVersion,
+							Timestamp:  &types.Timestamp{Seconds: 10},
+						},
 					},
 				}, nil)
 

@@ -22,7 +22,7 @@
 
 #include "src/common/testing/testing.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
 
 namespace px {
 namespace stirling {
@@ -395,6 +395,9 @@ TEST(GenProgramTest, SpecsAndCode) {
 
   const std::vector<std::string> expected_code_lines = {
       "#include <linux/sched.h>",
+      "#ifndef NSEC_PER_SEC",
+      "#define NSEC_PER_SEC 1000000000ULL",
+      "#endif",
       "#define __inline inline __attribute__((__always_inline__))",
       "static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {",
       "return div_u64(x, NSEC_PER_SEC / USER_HZ);",

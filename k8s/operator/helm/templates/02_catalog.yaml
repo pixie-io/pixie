@@ -18,6 +18,9 @@ spec:
     registryPoll:
       interval: 10m
   grpcPodConfig:
+    {{- if .Values.olmCatalogSource.nodeSelector }}
+    nodeSelector: {{ .Values.olmCatalogSource.nodeSelector | toYaml | nindent 6 }}
+    {{- end }}
     tolerations:
     - key: "kubernetes.io/arch"
       operator: "Equal"

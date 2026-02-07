@@ -88,7 +88,7 @@ class TCPStats {
    * @return A mutable reference to all the aggregated connection stats. The reference is mutable
    *         for the purposes of removing stats that are no longer needed.
    */
-  absl::flat_hash_map<AggKey, Stats>* UpdateStats(const std::vector<tcp_event_t> events);
+  absl::flat_hash_map<AggKey, Stats>* UpdateStats(const std::vector<tcp_event_t>& events);
 
  private:
   absl::flat_hash_map<AggKey, Stats> tcp_agg_stats_;

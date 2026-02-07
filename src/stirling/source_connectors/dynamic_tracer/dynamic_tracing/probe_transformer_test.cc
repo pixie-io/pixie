@@ -21,7 +21,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/probe_transformer.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_21_binary";
 
 namespace px {
 namespace stirling {
@@ -212,7 +212,14 @@ tracepoints {
         symbol: "main.MixedArgTypes"
         type: RETURN
       }
-      function_latency { id: "fn_latency" }
+      ret_vals {
+        id: "retval0"
+        expr: "$$0"
+      }
+      ret_vals {
+        id: "retval1"
+        expr: "$$1"
+      }
       map_vals {
         map_name: "probe0_argstash"
         key: GOID
@@ -224,13 +231,8 @@ tracepoints {
         value_ids: "arg5"
         value_ids: "start_ktime_ns"
       }
-      ret_vals {
-        id: "retval0"
-        expr: "$$0"
-      }
-      ret_vals {
-        id: "retval1"
-        expr: "$$1"
+      function_latency {
+        id: "fn_latency"
       }
       output_actions {
         output_name: "probe0_table"

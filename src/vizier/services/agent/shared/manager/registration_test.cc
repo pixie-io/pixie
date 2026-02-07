@@ -62,8 +62,11 @@ class RegistrationHandlerTest : public ::testing::Test {
     agent_info_.pod_name = "pod_name";
     agent_info_.host_ip = "host_ip";
     agent_info_.capabilities.set_collects_data(true);
-    agent_info_.kernel_version =
-        system::ParseKernelVersionString("5.15.0-106-generic").ValueOrDie();
+    auto kernel_info = system::KernelInfo{
+        system::ParseKernelVersionString("5.15.0-106-generic").ValueOrDie(),
+        true /*kernel_headers_installed*/,
+    };
+    agent_info_.kernel_info = kernel_info;
 
     auto register_hook = [this](uint32_t asid) -> Status {
       called_register_++;
@@ -114,9 +117,11 @@ TEST_F(RegistrationHandlerTest, RegisterAgent) {
   EXPECT_EQ(agent_info_.hostname, req.info().host_info().hostname());
   EXPECT_EQ(agent_info_.pod_name, req.info().host_info().pod_name());
   EXPECT_EQ(agent_info_.host_ip, req.info().host_info().host_ip());
-  EXPECT_EQ(agent_info_.kernel_version.version, req.info().host_info().kernel().version());
-  EXPECT_EQ(agent_info_.kernel_version.major_rev, req.info().host_info().kernel().major_rev());
-  EXPECT_EQ(agent_info_.kernel_version.minor_rev, req.info().host_info().kernel().minor_rev());
+  EXPECT_EQ(agent_info_.kernel_info.version.version, req.info().host_info().kernel().version());
+  EXPECT_EQ(agent_info_.kernel_info.version.major_rev, req.info().host_info().kernel().major_rev());
+  EXPECT_EQ(agent_info_.kernel_info.version.minor_rev, req.info().host_info().kernel().minor_rev());
+  EXPECT_EQ(agent_info_.kernel_info.kernel_headers_installed,
+            req.info().host_info().kernel_headers_installed());
 
   auto registration_ack = std::make_unique<messages::VizierMessage>();
   registration_ack->mutable_register_agent_response()->set_asid(10);

@@ -66,6 +66,7 @@ DECLARE_int32(stirling_enable_kafka_tracing);
 DECLARE_int32(stirling_enable_mux_tracing);
 DECLARE_int32(stirling_enable_amqp_tracing);
 DECLARE_int32(stirling_enable_mongodb_tracing);
+DECLARE_int32(stirling_enable_tls_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
@@ -94,9 +95,10 @@ enum TraceMode : int32_t {
 class SocketTraceConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "socket_tracer";
-  static constexpr auto kTables =
-      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable,
-                kRedisTable, kNATSTable, kKafkaTable, kMuxTable, kAMQPTable, kMongoDBTable);
+  // PROTOCOL_LIST
+  static constexpr auto kTables = MakeArray(
+      kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable, kRedisTable,
+      kNATSTable, kKafkaTable, kMuxTable, kAMQPTable, kMongoDBTable, kTLSTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
@@ -110,6 +112,7 @@ class SocketTraceConnector : public BCCSourceConnector {
   static constexpr uint32_t kMuxTableNum = TableNum(kTables, kMuxTable);
   static constexpr uint32_t kAMQPTableNum = TableNum(kTables, kAMQPTable);
   static constexpr uint32_t kMongoDBTableNum = TableNum(kTables, kMongoDBTable);
+  static constexpr uint32_t kTLSTableNum = TableNum(kTables, kTLSTable);
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
@@ -210,7 +213,7 @@ class SocketTraceConnector : public BCCSourceConnector {
       /* OUT */ struct go_grpc_http2_header_event_t* header_event_data_go_style);
 
   template <typename TProtocolTraits>
-  void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
+  size_t TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
   void TransferConnStats(ConnectorContext* ctx, DataTable* data_table);
 
   void set_iteration_time(std::chrono::time_point<std::chrono::steady_clock> time) {
@@ -253,7 +256,7 @@ class SocketTraceConnector : public BCCSourceConnector {
     int32_t trace_mode = TraceMode::Off;
     uint32_t table_num = 0;
     std::vector<endpoint_role_t> trace_roles;
-    std::function<void(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
+    std::function<size_t(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
         transfer_fn = nullptr;
     bool enabled = false;
   };
@@ -297,6 +300,8 @@ class SocketTraceConnector : public BCCSourceConnector {
 
   UProbeManager uprobe_mgr_;
 
+  size_t total_conn_tracker_mem_usage_ = 0;
+
   enum class StatKey {
     kLossSocketDataEvent,
     kLossSocketControlEvent,
@@ -311,6 +316,8 @@ class SocketTraceConnector : public BCCSourceConnector {
     kPollSocketDataEventAttrSize,
     kPollSocketDataEventDataSize,
     kPollSocketDataEventSize,
+
+    kDroppedSocketDataEvent,
   };
 
   utils::StatCounter<StatKey> stats_;

@@ -123,6 +123,9 @@ TEST_F(TcpTraceTest, Capture) {
   EXPECT_THAT(records, IsSupersetOf(expected));
   // TODO(RagalahariP): Explore options for testing retransmissions in a unit test case,
   // as retransmissions are blocking calls without known timeout value.
+
+  // TODO(ddelnano): Use a test case that verifies that local address of the socket is correct.
+  // The current implementation is correct, but other source connectors have had bugs here.
 }
 
 }  // namespace stirling

@@ -6,7 +6,6 @@ resources:
 - ../base
 - ../pem
 patches:
-# yamllint disable rule:indentation
 - patch: |-
     - op: add
       path: "/spec/template/spec/containers/0/env/-"
@@ -40,7 +39,6 @@ patches:
         hostPath:
           path: /profiles
           type: DirectoryOrCreate
-# yamllint enable rule:indentation
   target:
     kind: DaemonSet
     namespace: pl

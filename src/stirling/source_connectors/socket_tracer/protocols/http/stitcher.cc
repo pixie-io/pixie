@@ -43,7 +43,7 @@ namespace stirling {
 namespace protocols {
 namespace http {
 
-void PreProcessMessage(Message* message) {
+void PreProcessRespMessage(Message* message) {
   // Parse the flags on the first time only.
   static const HTTPHeaderFilter kHTTPResponseHeaderFilter =
       ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
@@ -72,6 +72,19 @@ void PreProcessMessage(Message* message) {
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != message->headers.end() && content_encoding_iter->second == "gzip") {
     message->body = px::zlib::Inflate(message->body).ConsumeValueOr("<Failed to gunzip body>");
+  }
+}
+
+void PreProcessReqMessage(Message* message) {
+  // Unlike responses, leave the body intact for messages that don't specify a Content-Type
+  auto content_type_iter = message->headers.find(http::kContentType);
+  if (content_type_iter == message->headers.end()) {
+    return;
+  }
+
+  if (message->type == message_type_t::kRequest &&
+      content_type_iter->second == "application/x-www-form-urlencoded") {
+    message->body = HTTPUrlDecode(message->body);
   }
 }
 

@@ -185,7 +185,6 @@ var VizierUpdateCmd = &cobra.Command{
 		}
 		uj := utils.NewSerialTaskRunner(updateJobs)
 		err = uj.RunAndMonitor()
-
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
 				UserId: pxconfig.Cfg().UniqueClientID,

@@ -173,7 +173,7 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
 	}
 
-	if !(at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64 || at == vpb.AT_CONTAINER_SET_YAMLS || at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) {
+	if at != vpb.AT_DARWIN_AMD64 && at != vpb.AT_LINUX_AMD64 && at != vpb.AT_CONTAINER_SET_YAMLS && at != vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS {
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be downloaded")
 	}
 
@@ -233,7 +233,6 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 
 	sha256ObjectPath := objectPath + ".sha256"
 	r, err := s.sc.Bucket(bucket).Object(sha256ObjectPath).NewReader(ctx)
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to fetch sha256 file")
 	}

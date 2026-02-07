@@ -24,8 +24,10 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-var mergeFailureReg *regexp.Regexp
-var settingsNonDynReg *regexp.Regexp
+var (
+	mergeFailureReg   *regexp.Regexp
+	settingsNonDynReg *regexp.Regexp
+)
 
 func init() {
 	mergeFailureReg = regexp.MustCompile(

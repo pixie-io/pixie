@@ -44,7 +44,7 @@ DEV_IMAGE_WITH_EXTRAS_DIGEST := $$($(DOCKER) inspect --format='{{index .RepoDige
 .PHONY: build_and_push_base_image
 build_and_push_base_image:
 	$(PACKER) build \
-		-var "base_image_and_tag=ubuntu:22.04" \
+		-var "base_image_and_tag=ubuntu:24.04" \
 		-var "generated_image_repository=$(REPOSITORY)/base_image" \
 		-var "generated_image_tag=$(BASE_IMAGE_VERSION)" \
 		packer_docker_base.json
@@ -53,7 +53,7 @@ build_and_push_base_image:
 .PHONY: build_and_push_dev_images
 build_and_push_dev_images:
 	$(PACKER) build \
-		-var "base_image_and_tag=ubuntu:22.04" \
+		-var "base_image_and_tag=ubuntu:24.04" \
 		-var "generated_image_repository=$(REPOSITORY)/linter_image" \
 		-var "generated_image_tag=$(DEV_IMAGE_VERSION)" \
 		packer_docker_linters.json

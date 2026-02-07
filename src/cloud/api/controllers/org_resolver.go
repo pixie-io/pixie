@@ -52,7 +52,6 @@ func (q *QueryResolver) InviteUser(ctx context.Context, args *inviteUserArgs) (*
 		FirstName: args.FirstName,
 		LastName:  args.LastName,
 	})
-
 	if err != nil {
 		return nil, rpcErrorHelper(err)
 	}
@@ -237,7 +236,6 @@ func (q *QueryResolver) CreateInviteToken(ctx context.Context, args *createInvit
 	resp, err := grpcAPI.CreateInviteToken(ctx, &cloudpb.CreateInviteTokenRequest{
 		OrgID: utils.ProtoFromUUIDStrOrNil(string(args.OrgID)),
 	})
-
 	if err != nil {
 		return "", rpcErrorHelper(err)
 	}
@@ -254,7 +252,6 @@ func (q *QueryResolver) RevokeAllInviteTokens(ctx context.Context, args *revokeA
 	grpcAPI := q.Env.OrgServer
 
 	_, err := grpcAPI.RevokeAllInviteTokens(ctx, utils.ProtoFromUUIDStrOrNil(string(args.OrgID)))
-
 	if err != nil {
 		return false, rpcErrorHelper(err)
 	}
@@ -272,7 +269,6 @@ func (q *QueryResolver) VerifyInviteToken(ctx context.Context, args *verifyInvit
 	grpcAPI := q.Env.OrgServer
 
 	resp, err := grpcAPI.VerifyInviteToken(ctx, &cloudpb.InviteToken{SignedClaims: args.InviteToken})
-
 	if err != nil {
 		return false, rpcErrorHelper(err)
 	}
@@ -289,7 +285,6 @@ func (q *QueryResolver) RemoveUserFromOrg(ctx context.Context, args *removeUserF
 	grpcAPI := q.Env.OrgServer
 
 	resp, err := grpcAPI.RemoveUserFromOrg(ctx, &cloudpb.RemoveUserFromOrgRequest{UserID: utils.ProtoFromUUIDStrOrNil(string(args.UserID))})
-
 	if err != nil {
 		return false, rpcErrorHelper(err)
 	}

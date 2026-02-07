@@ -60,9 +60,9 @@ class FilterNodeTest : public ::testing::Test {
     EXPECT_OK(func_registry_->Register<StrEqUDF>("eq"));
     auto table_store = std::make_shared<table_store::TableStore>();
 
-    exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
-                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
+    exec_state_ = std::make_unique<ExecState>(
+        func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
+        MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "eq", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
     EXPECT_OK(exec_state_->AddScalarUDF(

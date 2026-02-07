@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$BUILDPLATFORM golang:1.20-alpine@sha256:fd9d9d7194ec40a9a6ae89fcaef3e47c47de7746dd5848ab5343695dbbd09f8c AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:c8c5f95d64aa79b6547f3b626eb84b16a7ce18a139e3e9ca19a8c078b85ba80d AS build
 
 ARG TARGETOS TARGETARCH
 ARG NATS_VERSION
@@ -29,12 +29,16 @@ RUN apk add git
 
 RUN git clone --depth 1 https://github.com/nats-io/nats-server.git
 WORKDIR /src/nats-server
-RUN git checkout $NATS_VERSION
+RUN git fetch --tags && git checkout $NATS_VERSION
 
 ARG GO111MODULE=on
 ARG CGO_ENABLED=0
 
 RUN go mod download
+# TODO(ddelnano): Remove once NATS server is updated to have
+# vulnerability free upstream deps
+RUN go get golang.org/x/crypto@v0.35.0
+RUN go get github.com/nats-io/nkeys@v0.4.6
 RUN go build -trimpath -ldflags "-X github.com/nats-io/nats-server/v2/server.gitCommit=$(git rev-parse --short HEAD)" -o ./nats-server
 
 FROM scratch

@@ -1,21 +1,23 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-commonLabels:
-  app: pl-cloud
 namespace: plc-dev
 resources:
 - ../../base/elastic/cluster
-patchesJson6902:
+labels:
+- includeSelectors: true
+  pairs:
+    app: pl-cloud
+patches:
 - path: elastic_storage_patch.yaml
   target:
-    name: pl-elastic
-    kind: Elasticsearch
     group: elasticsearch.k8s.elastic.co
+    kind: Elasticsearch
+    name: pl-elastic
     version: v1
 - path: elastic_replica_patch.yaml
   target:
-    name: pl-elastic
-    kind: Elasticsearch
     group: elasticsearch.k8s.elastic.co
+    kind: Elasticsearch
+    name: pl-elastic
     version: v1

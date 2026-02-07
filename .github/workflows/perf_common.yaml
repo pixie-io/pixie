@@ -34,13 +34,13 @@ jobs:
       ref: ${{ inputs.ref }}
   generate-perf-matrix:
     needs: get-dev-image-with-extras
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         ref: ${{ inputs.ref }}
     - name: Add pwd to git safe dir
@@ -57,14 +57,14 @@ jobs:
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
   run-perf-eval:
     needs: [get-dev-image-with-extras, generate-perf-matrix]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: oracle-16cpu-64gb-x86-64
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
     strategy:
       matrix: ${{ fromJson(needs.generate-perf-matrix.outputs.matrix) }}
       fail-fast: false
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         ref: ${{ inputs.ref }}
         fetch-depth: 0
@@ -93,7 +93,6 @@ jobs:
       env:
         PX_API_KEY: ${{ secrets.PERF_PX_API_KEY }}
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
-      # yamllint disable rule:indentation
       run: |
         echo "$GOOGLE_APPLICATION_CREDENTIALS"
         bazel run //src/e2e_test/perf_tool -- run --commit_sha "${{ steps.get-commit-sha.outputs.commit-sha }}" \
@@ -104,12 +103,11 @@ jobs:
           --tags "${{ inputs.tags }}" \
           --suite "${{ matrix.suite }}" \
           --experiment_name "${{ matrix.experiment_name }}" > run_output
-      # yamllint enable rule:indentation
     - name: deactivate gcloud service account
       run: gcloud auth revoke
     # Github actions doesn't have native support for gathering outputs from matrix runs.
     # So we upload an artifact for each one and gather them ourselves in `get-perf-outputs`.
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: ${{ hashFiles('run_output') }}
         path: run_output
@@ -121,7 +119,7 @@ jobs:
     outputs:
       experiments: ${{ steps.get-outputs.outputs.run_output }}
     steps:
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
     - id: get-outputs
       run: |
         all_run_output="$(cat */run_output | jq --slurp -c '.[]')"

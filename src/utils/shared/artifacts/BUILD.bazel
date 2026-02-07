@@ -25,7 +25,7 @@ go_library(
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/utils/shared/tar",
         "//src/utils/shared/yamls",
-        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//metadata",
     ],
 )

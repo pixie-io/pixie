@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   // QEMU transforms this into (status << 1) | 1;
   // We don't want to interfere with qemu error code,
   // so we further make sure the codes are > 128 for exit codes from our tests.
-  // If we shift by 6, the additinal shift of 1 by qemu will make the exit code > 128.
+  // If we shift by 6, the additional shift of 1 by qemu will make the exit code > 128.
   statusb |= (1 << 6);
   outb(statusb, EXIT_PORT);
 

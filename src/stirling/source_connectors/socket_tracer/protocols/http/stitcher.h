@@ -45,7 +45,8 @@ namespace http {
 RecordsWithErrorCount<Record> ProcessMessages(std::deque<Message>* req_messages,
                                               std::deque<Message>* resp_messages);
 
-void PreProcessMessage(Message* message);
+void PreProcessRespMessage(Message* message);
+void PreProcessReqMessage(Message* message);
 
 }  // namespace http
 

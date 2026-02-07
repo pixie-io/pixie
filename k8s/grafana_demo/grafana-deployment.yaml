@@ -28,7 +28,6 @@ spec:
         command:
         - /bin/sh
         - -c
-        # yamllint disable rule:indentation
         - |
             GRAFANA_PATH=/var/lib/grafana
             PLUGIN_PATH=$GRAFANA_PATH/plugins
@@ -46,7 +45,6 @@ spec:
               rm $PLUGIN_PATH/$PLUGIN_ZIP
               echo "Unzipped plugin into $PLUGIN_PATH/$PLUGIN"
             fi
-        # yamllint enable rule:indentation
       - name: init-grafana-dashboards
         image: alpine/git
         volumeMounts:
@@ -56,7 +54,6 @@ spec:
         command:
         - /bin/sh
         - -c
-        # yamllint disable rule:indentation
         - |
             GRAFANA_PATH=/var/lib/grafana
             GRAFANA_DASHBOARDS_PATH=$GRAFANA_PATH/grafana-dashboard-definitions/pixie
@@ -82,7 +79,6 @@ spec:
               echo 'Replaced ${PLUGIN_UID_TEMPLATE_STRING} with ${PLUGIN_UID}
               in all dashboard files in $GRAFANA_DASHBOARDS_PATH.'
             fi
-        # yamllint enable rule:indentation
       containers:
       - name: grafana
         image: grafana/grafana:7.5.16@sha256:9b7b1d9a1deadbe6fed74416d58db47f8af31b5cee214cfb659f89e6dda3f716

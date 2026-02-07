@@ -38,7 +38,7 @@ func ensureDotFolderPath() (string, error) {
 
 	pixieDirPath := filepath.Join(home, pixieDotPath)
 	if _, err := os.Stat(pixieDirPath); os.IsNotExist(err) {
-		err = os.Mkdir(pixieDirPath, 0744)
+		err = os.Mkdir(pixieDirPath, 0o744)
 		if err != nil {
 			return "", err
 		}

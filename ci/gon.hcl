@@ -2,17 +2,16 @@
 // using Gon.
 
 source = ["./cli_darwin_amd64", "./cli_darwin_arm64", "cli_darwin_universal"]
-bundle_id = "ai.pixielabs.px"
+bundle_id = "ai.getcosmic.px"
 
-// TODO(zasgar): Update this to the orders@pixielabs.ai account. It has access to the certs,
-// but does not have access to application passwords.
 apple_id {
-  username = "zasgar@gmail.com"
-  password = "@env:AC_PASSWD"
+  username = "apple-dev@getcosmic.ai"
+  # Password is provided via AC_PASSWORD env var
+  provider = "769M9XJDG6"
 }
 
 sign {
-  application_identity = "Developer ID Application: Pixie Labs Inc. (SZCNTABEXY)"
+  application_identity = "Developer ID Application: Cosmic Observe, Inc."
 }
 
 zip {

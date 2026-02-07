@@ -35,6 +35,7 @@ declare global {
       LD_CLIENT_ID: string;
       SCRIPT_BUNDLE_URLS: string; // Actually a string[] in JSON form
       SCRIPT_BUNDLE_DEV: boolean;
+      SCRIPT_MODIFICATION_DISABLED: boolean;
       ANALYTICS_ENABLED: boolean;
       ANNOUNCEMENT_ENABLED: boolean;
       ANNOUNCE_WIDGET_URL: string;
@@ -60,6 +61,7 @@ export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;
 export const { LD_CLIENT_ID } = window.__PIXIE_FLAGS__;
 export const { SCRIPT_BUNDLE_URLS } = window.__PIXIE_FLAGS__;
 export const { SCRIPT_BUNDLE_DEV } = window.__PIXIE_FLAGS__;
+export const { SCRIPT_MODIFICATION_DISABLED } = window.__PIXIE_FLAGS__;
 export const { ANALYTICS_ENABLED } = window.__PIXIE_FLAGS__;
 export const { ANNOUNCEMENT_ENABLED } = window.__PIXIE_FLAGS__;
 export const { ANNOUNCE_WIDGET_URL } = window.__PIXIE_FLAGS__;
