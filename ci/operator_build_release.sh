@@ -37,7 +37,7 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
     | grep "release/operator" | grep -v "\-")
 
-image_repo="gcr.io/pixie-oss/pixie-prod"
+image_repo="ghcr.io/k8sstormcenter"
 image_paths=$(bazel cquery //k8s/operator:image_bundle \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
@@ -45,8 +45,6 @@ image_paths=$(bazel cquery //k8s/operator:image_bundle \
   --starlark:expr="'\n'.join(providers(target)['@io_bazel_rules_docker//container:providers.bzl%BundleInfo'].container_images.keys())")
 image_path=$(echo "${image_paths}" | grep -v deleter)
 deleter_image_path=$(echo "${image_paths}" | grep deleter)
-
-bucket="pixie-dev-public"
 
 channel="stable"
 channels="stable,dev"
@@ -108,8 +106,8 @@ mv "$(pwd)/k8s/operator/helm/templates/deleter_tmp.yaml" "$(pwd)/k8s/operator/he
 
 # Build and push bundle.
 cd "${tmp_dir}"
-bundle_image="gcr.io/pixie-oss/pixie-prod/operator/bundle:${release_tag}"
-index_image="gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1"
+bundle_image="ghcr.io/k8sstormcenter/operator/bundle:${release_tag}"
+index_image="ghcr.io/k8sstormcenter/operator/bundle_index:0.0.1"
 
 docker buildx create --name builder --driver docker-container --bootstrap
 docker buildx use builder
@@ -122,7 +120,6 @@ docker buildx build --platform linux/amd64,linux/arm64 -t "${index_image}" --pus
 cd "${repo_path}"
 
 # Upload templated YAMLs.
-output_path="gs://${bucket}/operator/${release_tag}"
 bazel build //k8s/operator:operator_templates
 yamls_tar="${repo_path}/bazel-bin/k8s/operator/operator_templates.tar"
 

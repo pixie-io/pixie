@@ -42,10 +42,6 @@ jobs:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
@@ -53,7 +49,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BUILD_NUMBER: ${{ github.run_attempt }}
         JOB_NAME: ${{ github.job }}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -66,13 +61,6 @@ jobs:
       with:
         name: linux-artifacts
         path: artifacts/
-    - name: Update GCS Manifest
-      env:
-        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
-        # Use the old style versions file instead of the new updates for the gcs manifest.
-        MANIFEST_UPDATES: ""
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
-      run: ./ci/update_artifact_manifest.sh
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: artifact-upload-log
@@ -131,10 +119,6 @@ jobs:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
     - name: Add pwd to git safe dir
       run: |
         git config --global --add safe.directory `pwd`
@@ -142,7 +126,6 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
       shell: bash
       run: |
@@ -217,8 +200,9 @@ jobs:
       env:
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       run: |
-        git config --global user.name 'pixie-io-buildbot'
-        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.name 'k8sstormcenter-buildbot'
+        # TODO:(ddelnano): Figure out an appropriate email here.
+        # git config --global user.email 'build@pixielabs.ai'
         git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
         git config --global commit.gpgsign true
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0

@@ -17,7 +17,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 gh_artifacts_dir="${ARTIFACTS_DIR}"
-gh_repo="${GH_REPO:-pixie-io/pixie}"
+# TODO:(ddelnano) Each release action should pass this in.
+# The cli and cloud jobs seem to be omitting it
+gh_repo="${GH_REPO:-k8sstormcenter/pixie}"
 workspace=$(git rev-parse --show-toplevel)
 mirrors_file="${workspace}/ci/artifact_mirrors.yaml"
 

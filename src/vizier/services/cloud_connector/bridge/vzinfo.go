@@ -52,9 +52,10 @@ import (
 
 const k8sStateUpdatePeriod = 10 * time.Second
 
+// TODO(ddelnano): Should these be the same for k8sstormcenter's fork?
 const (
-	privateImageRepo = "gcr.io/pixie-oss/pixie-dev"
-	publicImageRepo  = "gcr.io/pixie-oss/pixie-prod"
+	privateImageRepo = "ghcr.io/k8sstormcenter"
+	publicImageRepo  = "ghcr.io/k8sstormcenter"
 )
 
 // K8sState describes the Kubernetes state of the Vizier instance.

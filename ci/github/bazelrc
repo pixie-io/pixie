@@ -7,7 +7,7 @@ common --keep_going
 
 build --build_metadata=HOST=github-actions
 build --build_metadata=USER=github-actions
-build --build_metadata=REPO_URL=https://github.com/pixie-io/pixie
+build --build_metadata=REPO_URL=https://github.com/k8sstormcenter/pixie
 build --build_metadata=VISIBILITY=PUBLIC
 build --verbose_failures
 

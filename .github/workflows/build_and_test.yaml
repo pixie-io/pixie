@@ -85,7 +85,7 @@ jobs:
       run: |
         # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
         sysctl -w net.ipv6.conf.lo.disable_ipv6=0
-        ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
+        ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r k8sstormcenter/pixie
   generate-matrix:
     needs: [authorize, env-protect-setup, get-dev-image]
     runs-on: oracle-vm-16cpu-64gb-x86-64
