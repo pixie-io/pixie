@@ -154,6 +154,17 @@ jobs:
           ${{ matrix.args }} \
           --target_pattern_file=target_files/${{ matrix.buildables }} \
           2> >(tee bazel_stderr)
+    - name: Debug Docker networking
+      if: ${{ matrix.tests }}
+      shell: bash
+      run: |
+        docker info
+        docker network inspect bridge
+        docker run --rm postgres:13.3 echo "pull works"
+        CID=$(docker run -d --rm -e POSTGRES_PASSWORD=secret postgres:13.3)
+        sleep 2
+        docker inspect "$CID" --format '{{json .NetworkSettings}}' | jq '{Gateway: .Gateway, IPAddress: .IPAddress, Bridge: .Bridge, Networks: .Networks}'
+        docker stop "$CID"
     - name: Test ${{ matrix.name }}
       if: ${{ matrix.tests }}
       shell: bash
