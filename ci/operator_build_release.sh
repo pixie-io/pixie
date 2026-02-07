@@ -35,7 +35,7 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 
 # Find the previous bundle version, which this release should replace.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
-    | grep "release/operator" | grep -v "\-")
+    | grep "release/operator" | grep -v "\-" || true)
 
 image_repo="ghcr.io/k8sstormcenter"
 image_paths=$(bazel cquery //k8s/operator:image_bundle \
@@ -80,7 +80,7 @@ kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
 
 #shellcheck disable=SC2016
 faq -f yaml -o yaml --slurp '
-  .[0].spec.replaces = $previousName |
+  (if $previousName != "" then .[0].spec.replaces = $previousName else . end) |
   .[0].metadata.name = $name |
   .[0].spec.version = $version |
   .[0].spec.install = {strategy: "deployment", spec:{
@@ -93,7 +93,7 @@ faq -f yaml -o yaml --slurp '
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrole_pixie-operator-role.yaml" \
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrolebinding_pixie-operator-cluster-binding.yaml" \
   --kwargs version="${release_tag}" --kwargs name="pixie-operator.v${bundle_version}" \
-  --kwargs previousName="pixie-operator.v${previous_version}" \
+  --kwargs previousName="${previous_version:+pixie-operator.v${previous_version}}" \
   --kwargs image="${image_path}" > "${tmp_dir}/manifests/csv.yaml"
 faq -f yaml -o yaml --slurp '.[0]' "${kustomize_dir}/crd.yaml" > "${tmp_dir}/manifests/crd.yaml"
 
