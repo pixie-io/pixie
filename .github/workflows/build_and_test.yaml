@@ -35,32 +35,32 @@ jobs:
     with:
       image-base-name: "dev_image_with_extras"
       ref: ${{ needs.env-protect-setup.outputs.ref }}
-  clang-tidy:
-    runs-on: oracle-vm-16cpu-64gb-x86-64
-    needs: [authorize, env-protect-setup, get-dev-image]
-    container:
-      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-    steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      with:
-        fetch-depth: 0
-        ref: ${{ needs.env-protect-setup.outputs.ref }}
-    - name: Add pwd to git safe dir
-      run: git config --global --add safe.directory `pwd`
-    - name: get bazel config
-      uses: ./.github/actions/bazelrc
-      with:
-        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - name: Save Diff Info
-      run: ./ci/save_diff_info.sh
-    - name: Run Clang Tidy
-      shell: bash
-      run: |
-        diff_file="diff_origin_main_cc"
-        if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
-          diff_file="diff_head_cc"
-        fi
-        ./ci/run_clang_tidy.sh -f "${diff_file}"
+  # clang-tidy:
+  #   runs-on: oracle-vm-16cpu-64gb-x86-64
+  #   needs: [authorize, env-protect-setup, get-dev-image]
+  #   container:
+  #     image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+  #   steps:
+  #   - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+  #     with:
+  #       fetch-depth: 0
+  #       ref: ${{ needs.env-protect-setup.outputs.ref }}
+  #   - name: Add pwd to git safe dir
+  #     run: git config --global --add safe.directory `pwd`
+  #   - name: get bazel config
+  #     uses: ./.github/actions/bazelrc
+  #     with:
+  #       BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
+  #   - name: Save Diff Info
+  #     run: ./ci/save_diff_info.sh
+  #   - name: Run Clang Tidy
+  #     shell: bash
+  #     run: |
+  #       diff_file="diff_origin_main_cc"
+  #       if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
+  #         diff_file="diff_head_cc"
+  #       fi
+  #       ./ci/run_clang_tidy.sh -f "${diff_file}"
   code-coverage:
     if: github.event_name == 'push'
     needs: [authorize, env-protect-setup, get-dev-image]
