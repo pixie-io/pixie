@@ -38,6 +38,7 @@ image_repo="ghcr.io/k8sstormcenter"
 
 bazel run -c opt \
   --config=stamp \
+  --config=x86_64_sysroot \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
   //k8s/cloud:cloud_images_push
