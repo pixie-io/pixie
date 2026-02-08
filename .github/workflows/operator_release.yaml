@@ -41,6 +41,8 @@ jobs:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+    - name: Login to GHCR
+      run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
