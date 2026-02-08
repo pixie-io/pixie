@@ -1,0 +1,26 @@
+diff --git a/container/push.bzl b/container/push.bzl
+index baef9c2..942741d 100644
+--- a/container/push.bzl
++++ b/container/push.bzl
+@@ -205,7 +205,7 @@ container_push_ = rule(
+         ),
+         "_pusher": attr.label(
+             default = "//container/go/cmd/pusher",
+-            cfg = "target",
++            cfg = "host",
+             executable = True,
+             allow_files = True,
+         ),
+diff --git a/contrib/push-all.bzl b/contrib/push-all.bzl
+index c7e7f72..fd6518b 100644
+--- a/contrib/push-all.bzl
++++ b/contrib/push-all.bzl
+@@ -126,7 +126,7 @@ container_push = rule(
+         ),
+         "_pusher": attr.label(
+             default = Label("//container/go/cmd/pusher"),
+-            cfg = "target",
++            cfg = "host",
+             executable = True,
+             allow_files = True,
+         ),
