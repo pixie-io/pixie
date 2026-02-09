@@ -114,7 +114,11 @@ docker buildx use builder
 
 opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
 docker buildx build --platform linux/amd64,linux/arm64 -t "${bundle_image}" --push -f bundle.Dockerfile .
-opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "${index_image}"  --generate --out-dockerfile="${tmp_dir}/index.Dockerfile" -u docker
+from_index_args=()
+if crane manifest "${index_image}" > /dev/null 2>&1; then
+  from_index_args=(--from-index "${index_image}")
+fi
+opm index add --bundles "${bundle_image}" "${from_index_args[@]}" --tag "${index_image}"  --generate --out-dockerfile="${tmp_dir}/index.Dockerfile" -u docker
 docker buildx build --platform linux/amd64,linux/arm64 -t "${index_image}" --push -f "${tmp_dir}/index.Dockerfile" .
 
 cd "${repo_path}"
