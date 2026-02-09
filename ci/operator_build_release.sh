@@ -109,7 +109,7 @@ cd "${tmp_dir}"
 bundle_image="ghcr.io/k8sstormcenter/operator/bundle:${release_tag}"
 index_image="ghcr.io/k8sstormcenter/operator/bundle_index:0.0.1"
 
-docker buildx create --name builder --driver docker-container --bootstrap
+docker buildx inspect builder > /dev/null 2>&1 || docker buildx create --name builder --driver docker-container --bootstrap
 docker buildx use builder
 
 opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
