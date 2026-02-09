@@ -46,7 +46,6 @@ fetch_licenses(
     name = "go_licenses",
     src = "//:pl_3p_go_sum",
     disallow_missing = select({
-        "//bazel:stamped": True,
         "//conditions:default": False,
     }),
     fetch_tool = ":fetch_licenses",
@@ -60,7 +59,6 @@ fetch_licenses(
     name = "deps_licenses",
     src = "//:pl_3p_deps",
     disallow_missing = select({
-        "//bazel:stamped": True,
         "//conditions:default": False,
     }),
     fetch_tool = ":fetch_licenses",
