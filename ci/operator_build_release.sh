@@ -75,6 +75,15 @@ mkdir "${tmp_dir}/manifests"
 
 previous_version=${prev_tag//*\/v/}
 
+index_image="ghcr.io/k8sstormcenter/operator/bundle_index:0.0.1"
+# Don't set replaces when bootstrapping a fresh index, since the previous bundle won't exist.
+from_index_args=()
+if crane manifest "${index_image}" > /dev/null; then
+  from_index_args=(--from-index "${index_image}")
+else
+  previous_version=""
+fi
+
 kustomize build "$(pwd)/k8s/operator/crd/base" > "${kustomize_dir}/crd.yaml"
 kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
 
@@ -107,17 +116,12 @@ mv "$(pwd)/k8s/operator/helm/templates/deleter_tmp.yaml" "$(pwd)/k8s/operator/he
 # Build and push bundle.
 cd "${tmp_dir}"
 bundle_image="ghcr.io/k8sstormcenter/operator/bundle:${release_tag}"
-index_image="ghcr.io/k8sstormcenter/operator/bundle_index:0.0.1"
 
 docker buildx inspect builder > /dev/null 2>&1 || docker buildx create --name builder --driver docker-container --bootstrap
 docker buildx use builder
 
 opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
 docker buildx build --platform linux/amd64,linux/arm64 -t "${bundle_image}" --push -f bundle.Dockerfile .
-from_index_args=()
-if crane manifest "${index_image}" > /dev/null 2>&1; then
-  from_index_args=(--from-index "${index_image}")
-fi
 opm index add --bundles "${bundle_image}" "${from_index_args[@]}" --tag "${index_image}"  --generate --out-dockerfile="${tmp_dir}/index.Dockerfile" -u docker
 docker buildx build --platform linux/amd64,linux/arm64 -t "${index_image}" --push -f "${tmp_dir}/index.Dockerfile" .
 
