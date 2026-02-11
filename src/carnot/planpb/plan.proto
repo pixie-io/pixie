@@ -116,7 +116,6 @@ enum OperatorType {
   MEMORY_SINK_OPERATOR = 9000;
   GRPC_SINK_OPERATOR = 9100;
   OTEL_EXPORT_SINK_OPERATOR = 9200;
-  // TODO(ddelnano): 10001 - 11000 are reserved for future use (sink_results table)
   CLICKHOUSE_EXPORT_SINK_OPERATOR = 9300;
 }
 
@@ -157,7 +156,6 @@ message Operator {
     // ClickHouseExportSinkOperator writes the input table to a ClickHouse database.
     ClickHouseExportSinkOperator clickhouse_sink_op = 16;
   }
-  map<string, string> context = 17;
 }
 
 // Fetches data from in-memory source.

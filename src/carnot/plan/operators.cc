@@ -45,20 +45,6 @@ namespace plan {
 
 using px::Status;
 
-// enable_if std::is_base_of_v<SinkOperator, TOp>
-template <typename TOp, typename TProto, typename = std::enable_if_t<std::is_base_of_v<SinkOperator, TOp>>>
-std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb,
-                                         std::map<std::string, std::string> context) {
-  auto op = std::make_unique<TOp>(id, context);
-  auto s = op->Init(pb);
-  // On init failure, return null;
-  if (!s.ok()) {
-    LOG(ERROR) << "Failed to initialize operator with err: " << s.msg();
-    return nullptr;
-  }
-  return op;
-}
-
 template <typename TOp, typename TProto>
 std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
   auto op = std::make_unique<TOp>(id);
@@ -72,21 +58,19 @@ std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
 }
 
 std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_t id) {
-  auto pb_context = pb.context();
-  std::map<std::string, std::string> context(pb_context.begin(), pb_context.end());
   switch (pb.op_type()) {
     case planpb::MEMORY_SOURCE_OPERATOR:
-      return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op(), context);
+      return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op());
     case planpb::MAP_OPERATOR:
       return CreateOperator<MapOperator>(id, pb.map_op());
     case planpb::AGGREGATE_OPERATOR:
       return CreateOperator<AggregateOperator>(id, pb.agg_op());
     case planpb::MEMORY_SINK_OPERATOR:
-      return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op(), context);
+      return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
     case planpb::GRPC_SOURCE_OPERATOR:
       return CreateOperator<GRPCSourceOperator>(id, pb.grpc_source_op());
     case planpb::GRPC_SINK_OPERATOR:
-      return CreateOperator<GRPCSinkOperator>(id, pb.grpc_sink_op(), context);
+      return CreateOperator<GRPCSinkOperator>(id, pb.grpc_sink_op());
     case planpb::FILTER_OPERATOR:
       return CreateOperator<FilterOperator>(id, pb.filter_op());
     case planpb::LIMIT_OPERATOR:
@@ -104,7 +88,7 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
     case planpb::CLICKHOUSE_EXPORT_SINK_OPERATOR:
       return CreateOperator<ClickHouseExportSinkOperator>(id, pb.clickhouse_sink_op());
     case planpb::OTEL_EXPORT_SINK_OPERATOR:
-      return CreateOperator<OTelExportSinkOperator>(id, pb.otel_sink_op(), context);
+      return CreateOperator<OTelExportSinkOperator>(id, pb.otel_sink_op());
     default:
       LOG(FATAL) << absl::Substitute("Unknown operator type: $0",
                                      magic_enum::enum_name(pb.op_type()));

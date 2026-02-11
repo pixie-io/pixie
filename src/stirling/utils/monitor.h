@@ -50,14 +50,6 @@ struct ProbeStatusRecord {
   std::string info = "";
 };
 
-// Status of stream processing
-struct StreamStatusRecord {
-  int64_t timestamp_ns = 0;
-  std::string stream_id = "";
-  int64_t bytes_sent = 0;
-  std::string info = "";
-};
-
 class StirlingMonitor : NotCopyMoveable {
  public:
   static StirlingMonitor* GetInstance() {
@@ -73,13 +65,10 @@ class StirlingMonitor : NotCopyMoveable {
   // Stirling Error Reporting.
   void AppendProbeStatusRecord(const std::string& source_connector, const std::string& tracepoint,
                                const Status& status, const std::string& info);
-  void AppendStreamStatusRecord(const std::string& stream_id, const int64_t bytes_sent,
-                                const std::string& info);
   void AppendSourceStatusRecord(const std::string& source_connector, const Status& status,
                                 const std::string& context);
   std::vector<ProbeStatusRecord> ConsumeProbeStatusRecords();
   std::vector<SourceStatusRecord> ConsumeSourceStatusRecords();
-  std::vector<StreamStatusRecord> ConsumeStreamStatusRecords();
 
   static constexpr auto kCrashWindow = std::chrono::seconds{5};
 
@@ -92,13 +81,10 @@ class StirlingMonitor : NotCopyMoveable {
   std::vector<ProbeStatusRecord> probe_status_records_ ABSL_GUARDED_BY(probe_status_lock_);
   // Records of Stirling Source Connector status.
   std::vector<SourceStatusRecord> source_status_records_ ABSL_GUARDED_BY(source_status_lock_);
-  // Records of Stirling stream connector status.
-  std::vector<StreamStatusRecord> stream_status_records_ ABSL_GUARDED_BY(stream_status_lock_);
 
   // Lock to protect probe and source records.
   absl::base_internal::SpinLock probe_status_lock_;
   absl::base_internal::SpinLock source_status_lock_;
-  absl::base_internal::SpinLock stream_status_lock_;
 
   prometheus::Counter& java_proc_crashed_during_attach_;
 };

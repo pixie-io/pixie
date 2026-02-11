@@ -18,7 +18,6 @@
 
 #include "src/carnot/exec/grpc_sink_node.h"
 
-#include <map>
 #include <utility>
 #include <vector>
 
@@ -163,8 +162,7 @@ query_result {
 
 TEST_F(GRPCSinkNodeTest, internal_result) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
@@ -296,8 +294,7 @@ query_result {
 
 TEST_F(GRPCSinkNodeTest, external_result) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
@@ -355,8 +352,7 @@ TEST_F(GRPCSinkNodeTest, external_result) {
 
 TEST_F(GRPCSinkNodeTest, check_connection) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
@@ -396,8 +392,7 @@ TEST_F(GRPCSinkNodeTest, check_connection) {
 
 TEST_F(GRPCSinkNodeTest, update_connection_time) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
@@ -449,8 +444,7 @@ class GRPCSinkNodeSplitTest : public GRPCSinkNodeTest,
 
 TEST_P(GRPCSinkNodeSplitTest, break_up_batches) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
 
   auto test_case = GetParam();
@@ -658,8 +652,7 @@ INSTANTIATE_TEST_SUITE_P(SplitBatchesTest, GRPCSinkNodeSplitTest,
 
 TEST_F(GRPCSinkNodeTest, retry_failed_writes) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
@@ -731,8 +724,7 @@ TEST_F(GRPCSinkNodeTest, retry_failed_writes) {
 
 TEST_F(GRPCSinkNodeTest, check_connection_after_eos) {
   auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});

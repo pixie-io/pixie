@@ -1060,10 +1060,6 @@ constexpr char kPlanWithOTelExport[] = R"proto(
     id: 1
     op {
       op_type: MEMORY_SOURCE_OPERATOR
-      context: {
-        key: "mutation_id"
-        value:  "mutation"
-      }
       mem_source_op {
         name: "numbers"
         column_idxs: 0
@@ -1082,10 +1078,6 @@ constexpr char kPlanWithOTelExport[] = R"proto(
     id: 2
     op {
       op_type: OTEL_EXPORT_SINK_OPERATOR
-      context: {
-        key: "mutation_id"
-        value:  "mutation"
-      }
       otel_sink_op {
         endpoint_config {
           url: "0.0.0.0:55690"

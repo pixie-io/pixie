@@ -59,8 +59,7 @@ class MemorySourceNodeTest : public ::testing::Test {
                                       {"col1", "time_"});
 
     int64_t compaction_size = 2 * sizeof(bool) + 2 * sizeof(int64_t);
-    cpu_table_ =
-        std::make_shared<table_store::HotColdTable>("cpu", rel, 128 * 1024, compaction_size);
+    cpu_table_ = std::make_shared<Table>("cpu", rel, 128 * 1024, compaction_size);
     exec_state_->table_store()->AddTable("cpu", cpu_table_);
 
     auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
@@ -77,7 +76,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
     EXPECT_OK(cpu_table_->WriteRowBatch(rb2));
 
-    exec_state_->table_store()->AddTable("empty", table_store::HotColdTable::Create("empty", rel));
+    exec_state_->table_store()->AddTable("empty", Table::Create("empty", rel));
   }
 
   std::shared_ptr<Table> cpu_table_;
@@ -238,7 +237,7 @@ class MemorySourceNodeTabletTest : public ::testing::Test {
     rel = table_store::schema::Relation({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                         {"col1", "time_"});
 
-    std::shared_ptr<Table> tablet = table_store::HotColdTable::Create(table_name_, rel);
+    std::shared_ptr<Table> tablet = Table::Create(table_name_, rel);
     AddValuesToTable(tablet.get());
 
     exec_state_->table_store()->AddTable(tablet, table_name_, table_id_, tablet_id_);
@@ -297,7 +296,7 @@ TEST_F(MemorySourceNodeTabletTest, basic_tablet_test) {
 TEST_F(MemorySourceNodeTabletTest, multiple_tablet_test) {
   types::TabletID new_tablet_id = "456";
   EXPECT_NE(tablet_id_, new_tablet_id);
-  std::shared_ptr<Table> new_tablet = table_store::HotColdTable::Create(tablet_id_, rel);
+  std::shared_ptr<Table> new_tablet = Table::Create(tablet_id_, rel);
 
   auto wrapper_batch_1 = std::make_unique<px::types::ColumnWrapperRecordBatch>();
   auto col_wrapper_1 = std::make_shared<types::BoolValueColumnWrapper>(0);
@@ -459,8 +458,7 @@ class ParamMemorySourceNodeTest : public ::testing::Test,
         std::vector<types::DataType>{types::DataType::TIME64NS}, std::vector<std::string>{"time_"});
 
     int64_t compaction_size = 2 * sizeof(int64_t);
-    cpu_table_ =
-        std::make_shared<table_store::HotColdTable>("cpu", *rel_, 128 * 1024, compaction_size);
+    cpu_table_ = std::make_shared<Table>("cpu", *rel_, 128 * 1024, compaction_size);
     exec_state_->table_store()->AddTable("cpu", cpu_table_);
 
     planpb::Operator op;

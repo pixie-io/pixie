@@ -49,8 +49,8 @@ class MyRequestHandler(BaseHTTPRequestHandler):
 
 httpd = HTTPServer(('localhost', 443), MyRequestHandler)
 
-httpd.socket = ssl.wrap_socket(httpd.socket,
-                               keyfile="/etc/ssl/server.key",
-                               certfile='/etc/ssl/server.crt', server_side=True)
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain(certfile='/etc/ssl/server.crt', keyfile="/etc/ssl/server.key")
+httpd.socket = ssl_context.wrap_socket(httpd.socket, server_side=True)
 
 httpd.serve_forever()

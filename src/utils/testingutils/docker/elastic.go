@@ -70,6 +70,7 @@ func SetupElastic() (*elastic.Client, func(), error) {
 				Type:   "tmpfs",
 				TempfsOptions: &docker.TempfsOptions{
 					SizeBytes: 100 * 1024 * 1024,
+					Mode:      0o777,
 				},
 			},
 			{
@@ -77,6 +78,7 @@ func SetupElastic() (*elastic.Client, func(), error) {
 				Type:   "tmpfs",
 				TempfsOptions: &docker.TempfsOptions{
 					SizeBytes: 100 * 1024 * 1024,
+					Mode:      0o777,
 				},
 			},
 			{
@@ -84,6 +86,7 @@ func SetupElastic() (*elastic.Client, func(), error) {
 				Type:   "tmpfs",
 				TempfsOptions: &docker.TempfsOptions{
 					SizeBytes: 100 * 1024 * 1024,
+					Mode:      0o777,
 				},
 			},
 		}

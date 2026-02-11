@@ -28,7 +28,6 @@ pl_proto_library(
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_proto",
-        "//src/carnot/planner/file_source/ir:logical_pl_proto",
         "//src/carnot/planpb:plan_pl_proto",
         "//src/common/base/statuspb:status_pl_proto",
         "//src/shared/types/typespb:types_pl_proto",
@@ -43,7 +42,6 @@ pl_cc_proto_library(
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
-        "//src/carnot/planner/file_source/ir:logical_pl_cc_proto",
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/common/base/statuspb:status_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
@@ -58,7 +56,6 @@ pl_go_proto_library(
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
-        "//src/carnot/planner/file_source/ir:logical_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
         "//src/shared/types/typespb:types_pl_go_proto",

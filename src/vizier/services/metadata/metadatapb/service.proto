@@ -28,7 +28,6 @@ import "google/protobuf/timestamp.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
-import "src/carnot/planner/file_source/ir/logical.proto";
 import "src/common/base/statuspb/status.proto";
 import "src/table_store/schemapb/schema.proto";
 import "src/vizier/messages/messagespb/messages.proto";
@@ -44,12 +43,6 @@ service MetadataService {
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse);
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse);
   rpc GetWithPrefixKey(WithPrefixKeyRequest) returns (WithPrefixKeyResponse);
-}
-
-service MetadataFileSourceService {
-  rpc RegisterFileSource(RegisterFileSourceRequest) returns (RegisterFileSourceResponse);
-  rpc GetFileSourceInfo(GetFileSourceInfoRequest) returns (GetFileSourceInfoResponse);
-  rpc RemoveFileSource(RemoveFileSourceRequest) returns (RemoveFileSourceResponse);
 }
 
 service MetadataTracepointService {
@@ -167,63 +160,6 @@ message WithPrefixKeyResponse {
   }
   // All the key-value pairs that matched the given prefix.
   repeated KV kvs = 1;
-}
-
-message RegisterFileSourceRequest {
-  repeated px.carnot.planner.file_source.ir.FileSourceDeployment requests = 1;
-}
-
-// The response to a RegisterFileSourceRequest.
-message RegisterFileSourceResponse {
-  message FileSourceStatus {
-    px.statuspb.Status status = 1;  // TODO(ddelnano): Is this necessary?
-    // The ID of the file source. This should be the user-specified name for the file source .
-    uuidpb.UUID id = 2 [ (gogoproto.customname) = "ID" ];
-    string name = 3;
-  }
-  repeated FileSourceStatus file_sources = 1;
-  // Overall status of whether file source  registration requests were initiated with/without
-  // errors.
-  px.statuspb.Status status = 2;
-}
-
-// The request to check the status for a file source with the given names.
-message GetFileSourceInfoRequest {
-  // The file source  IDs to get the info for. If empty, fetches the info for all known file source
-  // s.
-  repeated uuidpb.UUID ids = 1 [ (gogoproto.customname) = "IDs" ];
-}
-
-// The status of whether the file source  has successfully registered or not.
-message GetFileSourceInfoResponse {
-  message FileSourceState {
-    // The file source  ID.
-    uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
-    // The state of the file source .
-    px.statuspb.LifeCycleState state = 2;
-    // The status of the file source, specified if the state of the file source  is not healthy.
-    repeated px.statuspb.Status statuses = 3;
-    string name = 4;
-    // The desired state for the file source . This can be used to determine whether
-    // the file source  is just starting up or in the process of terminating.
-    px.statuspb.LifeCycleState expected_state = 5;
-    repeated string schema_names = 6;
-  }
-  // List of file source  states.
-  repeated FileSourceState file_sources = 1;
-}
-
-// The request to evict a file source . This will normally happen via the file source 's TTL, but
-// can be initiated via request as well.
-message RemoveFileSourceRequest {
-  // The name of the file source  to remove.
-  repeated string names = 1;
-}
-
-// The response to the file source  removal.
-message RemoveFileSourceResponse {
-  // Status of whether the file source  removal request was initiated with/without errors.
-  px.statuspb.Status status = 1;
 }
 
 // The request to register tracepoints on all PEMs.

@@ -106,23 +106,6 @@ std::vector<ProbeStatusRecord> ToProbeRecordVector(
   return result;
 }
 
-std::vector<StreamStatusRecord> ToStreamRecordVector(
-    const std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>& record_batches) {
-  std::vector<StreamStatusRecord> result;
-
-  for (size_t rb_idx = 0; rb_idx < record_batches.size(); ++rb_idx) {
-    auto& rb = *record_batches[rb_idx];
-    for (size_t idx = 0; idx < rb.front()->Size(); ++idx) {
-      StreamStatusRecord r;
-      r.stream_id = rb[2]->Get<StringValue>(idx).string();
-      r.bytes_sent = rb[3]->Get<Int64Value>(idx).val;
-      r.info = rb[4]->Get<StringValue>(idx).string();
-      result.push_back(r);
-    }
-  }
-  return result;
-}
-
 // A SourceConnector that fails on Init.
 class FaultyConnector : public SourceConnector {
  public:
@@ -212,25 +195,6 @@ class StirlingErrorTest : public ::testing::Test {
     return trace_id;
   }
 
-  StatusOr<sole::uuid> DeployFileSource(const std::string& program_text) {
-    // Compile file source.
-    PX_ASSIGN_OR_RETURN(auto compiled_file_source,
-                        px::carnot::planner::compiler::CompileFileSource(program_text));
-
-    // Register tracepoint.
-    sole::uuid id = sole::uuid4();
-    stirling_->RegisterFileSource(id, std::move(compiled_file_source.glob_pattern()));
-
-    // Wait for deployment to finish.
-    StatusOr<stirlingpb::Publish> s;
-    do {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      s = stirling_->GetFileSourceInfo(id);
-    } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
-
-    return id;
-  }
-
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,
                     std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     PX_UNUSED(tablet_id);
@@ -244,8 +208,6 @@ class StirlingErrorTest : public ::testing::Test {
         source_status_batches_.push_back(std::move(record_batch));
       } else if (table_name == "probe_status") {
         probe_status_batches_.push_back(std::move(record_batch));
-      } else if (table_name == "stream_status") {
-        stream_status_batches_.push_back(std::move(record_batch));
       }
     }
     return Status::OK();
@@ -259,9 +221,6 @@ class StirlingErrorTest : public ::testing::Test {
     } else if constexpr (std::is_same_v<TRecord, ProbeStatusRecord>) {
       return WaitAndExpectRecords([&]() { return ToProbeRecordVector(probe_status_batches_); },
                                   expected);
-    } else if constexpr (std::is_same_v<TRecord, StreamStatusRecord>) {
-      return WaitAndExpectRecords([&]() { return ToStreamRecordVector(stream_status_batches_); },
-                                  expected);
     } else {
       static_assert(always_false<TRecord>);
     }
@@ -271,7 +230,6 @@ class StirlingErrorTest : public ::testing::Test {
   std::unique_ptr<Stirling> stirling_;
   std::vector<std::unique_ptr<ColumnWrapperRecordBatch>> source_status_batches_;
   std::vector<std::unique_ptr<ColumnWrapperRecordBatch>> probe_status_batches_;
-  std::vector<std::unique_ptr<ColumnWrapperRecordBatch>> stream_status_batches_;
 };
 
 TEST_F(StirlingErrorTest, SourceConnectorInitOK) {
@@ -567,56 +525,6 @@ TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
 
   auto probe_records = ToProbeRecordVector(probe_status_batches_);
   EXPECT_THAT(probe_records, IsEmpty());
-}
-
-// Deploy a FileSource stream and record the progress of the stream throughput.
-// Expects one message for each TransferDataImpl call to the FileSource.
-TEST_F(StirlingErrorTest, StreamStatusThroughput) {
-  // Register StirlingErrorConnector.
-  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
-
-  // Run Stirling.
-  InitStirling(std::move(registry));
-  ASSERT_OK(stirling_->RunAsThread());
-  ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
-
-  auto file_stream_pxl = R"(
-import pxlog
-glob_pattern = '$0'
-table_name = '$1'
-pxlog.FileSource(glob_pattern, table_name, "1m")
-)";
-
-  const auto glob_pattern =
-      BazelRunfilePath("src/stirling/source_connectors/stirling_error/testdata/test.json").string();
-  const auto table_name = "test.json";
-
-  ASSERT_OK_AND_ASSIGN(
-      auto id, DeployFileSource(absl::Substitute(file_stream_pxl, glob_pattern, table_name)));
-
-  // Stirling Error Source Connector Initialization.
-  WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
-      {.source_connector = "stirling_error",
-       .status = px::statuspb::Code::OK,
-       .error = "",
-       .context = "Init"},
-  });
-  // Tracepoint deployed.
-  WaitAndExpectStatusRecords(
-      std::vector<StreamStatusRecord>{{.stream_id = glob_pattern, .bytes_sent = 587, .info = ""}});
-
-  // Remove file source;
-  ASSERT_OK(stirling_->RemoveFileSource(id));
-  StatusOr<stirlingpb::Publish> s;
-  do {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    s = stirling_->GetFileSourceInfo(id);
-  } while (s.ok());
-
-  // TODO(ddelnano): Add file source removal message assertion.
-
-  stirling_->Stop();
 }
 
 }  // namespace stirling

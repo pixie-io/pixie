@@ -24,7 +24,6 @@ namespace planner {
 
 Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node,
                                     absl::flat_hash_map<const IRNode*, IRNode*>*) {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::CopyFromNodeImpl(node, nullptr));
   const GRPCSinkIR* grpc_sink = static_cast<const GRPCSinkIR*>(node);
   sink_type_ = grpc_sink->sink_type_;
   destination_id_ = grpc_sink->destination_id_;
@@ -36,7 +35,6 @@ Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node,
 }
 
 Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::ToProto(op));
   CHECK(has_output_table());
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
@@ -56,7 +54,6 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
 }
 
 Status GRPCSinkIR::ToProto(planpb::Operator* op, int64_t agent_id) const {
-  PX_RETURN_IF_ERROR(SinkOperatorIR::ToProto(op));
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
   pb->set_address(destination_address());

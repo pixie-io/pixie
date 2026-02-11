@@ -29,8 +29,4 @@ var (
 	ErrTracepointPending = errors.New("tracepoints are still pending")
 	// ErrConfigUpdateFailed failed to send the config update request to an agent.
 	ErrConfigUpdateFailed = errors.New("failed to update config")
-	// ErrFileSourceRegistrationFailed failed to register file source. to an agent.
-	ErrFileSourceRegistrationFailed = errors.New("failed to register file sources")
-	// ErrFileSourceDeletionFailed failed to delete file source.
-	ErrFileSourceDeletionFailed = errors.New("failed to delete file sources")
 )

@@ -90,8 +90,6 @@ message Relation {
   repeated ColumnInfo columns = 1;
   // Description of the table.
   string desc = 2;
-  // Mutation id of the table if one exists.
-  string mutation_id = 3;
 }
 
 // A table serialized as proto.

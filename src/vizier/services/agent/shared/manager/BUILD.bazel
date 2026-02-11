@@ -42,7 +42,6 @@ pl_cc_library(
         "//src/vizier/funcs:cc_library",
         "//src/vizier/messages/messagespb:messages_pl_cc_proto",
         "//src/vizier/services/agent/shared/base:cc_library",
-        "//src/stirling/source_connectors/stirling_error:cc_library",
         "//third_party:natsc",
         "@com_github_arun11299_cpp_jwt//:cpp_jwt",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",

@@ -50,10 +50,6 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
       dest->set_grpc_address(exec_complete_address_);
       dest->set_ssl_targetname(exec_complete_ssl_targetname_);
     }
-    if (qb_address_to_plan_pb->find(carnot->QueryBrokerAddress()) !=
-        qb_address_to_plan_pb->end()) {
-      return error::Internal(absl::Substitute("Distributed plan has multiple nodes with the '$0' query broker address.", carnot->QueryBrokerAddress()));
-    }
     (*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()] = plan_proto;
     (*qb_address_to_dag_id_pb)[carnot->QueryBrokerAddress()] = i;
 

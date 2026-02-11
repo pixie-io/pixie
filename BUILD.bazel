@@ -1,6 +1,3 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("@px//bazel:pl_build_system.bzl", "pl_go_binary")
-
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +56,6 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/carnot/docspb //src/carnot/docspb:docs_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/compilerpb //src/carnot/planner/compilerpb:compiler_status_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/distributedpb //src/carnot/planner/distributedpb:distributed_plan_pl_go_proto
-# gazelle:resolve go px.dev/pixie/src/carnot/planner/file_source/ir //src/carnot/planner/file_source/ir:logical_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb //src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/plannerpb //src/carnot/planner/plannerpb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planpb //src/carnot/planpb:plan_pl_go_proto
@@ -218,18 +214,5 @@ list_pl_deps(
 filegroup(
     name = "pl_3p_go_sum",
     srcs = ["go.sum"],
-    visibility = ["//visibility:public"],
-)
-
-go_library(
-    name = "pixie_lib",
-    srcs = ["gosym_tab_experiment.go"],
-    importpath = "px.dev/pixie",
-    visibility = ["//visibility:private"],
-)
-
-pl_go_binary(
-    name = "pixie",
-    embed = [":pixie_lib"],
     visibility = ["//visibility:public"],
 )

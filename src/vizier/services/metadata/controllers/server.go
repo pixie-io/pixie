@@ -41,7 +41,6 @@ import (
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
-	"px.dev/pixie/src/vizier/services/metadata/controllers/file_source"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	"px.dev/pixie/src/vizier/services/metadata/metadataenv"
@@ -62,7 +61,6 @@ type Server struct {
 	pls    k8smeta.PodLabelStore
 	agtMgr agent.Manager
 	tpMgr  *tracepoint.Manager
-	fsMgr  *file_source.Manager
 	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
 	// stream should be running at a time.
 	getAgentsCursor uuid.UUID
@@ -70,14 +68,13 @@ type Server struct {
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, ds datastore.MultiGetterSetterDeleterCloser, pls k8smeta.PodLabelStore, agtMgr agent.Manager, tpMgr *tracepoint.Manager, fsMgr *file_source.Manager) *Server {
+func NewServer(env metadataenv.MetadataEnv, ds datastore.MultiGetterSetterDeleterCloser, pls k8smeta.PodLabelStore, agtMgr agent.Manager, tpMgr *tracepoint.Manager) *Server {
 	return &Server{
 		env:    env,
 		ds:     ds,
 		pls:    pls,
 		agtMgr: agtMgr,
 		tpMgr:  tpMgr,
-		fsMgr:  fsMgr,
 	}
 }
 
@@ -101,9 +98,6 @@ func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Sch
 			Columns: columnPbs,
 			Desc:    schema.Desc,
 		}
-		if schema.MutationId != "" {
-			schemaPb.MutationId = schema.MutationId
-		}
 		respSchemaPb.RelationMap[schema.Name] = schemaPb
 	}
 
@@ -126,9 +120,6 @@ func convertToSchemaInfo(computedSchema *storepb.ComputedSchema) ([]*distributed
 		}
 		schemaPb := &schemapb.Relation{
 			Columns: columnPbs,
-		}
-		if schema.MutationId != "" {
-			schemaPb.MutationId = schema.MutationId
 		}
 
 		agentIDs, ok := computedSchema.TableNameToAgentIDs[schema.Name]
@@ -574,55 +565,6 @@ func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTra
 	return statuspb.UNKNOWN_STATE, []*statuspb.Status{}
 }
 
-func getFileSourceStateFromAgentFileSourceStates(agentStates []*storepb.AgentFileSourceStatus) (statuspb.LifeCycleState, []*statuspb.Status) {
-	if len(agentStates) == 0 {
-		return statuspb.PENDING_STATE, nil
-	}
-
-	numFailed := 0
-	numTerminated := 0
-	numPending := 0
-	numRunning := 0
-	statuses := make([]*statuspb.Status, 0)
-
-	for _, s := range agentStates {
-		switch s.State {
-		case statuspb.TERMINATED_STATE:
-			numTerminated++
-		case statuspb.FAILED_STATE:
-			numFailed++
-			if s.Status.ErrCode != statuspb.FAILED_PRECONDITION && s.Status.ErrCode != statuspb.OK {
-				statuses = append(statuses, s.Status)
-			}
-		case statuspb.PENDING_STATE:
-			numPending++
-		case statuspb.RUNNING_STATE:
-			numRunning++
-		}
-	}
-
-	if numTerminated > 0 { // If any agentFileSources are terminated, then we consider the tracepoint in an terminated state.
-		return statuspb.TERMINATED_STATE, []*statuspb.Status{}
-	}
-
-	if numRunning > 0 { // If a single agentFileSource is running, then we consider the overall tracepoint as healthy.
-		return statuspb.RUNNING_STATE, []*statuspb.Status{}
-	}
-
-	if numPending > 0 { // If no agentFileSources are running, but some are in a pending state, the tracepoint is pending.
-		return statuspb.PENDING_STATE, []*statuspb.Status{}
-	}
-
-	if numFailed > 0 { // If there are no terminated/running/pending tracepoints, then the tracepoint is failed.
-		if len(statuses) == 0 {
-			return statuspb.FAILED_STATE, []*statuspb.Status{agentStates[0].Status} // If there are no non FAILED_PRECONDITION statuses, just use the error from the first agent.
-		}
-		return statuspb.FAILED_STATE, statuses
-	}
-
-	return statuspb.UNKNOWN_STATE, []*statuspb.Status{}
-}
-
 // RemoveTracepoint is a request to evict the given tracepoint on all agents.
 func (s *Server) RemoveTracepoint(ctx context.Context, req *metadatapb.RemoveTracepointRequest) (*metadatapb.RemoveTracepointResponse, error) {
 	err := s.tpMgr.RemoveTracepoints(req.Names)
@@ -631,132 +573,6 @@ func (s *Server) RemoveTracepoint(ctx context.Context, req *metadatapb.RemoveTra
 	}
 
 	return &metadatapb.RemoveTracepointResponse{
-		Status: &statuspb.Status{
-			ErrCode: statuspb.OK,
-		},
-	}, nil
-}
-
-// RegisterFileSource is a request to register the file sources specified in the FileSourceDeployment on all agents.
-func (s *Server) RegisterFileSource(ctx context.Context, req *metadatapb.RegisterFileSourceRequest) (*metadatapb.RegisterFileSourceResponse, error) {
-	responses := make([]*metadatapb.RegisterFileSourceResponse_FileSourceStatus, len(req.Requests))
-
-	// Create file source.
-	for i, fs := range req.Requests {
-		// TODO(ddelnano): Consider adding support for filtering by labels.
-		fileSourceID, err := s.fsMgr.CreateFileSource(fs.Name, fs)
-		if err != nil && err != file_source.ErrFileSourceAlreadyExists {
-			return nil, err
-		}
-		if err == file_source.ErrFileSourceAlreadyExists {
-			responses[i] = &metadatapb.RegisterFileSourceResponse_FileSourceStatus{
-				ID: utils.ProtoFromUUID(*fileSourceID),
-				Status: &statuspb.Status{
-					ErrCode: statuspb.ALREADY_EXISTS,
-				},
-				Name: fs.Name,
-			}
-			continue
-		}
-
-		responses[i] = &metadatapb.RegisterFileSourceResponse_FileSourceStatus{
-			ID: utils.ProtoFromUUID(*fileSourceID),
-			Status: &statuspb.Status{
-				ErrCode: statuspb.OK,
-			},
-			Name: fs.Name,
-		}
-
-		// Get all agents currently running.
-		agents, err := s.agtMgr.GetActiveAgents()
-		if err != nil {
-			return nil, err
-		}
-
-		err = s.fsMgr.RegisterFileSource(agents, *fileSourceID, fs)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	resp := &metadatapb.RegisterFileSourceResponse{
-		FileSources: responses,
-		Status: &statuspb.Status{
-			ErrCode: statuspb.OK,
-		},
-	}
-
-	return resp, nil
-}
-
-// GetFileSourceInfo is a request to check the status for the given file source.
-func (s *Server) GetFileSourceInfo(ctx context.Context, req *metadatapb.GetFileSourceInfoRequest) (*metadatapb.GetFileSourceInfoResponse, error) {
-	var fileSourceInfos []*storepb.FileSourceInfo
-	var err error
-	if len(req.IDs) > 0 {
-		ids := make([]uuid.UUID, len(req.IDs))
-		for i, id := range req.IDs {
-			ids[i] = utils.UUIDFromProtoOrNil(id)
-		}
-
-		fileSourceInfos, err = s.fsMgr.GetFileSourcesForIDs(ids)
-	} else {
-		fileSourceInfos, err = s.fsMgr.GetAllFileSources()
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	fileSourceState := make([]*metadatapb.GetFileSourceInfoResponse_FileSourceState, len(fileSourceInfos))
-
-	for i, fs := range fileSourceInfos {
-		if fs == nil { // FileSourceDeployment does not exist.
-			fileSourceState[i] = &metadatapb.GetFileSourceInfoResponse_FileSourceState{
-				ID:    req.IDs[i],
-				State: statuspb.UNKNOWN_STATE,
-				Statuses: []*statuspb.Status{{
-					ErrCode: statuspb.NOT_FOUND,
-				}},
-			}
-			continue
-		}
-		tUUID := utils.UUIDFromProtoOrNil(fs.ID)
-
-		fileSourceStates, err := s.fsMgr.GetFileSourceStates(tUUID)
-		if err != nil {
-			return nil, err
-		}
-
-		state, statuses := getFileSourceStateFromAgentFileSourceStates(fileSourceStates)
-
-		// TODO(ddelnano): For now file sources only have one schema
-		schemas := make([]string, 1)
-		schemas[0] = fs.FileSource.TableName
-
-		fileSourceState[i] = &metadatapb.GetFileSourceInfoResponse_FileSourceState{
-			ID:            fs.ID,
-			State:         state,
-			Statuses:      statuses,
-			Name:          fs.Name,
-			ExpectedState: fs.ExpectedState,
-			SchemaNames:   schemas,
-		}
-	}
-
-	return &metadatapb.GetFileSourceInfoResponse{
-		FileSources: fileSourceState,
-	}, nil
-}
-
-// RemoveFileSource is a request to evict the given file sources on all agents.
-func (s *Server) RemoveFileSource(ctx context.Context, req *metadatapb.RemoveFileSourceRequest) (*metadatapb.RemoveFileSourceResponse, error) {
-	err := s.fsMgr.RemoveFileSources(req.Names)
-	if err != nil {
-		return nil, err
-	}
-
-	return &metadatapb.RemoveFileSourceResponse{
 		Status: &statuspb.Status{
 			ErrCode: statuspb.OK,
 		},

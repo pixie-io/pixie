@@ -73,7 +73,8 @@ StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneMemorySource(MemorySourceI
 }
 
 bool PruneUnavailableSourcesRule::AgentSupportsMemorySources() {
-  return carnot_info_.has_data_store() && carnot_info_.processes_data();
+  return carnot_info_.has_data_store() && !carnot_info_.has_grpc_server() &&
+         carnot_info_.processes_data();
 }
 
 bool PruneUnavailableSourcesRule::AgentHasTable(std::string table_name) {

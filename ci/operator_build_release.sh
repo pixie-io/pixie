@@ -35,9 +35,9 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 
 # Find the previous bundle version, which this release should replace.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
-    | grep "release/operator" | grep -v "\-")
+    | grep "release/operator" | grep -v "\-" || true)
 
-image_repo="gcr.io/pixie-oss/pixie-prod"
+image_repo="ghcr.io/k8sstormcenter"
 image_paths=$(bazel cquery //k8s/operator:image_bundle \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
@@ -45,8 +45,6 @@ image_paths=$(bazel cquery //k8s/operator:image_bundle \
   --starlark:expr="'\n'.join(providers(target)['@io_bazel_rules_docker//container:providers.bzl%BundleInfo'].container_images.keys())")
 image_path=$(echo "${image_paths}" | grep -v deleter)
 deleter_image_path=$(echo "${image_paths}" | grep deleter)
-
-bucket="pixie-dev-public"
 
 channel="stable"
 channels="stable,dev"
@@ -77,12 +75,21 @@ mkdir "${tmp_dir}/manifests"
 
 previous_version=${prev_tag//*\/v/}
 
+index_image="ghcr.io/k8sstormcenter/operator/bundle_index:0.0.1"
+# Don't set replaces when bootstrapping a fresh index, since the previous bundle won't exist.
+from_index_args=()
+if crane manifest "${index_image}" > /dev/null; then
+  from_index_args=(--from-index "${index_image}")
+else
+  previous_version=""
+fi
+
 kustomize build "$(pwd)/k8s/operator/crd/base" > "${kustomize_dir}/crd.yaml"
 kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
 
 #shellcheck disable=SC2016
 faq -f yaml -o yaml --slurp '
-  .[0].spec.replaces = $previousName |
+  (if $previousName != "" then .[0].spec.replaces = $previousName else . end) |
   .[0].metadata.name = $name |
   .[0].spec.version = $version |
   .[0].spec.install = {strategy: "deployment", spec:{
@@ -95,7 +102,7 @@ faq -f yaml -o yaml --slurp '
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrole_pixie-operator-role.yaml" \
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrolebinding_pixie-operator-cluster-binding.yaml" \
   --kwargs version="${release_tag}" --kwargs name="pixie-operator.v${bundle_version}" \
-  --kwargs previousName="pixie-operator.v${previous_version}" \
+  --kwargs previousName="${previous_version:+pixie-operator.v${previous_version}}" \
   --kwargs image="${image_path}" > "${tmp_dir}/manifests/csv.yaml"
 faq -f yaml -o yaml --slurp '.[0]' "${kustomize_dir}/crd.yaml" > "${tmp_dir}/manifests/crd.yaml"
 
@@ -108,21 +115,19 @@ mv "$(pwd)/k8s/operator/helm/templates/deleter_tmp.yaml" "$(pwd)/k8s/operator/he
 
 # Build and push bundle.
 cd "${tmp_dir}"
-bundle_image="gcr.io/pixie-oss/pixie-prod/operator/bundle:${release_tag}"
-index_image="gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1"
+bundle_image="ghcr.io/k8sstormcenter/operator/bundle:${release_tag}"
 
-docker buildx create --name builder --driver docker-container --bootstrap
+docker buildx inspect builder > /dev/null 2>&1 || docker buildx create --name builder --driver docker-container --bootstrap
 docker buildx use builder
 
 opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
 docker buildx build --platform linux/amd64,linux/arm64 -t "${bundle_image}" --push -f bundle.Dockerfile .
-opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "${index_image}"  --generate --out-dockerfile="${tmp_dir}/index.Dockerfile" -u docker
+opm index add --bundles "${bundle_image}" "${from_index_args[@]}" --tag "${index_image}"  --generate --out-dockerfile="${tmp_dir}/index.Dockerfile" -u docker
 docker buildx build --platform linux/amd64,linux/arm64 -t "${index_image}" --push -f "${tmp_dir}/index.Dockerfile" .
 
 cd "${repo_path}"
 
 # Upload templated YAMLs.
-output_path="gs://${bucket}/operator/${release_tag}"
 bazel build //k8s/operator:operator_templates
 yamls_tar="${repo_path}/bazel-bin/k8s/operator/operator_templates.tar"
 

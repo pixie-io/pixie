@@ -36,11 +36,6 @@ tmp_dir="$(mktemp -d)"
 index_file="${INDEX_FILE:?}"
 gh_repo="${GH_REPO:?}"
 
-helm_gcs_bucket="pixie-operator-charts"
-if [[ $VERSION == *"-"* ]]; then
-  helm_gcs_bucket="pixie-operator-charts-dev"
-fi
-
 repo_path=$(pwd)
 # shellcheck source=ci/artifact_utils.sh
 . "${repo_path}/ci/artifact_utils.sh"
@@ -60,37 +55,12 @@ helm_tmpl_checks="$(cat "${repo_path}/k8s/operator/helm/olm_template_checks.tmpl
 find "${repo_path}/k8s/operator/helm/templates" -type f -exec sed -i "/HELM_DEPLOY_OLM_PLACEHOLDER/c\\${helm_tmpl_checks}" {} \;
 rm "${repo_path}/k8s/operator/helm/olm_template_checks.tmpl"
 
-# Fetch all of the current charts in GCS, because generating the index needs all pre-existing tar versions present.
-mkdir -p "${tmp_dir}/${helm_gcs_bucket}"
-gsutil rsync "gs://${helm_gcs_bucket}" "${tmp_dir}/${helm_gcs_bucket}"
-
 # Generates tgz for the new release helm3 chart.
-helm package "${helm_path}" -d "${tmp_dir}/${helm_gcs_bucket}"
+helm package "${helm_path}" -d "${tmp_dir}/helm_chart"
 
-# Create release for Helm2.
-mkdir "${helm_path}2"
+upload_artifact_to_mirrors "operator" "${VERSION}" "${tmp_dir}/helm_chart/pixie-operator-chart-${VERSION}.tgz" "pixie-operator-chart-${VERSION}.tgz"
 
-# Create Chart.yaml for this release for Helm2.
-echo "apiVersion: v1
-name: pixie-operator-helm2-chart
-type: application
-version: ${VERSION}" > "${helm_path}2/Chart.yaml"
-
-cp -r "${helm_path}/templates" "${helm_path}2/templates"
-cp "${helm_path}/values.yaml" "${helm_path}2/values.yaml"
-
-# Generates tgz for the new release helm3 chart.
-helm package "${helm_path}2" -d "${tmp_dir}/${helm_gcs_bucket}"
-
-# Update the index file.
-helm repo index "${tmp_dir}/${helm_gcs_bucket}" --url "https://${helm_gcs_bucket}.storage.googleapis.com"
-
-upload_artifact_to_mirrors "operator" "${VERSION}" "${tmp_dir}/${helm_gcs_bucket}/pixie-operator-chart-${VERSION}.tgz" "pixie-operator-chart-${VERSION}.tgz"
-
-# Upload the new index and tar to gcs by syncing. This will help keep the timestamps for pre-existing tars the same.
-gsutil rsync "${tmp_dir}/${helm_gcs_bucket}" "gs://${helm_gcs_bucket}"
-
-# Generate separate index file for GH.
+# Generate index file for GH.
 mkdir -p "${tmp_dir}/gh_helm_chart"
 helm package "${helm_path}" -d "${tmp_dir}/gh_helm_chart"
 # Pull index file.

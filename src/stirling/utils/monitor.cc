@@ -74,12 +74,6 @@ void StirlingMonitor::AppendProbeStatusRecord(const std::string& source_connecto
       {CurrentTimeNS(), source_connector, tracepoint, status.code(), status.msg(), info});
 }
 
-void StirlingMonitor::AppendStreamStatusRecord(const std::string& stream_id,
-                                               const int64_t bytes_sent, const std::string& info) {
-  absl::base_internal::SpinLockHolder lock(&stream_status_lock_);
-  stream_status_records_.push_back({CurrentTimeNS(), stream_id, bytes_sent, info});
-}
-
 std::vector<SourceStatusRecord> StirlingMonitor::ConsumeSourceStatusRecords() {
   absl::base_internal::SpinLockHolder lock(&source_status_lock_);
   return std::move(source_status_records_);
@@ -88,11 +82,6 @@ std::vector<SourceStatusRecord> StirlingMonitor::ConsumeSourceStatusRecords() {
 std::vector<ProbeStatusRecord> StirlingMonitor::ConsumeProbeStatusRecords() {
   absl::base_internal::SpinLockHolder lock(&probe_status_lock_);
   return std::move(probe_status_records_);
-}
-
-std::vector<StreamStatusRecord> StirlingMonitor::ConsumeStreamStatusRecords() {
-  absl::base_internal::SpinLockHolder lock(&stream_status_lock_);
-  return std::move(stream_status_records_);
 }
 
 }  // namespace stirling

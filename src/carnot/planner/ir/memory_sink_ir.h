@@ -38,11 +38,10 @@ namespace planner {
 /**
  * The MemorySinkIR describes the MemorySink operator.
  */
-class MemorySinkIR : public SinkOperatorIR {
+class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id, std::string mutation_id)
-      : SinkOperatorIR(id, IRNodeType::kMemorySink, mutation_id) {}
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySink) {}
 
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_ = name; }

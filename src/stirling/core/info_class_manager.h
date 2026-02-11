@@ -74,13 +74,6 @@ class InfoClassManager final : public NotCopyable {
   void SetSourceConnector(SourceConnector* source) { source_ = source; }
 
   /**
-   * @brief Mutation ID connector connected to this Info Class if one exists
-   *
-   * @param source Pointer to source connector instance.
-   */
-  void SetMutationId(std::optional<std::string> mutation_id) { mutation_id_ = mutation_id; }
-
-  /**
    * Get the schema of the InfoClass.
    *
    * @return DataTableSchema schema
@@ -135,9 +128,6 @@ class InfoClassManager final : public NotCopyable {
 
   // Pointer to the data table where the data is stored.
   std::unique_ptr<DataTable> data_table_;
-
-  // The mutation ID of the info class manager if one exists.
-  std::optional<std::string> mutation_id_;
 };
 
 using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;

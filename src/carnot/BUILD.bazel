@@ -69,6 +69,7 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/exec:test_utils",
         "//src/carnot/udf_exporter:cc_library",
+        "//src/common/testing/event:cc_library",
     ],
 )
 
@@ -79,6 +80,7 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/exec:test_utils",
         "//src/carnot/udf_exporter:cc_library",
+        "//src/common/testing/event:cc_library",
     ],
 )
 
@@ -114,7 +116,6 @@ pl_cc_binary(
         "//src/stirling/source_connectors/socket_tracer:cc_library",
         "//src/vizier/funcs:cc_library",
         "//src/vizier/funcs/context:cc_library",
-        "//src/vizier/services/metadata/local:cc_library",
         "@com_github_clickhouse_clickhouse_cpp//:clickhouse_cpp",
     ],
 )

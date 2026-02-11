@@ -83,7 +83,7 @@ class ChanCache {
   };
 
   // The cache of channels (grpc conns) made to other agents.
-  absl::flat_hash_map<std::string, Channel> chan_cache_ GUARDED_BY(chan_cache_lock_);
+  absl::flat_hash_map<std::string, Channel> chan_cache_ ABSL_GUARDED_BY(chan_cache_lock_);
   absl::base_internal::SpinLock chan_cache_lock_;
   // Connections that are alive for shorter than warm_up_period_ won't be cleared.
   std::chrono::nanoseconds warm_up_period_;

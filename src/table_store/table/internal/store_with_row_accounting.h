@@ -53,8 +53,6 @@ void constexpr_else_static_assert_false() {
   static_assert(always_false, "constexpr else block reached");
 }
 
-class HotOnlyStore;
-
 /**
  * StoreWithRowTimeAccounting stores a deque of batches (hot or cold) and keeps track of the first
  * and last unique RowID's for each batch, as well as the first and last times for each batch (if
@@ -77,28 +75,12 @@ class StoreWithRowTimeAccounting {
   StoreWithRowTimeAccounting(const schema::Relation& rel, int64_t time_col_idx)
       : rel_(rel), time_col_idx_(time_col_idx) {}
 
-  Status AddBatchSliceToRowBatch(const TBatch& batch, size_t row_offset, size_t batch_size,
-                                 const std::vector<int64_t>& cols,
-                                 schema::RowBatch* output_rb) const {
-    if constexpr (std::is_same_v<TBatch, ColdBatch>) {
-      for (auto col_idx : cols) {
-        auto arr = batch[col_idx]->Slice(row_offset, batch_size);
-        PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
-      }
-      return Status::OK();
-    } else if constexpr (std::is_same_v<TBatch, HotBatch>) {
-      return batch.AddBatchSliceToRowBatch(row_offset, batch_size, cols, output_rb);
-    } else {
-      constexpr_else_static_assert_false();
-    }
-  }
-
   /**
    * GetNextRowBatch returns the next row batch in this store after the given unique row id.
    * @param last_read_row_id, pointer to the unique RowID of the last read row. The outputted batch
    * should include only rows with a RowID greater than this RowID. After determining the output
    * batch, this pointer is updated to point to the RowID of the last row in the outputted batch.
-   * @param hints, pointer to a BatchHints object (usually from a Cursor), that provides a
+   * @param hints, pointer to a BatchHints object (usually from a Table::Cursor), that provides a
    * hint to the store about which batch should be next. If the hint is correct, no searching for
    * the right batch is required, otherwise searching is performed as usual. This is purely an
    * optimization and passing a `nullptr` for hints is accepted.
@@ -176,16 +158,16 @@ class StoreWithRowTimeAccounting {
    * PopFront removes the first batch in the store, and returns an rvalue reference to it.
    * @return rvalue reference to the removed batch.
    */
-  TBatch PopFront() {
+  TBatch&& PopFront() {
     DCHECK(!batches_.empty());
     first_batch_id_++;
 
     row_ids_.pop_front();
     if (time_col_idx_ != -1) times_.pop_front();
 
-    auto front = std::move(batches_.front());
+    auto&& front = std::move(batches_.front());
     batches_.pop_front();
-    return front;
+    return std::move(front);
   }
 
   /**
@@ -402,14 +384,28 @@ class StoreWithRowTimeAccounting {
     }
   }
 
+  Status AddBatchSliceToRowBatch(const TBatch& batch, size_t row_offset, size_t batch_size,
+                                 const std::vector<int64_t>& cols,
+                                 schema::RowBatch* output_rb) const {
+    if constexpr (std::is_same_v<TBatch, ColdBatch>) {
+      for (auto col_idx : cols) {
+        auto arr = batch[col_idx]->Slice(row_offset, batch_size);
+        PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
+      }
+      return Status::OK();
+    } else if constexpr (std::is_same_v<TBatch, HotBatch>) {
+      return batch.AddBatchSliceToRowBatch(row_offset, batch_size, cols, output_rb);
+    } else {
+      constexpr_else_static_assert_false();
+    }
+  }
+
   BatchID first_batch_id_ = 0;
   const schema::Relation& rel_;
   const int64_t time_col_idx_;
   std::deque<TBatch> batches_;
   std::deque<RowIDInterval> row_ids_;
   std::deque<TimeInterval> times_;
-
-  friend HotOnlyStore;
 };
 
 }  // namespace internal

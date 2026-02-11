@@ -76,8 +76,7 @@ void BM_GRPCSinkNodeSplitting(benchmark::State& state) {
 
   px::carnot::exec::GRPCSinkNode node;
   auto op_proto = px::carnot::planpb::testutils::CreateTestGRPCSink2PB();
-  std::map<std::string, std::string> context;
-  auto plan_node = std::make_unique<px::carnot::plan::GRPCSinkOperator>(1, context);
+  auto plan_node = std::make_unique<px::carnot::plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
 
   auto num_rows = 1024;

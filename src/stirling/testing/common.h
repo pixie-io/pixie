@@ -176,7 +176,7 @@ inline types::ColumnWrapperRecordBatch ExtractRecordsMatchingPID(DataTable* data
 
 class Timeout {
  public:
-  explicit Timeout(std::chrono::nanoseconds timeout = std::chrono::minutes{1})
+  explicit Timeout(std::chrono::nanoseconds timeout = std::chrono::minutes{5})
       : timeout_(timeout), start_(std::chrono::steady_clock::now()) {}
 
   bool TimedOut() { return !((std::chrono::steady_clock::now() - start_) < timeout_); }

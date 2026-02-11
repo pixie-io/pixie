@@ -33,16 +33,13 @@
 #include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/common/base/base.h"
-#include "src/common/event/time_system.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/test_utils/container_runner.h"
-#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
 #include "src/table_store/table_store.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
-#include "src/vizier/services/metadata/local/local_metadata_service.h"
 #include "src/stirling/source_connectors/socket_tracer/http_table.h"
 
 // Example clickhouse test usage:
@@ -582,15 +579,11 @@ int main(int argc, char* argv[]) {
   auto table_store = std::make_shared<px::table_store::TableStore>();
   auto result_server = px::carnot::exec::LocalGRPCResultSinkServer();
 
-  // Create metadata service stub for table schemas
-  auto metadata_grpc_server = std::make_unique<px::vizier::services::metadata::LocalMetadataGRPCServer>(table_store.get());
-
   // Create vizier func factory context with metadata stub
   px::vizier::funcs::VizierFuncFactoryContext func_context(
       nullptr,  // agent_manager
-      metadata_grpc_server->StubGenerator(),  // mds_stub
+      nullptr,
       nullptr,  // mdtp_stub
-      nullptr,  // mdfs_stub
       nullptr,  // cronscript_stub
       table_store,
       [](grpc::ClientContext*) {}  // add_grpc_auth
@@ -614,25 +607,6 @@ int main(int argc, char* argv[]) {
                                            std::move(clients_config), std::move(server_config))
                     .ConsumeValueOrDie();
 
-  // Create a minimal agent metadata state for standalone execution
-  auto time_system = std::make_unique<px::event::RealTimeSystem>();
-  auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
-      "carnot_executable",  // hostname
-      1,                    // asid
-      getpid(),            // pid
-      0,                   // start_time
-      sole::uuid4(),       // agent_id
-      "",                  // pod_name
-      sole::uuid4(),       // vizier_id
-      "standalone",        // vizier_name
-      "",                  // vizier_namespace
-      time_system.get());  // time_system
-
-  // Register metadata callback
-  carnot->RegisterAgentMetadataCallback([metadata_state]() {
-    return metadata_state;
-  });
-
   if (use_clickhouse) {
     // Create http_events table schema in table_store using the actual stirling HTTP table definition
     std::vector<px::types::DataType> types;
@@ -646,7 +620,7 @@ int main(int argc, char* argv[]) {
     }
 
     px::table_store::schema::Relation rel(types, names);
-    auto http_events_table = px::table_store::HotColdTable::Create("http_events", rel);
+    auto http_events_table = px::table_store::Table::Create("http_events", rel);
     // Need to provide a table_id for GetTableIDs() to work
     uint64_t http_events_table_id = 1;
     table_store->AddTable(http_events_table, "http_events", http_events_table_id);

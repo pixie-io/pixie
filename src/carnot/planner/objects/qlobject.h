@@ -66,7 +66,6 @@ enum class QLObjectType {
   kExporter,
   kOTelEndpoint,
   kOTelDataContainer,
-  kLogModule,
   kClickHouseRows,
 };
 

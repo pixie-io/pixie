@@ -53,16 +53,6 @@ inline void PrintTo(const ProbeStatusRecord& r, std::ostream* os) {
       r.info);
 }
 
-inline bool operator==(const StreamStatusRecord& a, const StreamStatusRecord& b) {
-  return (a.stream_id == b.stream_id) && (a.bytes_sent == b.bytes_sent) && (a.info == b.info);
-}
-
-inline void PrintTo(const StreamStatusRecord& r, std::ostream* os) {
-  *os << absl::Substitute(
-      "StreamStatusRecord{timestamp_ns: $0, stream_id: $1, bytes_sent: $2, info: $3}",
-      r.timestamp_ns, r.stream_id, r.bytes_sent, r.info);
-}
-
 inline bool operator==(const TcpStatsRecord& a, const TcpStatsRecord& b) {
   return (a.remote_port == b.remote_port) && (a.remote_addr == b.remote_addr) && (a.tx == b.tx) &&
          (a.rx == b.rx) && (a.retransmits == b.retransmits);

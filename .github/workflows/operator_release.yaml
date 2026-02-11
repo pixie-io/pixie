@@ -17,6 +17,9 @@ jobs:
     name: Build Release
     runs-on: oracle-vm-16cpu-64gb-x86-64
     needs: get-dev-image
+    permissions:
+      contents: read
+      packages: write
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     env:
@@ -33,15 +36,13 @@ jobs:
       with:
         download_toplevel: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
     - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+    - name: Login to GHCR
+      run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
@@ -49,7 +50,6 @@ jobs:
         JOB_NAME: ${{ github.job }}
         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         GH_REPO: ${{ github.repository }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       shell: bash
@@ -60,13 +60,6 @@ jobs:
         mkdir -p "${ARTIFACTS_DIR}"
         ./ci/save_version_info.sh
         ./ci/operator_build_release.sh
-    - name: Update GCS Manifest
-      env:
-        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
-        # Use the old style versions file instead of the new updates for the gcs manifest.
-        MANIFEST_UPDATES: ""
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
-      run: ./ci/update_artifact_manifest.sh
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: manifest-updates
@@ -127,8 +120,8 @@ jobs:
       env:
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
       run: |
-        git config --global user.name 'pixie-io-buildbot'
-        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.name 'k8sstormcenter-buildbot'
+        git config --global user.email 'info@fusioncore.ai'
     - name: Push Helm YAML to gh-pages
       shell: bash
       env:
@@ -142,7 +135,7 @@ jobs:
         git commit -s -m "Release Helm chart ${VERSION}"
         git push origin "gh-pages"
   update-gh-artifacts-manifest:
-    runs-on: oracle-8cpu-32gb-x86-64
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     needs: [get-dev-image, create-github-release]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
@@ -171,8 +164,8 @@ jobs:
       env:
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       run: |
-        git config --global user.name 'pixie-io-buildbot'
-        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.name 'k8sstormcenter-buildbot'
+        git config --global user.email 'info@fusioncore.ai'
         git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
         git config --global commit.gpgsign true
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0

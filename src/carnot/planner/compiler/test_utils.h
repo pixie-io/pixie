@@ -768,14 +768,6 @@ class OperatorTests : public ::testing::Test {
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
   }
-  // Used for testing propagation of context to children.
-  table_store::schema::Relation MakeRelationWithMutation() {
-    std::optional<std::string> mutation = "mutation";
-    return table_store::schema::Relation(
-        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
-        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}), mutation);
-  }
   // Same as MakeRelation, but has a time column.
   table_store::schema::Relation MakeTimeRelation() {
     return table_store::schema::Relation(

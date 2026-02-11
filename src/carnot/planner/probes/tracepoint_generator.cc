@@ -28,16 +28,14 @@
 #include "src/carnot/planner/probes/probes.h"
 
 #include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
-#include "src/carnot/planner/file_source/ir/logical.pb.h"
 
 namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
 
-namespace {
-
-StatusOr<plannerpb::CompileMutationsResponse> CompileMutations(std::string_view query) {
+StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
+    std::string_view query) {
   // Create a compiler state; it doesn't affect the tracepoint compilation.
   // TODO(oazizi): Try inserting nullptr for registry_info.
   px::carnot::planner::RegistryInfo registry_info;
@@ -67,20 +65,8 @@ StatusOr<plannerpb::CompileMutationsResponse> CompileMutations(std::string_view 
   if (pb.mutations_size() != 1) {
     return error::Internal("Unexpected number of mutations");
   }
-  return pb;
-}
 
-}  // namespace
-
-StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
-    std::string_view query) {
-  PX_ASSIGN_OR_RETURN(auto pb, CompileMutations(query));
   return pb.mutations()[0].trace();
-}
-
-StatusOr<file_source::ir::FileSourceDeployment> CompileFileSource(std::string_view query) {
-  PX_ASSIGN_OR_RETURN(auto pb, CompileMutations(query));
-  return pb.mutations()[0].file_source();
 }
 
 }  // namespace compiler

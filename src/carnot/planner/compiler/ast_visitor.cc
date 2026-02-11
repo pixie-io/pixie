@@ -104,8 +104,6 @@ Status ASTVisitorImpl::SetupModules(
       PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_, reserved_names_));
   PX_ASSIGN_OR_RETURN((*module_handler_)[TraceModule::kTraceModuleObjName],
                       TraceModule::Create(mutations_, this));
-  PX_ASSIGN_OR_RETURN((*module_handler_)[LogModule::kLogModuleObjName],
-                      LogModule::Create(mutations_, this));
   PX_ASSIGN_OR_RETURN((*module_handler_)[ConfigModule::kConfigModuleObjName],
                       ConfigModule::Create(mutations_, this));
   for (const auto& [module_name, module_text] : module_name_to_pxl_map) {

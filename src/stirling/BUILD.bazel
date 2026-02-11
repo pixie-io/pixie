@@ -49,7 +49,6 @@ pl_cc_library(
         "//src/stirling/proto:stirling_pl_cc_proto",
         "//src/stirling/source_connectors/dynamic_bpftrace:cc_library",
         "//src/stirling/source_connectors/dynamic_tracer:cc_library",
-        "//src/stirling/source_connectors/file_source:cc_library",
         "//src/stirling/source_connectors/jvm_stats:cc_library",
         "//src/stirling/source_connectors/network_stats:cc_library",
         "//src/stirling/source_connectors/perf_profiler:cc_library",

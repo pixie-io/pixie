@@ -40,10 +40,10 @@ namespace planner {
  * @brief The MemorySourceIR is a dual logical plan
  * and IR node operator. It inherits from both classes
  */
-class MemorySourceIR : public SinkOperatorIR {
+class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id, std::string mutation_id) : SinkOperatorIR(id, IRNodeType::kMemorySource, mutation_id) {}
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySource) {}
 
   /**
    * @brief Initialize the memory source.

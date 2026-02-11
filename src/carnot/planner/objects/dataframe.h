@@ -43,12 +43,10 @@ class Dataframe : public QLObject {
       /* name */ "DataFrame",
       /* type */ QLObjectType::kDataframe,
   };
-  static StatusOr<std::shared_ptr<Dataframe>> Create(
-      CompilerState* compiler_state, OperatorIR* op, ASTVisitor* visitor,
-      std::optional<std::string> mutation_id = std::nullopt);
-  static StatusOr<std::shared_ptr<Dataframe>> Create(
-      CompilerState* compiler_state, IR* graph, ASTVisitor* visitor,
-      std::optional<std::string> mutation_id = std::nullopt);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(CompilerState* compiler_state, OperatorIR* op,
+                                                     ASTVisitor* visitor);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(CompilerState* compiler_state, IR* graph,
+                                                     ASTVisitor* visitor);
   static bool IsDataframe(const QLObjectPtr& object) {
     return object->type() == DataframeType.type();
   }
@@ -432,17 +430,7 @@ class Dataframe : public QLObject {
       : QLObject(DataframeType, op ? op->ast() : nullptr, visitor),
         compiler_state_(compiler_state),
         op_(op),
-        graph_(graph),
-        mutation_id_(std::nullopt) {}
-
-  explicit Dataframe(CompilerState* compiler_state, OperatorIR* op, IR* graph, ASTVisitor* visitor,
-                     std::optional<std::string> mutation_id)
-      : QLObject(DataframeType, op ? op->ast() : nullptr, visitor),
-        compiler_state_(compiler_state),
-        op_(op),
-        graph_(graph),
-        mutation_id_(mutation_id) {}
-
+        graph_(graph) {}
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        std::string_view name) const override;
 
@@ -453,7 +441,6 @@ class Dataframe : public QLObject {
   CompilerState* compiler_state_;
   OperatorIR* op_ = nullptr;
   IR* graph_ = nullptr;
-  std::optional<std::string> mutation_id_;
 };
 
 StatusOr<std::shared_ptr<Dataframe>> GetAsDataFrame(QLObjectPtr obj);

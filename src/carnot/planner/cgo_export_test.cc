@@ -278,43 +278,6 @@ TEST_F(PlannerExportTest, compile_delete_tracepoint) {
   EXPECT_THAT(mutations_response_pb, EqualsProto(kExpectedDeleteTracepointsMutationPb));
 }
 
-constexpr char kSingleFileSource[] = R"pxl(
-import pxlog
-
-glob_pattern = 'test.json'
-pxlog.FileSource(glob_pattern, 'test_table', '5m')
-)pxl";
-
-constexpr char kSingleFileSourceProgramPb[] = R"pxl(
-glob_pattern: "test.json"
-table_name: "test_table"
-ttl {
-  seconds: 300
-}
-)pxl";
-
-TEST_F(PlannerExportTest, compile_file_source_def) {
-  planner_ = MakePlanner();
-  int result_len;
-  std::string mutation_request;
-  plannerpb::CompileMutationsRequest req;
-  req.set_query_str(kSingleFileSource);
-  *(req.mutable_logical_planner_state()) = testutils::CreateTwoPEMsOneKelvinPlannerState();
-  ASSERT_TRUE(req.SerializeToString(&mutation_request));
-  auto interface_result = PlannerCompileMutations(planner_, mutation_request.c_str(),
-                                                  mutation_request.length(), &result_len);
-
-  ASSERT_GT(result_len, 0);
-  plannerpb::CompileMutationsResponse mutations_response_pb;
-  ASSERT_TRUE(mutations_response_pb.ParseFromString(
-      std::string(interface_result, interface_result + result_len)));
-  delete[] interface_result;
-  ASSERT_OK(mutations_response_pb.status());
-  ASSERT_EQ(mutations_response_pb.mutations().size(), 1);
-  EXPECT_THAT(mutations_response_pb.mutations()[0].file_source(),
-              EqualsProto(kSingleFileSourceProgramPb));
-}
-
 constexpr char kExportPxL[] = R"pxl(import px
 otel_df = 'placeholder'
 df = px.DataFrame('http_events', start_time='-5m')

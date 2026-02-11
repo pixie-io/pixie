@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -28,18 +27,6 @@
 #include "src/common/base/base.h"
 #include "src/common/perf/perf.h"
 #include "src/table_store/table_store.h"
-
-namespace px::carnot::exec {
-// Forward declaration so enum_range can be specialized.
-enum class SinkResultsDestType : uint64_t;
-
-}  // namespace px::carot::exec
-
-template <>
-struct magic_enum::customize::enum_range<px::carnot::exec::SinkResultsDestType> {
-  static constexpr int min = 1000;
-  static constexpr int max = 11000;
-};
 
 namespace px {
 namespace carnot {
@@ -140,29 +127,10 @@ struct ExecNodeStats {
   absl::flat_hash_map<std::string, std::string> extra_info;
 };
 
-enum class SinkResultsDestType : uint64_t {
-  amqp_events = 10001, // TODO(ddelnano): This is set to not collide with the planpb::OperatorType enum
-  cql_events,
-  dns_events,
-  http_events,
-  kafka_events, // Won't work since table is suffixed with ".beta"
-  mongodb_events,
-  mux_events,
-  mysql_events,
-  nats_events, // Won't work since table is suffixed with ".beta"
-  pgsql_events,
-  redis_events,
-};
-
 /**
  * This is the base class for the execution nodes in Carnot.
  */
 class ExecNode {
-  const std::string kContextKey = "mutation_id";
-  const std::string kSinkResultsTableName = "sink_results";
-  const std::vector<std::string> sink_results_col_names = {"time_", "upid", "bytes_transferred",
-                                                           "destination", "stream_id"};
-
  public:
   ExecNode() = delete;
   virtual ~ExecNode() = default;
@@ -175,27 +143,9 @@ class ExecNode {
    * @return
    */
   Status Init(const plan::Operator& plan_node,
-                      const table_store::schema::RowDescriptor& output_descriptor,
-                      std::vector<table_store::schema::RowDescriptor> input_descriptors,
-                      bool collect_exec_stats = false) {
-    auto op_type = plan_node.op_type();
-    // TODO(ddelnano): Replace this with a template based compile time check
-    // to ensure that there can't be segfaults on the subsequent static_casts
-    if (op_type == planpb::MEMORY_SOURCE_OPERATOR || op_type == planpb::GRPC_SINK_OPERATOR ||
-        op_type == planpb::MEMORY_SINK_OPERATOR || op_type == planpb::OTEL_EXPORT_SINK_OPERATOR) {
-      const auto* sink_op = static_cast<const plan::SinkOperator*>(&plan_node);
-      context_ = sink_op->context();
-      auto op_type = plan_node.op_type();
-      destination_ = static_cast<uint64_t>(op_type);
-      if (op_type == planpb::MEMORY_SOURCE_OPERATOR) {
-        const auto* memory_source_op = static_cast<const plan::MemorySourceOperator*>(&plan_node);
-        auto table_name = memory_source_op->TableName();
-        auto protocol_events = magic_enum::enum_cast<SinkResultsDestType>(table_name);
-        if (protocol_events.has_value()) {
-          destination_ = static_cast<uint64_t>(protocol_events.value());
-        }
-      }
-    }
+              const table_store::schema::RowDescriptor& output_descriptor,
+              std::vector<table_store::schema::RowDescriptor> input_descriptors,
+              bool collect_exec_stats = false) {
     is_initialized_ = true;
     output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
     input_descriptors_ = input_descriptors;
@@ -210,9 +160,6 @@ class ExecNode {
    */
   Status Prepare(ExecState* exec_state) {
     DCHECK(is_initialized_);
-    if (context_.find(kContextKey) != context_.end()) {
-      SetUpStreamResultsTable(exec_state);
-    }
     return PrepareImpl(exec_state);
   }
 
@@ -264,7 +211,7 @@ class ExecNode {
    * @return The Status of consumption.
    */
   Status ConsumeNext(ExecState* exec_state, const table_store::schema::RowBatch& rb,
-                             size_t parent_index) {
+                     size_t parent_index) {
     DCHECK(is_initialized_);
     DCHECK(type() == ExecNodeType::kSinkNode || type() == ExecNodeType::kProcessingNode);
     if (rb.eos() && !rb.eow()) {
@@ -275,8 +222,6 @@ class ExecNode {
     stats_->ResumeTotalTimer();
     PX_RETURN_IF_ERROR(ConsumeNextImpl(exec_state, rb, parent_index));
     stats_->StopTotalTimer();
-    PX_RETURN_IF_ERROR(
-        RecordSinkResults(rb, exec_state->time_now(), exec_state->GetAgentUPID().value()));
     return Status::OK();
   }
 
@@ -337,8 +282,7 @@ class ExecNode {
    * @param rb The row batch to send.
    * @return Status of children execution.
    */
-  Status SendRowBatchToChildren(ExecState* exec_state,
-                                        const table_store::schema::RowBatch& rb) {
+  Status SendRowBatchToChildren(ExecState* exec_state, const table_store::schema::RowBatch& rb) {
     stats_->ResumeChildTimer();
     for (size_t i = 0; i < children_.size(); ++i) {
       PX_RETURN_IF_ERROR(children_[i]->ConsumeNext(exec_state, rb, parent_ids_for_children_[i]));
@@ -349,16 +293,10 @@ class ExecNode {
       DCHECK(!sent_eos_);
       sent_eos_ = true;
     }
-    PX_RETURN_IF_ERROR(
-        RecordSinkResults(rb, exec_state->time_now(), exec_state->GetAgentUPID().value()));
     return Status::OK();
   }
 
-  explicit ExecNode(ExecNodeType type)
-      : type_(type),
-        rel_({types::DataType::TIME64NS, types::DataType::UINT128, types::DataType::INT64,
-              types::DataType::INT64, types::DataType::STRING},
-             sink_results_col_names) {}
+  explicit ExecNode(ExecNodeType type) : type_(type) {}
 
   // Defines the protected implementations of the non-virtual interface functions
   // defined above.
@@ -383,43 +321,6 @@ class ExecNode {
   bool sent_eos_ = false;
 
  private:
-  void SetUpStreamResultsTable(ExecState* exec_state) {
-    auto sink_results = exec_state->table_store()->GetTable(kSinkResultsTableName);
-    if (sink_results != nullptr) {
-      table_ = sink_results;
-    } else {
-      auto table = table_store::HotColdTable::Create(kSinkResultsTableName, rel_);
-      exec_state->table_store()->AddTable(kSinkResultsTableName, table);
-      table_ = table.get();
-    }
-  }
-
-  Status RecordSinkResults(const table_store::schema::RowBatch& rb,
-                           const types::Time64NSValue time_now, const types::UInt128Value upid) {
-    if (table_ != nullptr && context_.find(kContextKey) != context_.end()) {
-      auto mutation_id = context_[kContextKey];
-      std::vector<types::Time64NSValue> col1_in1 = {time_now};
-      std::vector<types::UInt128Value> col2_in1 = {upid};
-      std::vector<types::Int64Value> col3_in1 = {rb.NumBytes()};
-      std::vector<types::Int64Value> col4_in1 = {destination_};
-      std::vector<types::StringValue> col5_in1 = {mutation_id};
-      auto rb_sink_stats =
-          table_store::schema::RowBatch(table_store::schema::RowDescriptor(rel_.col_types()), 1);
-      PX_RETURN_IF_ERROR(
-          rb_sink_stats.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-      PX_RETURN_IF_ERROR(
-          rb_sink_stats.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-      PX_RETURN_IF_ERROR(
-          rb_sink_stats.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-      PX_RETURN_IF_ERROR(
-          rb_sink_stats.AddColumn(types::ToArrow(col4_in1, arrow::default_memory_pool())));
-      PX_RETURN_IF_ERROR(
-          rb_sink_stats.AddColumn(types::ToArrow(col5_in1, arrow::default_memory_pool())));
-      PX_RETURN_IF_ERROR(table_->WriteRowBatch(rb_sink_stats));
-    }
-    return Status::OK();
-  }
-
   // The stats of this exec node.
   std::unique_ptr<ExecNodeStats> stats_;
   // Unowned reference to the children. Must remain valid for the duration of query.
@@ -433,16 +334,6 @@ class ExecNode {
   ExecNodeType type_;
   // Whether this node has been initialized.
   bool is_initialized_ = false;
-
-  // The context key, value pairs passed to the operator node.
-  // This is currently used to store the mutation_id.
-  std::map<std::string, std::string> context_;
-
-  // The operator type of the current node
-  uint64_t destination_;
-
-  table_store::Table* table_;
-  table_store::schema::Relation rel_;
 };
 
 /**

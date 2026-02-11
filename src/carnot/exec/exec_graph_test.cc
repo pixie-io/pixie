@@ -38,7 +38,6 @@
 #include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
-#include "src/common/testing/event/simulated_time_system.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
@@ -78,12 +77,6 @@ class BaseExecGraphTest : public ::testing::Test {
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
         MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-    auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-        std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-    auto metadata_state = std::make_shared<md::AgentMetadataState>(
-        "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-        time_system.get());
-    exec_state_->set_metadata_state(metadata_state);
   }
 
   std::unique_ptr<udf::Registry> func_registry_;
@@ -157,7 +150,7 @@ TEST_P(ExecGraphExecuteTest, execute) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -182,12 +175,6 @@ TEST_P(ExecGraphExecuteTest, execute) {
   auto exec_state_ = std::make_unique<ExecState>(
       func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -200,14 +187,11 @@ TEST_P(ExecGraphExecuteTest, execute) {
                   /* collect_exec_node_stats */ false, calls_to_generate);
 
   EXPECT_OK(e.Execute());
-  auto stats = e.GetStats();
-  EXPECT_EQ(stats.bytes_processed, 85);
-  EXPECT_EQ(stats.rows_processed, 5);
 
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
-  table_store::Cursor cursor(output_table);
+  table_store::Table::Cursor cursor(output_table);
   EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
       types::ToArrow(out_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
@@ -245,7 +229,7 @@ TEST_F(ExecGraphTest, execute_time) {
   table_store::schema::Relation rel(
       {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Time64NSValue> col1_in1 = {types::Time64NSValue(1), types::Time64NSValue(2),
@@ -272,12 +256,6 @@ TEST_F(ExecGraphTest, execute_time) {
   auto exec_state_ = std::make_unique<ExecState>(
       func_registry.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -294,7 +272,7 @@ TEST_F(ExecGraphTest, execute_time) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
-  table_store::Cursor cursor(output_table);
+  table_store::Table::Cursor cursor(output_table);
   EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
       types::ToArrow(out_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(cursor.GetNextRowBatch({0}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
@@ -320,7 +298,7 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -345,12 +323,6 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   auto exec_state_ = std::make_unique<ExecState>(
       func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -363,8 +335,8 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  table_store::Cursor cursor1(output_table1);
-  table_store::Cursor cursor2(output_table2);
+  table_store::Table::Cursor cursor1(output_table1);
+  table_store::Table::Cursor cursor2(output_table2);
 
   auto out_rb1 = cursor1.GetNextRowBatch(std::vector<int64_t>({0, 1, 2})).ConsumeValueOrDie();
   auto out_rb2 = cursor2.GetNextRowBatch(std::vector<int64_t>({0, 1, 2})).ConsumeValueOrDie();
@@ -394,7 +366,7 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -419,12 +391,6 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   auto exec_state_ = std::make_unique<ExecState>(
       func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -436,7 +402,7 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  table_store::Cursor cursor(output_table);
+  table_store::Table::Cursor cursor(output_table);
   auto out_rb = cursor.GetNextRowBatch(std::vector<int64_t>({0, 1, 2})).ConsumeValueOrDie();
   EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
@@ -461,7 +427,7 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -487,12 +453,6 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   auto exec_state_ = std::make_unique<ExecState>(
       func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -504,7 +464,7 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  table_store::Cursor cursor(output_table);
+  table_store::Table::Cursor cursor(output_table);
   auto out_rb = cursor.GetNextRowBatch({0, 1, 2}).ConsumeValueOrDie();
   EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
@@ -530,7 +490,7 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
+  auto table = Table::Create("test", rel);
 
   auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -556,12 +516,6 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   auto exec_state_ = std::make_unique<ExecState>(
       func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
 
   ExecutionGraph e;
   auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
@@ -572,177 +526,12 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   auto output_table_1 = exec_state_->table_store()->GetTable("output1");
   auto output_table_2 = exec_state_->table_store()->GetTable("output2");
   std::vector<types::Float64Value> out_in1 = {1.4, 6.2};
-  table_store::Cursor cursor1(output_table_1);
+  table_store::Table::Cursor cursor1(output_table_1);
   EXPECT_TRUE(cursor1.GetNextRowBatch({2}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
       types::ToArrow(out_in1, arrow::default_memory_pool())));
-  table_store::Cursor cursor2(output_table_2);
+  table_store::Table::Cursor cursor2(output_table_2);
   EXPECT_TRUE(cursor2.GetNextRowBatch({2}).ConsumeValueOrDie()->ColumnAt(0)->Equals(
       types::ToArrow(out_in1, arrow::default_memory_pool())));
-}
-
-TEST_F(ExecGraphTest, execute_with_timed_sink_node_no_prior_results_table) {
-  planpb::PlanFragment pf_pb;
-  ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kPlanWithOTelExport, &pf_pb));
-  std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
-  ASSERT_OK(plan_fragment_->Init(pf_pb));
-
-  auto plan_state = std::make_unique<plan::PlanState>(func_registry_.get());
-
-  auto schema = std::make_shared<table_store::schema::Schema>();
-  schema->AddRelation(
-      1, table_store::schema::Relation(
-             std::vector<types::DataType>(
-                 {types::DataType::STRING, types::DataType::BOOLEAN, types::DataType::FLOAT64}),
-             std::vector<std::string>({"a", "b", "c"})));
-
-  table_store::schema::Relation rel(
-      {types::DataType::STRING, types::DataType::BOOLEAN, types::DataType::FLOAT64},
-      {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
-
-  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
-  std::vector<types::StringValue> col1_in1 = {"service a", "service b", "service c"};
-  std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
-
-  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(table->WriteRowBatch(rb1));
-
-  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
-  std::vector<types::StringValue> col1_in2 = {"service a", "service b"};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
-  EXPECT_OK(table->WriteRowBatch(rb2));
-
-  auto table_store = std::make_shared<table_store::TableStore>();
-  table_store->AddTable("numbers", table);
-  auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
-      MockTraceStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
-
-  ExecutionGraph e;
-  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
-                  /* collect_exec_node_stats */ false);
-
-  EXPECT_OK(e.Execute());
-
-  auto output_table_1 = exec_state_->table_store()->GetTable("sink_results");
-  EXPECT_NE(output_table_1, nullptr);
-  std::vector<types::Int64Value> out1_in1 = {54};
-  std::vector<types::Int64Value> out1_in2 = {54};
-  std::vector<types::Int64Value> out1_in3 = {36};
-  std::vector<types::Int64Value> out2_in1 = {planpb::OperatorType::MEMORY_SOURCE_OPERATOR};
-  std::vector<types::Int64Value> out2_in2 = {planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR};
-  std::vector<types::Int64Value> out2_in3 = {planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR};
-  table_store::Cursor cursor1(output_table_1);
-  auto rb_out1 = cursor1.GetNextRowBatch({2, 3}).ConsumeValueOrDie();
-  EXPECT_TRUE(rb_out1->ColumnAt(0)->Equals(types::ToArrow(out1_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb_out1->ColumnAt(1)->Equals(types::ToArrow(out2_in1, arrow::default_memory_pool())));
-  auto rb_out2 = cursor1.GetNextRowBatch({2, 3}).ConsumeValueOrDie();
-  EXPECT_TRUE(rb_out2->ColumnAt(0)->Equals(types::ToArrow(out1_in2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb_out2->ColumnAt(1)->Equals(types::ToArrow(out2_in2, arrow::default_memory_pool())));
-  auto rb_out3 = cursor1.GetNextRowBatch({2, 3}).ConsumeValueOrDie();
-  EXPECT_TRUE(rb_out3->ColumnAt(0)->Equals(types::ToArrow(out1_in3, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb_out3->ColumnAt(1)->Equals(types::ToArrow(out2_in3, arrow::default_memory_pool())));
-}
-
-TEST_F(ExecGraphTest, execute_with_timed_sink_node_prior_results_table) {
-  planpb::PlanFragment pf_pb;
-  ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kPlanWithOTelExport, &pf_pb));
-  std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
-  ASSERT_OK(plan_fragment_->Init(pf_pb));
-
-  auto plan_state = std::make_unique<plan::PlanState>(func_registry_.get());
-
-  auto schema = std::make_shared<table_store::schema::Schema>();
-  schema->AddRelation(
-      1, table_store::schema::Relation(
-             std::vector<types::DataType>(
-                 {types::DataType::STRING, types::DataType::BOOLEAN, types::DataType::FLOAT64}),
-             std::vector<std::string>({"a", "b", "c"})));
-
-  table_store::schema::Relation rel(
-      {types::DataType::STRING, types::DataType::BOOLEAN, types::DataType::FLOAT64},
-      {"col1", "col2", "col3"});
-  auto table = table_store::HotColdTable::Create("test", rel);
-
-  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
-  std::vector<types::StringValue> col1_in1 = {"service a", "service b", "service c"};
-  std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
-
-  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(table->WriteRowBatch(rb1));
-
-  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
-  std::vector<types::StringValue> col1_in2 = {"service a", "service b"};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
-  EXPECT_OK(table->WriteRowBatch(rb2));
-
-  std::vector<std::string> sink_results_col_names = {"time_", "upid", "bytes_transferred", "destination",
-                                                     "stream_id"};
-  table_store::schema::Relation sink_results_rel(
-      {types::DataType::TIME64NS, types::DataType::UINT128, types::DataType::INT64, types::DataType::INT64, types::DataType::STRING},
-      sink_results_col_names);
-  auto sink_results_table = table_store::HotColdTable::Create("sink_results", sink_results_rel);
-
-  auto table_store = std::make_shared<table_store::TableStore>();
-  table_store->AddTable("numbers", table);
-  table_store->AddTable("sink_results", sink_results_table);
-  auto exec_state_ = std::make_unique<ExecState>(
-      func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
-      MockTraceStubGenerator, sole::uuid4(), nullptr);
-  auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-      std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-  auto metadata_state = std::make_shared<md::AgentMetadataState>(
-      "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-      time_system.get());
-  exec_state_->set_metadata_state(metadata_state);
-
-  ExecutionGraph e;
-  auto s = e.Init(schema.get(), plan_state.get(), exec_state_.get(), plan_fragment_.get(),
-                  /* collect_exec_node_stats */ false);
-
-  EXPECT_OK(e.Execute());
-
-  auto output_table_1 = exec_state_->table_store()->GetTable("sink_results");
-  EXPECT_NE(output_table_1, nullptr);
-  std::vector<types::Int64Value> out1_in1 = {54};
-  std::vector<types::Int64Value> out1_in2 = {54};
-  std::vector<types::Int64Value> out1_in3 = {36};
-  std::vector<types::Int64Value> out2_in1 = {planpb::OperatorType::MEMORY_SOURCE_OPERATOR};
-  std::vector<types::Int64Value> out2_in2 = {planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR};
-  std::vector<types::Int64Value> out2_in3 = {planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR};
-  table_store::Cursor cursor1(output_table_1);
-  auto rb_out1 = cursor1.GetNextRowBatch({2, 3}).ConsumeValueOrDie();
-  LOG(INFO) << rb_out1->DebugString();
-  EXPECT_TRUE(rb_out1->ColumnAt(0)->Equals(types::ToArrow(out1_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb_out1->ColumnAt(1)->Equals(types::ToArrow(out2_in1, arrow::default_memory_pool())));
-  auto rb_out2 = cursor1.GetNextRowBatch({2, 3}).ConsumeValueOrDie();
-  LOG(INFO) << rb_out2->DebugString();
-  EXPECT_TRUE(rb_out2->ColumnAt(0)->Equals(types::ToArrow(out1_in2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb_out2->ColumnAt(1)->Equals(types::ToArrow(out2_in2, arrow::default_memory_pool())));
-  auto rb_out3 = cursor1.GetNextRowBatch({2, 3}).ConsumeValueOrDie();
-  LOG(INFO) << rb_out3->DebugString();
-  EXPECT_TRUE(rb_out3->ColumnAt(0)->Equals(types::ToArrow(out1_in3, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb_out3->ColumnAt(1)->Equals(types::ToArrow(out2_in3, arrow::default_memory_pool())));
 }
 
 class YieldingExecGraphTest : public BaseExecGraphTest {
@@ -914,12 +703,6 @@ class GRPCExecGraphTest : public ::testing::Test {
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
         MockTraceStubGenerator, MockLogStubGenerator, sole::uuid4(), nullptr, grpc_router_.get());
-    auto time_system = std::make_unique<event::SimulatedTimeSystem>(
-        std::chrono::steady_clock::now(), std::chrono::system_clock::now());
-    auto metadata_state = std::make_shared<md::AgentMetadataState>(
-        "myhost", 1, 963, 0, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
-        time_system.get());
-    exec_state_->set_metadata_state(metadata_state);
   }
 
   void SetUpPlanFragment() {

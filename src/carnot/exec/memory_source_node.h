@@ -60,7 +60,7 @@ class MemorySourceNode : public SourceNode {
   // Whether this memory source will stream future results.
   bool streaming_ = false;
 
-  std::unique_ptr<table_store::Cursor> cursor_;
+  std::unique_ptr<Table::Cursor> cursor_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   table_store::Table* table_ = nullptr;

@@ -73,8 +73,7 @@ StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view
       api_(std::make_unique<px::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       table_store_(std::make_shared<table_store::TableStore>()),
-      metadata_grpc_server_(std::make_unique<services::metadata::LocalMetadataGRPCServer>(table_store_.get())),
-      func_context_(this, metadata_grpc_server_->StubGenerator(), /* mdtp_stub= */ nullptr,
+      func_context_(this, /* mds_stub= */ nullptr, /* mdtp_stub= */ nullptr,
                     /* cronscript_stub= */ nullptr, table_store_, [](grpc::ClientContext*) {}),
       stirling_(px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag())),
       results_sink_server_(std::make_unique<StandaloneGRPCResultSinkServer>()) {
@@ -104,16 +103,11 @@ StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view
                                        std::move(clients_config), std::move(server_config))
                 .ConsumeValueOrDie();
 
-  const std::string proc_pid_path = std::string("/proc/") + std::to_string(info_.pid);
-  PX_ASSIGN_OR_RETURN(auto start_time, system::GetPIDStartTimeTicks(proc_pid_path));
-
   mds_manager_ = std::make_unique<px::md::StandaloneAgentMetadataStateManager>(
-      info_.hostname, info_.asid, info_.pid, start_time, info_.agent_id, time_system_.get());
+      info_.hostname, info_.asid, info_.pid, info_.agent_id, time_system_.get());
 
   tracepoint_manager_ =
       std::make_unique<TracepointManager>(dispatcher_.get(), stirling_.get(), table_store_.get());
-  file_source_manager_ =
-      std::make_unique<FileSourceManager>(dispatcher_.get(), stirling_.get(), table_store_.get());
   // Force Metadata Update.
   ECHECK_OK(mds_manager_->PerformMetadataStateUpdate());
 }
@@ -153,9 +147,9 @@ Status StandalonePEMManager::Init() {
   stirling_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
 
-  vizier_grpc_server_ = std::make_unique<VizierGRPCServer>(
-      port_, carnot_.get(), results_sink_server_.get(), carnot_->GetEngineState(),
-      tracepoint_manager_.get(), file_source_manager_.get());
+  vizier_grpc_server_ =
+      std::make_unique<VizierGRPCServer>(port_, carnot_.get(), results_sink_server_.get(),
+                                         carnot_->GetEngineState(), tracepoint_manager_.get());
 
   return Status::OK();
 }
@@ -218,20 +212,20 @@ Status StandalonePEMManager::InitSchemas() {
       // Special case to set the max size of the http_events table differently from the other
       // tables. For now, the min cold batch size is set to 256kB to be consistent with previous
       // behaviour.
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, http_table_size, 256 * 1024);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       http_table_size, 256 * 1024);
     } else if (relation_info.name == "stirling_error") {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, stirling_error_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       stirling_error_table_size);
     } else if (relation_info.name == "probe_status") {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, probe_status_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       probe_status_table_size);
     } else if (relation_info.name == "proc_exit_events") {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, proc_exit_events_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       proc_exit_events_table_size);
     } else {
-      table_ptr = std::make_shared<table_store::HotColdTable>(
-          relation_info.name, relation_info.relation, other_table_size);
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       other_table_size);
     }
 
     table_store_->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);

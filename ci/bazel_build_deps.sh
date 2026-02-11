@@ -126,7 +126,7 @@ function compute_targets() {
       # any bazel targets and skip it otherwise.
       # This filtering ensures that rdeps doesn't fail.
       ret=0
-      bazel query --noshow_progress "$file" 1>/dev/null 2>/dev/null || ret=$?
+      bazel query --noshow_progress "$file" 1>/dev/null || ret=$?
       if [[ ret -eq 0 ]]; then
         changed_files+=("$file")
       fi
@@ -179,30 +179,30 @@ cc_bpf_tests="kind(cc_.*, ${bpf_tests})"
 
 
 # Clang:opt (includes non-cc targets: go targets, //src/ui/..., etc.)
-query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt 2>/dev/null
-query_compatible_targets "clang" "${tests} ${bpf_excludes}" > bazel_tests_clang_opt 2>/dev/null
+query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt
+query_compatible_targets "clang" "${tests} ${bpf_excludes}" > bazel_tests_clang_opt
 
 # Clang:dbg
-query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg 2>/dev/null
-query_compatible_targets "clang" "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg 2>/dev/null
+query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg
+query_compatible_targets "clang" "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg
 
 # GCC:opt
-query_compatible_targets "gcc" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt 2>/dev/null
-query_compatible_targets "gcc" "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt 2>/dev/null
+query_compatible_targets "gcc" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt
+query_compatible_targets "gcc" "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt
 
 # Sanitizer (Limit to C++ only).
 # TODO(james): technically we should set the configs to asan, msan, and tsan and produce different files for each.
-query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer 2>/dev/null
-query_compatible_targets "clang" "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer 2>/dev/null
+query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer
+query_compatible_targets "clang" "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer
 
 if [[ "${run_bpf_targets}" = "true" ]]; then
   # BPF.
-  query_compatible_targets "bpf" "${bpf_buildables}" > bazel_buildables_bpf 2>/dev/null
-  query_compatible_targets "bpf" "${bpf_tests}" > bazel_tests_bpf 2>/dev/null
+  query_compatible_targets "bpf" "${bpf_buildables}" > bazel_buildables_bpf
+  query_compatible_targets "bpf" "${bpf_tests}" > bazel_tests_bpf
 
   # BPF Sanitizer (C/C++ Only, excludes shell tests).
-  query_compatible_targets "bpf" "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer 2>/dev/null
-  query_compatible_targets "bpf" "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer 2>/dev/null
+  query_compatible_targets "bpf" "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer
+  query_compatible_targets "bpf" "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer
 else
   # BPF.
   cat /dev/null > bazel_buildables_bpf
@@ -214,9 +214,9 @@ else
 fi
 
 # Should we run clang-tidy?
-query_compatible_targets "clang" "${cc_buildables}" > bazel_buildables_clang_tidy 2>/dev/null
-query_compatible_targets "clang" "${cc_tests}" > bazel_tests_clang_tidy 2>/dev/null
+query_compatible_targets "clang" "${cc_buildables}" > bazel_buildables_clang_tidy
+query_compatible_targets "clang" "${cc_tests}" > bazel_tests_clang_tidy
 
 # Should we run golang race detection?
-query_compatible_targets "clang" "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race 2>/dev/null
-query_compatible_targets "clang" "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race 2>/dev/null
+query_compatible_targets "clang" "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race
+query_compatible_targets "clang" "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race

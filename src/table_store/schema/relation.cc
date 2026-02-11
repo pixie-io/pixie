@@ -38,11 +38,6 @@ Relation::Relation() = default;
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names)
     : Relation(col_types, col_names, ColDescArray(col_types.size(), "")) {}
 
-Relation::Relation(ColTypeArray col_types, ColNameArray col_names, std::optional<std::string> mutation_id)
-    : Relation(col_types, col_names, ColDescArray(col_types.size(), "")) {
-        mutation_id_ = mutation_id;
-    }
-
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc)
     : Relation(col_types, col_names, col_desc,
                ColSemanticTypeArray(col_types.size(), types::ST_NONE)) {}
@@ -166,9 +161,6 @@ std::string Relation::DebugString() const {
   for (size_t i = 0; i < col_types_.size(); ++i) {
     col_info_as_str.push_back(absl::StrCat(col_names_[i], ":", types::ToString(col_types_[i])));
   }
-  if (mutation_id_.has_value()) {
-    col_info_as_str.push_back(absl::Substitute("mutation_id:$0", mutation_id_.value()));
-  }
   return "[" + absl::StrJoin(col_info_as_str, ", ") + "]";
 }
 
@@ -181,9 +173,6 @@ Status Relation::ToProto(table_store::schemapb::Relation* relation_proto) const 
     col_pb->set_column_name(GetColumnName(col_idx));
     col_pb->set_column_semantic_type(GetColumnSemanticType(col_idx));
   }
-  if (mutation_id_.has_value()) {
-    relation_proto->set_mutation_id(mutation_id_.value());
-  }
   return Status::OK();
 }
 Status Relation::FromProto(const table_store::schemapb::Relation* relation_pb) {
@@ -194,9 +183,6 @@ Status Relation::FromProto(const table_store::schemapb::Relation* relation_pb) {
   for (int idx = 0; idx < relation_pb->columns_size(); ++idx) {
     auto column = relation_pb->columns(idx);
     AddColumn(column.column_type(), column.column_name(), column.column_semantic_type());
-  }
-  if (relation_pb->mutation_id().size() > 0) {
-    mutation_id_ = relation_pb->mutation_id();
   }
   return Status::OK();
 }

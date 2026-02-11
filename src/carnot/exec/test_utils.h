@@ -122,7 +122,7 @@ class CarnotTestUtils {
   static std::shared_ptr<table_store::Table> TestTable() {
     table_store::schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64},
                                       {"col1", "col2"});
-    auto table = table_store::HotColdTable::Create("test_table", rel);
+    auto table = table_store::Table::Create("test_table", rel);
 
     auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
@@ -143,7 +143,7 @@ class CarnotTestUtils {
 
   static std::shared_ptr<table_store::Table> TestDuration64Table() {
     table_store::schema::Relation rel({types::DataType::INT64}, {"col1"});
-    auto table = table_store::HotColdTable::Create("test_table", rel);
+    auto table = table_store::Table::Create("test_table", rel);
 
     auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -166,7 +166,7 @@ class CarnotTestUtils {
          types::DataType::INT64, types::DataType::STRING},
         {"time_", "col2", "col3", "num_groups", "string_groups"});
 
-    auto table = table_store::HotColdTable::Create("test_table", rel);
+    auto table = table_store::Table::Create("test_table", rel);
 
     for (const auto& pair : split_idx) {
       auto rb = RowBatch(RowDescriptor(rel.col_types()), pair.second - pair.first);
@@ -227,7 +227,7 @@ class CarnotTestUtils {
             "read_bytes",
             "write_bytes",
         });
-    auto table = table_store::HotColdTable::Create("process_table", rel);
+    auto table = table_store::Table::Create("process_table", rel);
     return table;
   }
 
@@ -248,7 +248,7 @@ class CarnotTestUtils {
             "req_path",      "req_body",      "req_body_size",  "resp_headers", "resp_status",
             "resp_message",  "resp_body",     "resp_body_size", "latency",
         });
-    auto table = table_store::HotColdTable::Create("http_events_table", rel);
+    auto table = table_store::Table::Create("http_events_table", rel);
     return table;
   }
 };

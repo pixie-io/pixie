@@ -25,7 +25,6 @@
 #include "src/carnot/funcs/builtins/ml_ops.h"
 #include "src/carnot/funcs/builtins/pii_ops.h"
 #include "src/carnot/funcs/builtins/pprof_ops.h"
-#include "src/carnot/funcs/builtins/pipeline_ops.h"
 #include "src/carnot/funcs/builtins/regex_ops.h"
 #include "src/carnot/funcs/builtins/request_path_ops.h"
 #include "src/carnot/funcs/builtins/sql_ops.h"
@@ -53,7 +52,6 @@ void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterPIIOpsOrDie(registry);
   RegisterURIOpsOrDie(registry);
   RegisterUtilOpsOrDie(registry);
-  RegisterPipelineOpsOrDie(registry);
   RegisterPProfOpsOrDie(registry);
 }
 

@@ -38,8 +38,6 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/controllers"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
 	mock_agent "px.dev/pixie/src/vizier/services/metadata/controllers/agent/mock"
-	"px.dev/pixie/src/vizier/services/metadata/controllers/file_source"
-	mock_file_source "px.dev/pixie/src/vizier/services/metadata/controllers/file_source/mock"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/testutils"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	mock_tracepoint "px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint/mock"
@@ -66,12 +64,11 @@ func assertSendMessageCalledWith(t *testing.T, expTopic string, expMsg messagesp
 	}
 }
 
-func setup(t *testing.T, sendMsgFn controllers.SendMessageFn) (*controllers.AgentTopicListener, *mock_agent.MockManager, *mock_tracepoint.MockStore, *mock_file_source.MockStore, func()) {
+func setup(t *testing.T, sendMsgFn controllers.SendMessageFn) (*controllers.AgentTopicListener, *mock_agent.MockManager, *mock_tracepoint.MockStore, func()) {
 	ctrl := gomock.NewController(t)
 
 	mockAgtMgr := mock_agent.NewMockManager(ctrl)
 	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
-	mockFileSourceStore := mock_file_source.NewMockStore(ctrl)
 
 	agentInfo := new(agentpb.Agent)
 	if err := proto.UnmarshalText(testutils.UnhealthyKelvinAgentInfo, agentInfo); err != nil {
@@ -85,16 +82,14 @@ func setup(t *testing.T, sendMsgFn controllers.SendMessageFn) (*controllers.Agen
 		Return([]*agentpb.Agent{agentInfo}, nil)
 
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
-	fsMgr := file_source.NewManager(mockFileSourceStore, mockAgtMgr, 5*time.Second)
-	atl, _ := controllers.NewAgentTopicListener(mockAgtMgr, tracepointMgr, fsMgr, sendMsgFn)
+	atl, _ := controllers.NewAgentTopicListener(mockAgtMgr, tracepointMgr, sendMsgFn)
 
 	cleanup := func() {
 		ctrl.Finish()
 		tracepointMgr.Close()
-		fsMgr.Close()
 	}
 
-	return atl, mockAgtMgr, mockTracepointStore, mockFileSourceStore, cleanup
+	return atl, mockAgtMgr, mockTracepointStore, cleanup
 }
 
 func TestAgentRegisterRequest(t *testing.T) {
@@ -114,8 +109,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	wg.Add(2)
-	atl, mockAgtMgr, mockTracepointStore, mockFileSourceStore, cleanup := setup(t, sendMsg)
+	wg.Add(1)
+	atl, mockAgtMgr, mockTracepointStore, cleanup := setup(t, sendMsg)
 	defer cleanup()
 
 	agentInfo := &agentpb.Agent{
@@ -140,14 +135,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 		EXPECT().
 		GetTracepoints().
 		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
-			wg.Done()
-			return nil, nil
-		})
-
-	mockFileSourceStore.
-		EXPECT().
-		GetFileSources().
-		DoAndReturn(func() ([]*storepb.FileSourceInfo, error) {
 			wg.Done()
 			return nil, nil
 		})
@@ -200,8 +187,8 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	wg.Add(2)
-	atl, mockAgtMgr, mockTracepointStore, mockFileSourceStore, cleanup := setup(t, sendMsg)
+	wg.Add(1)
+	atl, mockAgtMgr, mockTracepointStore, cleanup := setup(t, sendMsg)
 	defer cleanup()
 
 	agentInfo := &agentpb.Agent{
@@ -226,14 +213,6 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		EXPECT().
 		GetTracepoints().
 		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
-			wg.Done()
-			return nil, nil
-		})
-
-	mockFileSourceStore.
-		EXPECT().
-		GetFileSources().
-		DoAndReturn(func() ([]*storepb.FileSourceInfo, error) {
 			wg.Done()
 			return nil, nil
 		})
@@ -283,8 +262,8 @@ func TestAgentReRegisterRequest(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	wg.Add(2)
-	atl, mockAgtMgr, mockTracepointStore, mockFileSourceStore, cleanup := setup(t, sendMsg)
+	wg.Add(1)
+	atl, mockAgtMgr, mockTracepointStore, cleanup := setup(t, sendMsg)
 	defer cleanup()
 
 	agentInfo := &agentpb.Agent{
@@ -310,14 +289,6 @@ func TestAgentReRegisterRequest(t *testing.T) {
 		EXPECT().
 		GetTracepoints().
 		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
-			wg.Done()
-			return nil, nil
-		})
-
-	mockFileSourceStore.
-		EXPECT().
-		GetFileSources().
-		DoAndReturn(func() ([]*storepb.FileSourceInfo, error) {
 			wg.Done()
 			return nil, nil
 		})
@@ -355,7 +326,7 @@ func TestAgentReRegisterRequest(t *testing.T) {
 
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
+	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
 	req := new(messagespb.VizierMessage)
@@ -373,7 +344,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 
 func TestAgentCreateFailed(t *testing.T) {
 	var wg sync.WaitGroup
-	atl, mockAgtMgr, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
+	atl, mockAgtMgr, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
 	req := new(messagespb.VizierMessage)
@@ -427,7 +398,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
 		msg := messagespb.VizierMessage{}
 		if err := proto.Unmarshal(b, &msg); err != nil {
 			t.Fatal("Cannot Unmarshal protobuf.")
@@ -503,7 +474,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set up mock.
-	atl, mockAgtMgr, _, _, cleanup := setup(t, sendMsg)
+	atl, mockAgtMgr, _, cleanup := setup(t, sendMsg)
 	defer cleanup()
 
 	var wg sync.WaitGroup
@@ -527,7 +498,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 
 func TestEmptyMessage(t *testing.T) {
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
+	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 	req := new(messagespb.VizierMessage)
 	reqPb, err := req.Marshal()
@@ -541,7 +512,7 @@ func TestEmptyMessage(t *testing.T) {
 
 func TestUnhandledMessage(t *testing.T) {
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
+	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
 	req := new(messagespb.VizierMessage)
@@ -559,7 +530,7 @@ func TestUnhandledMessage(t *testing.T) {
 
 func TestAgentTracepointInfoUpdate(t *testing.T) {
 	// Set up mock.
-	atl, _, mockTracepointStore, _, cleanup := setup(t, assertSendMessageUncalled(t))
+	atl, _, mockTracepointStore, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
 	agentID := uuid.Must(uuid.NewV4())
@@ -596,45 +567,6 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestAgentFileSourceInfoUpdate(t *testing.T) {
-	// Set up mock.
-	atl, _, _, mockFileSourceStore, cleanup := setup(t, assertSendMessageUncalled(t))
-	defer cleanup()
-
-	agentID := uuid.Must(uuid.NewV4())
-	tpID := uuid.Must(uuid.NewV4())
-
-	mockFileSourceStore.
-		EXPECT().
-		UpdateFileSourceState(&storepb.AgentFileSourceStatus{
-			ID:      utils.ProtoFromUUID(tpID),
-			AgentID: utils.ProtoFromUUID(agentID),
-			State:   statuspb.RUNNING_STATE,
-		}).
-		Return(nil)
-
-	req := &messagespb.VizierMessage{
-		Msg: &messagespb.VizierMessage_FileSourceMessage{
-			FileSourceMessage: &messagespb.FileSourceMessage{
-				Msg: &messagespb.FileSourceMessage_FileSourceInfoUpdate{
-					FileSourceInfoUpdate: &messagespb.FileSourceInfoUpdate{
-						ID:      utils.ProtoFromUUID(tpID),
-						AgentID: utils.ProtoFromUUID(agentID),
-						State:   statuspb.RUNNING_STATE,
-					},
-				},
-			},
-		},
-	}
-	reqPb, err := req.Marshal()
-	require.NoError(t, err)
-
-	msg := nats.Msg{}
-	msg.Data = reqPb
-	err = atl.HandleMessage(&msg)
-	require.NoError(t, err)
-}
-
 func TestAgentStop(t *testing.T) {
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	require.NoError(t, err)
@@ -649,7 +581,7 @@ func TestAgentStop(t *testing.T) {
 		})
 
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, sendMsg)
+	atl, _, _, cleanup := setup(t, sendMsg)
 	defer cleanup()
 
 	atl.StopAgent(u)
