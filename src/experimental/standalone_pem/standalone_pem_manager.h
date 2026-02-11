@@ -31,6 +31,7 @@
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/services/agent/shared/base/base_manager.h"
 #include "src/vizier/services/agent/shared/base/info.h"
+#include "src/vizier/services/metadata/local/local_metadata_service.h"
 
 namespace px {
 namespace vizier {
@@ -71,6 +72,9 @@ class StandalonePEMManager : public BaseManager {
   std::atomic<bool> running_ = false;
 
   std::shared_ptr<table_store::TableStore> table_store_;
+
+  // Metadata gRPC server must be initialized before func_context_
+  std::unique_ptr<services::metadata::LocalMetadataGRPCServer> metadata_grpc_server_;
 
   // Factory context for vizier functions.
   funcs::VizierFuncFactoryContext func_context_;

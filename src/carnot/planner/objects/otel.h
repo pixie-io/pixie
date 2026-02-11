@@ -313,6 +313,30 @@ class ClickHouseRows : public QLObject {
   std::string table_name_;
 };
 
+class ClickHouseRows : public QLObject {
+ public:
+  static constexpr TypeDescriptor ClickHouseRowsType = {
+      /* name */ "ClickHouseRows",
+      /* type */ QLObjectType::kClickHouseRows,
+  };
+
+  static StatusOr<std::shared_ptr<ClickHouseRows>> Create(
+      ASTVisitor* ast_visitor, const std::string& table_name);
+
+  static bool IsClickHouseRows(const QLObjectPtr& obj) {
+    return obj->type() == ClickHouseRowsType.type();
+  }
+
+  const std::string& table_name() const { return table_name_; }
+
+ protected:
+  ClickHouseRows(ASTVisitor* ast_visitor, std::string table_name)
+      : QLObject(ClickHouseRowsType, ast_visitor), table_name_(std::move(table_name)) {}
+
+ private:
+  std::string table_name_;
+};
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

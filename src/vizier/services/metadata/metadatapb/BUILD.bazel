@@ -19,7 +19,11 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "service_pl_proto",
     srcs = ["service.proto"],
-    visibility = ["//src/vizier:__subpackages__"],
+    visibility = [
+        "//src/carnot:__subpackages__",
+        "//src/experimental:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_proto",
@@ -37,7 +41,11 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "service_pl_cc_proto",
     proto = ":service_pl_proto",
-    visibility = ["//src/vizier:__subpackages__"],
+    visibility = [
+        "//src/carnot:__subpackages__",
+        "//src/experimental:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_cc_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",

@@ -27,6 +27,7 @@
 #include "src/shared/schema/utils.h"
 #include "src/table_store/table_store.h"
 #include "src/vizier/funcs/funcs.h"
+#include "src/vizier/services/metadata/local/local_metadata_service.h"
 
 DEFINE_int32(
     table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
