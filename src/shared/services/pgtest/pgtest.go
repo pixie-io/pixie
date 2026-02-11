@@ -20,6 +20,7 @@ package pgtest
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
@@ -69,8 +70,8 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("Failed to run docker pool: %w", err)
 	}
-	// Set a 5 minute expiration on resources.
-	err = resource.Expire(300)
+	// Set a 15 minute expiration on resources (extended for debugging).
+	err = resource.Expire(900)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,6 +86,7 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 	viper.Set("postgres_username", "postgres")
 	viper.Set("postgres_password", "secret")
 
+	pool.MaxWait = 10 * time.Minute
 	if err = pool.Retry(func() error {
 		log.Info("trying to connect")
 		db = pg.MustCreateDefaultPostgresDB()
