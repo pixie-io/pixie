@@ -18,7 +18,7 @@ load("//bazel:pl_build_system.bzl", "pl_go_image")
 
 pl_go_image(
     name = "adaptive_export_image",
-    binary = ":adaptive_export",
+    binary = "//src/vizier/services/adaptive_export/cmd",
     visibility = [
         "//k8s:__subpackages__",
         "//src/vizier:__subpackages__",

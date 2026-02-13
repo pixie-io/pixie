@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@px//bazel:pl_build_system.bzl", "pl_go_binary")
+
+go_library(
+    name = "cmd_lib",
+    srcs = ["main.go"],
+    importpath = "px.dev/pixie/src/vizier/services/adaptive_export/cmd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/api/go/pxapi",
+        "//src/vizier/services/adaptive_export/internal/config",
+        "//src/vizier/services/adaptive_export/internal/pixie",
+        "//src/vizier/services/adaptive_export/internal/pxl",
+        "//src/vizier/services/adaptive_export/internal/script",
+        "@com_github_sirupsen_logrus//:logrus",
+    ],
+)
+
+pl_go_binary(
+    name = "cmd",
+    embed = [":cmd_lib"],
+    visibility = ["//visibility:public"],
+)
