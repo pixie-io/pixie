@@ -19,7 +19,10 @@
 package pgtest
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"regexp"
 	"time"
 
 	"github.com/golang-migrate/migrate"
@@ -33,6 +36,27 @@ import (
 
 	"px.dev/pixie/src/shared/services/pg"
 )
+
+// selfContainerID returns the current Docker container ID by parsing
+// /proc/self/mountinfo. Docker bind-mounts /etc/hostname from
+// /var/lib/docker/containers/<id>/hostname, exposing the container ID.
+// Returns empty string if not running inside a Docker container.
+func selfContainerID() string {
+	f, err := os.Open("/proc/self/mountinfo")
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	re := regexp.MustCompile(`/containers/([a-f0-9]{64})/hostname`)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		if m := re.FindStringSubmatch(scanner.Text()); m != nil {
+			return m[1]
+		}
+	}
+	return ""
+}
 
 // SetupTestDB sets up a test database instance and applies migrations.
 func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
@@ -76,12 +100,47 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 		return nil, nil, err
 	}
 
-	viper.Set("postgres_port", resource.GetPort("5432/tcp"))
-	hostname := resource.Container.NetworkSettings.Gateway
-	if hostname == "" {
-		hostname = "localhost"
+	// When running inside a container (e.g. CI), the postgres container is on
+	// a different Docker network and we can't reach it via host port mapping.
+	// Detect this and connect postgres to our network instead.
+	pgHost := resource.Container.NetworkSettings.Gateway
+	pgPort := resource.GetPort("5432/tcp")
+	selfID := selfContainerID()
+	log.Infof("selfContainerID: %q", selfID)
+	if selfID != "" {
+		selfContainer, err := pool.Client.InspectContainer(selfID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to inspect self container %s: %w", selfID, err)
+		}
+		for netName, net := range selfContainer.NetworkSettings.Networks {
+			if netName == "host" {
+				continue
+			}
+			err := pool.Client.ConnectNetwork(net.NetworkID, docker.NetworkConnectionOptions{
+				Container: resource.Container.ID,
+			})
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to connect postgres to network %s: %w", netName, err)
+			}
+			// Re-inspect to get the postgres container's IP on our network.
+			updated, err := pool.Client.InspectContainer(resource.Container.ID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to re-inspect postgres container: %w", err)
+			}
+			resource.Container = updated
+			if pgNet, ok := updated.NetworkSettings.Networks[netName]; ok {
+				pgHost = pgNet.IPAddress
+				pgPort = "5432"
+				log.Infof("pgHost set to %s:%s via network %s", pgHost, pgPort, netName)
+			}
+			break
+		}
 	}
-	viper.Set("postgres_hostname", hostname)
+	if pgHost == "" {
+		pgHost = "localhost"
+	}
+	viper.Set("postgres_port", pgPort)
+	viper.Set("postgres_hostname", pgHost)
 	viper.Set("postgres_db", dbName)
 	viper.Set("postgres_username", "postgres")
 	viper.Set("postgres_password", "secret")
