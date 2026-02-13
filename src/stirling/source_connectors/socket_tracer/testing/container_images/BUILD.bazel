@@ -20,8 +20,8 @@ load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_librar
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 
 package(default_visibility = [
-    "//src/stirling:__subpackages__",
     "//src/carnot:__subpackages__",
+    "//src/stirling:__subpackages__",
 ])
 
 pl_cc_test_library(
@@ -424,9 +424,9 @@ pl_cc_test_library(
 # ClickHouse configuration layer for console logging
 container_layer(
     name = "clickhouse_config_layer",
+    directory = "/etc/clickhouse-server/config.d",
     files = ["clickhouse_logging_config.xml"],
     mode = "0644",
-    directory = "/etc/clickhouse-server/config.d",
 )
 
 container_image(

@@ -17,8 +17,8 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_bpf_test", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = [
-    "//src/stirling:__subpackages__",
     "//src/carnot:__subpackages__",
+    "//src/stirling:__subpackages__",
 ])
 
 pl_cc_library(
