@@ -37,23 +37,30 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/http_table.h"
 #include "src/table_store/table_store.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
-#include "src/stirling/source_connectors/socket_tracer/http_table.h"
 
 // Example clickhouse test usage:
 // The records inserted into clickhouse exist between -10m and -5m
-// bazel run -c dbg  src/carnot:carnot_executable --  --vmodule=clickhouse_source_node=1 --use_clickhouse=true     --query="import px;df = px.DataFrame('http_events', clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m', end_time='-9m'); px.display(df)"     --output_file=$(pwd)/output.csv
+// bazel run -c dbg  src/carnot:carnot_executable --  --vmodule=clickhouse_source_node=1
+// --use_clickhouse=true     --query="import px;df = px.DataFrame('http_events',
+// clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m',
+// end_time='-9m'); px.display(df)"     --output_file=$(pwd)/output.csv
 //
 //
 // Test that verifies bug with Map operators isn't introduced
-//  bazel run -c dbg  src/carnot:carnot_executable --  -v=1 --vmodule=clickhouse_source_node=1 --use_clickhouse=true     --query="import px;df = px.DataFrame('http_events', clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m', end_time='-9m'); df.time_ = df.event_time; df = df[['time_', 'req_path']]; px.display(df)"     --output_file=$(pwd)/output.csv
+//  bazel run -c dbg  src/carnot:carnot_executable --  -v=1 --vmodule=clickhouse_source_node=1
+//  --use_clickhouse=true     --query="import px;df = px.DataFrame('http_events',
+//  clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m',
+//  end_time='-9m'); df.time_ = df.event_time; df = df[['time_', 'req_path']]; px.display(df)"
+//  --output_file=$(pwd)/output.csv
 //
 //
 // Testing existing ClickHouse table (kubescape_stix) table population and query:
-// docker run -p 9000:9000 --network=host --env=CLICKHOUSE_PASSWORD=test_password clickhouse/clickhouse-server:25.7-alpine
-// CREATE TABLE IF NOT EXISTS default.kubescape_stix (
+// docker run -p 9000:9000 --network=host --env=CLICKHOUSE_PASSWORD=test_password
+// clickhouse/clickhouse-server:25.7-alpine CREATE TABLE IF NOT EXISTS default.kubescape_stix (
 //    timestamp String,
 //    pod_name String,
 //    namespace String,
@@ -61,11 +68,13 @@
 //    hostname String,
 //    event_time DateTime64(3)
 //) ENGINE = MergeTree()
-//PARTITION BY toYYYYMM(event_time)
-//ORDER BY (hostname, event_time);
+// PARTITION BY toYYYYMM(event_time)
+// ORDER BY (hostname, event_time);
 
-// bazel run -c dbg  src/carnot:carnot_executable --  --vmodule=clickhouse_source_node=1 --use_clickhouse=true --start_clickhouse=false --query="import px;df = px.DataFrame('kubescape_stix', clickhouse_dsn='default:test_password@localhost:9000/default', start_time='-10m'); px.display(df)"     --output_file=$(pwd)/output.csv
-
+// bazel run -c dbg  src/carnot:carnot_executable --  --vmodule=clickhouse_source_node=1
+// --use_clickhouse=true --start_clickhouse=false --query="import px;df =
+// px.DataFrame('kubescape_stix', clickhouse_dsn='default:test_password@localhost:9000/default',
+// start_time='-10m'); px.display(df)"     --output_file=$(pwd)/output.csv
 
 DEFINE_string(input_file, gflags::StringFromEnv("INPUT_FILE", ""),
               "The csv containing data to run the query on.");
@@ -314,7 +323,8 @@ void PopulateHttpEventsTable(clickhouse::Client* client) {
     gethostname(current_hostname, sizeof(current_hostname));
     std::string hostname_str(current_hostname);
 
-    // Insert sample data matching the stirling HTTP table schema (upid as String with high:low format)
+    // Insert sample data matching the stirling HTTP table schema (upid as String with high:low
+    // format)
     auto time_col = std::make_shared<clickhouse::ColumnDateTime64>(9);
     auto upid_col = std::make_shared<clickhouse::ColumnString>();
     auto remote_addr_col = std::make_shared<clickhouse::ColumnString>();
@@ -485,8 +495,10 @@ void PopulateKubescapeStixTable(clickhouse::Client* client) {
     std::time_t now = std::time(nullptr);
 
     // Add 5 sample records with different pods and namespaces
-    std::vector<std::string> pod_names = {"web-pod-1", "api-pod-2", "db-pod-3", "cache-pod-4", "worker-pod-5"};
-    std::vector<std::string> namespaces = {"production", "staging", "development", "production", "staging"};
+    std::vector<std::string> pod_names = {"web-pod-1", "api-pod-2", "db-pod-3", "cache-pod-4",
+                                          "worker-pod-5"};
+    std::vector<std::string> namespaces = {"production", "staging", "development", "production",
+                                           "staging"};
 
     for (int i = 0; i < 5; ++i) {
       // Timestamp as ISO 8601 string
@@ -543,7 +555,6 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<px::table_store::Table> table;
 
   if (use_clickhouse) {
-
     if (FLAGS_start_clickhouse) {
       LOG(INFO) << "Starting ClickHouse container...";
       clickhouse_server =
@@ -583,10 +594,9 @@ int main(int argc, char* argv[]) {
   px::vizier::funcs::VizierFuncFactoryContext func_context(
       nullptr,  // agent_manager
       nullptr,
-      nullptr,  // mdtp_stub
-      nullptr,  // cronscript_stub
-      table_store,
-      [](grpc::ClientContext*) {}  // add_grpc_auth
+      nullptr,                                  // mdtp_stub
+      nullptr,                                  // cronscript_stub
+      table_store, [](grpc::ClientContext*) {}  // add_grpc_auth
   );
 
   auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
@@ -608,7 +618,8 @@ int main(int argc, char* argv[]) {
                     .ConsumeValueOrDie();
 
   if (use_clickhouse) {
-    // Create http_events table schema in table_store using the actual stirling HTTP table definition
+    // Create http_events table schema in table_store using the actual stirling HTTP table
+    // definition
     std::vector<px::types::DataType> types;
     std::vector<std::string> names;
 
@@ -628,11 +639,13 @@ int main(int argc, char* argv[]) {
     // Log the schema for debugging
     LOG(INFO) << "http_events table schema has " << names.size() << " columns:";
     for (size_t i = 0; i < names.size(); ++i) {
-      LOG(INFO) << "  Column[" << i << "]: " << names[i] << " (type=" << static_cast<int>(types[i]) << ")";
+      LOG(INFO) << "  Column[" << i << "]: " << names[i] << " (type=" << static_cast<int>(types[i])
+                << ")";
     }
 
     auto schema_query = "import px; px.display(px.CreateClickHouseSchemas())";
-    auto schema_query_status = carnot->ExecuteQuery(schema_query, sole::uuid4(), px::CurrentTimeNS());
+    auto schema_query_status =
+        carnot->ExecuteQuery(schema_query, sole::uuid4(), px::CurrentTimeNS());
     if (!schema_query_status.ok()) {
       LOG(FATAL) << absl::Substitute("Schema query failed to execute: $0",
                                      schema_query_status.msg());
