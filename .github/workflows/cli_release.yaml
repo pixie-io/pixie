@@ -17,6 +17,9 @@ jobs:
     name: Build Release
     runs-on: oracle-vm-16cpu-64gb-x86-64
     needs: get-dev-image
+    permissions:
+      contents: read
+      packages: write
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     env:
@@ -38,6 +41,12 @@ jobs:
         # With some kernel configs (eg. COS), podman only works with legacy iptables.
         update-alternatives --set iptables /usr/sbin/iptables-legacy
         update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
     - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
