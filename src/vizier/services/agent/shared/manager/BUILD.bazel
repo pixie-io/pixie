@@ -86,6 +86,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "heartbeat_test",
+    size = "medium",
     srcs = ["heartbeat_test.cc"],
     deps = [
         ":cc_library",
@@ -118,6 +119,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "registration_test",
+    size = "medium",
     srcs = ["registration_test.cc"],
     deps = [
         ":cc_library",
