@@ -334,7 +334,7 @@ pl_cc_bpf_test(
 
 pl_cc_bpf_test(
     name = "http2_trace_bpf_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["http2_trace_bpf_test.cc"],
     flaky = True,
     tags = [
