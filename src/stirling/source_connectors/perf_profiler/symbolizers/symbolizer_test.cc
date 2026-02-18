@@ -114,9 +114,17 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
   const uint64_t start_time_ns = 0;
   const struct upid_t child_upid = {{child_pid}, start_time_ns};
 
+  // Wait for the fake Java process to create the symbol file before calling GetSymbolizerFn,
+  // so that the symbolizer finds the pre-existing file rather than attempting an agent attach.
+  const std::filesystem::path symbol_file_path = java::StirlingSymbolFilePath(child_upid);
+  testing::Timeout symbol_file_timeout(std::chrono::seconds{30});
+  while (!fs::Exists(symbol_file_path) && !symbol_file_timeout.TimedOut()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+  }
+  ASSERT_TRUE(fs::Exists(symbol_file_path)) << "Symbol file was not created in time.";
+
   symbolizer->IterationPreTick();
   symbolizer->GetSymbolizerFn(child_upid);
-  std::this_thread::sleep_for(std::chrono::milliseconds{500});
 
   ASSERT_TRUE(symbolizer->Uncacheable(child_upid)) << "Should have found symbol file by now.";
   auto symbolize = symbolizer->GetSymbolizerFn(child_upid);
@@ -154,12 +162,6 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
 
 // Expect that Java symbolization agents will not be injected after disabling.
 TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
-  if (std::getenv("TESTING_UNDER_QEMU") != nullptr) {
-    // TODO(pixie-io/stirling): This test fails under qemu, likely due to timing issues.
-    // We should remove the sleep(s) and instead wait for certain conditions to occur
-    // (with appropriate timeouts)s.
-    GTEST_SKIP() << "Skipping this test under qemu";
-  }
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
@@ -182,8 +184,11 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
 
   symbolizer->IterationPreTick();
   symbolizer->GetSymbolizerFn(child_upid_0);
-  std::this_thread::sleep_for(std::chrono::milliseconds{500});
 
+  testing::Timeout t0(std::chrono::seconds{30});
+  while (!symbolizer->Uncacheable(child_upid_0) && !t0.TimedOut()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+  }
   ASSERT_TRUE(symbolizer->Uncacheable(child_upid_0)) << "Should have found symbol file by now.";
   const auto artifacts_path_0 = java::AgentArtifactsPath(child_upid_0);
   EXPECT_TRUE(fs::Exists(artifacts_path_0));
@@ -333,13 +338,14 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
   // will not have a cached symbolization function for this upid.
   symbolizer->GetSymbolizerFn(child_upid);
 
-  // Give the attach process some time (more than enough time) to complete.
-  std::this_thread::sleep_for(std::chrono::milliseconds{500});
-
-  // Java symbols are considered uncacheable becasue the JVM is free to delete them
-  // and recompile them to a different location. We can infer successful JVMTI symbolization
-  // agent attach by the symbolizer reporting that the symbols are indeed uncacheable.
-  // Succinctly, this test expects JVMTI attach success because tmpfs had enough space.
+  // Wait for the attach process to complete. Java symbols are considered uncacheable because the
+  // JVM is free to delete them and recompile them to a different location. We can infer successful
+  // JVMTI symbolization agent attach by the symbolizer reporting that the symbols are indeed
+  // uncacheable. This test expects JVMTI attach success because tmpfs had enough space.
+  testing::Timeout t(std::chrono::seconds{30});
+  while (!symbolizer->Uncacheable(child_upid) && !t.TimedOut()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+  }
   ASSERT_TRUE(symbolizer->Uncacheable(child_upid)) << "Symbolizer did not attach.";
 }
 
