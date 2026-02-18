@@ -85,6 +85,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "data_stream_test",
+    timeout = "moderate",
     srcs = ["data_stream_test.cc"],
     deps = [
         ":cc_library",
