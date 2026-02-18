@@ -312,7 +312,7 @@ pl_cc_test(
     ],
     tags = [
         "exclusive",
-        "requires_docker",
+        "requires_bpf",
     ],
     deps = [
         ":cc_library",
@@ -333,7 +333,7 @@ pl_cc_test(
     ],
     tags = [
         "exclusive",
-        "requires_docker",
+        "requires_bpf",
     ],
     deps = [
         ":cc_library",

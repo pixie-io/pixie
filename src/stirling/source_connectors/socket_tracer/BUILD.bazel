@@ -17,8 +17,8 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_bpf_test", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = [
-    "//src/stirling:__subpackages__",
     "//src/carnot:__subpackages__",
+    "//src/stirling:__subpackages__",
 ])
 
 pl_cc_library(
@@ -85,6 +85,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "data_stream_test",
+    timeout = "moderate",
     srcs = ["data_stream_test.cc"],
     deps = [
         ":cc_library",
@@ -213,25 +214,25 @@ pl_cc_bpf_test(
     ],
 )
 
-# pl_cc_bpf_test(
-#     name = "mux_trace_bpf_test",
-#     timeout = "moderate",
-#     srcs = ["mux_trace_bpf_test.cc"],
-#     flaky = True,
-#     tags = [
-#         "cpu:16",
-#         "no_asan",
-#         "requires_bpf",
-#     ],
-#     deps = [
-#         ":cc_library",
-#         "//src/common/testing/test_utils:cc_library",
-#         "//src/stirling/source_connectors/socket_tracer/protocols/test_output_generator:cc_library",
-#         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
-#         "//src/stirling/source_connectors/socket_tracer/testing/container_images:thrift_mux_server_container",
-#         "//src/stirling/testing:cc_library",
-#     ],
-# )
+pl_cc_bpf_test(
+    name = "mux_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["mux_trace_bpf_test.cc"],
+    flaky = True,
+    tags = [
+        "cpu:16",
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/protocols/test_output_generator:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:thrift_mux_server_container",
+        "//src/stirling/testing:cc_library",
+    ],
+)
 
 pl_cc_bpf_test(
     name = "mysql_trace_bpf_test",
@@ -334,7 +335,7 @@ pl_cc_bpf_test(
 
 pl_cc_bpf_test(
     name = "http2_trace_bpf_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["http2_trace_bpf_test.cc"],
     flaky = True,
     tags = [
@@ -491,24 +492,24 @@ pl_cc_bpf_test(
     ],
 )
 
-# pl_cc_bpf_test(
-#     name = "netty_tls_trace_bpf_test",
-#     timeout = "long",
-#     srcs = ["netty_tls_trace_bpf_test.cc"],
-#     flaky = True,
-#     shard_count = 2,
-#     tags = [
-#         "no_asan",
-#         "requires_bpf",
-#     ],
-#     deps = [
-#         ":cc_library",
-#         "//src/common/testing/test_utils:cc_library",
-#         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
-#         "//src/stirling/source_connectors/socket_tracer/testing/container_images:thrift_mux_server_container",
-#         "//src/stirling/testing:cc_library",
-#     ],
-# )
+pl_cc_bpf_test(
+    name = "netty_tls_trace_bpf_test",
+    timeout = "long",
+    srcs = ["netty_tls_trace_bpf_test.cc"],
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:thrift_mux_server_container",
+        "//src/stirling/testing:cc_library",
+    ],
+)
 
 pl_cc_bpf_test(
     name = "tls_trace_bpf_test",

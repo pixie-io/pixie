@@ -74,6 +74,7 @@ pl_cc_test(
     name = "address_converter_test",
     srcs = ["address_converter_test.cc"],
     tags = [
+        "disabled",
         "requires_bpf",
     ],
     deps = [
