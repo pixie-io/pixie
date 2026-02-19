@@ -26,7 +26,7 @@
 
 #include <absl/strings/str_cat.h>
 #include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/carnot/dag/dag.h"
 #include "src/carnot/planpb/plan.pb.h"

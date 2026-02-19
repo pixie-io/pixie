@@ -180,7 +180,7 @@ class StandaloneResultSinkServer final : public carnotpb::ResultSinkService::Ser
   }
 
   absl::flat_hash_map<sole::uuid, ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>*>
-      consumer_map_ GUARDED_BY(id_to_query_consumer_map_lock_);
+      consumer_map_ ABSL_GUARDED_BY(id_to_query_consumer_map_lock_);
   mutable absl::base_internal::SpinLock id_to_query_consumer_map_lock_;
 };
 

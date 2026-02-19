@@ -18,6 +18,7 @@
 
 #include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 
 #include <unordered_map>
@@ -208,7 +209,8 @@ TEST_F(DistributedPlanTest, construction_test) {
 
   for (const auto& [carnot_id, carnot_info] : carnot_id_to_carnot_info_map) {
     CarnotInstance* carnot_instance = physical_plan->Get(carnot_id);
-    EXPECT_THAT(carnot_instance->carnot_info(), EqualsProto(carnot_info.DebugString()));
+    EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(carnot_instance->carnot_info(),
+                                                                   carnot_info));
     EXPECT_THAT(carnot_instance->QueryBrokerAddress(), carnot_info.query_broker_address());
     auto new_graph = std::make_shared<IR>();
     SwapGraphBeingBuilt(new_graph);

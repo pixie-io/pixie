@@ -30,7 +30,7 @@
 #include <absl/strings/match.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/delimited_message_util.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include "src/common/system/kernel_version.h"
 
 #include "src/common/base/base.h"

@@ -13,13 +13,7 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global =
-    (typeof globalThis !== 'undefined' && globalThis) ||
-    (typeof window !== 'undefined' && window) ||
-    (typeof global !== 'undefined' && global) ||
-    (typeof self !== 'undefined' && self) ||
-    (function () { return this; }).call(null) ||
-    Function('return this')();
+var global = globalThis;
 
 goog.exportSymbol('proto.px.api.vizierpb.BooleanColumn', null, global);
 goog.exportSymbol('proto.px.api.vizierpb.Column', null, global);
@@ -920,8 +914,8 @@ proto.px.api.vizierpb.UInt128.prototype.toObject = function(opt_includeInstance)
  */
 proto.px.api.vizierpb.UInt128.toObject = function(includeInstance, msg) {
   var f, obj = {
-    low: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    high: jspb.Message.getFieldWithDefault(msg, 2, 0)
+low: jspb.Message.getFieldWithDefault(msg, 1, 0),
+high: jspb.Message.getFieldWithDefault(msg, 2, 0)
   };
 
   if (includeInstance) {
@@ -934,7 +928,7 @@ proto.px.api.vizierpb.UInt128.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.UInt128}
  */
 proto.px.api.vizierpb.UInt128.deserializeBinary = function(bytes) {
@@ -1087,7 +1081,7 @@ proto.px.api.vizierpb.BooleanColumn.prototype.toObject = function(opt_includeIns
  */
 proto.px.api.vizierpb.BooleanColumn.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: (f = jspb.Message.getRepeatedBooleanField(msg, 1)) == null ? undefined : f
+dataList: (f = jspb.Message.getRepeatedBooleanField(msg, 1)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -1100,7 +1094,7 @@ proto.px.api.vizierpb.BooleanColumn.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.BooleanColumn}
  */
 proto.px.api.vizierpb.BooleanColumn.deserializeBinary = function(bytes) {
@@ -1125,10 +1119,7 @@ proto.px.api.vizierpb.BooleanColumn.deserializeBinaryFromReader = function(msg, 
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var values = /** @type {!Array<boolean>} */ (reader.isDelimited() ? reader.readPackedBool() : [reader.readBool()]);
-      for (var i = 0; i < values.length; i++) {
-        msg.addData(values[i]);
-      }
+      reader.readPackableBoolInto(msg.getDataList());
       break;
     default:
       reader.skipField();
@@ -1245,7 +1236,7 @@ proto.px.api.vizierpb.Int64Column.prototype.toObject = function(opt_includeInsta
  */
 proto.px.api.vizierpb.Int64Column.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f
+dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -1258,7 +1249,7 @@ proto.px.api.vizierpb.Int64Column.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Int64Column}
  */
 proto.px.api.vizierpb.Int64Column.deserializeBinary = function(bytes) {
@@ -1283,10 +1274,7 @@ proto.px.api.vizierpb.Int64Column.deserializeBinaryFromReader = function(msg, re
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedInt64() : [reader.readInt64()]);
-      for (var i = 0; i < values.length; i++) {
-        msg.addData(values[i]);
-      }
+      reader.readPackableInt64Into(msg.getDataList());
       break;
     default:
       reader.skipField();
@@ -1403,7 +1391,7 @@ proto.px.api.vizierpb.UInt128Column.prototype.toObject = function(opt_includeIns
  */
 proto.px.api.vizierpb.UInt128Column.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: jspb.Message.toObjectList(msg.getDataList(),
+dataList: jspb.Message.toObjectList(msg.getDataList(),
     proto.px.api.vizierpb.UInt128.toObject, includeInstance)
   };
 
@@ -1417,7 +1405,7 @@ proto.px.api.vizierpb.UInt128Column.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.UInt128Column}
  */
 proto.px.api.vizierpb.UInt128Column.deserializeBinary = function(bytes) {
@@ -1563,7 +1551,7 @@ proto.px.api.vizierpb.Float64Column.prototype.toObject = function(opt_includeIns
  */
 proto.px.api.vizierpb.Float64Column.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: (f = jspb.Message.getRepeatedFloatingPointField(msg, 1)) == null ? undefined : f
+dataList: (f = jspb.Message.getRepeatedFloatingPointField(msg, 1)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -1576,7 +1564,7 @@ proto.px.api.vizierpb.Float64Column.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Float64Column}
  */
 proto.px.api.vizierpb.Float64Column.deserializeBinary = function(bytes) {
@@ -1601,10 +1589,7 @@ proto.px.api.vizierpb.Float64Column.deserializeBinaryFromReader = function(msg, 
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedDouble() : [reader.readDouble()]);
-      for (var i = 0; i < values.length; i++) {
-        msg.addData(values[i]);
-      }
+      reader.readPackableDoubleInto(msg.getDataList());
       break;
     default:
       reader.skipField();
@@ -1721,7 +1706,7 @@ proto.px.api.vizierpb.Time64NSColumn.prototype.toObject = function(opt_includeIn
  */
 proto.px.api.vizierpb.Time64NSColumn.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f
+dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -1734,7 +1719,7 @@ proto.px.api.vizierpb.Time64NSColumn.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Time64NSColumn}
  */
 proto.px.api.vizierpb.Time64NSColumn.deserializeBinary = function(bytes) {
@@ -1759,10 +1744,7 @@ proto.px.api.vizierpb.Time64NSColumn.deserializeBinaryFromReader = function(msg,
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedInt64() : [reader.readInt64()]);
-      for (var i = 0; i < values.length; i++) {
-        msg.addData(values[i]);
-      }
+      reader.readPackableInt64Into(msg.getDataList());
       break;
     default:
       reader.skipField();
@@ -1879,7 +1861,7 @@ proto.px.api.vizierpb.StringColumn.prototype.toObject = function(opt_includeInst
  */
 proto.px.api.vizierpb.StringColumn.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: msg.getDataList_asB64()
+dataList: msg.getDataList_asB64()
   };
 
   if (includeInstance) {
@@ -1892,7 +1874,7 @@ proto.px.api.vizierpb.StringColumn.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.StringColumn}
  */
 proto.px.api.vizierpb.StringColumn.deserializeBinary = function(bytes) {
@@ -2082,12 +2064,12 @@ proto.px.api.vizierpb.Column.prototype.toObject = function(opt_includeInstance) 
  */
 proto.px.api.vizierpb.Column.toObject = function(includeInstance, msg) {
   var f, obj = {
-    booleanData: (f = msg.getBooleanData()) && proto.px.api.vizierpb.BooleanColumn.toObject(includeInstance, f),
-    int64Data: (f = msg.getInt64Data()) && proto.px.api.vizierpb.Int64Column.toObject(includeInstance, f),
-    uint128Data: (f = msg.getUint128Data()) && proto.px.api.vizierpb.UInt128Column.toObject(includeInstance, f),
-    time64nsData: (f = msg.getTime64nsData()) && proto.px.api.vizierpb.Time64NSColumn.toObject(includeInstance, f),
-    float64Data: (f = msg.getFloat64Data()) && proto.px.api.vizierpb.Float64Column.toObject(includeInstance, f),
-    stringData: (f = msg.getStringData()) && proto.px.api.vizierpb.StringColumn.toObject(includeInstance, f)
+booleanData: (f = msg.getBooleanData()) && proto.px.api.vizierpb.BooleanColumn.toObject(includeInstance, f),
+int64Data: (f = msg.getInt64Data()) && proto.px.api.vizierpb.Int64Column.toObject(includeInstance, f),
+uint128Data: (f = msg.getUint128Data()) && proto.px.api.vizierpb.UInt128Column.toObject(includeInstance, f),
+time64nsData: (f = msg.getTime64nsData()) && proto.px.api.vizierpb.Time64NSColumn.toObject(includeInstance, f),
+float64Data: (f = msg.getFloat64Data()) && proto.px.api.vizierpb.Float64Column.toObject(includeInstance, f),
+stringData: (f = msg.getStringData()) && proto.px.api.vizierpb.StringColumn.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -2100,7 +2082,7 @@ proto.px.api.vizierpb.Column.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Column}
  */
 proto.px.api.vizierpb.Column.deserializeBinary = function(bytes) {
@@ -2495,12 +2477,12 @@ proto.px.api.vizierpb.RowBatchData.prototype.toObject = function(opt_includeInst
  */
 proto.px.api.vizierpb.RowBatchData.toObject = function(includeInstance, msg) {
   var f, obj = {
-    tableId: jspb.Message.getFieldWithDefault(msg, 5, ""),
-    colsList: jspb.Message.toObjectList(msg.getColsList(),
+tableId: jspb.Message.getFieldWithDefault(msg, 5, ""),
+colsList: jspb.Message.toObjectList(msg.getColsList(),
     proto.px.api.vizierpb.Column.toObject, includeInstance),
-    numRows: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    eow: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
-    eos: jspb.Message.getBooleanFieldWithDefault(msg, 4, false)
+numRows: jspb.Message.getFieldWithDefault(msg, 2, 0),
+eow: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
+eos: jspb.Message.getBooleanFieldWithDefault(msg, 4, false)
   };
 
   if (includeInstance) {
@@ -2513,7 +2495,7 @@ proto.px.api.vizierpb.RowBatchData.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.RowBatchData}
  */
 proto.px.api.vizierpb.RowBatchData.deserializeBinary = function(bytes) {
@@ -2538,7 +2520,7 @@ proto.px.api.vizierpb.RowBatchData.deserializeBinaryFromReader = function(msg, r
     var field = reader.getFieldNumber();
     switch (field) {
     case 5:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setTableId(value);
       break;
     case 1:
@@ -2775,7 +2757,7 @@ proto.px.api.vizierpb.Relation.prototype.toObject = function(opt_includeInstance
  */
 proto.px.api.vizierpb.Relation.toObject = function(includeInstance, msg) {
   var f, obj = {
-    columnsList: jspb.Message.toObjectList(msg.getColumnsList(),
+columnsList: jspb.Message.toObjectList(msg.getColumnsList(),
     proto.px.api.vizierpb.Relation.ColumnInfo.toObject, includeInstance)
   };
 
@@ -2789,7 +2771,7 @@ proto.px.api.vizierpb.Relation.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Relation}
  */
 proto.px.api.vizierpb.Relation.deserializeBinary = function(bytes) {
@@ -2890,10 +2872,10 @@ proto.px.api.vizierpb.Relation.ColumnInfo.prototype.toObject = function(opt_incl
  */
 proto.px.api.vizierpb.Relation.ColumnInfo.toObject = function(includeInstance, msg) {
   var f, obj = {
-    columnName: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    columnType: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    columnDesc: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    columnSemanticType: jspb.Message.getFieldWithDefault(msg, 4, 0)
+columnName: jspb.Message.getFieldWithDefault(msg, 1, ""),
+columnType: jspb.Message.getFieldWithDefault(msg, 2, 0),
+columnDesc: jspb.Message.getFieldWithDefault(msg, 3, ""),
+columnSemanticType: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -2906,7 +2888,7 @@ proto.px.api.vizierpb.Relation.ColumnInfo.toObject = function(includeInstance, m
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Relation.ColumnInfo}
  */
 proto.px.api.vizierpb.Relation.ColumnInfo.deserializeBinary = function(bytes) {
@@ -2931,7 +2913,7 @@ proto.px.api.vizierpb.Relation.ColumnInfo.deserializeBinaryFromReader = function
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setColumnName(value);
       break;
     case 2:
@@ -2939,7 +2921,7 @@ proto.px.api.vizierpb.Relation.ColumnInfo.deserializeBinaryFromReader = function
       msg.setColumnType(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setColumnDesc(value);
       break;
     case 4:
@@ -3148,9 +3130,9 @@ proto.px.api.vizierpb.CompilerError.prototype.toObject = function(opt_includeIns
  */
 proto.px.api.vizierpb.CompilerError.toObject = function(includeInstance, msg) {
   var f, obj = {
-    line: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    column: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    message: jspb.Message.getFieldWithDefault(msg, 3, "")
+line: jspb.Message.getFieldWithDefault(msg, 1, 0),
+column: jspb.Message.getFieldWithDefault(msg, 2, 0),
+message: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -3163,7 +3145,7 @@ proto.px.api.vizierpb.CompilerError.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.CompilerError}
  */
 proto.px.api.vizierpb.CompilerError.deserializeBinary = function(bytes) {
@@ -3196,7 +3178,7 @@ proto.px.api.vizierpb.CompilerError.deserializeBinaryFromReader = function(msg, 
       msg.setColumn(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setMessage(value);
       break;
     default:
@@ -3363,7 +3345,7 @@ proto.px.api.vizierpb.ErrorDetails.prototype.toObject = function(opt_includeInst
  */
 proto.px.api.vizierpb.ErrorDetails.toObject = function(includeInstance, msg) {
   var f, obj = {
-    compilerError: (f = msg.getCompilerError()) && proto.px.api.vizierpb.CompilerError.toObject(includeInstance, f)
+compilerError: (f = msg.getCompilerError()) && proto.px.api.vizierpb.CompilerError.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -3376,7 +3358,7 @@ proto.px.api.vizierpb.ErrorDetails.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ErrorDetails}
  */
 proto.px.api.vizierpb.ErrorDetails.deserializeBinary = function(bytes) {
@@ -3521,9 +3503,9 @@ proto.px.api.vizierpb.Status.prototype.toObject = function(opt_includeInstance) 
  */
 proto.px.api.vizierpb.Status.toObject = function(includeInstance, msg) {
   var f, obj = {
-    code: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    message: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    errorDetailsList: jspb.Message.toObjectList(msg.getErrorDetailsList(),
+code: jspb.Message.getFieldWithDefault(msg, 1, 0),
+message: jspb.Message.getFieldWithDefault(msg, 2, ""),
+errorDetailsList: jspb.Message.toObjectList(msg.getErrorDetailsList(),
     proto.px.api.vizierpb.ErrorDetails.toObject, includeInstance)
   };
 
@@ -3537,7 +3519,7 @@ proto.px.api.vizierpb.Status.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Status}
  */
 proto.px.api.vizierpb.Status.deserializeBinary = function(bytes) {
@@ -3566,7 +3548,7 @@ proto.px.api.vizierpb.Status.deserializeBinaryFromReader = function(msg, reader)
       msg.setCode(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setMessage(value);
       break;
     case 4:
@@ -3764,13 +3746,13 @@ proto.px.api.vizierpb.ScalarValue.prototype.toObject = function(opt_includeInsta
  */
 proto.px.api.vizierpb.ScalarValue.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataType: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    boolValue: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
-    int64Value: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    float64Value: jspb.Message.getFloatingPointFieldWithDefault(msg, 4, 0.0),
-    stringValue: jspb.Message.getFieldWithDefault(msg, 5, ""),
-    time64NsValue: jspb.Message.getFieldWithDefault(msg, 6, 0),
-    uint128Value: (f = msg.getUint128Value()) && proto.px.api.vizierpb.UInt128.toObject(includeInstance, f)
+dataType: jspb.Message.getFieldWithDefault(msg, 1, 0),
+boolValue: (f = jspb.Message.getBooleanField(msg, 2)) == null ? undefined : f,
+int64Value: (f = jspb.Message.getField(msg, 3)) == null ? undefined : f,
+float64Value: (f = jspb.Message.getOptionalFloatingPointField(msg, 4)) == null ? undefined : f,
+stringValue: (f = jspb.Message.getField(msg, 5)) == null ? undefined : f,
+time64NsValue: (f = jspb.Message.getField(msg, 6)) == null ? undefined : f,
+uint128Value: (f = msg.getUint128Value()) && proto.px.api.vizierpb.UInt128.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -3783,7 +3765,7 @@ proto.px.api.vizierpb.ScalarValue.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ScalarValue}
  */
 proto.px.api.vizierpb.ScalarValue.deserializeBinary = function(bytes) {
@@ -3824,7 +3806,7 @@ proto.px.api.vizierpb.ScalarValue.deserializeBinaryFromReader = function(msg, re
       msg.setFloat64Value(value);
       break;
     case 5:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setStringValue(value);
       break;
     case 6:
@@ -4192,15 +4174,15 @@ proto.px.api.vizierpb.ExecuteScriptRequest.prototype.toObject = function(opt_inc
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    queryStr: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    clusterId: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    execFuncsList: jspb.Message.toObjectList(msg.getExecFuncsList(),
+queryStr: jspb.Message.getFieldWithDefault(msg, 1, ""),
+clusterId: jspb.Message.getFieldWithDefault(msg, 3, ""),
+execFuncsList: jspb.Message.toObjectList(msg.getExecFuncsList(),
     proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.toObject, includeInstance),
-    mutation: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
-    encryptionOptions: (f = msg.getEncryptionOptions()) && proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject(includeInstance, f),
-    queryId: jspb.Message.getFieldWithDefault(msg, 7, ""),
-    configs: (f = msg.getConfigs()) && proto.px.api.vizierpb.Configs.toObject(includeInstance, f),
-    queryName: jspb.Message.getFieldWithDefault(msg, 10, "")
+mutation: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
+encryptionOptions: (f = msg.getEncryptionOptions()) && proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject(includeInstance, f),
+queryId: jspb.Message.getFieldWithDefault(msg, 7, ""),
+configs: (f = msg.getConfigs()) && proto.px.api.vizierpb.Configs.toObject(includeInstance, f),
+queryName: jspb.Message.getFieldWithDefault(msg, 10, "")
   };
 
   if (includeInstance) {
@@ -4213,7 +4195,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.toObject = function(includeInstance, 
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ExecuteScriptRequest}
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.deserializeBinary = function(bytes) {
@@ -4238,11 +4220,11 @@ proto.px.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setQueryStr(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setClusterId(value);
       break;
     case 4:
@@ -4260,7 +4242,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
       msg.setEncryptionOptions(value);
       break;
     case 7:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setQueryId(value);
       break;
     case 9:
@@ -4269,7 +4251,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
       msg.setConfigs(value);
       break;
     case 10:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setQueryName(value);
       break;
     default:
@@ -4402,10 +4384,10 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.prototype.toObject = fu
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.toObject = function(includeInstance, msg) {
   var f, obj = {
-    funcName: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    argValuesList: jspb.Message.toObjectList(msg.getArgValuesList(),
+funcName: jspb.Message.getFieldWithDefault(msg, 1, ""),
+argValuesList: jspb.Message.toObjectList(msg.getArgValuesList(),
     proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue.toObject, includeInstance),
-    outputTablePrefix: jspb.Message.getFieldWithDefault(msg, 3, "")
+outputTablePrefix: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -4418,7 +4400,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.toObject = function(inc
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute}
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.deserializeBinary = function(bytes) {
@@ -4443,7 +4425,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.deserializeBinaryFromRe
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setFuncName(value);
       break;
     case 2:
@@ -4452,7 +4434,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.deserializeBinaryFromRe
       msg.addArgValues(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setOutputTablePrefix(value);
       break;
     default:
@@ -4541,8 +4523,8 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue.prototype.toOb
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue.toObject = function(includeInstance, msg) {
   var f, obj = {
-    name: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    value: jspb.Message.getFieldWithDefault(msg, 2, "")
+name: jspb.Message.getFieldWithDefault(msg, 1, ""),
+value: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -4555,7 +4537,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue.toObject = fun
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue}
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue.deserializeBinary = function(bytes) {
@@ -4580,11 +4562,11 @@ proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.ArgValue.deserializeBin
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setName(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setValue(value);
       break;
     default:
@@ -4775,10 +4757,10 @@ proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.prototype.toObject 
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject = function(includeInstance, msg) {
   var f, obj = {
-    jwkKey: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    keyAlg: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    contentAlg: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    compressionAlg: jspb.Message.getFieldWithDefault(msg, 4, "")
+jwkKey: jspb.Message.getFieldWithDefault(msg, 1, ""),
+keyAlg: jspb.Message.getFieldWithDefault(msg, 2, ""),
+contentAlg: jspb.Message.getFieldWithDefault(msg, 3, ""),
+compressionAlg: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -4791,7 +4773,7 @@ proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject = function
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions}
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.deserializeBinary = function(bytes) {
@@ -4816,19 +4798,19 @@ proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.deserializeBinaryFr
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setJwkKey(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setKeyAlg(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setContentAlg(value);
       break;
     case 4:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setCompressionAlg(value);
       break;
     default:
@@ -5197,8 +5179,8 @@ proto.px.api.vizierpb.Configs.prototype.toObject = function(opt_includeInstance)
  */
 proto.px.api.vizierpb.Configs.toObject = function(includeInstance, msg) {
   var f, obj = {
-    otelEndpointConfig: (f = msg.getOtelEndpointConfig()) && proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject(includeInstance, f),
-    pluginConfig: (f = msg.getPluginConfig()) && proto.px.api.vizierpb.Configs.PluginConfig.toObject(includeInstance, f)
+otelEndpointConfig: (f = msg.getOtelEndpointConfig()) && proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject(includeInstance, f),
+pluginConfig: (f = msg.getPluginConfig()) && proto.px.api.vizierpb.Configs.PluginConfig.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -5211,7 +5193,7 @@ proto.px.api.vizierpb.Configs.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Configs}
  */
 proto.px.api.vizierpb.Configs.deserializeBinary = function(bytes) {
@@ -5325,10 +5307,10 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.toObject = function(o
  */
 proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject = function(includeInstance, msg) {
   var f, obj = {
-    url: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    headersMap: (f = msg.getHeadersMap()) ? f.toObject(includeInstance, undefined) : [],
-    insecure: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
-    timeout: jspb.Message.getFieldWithDefault(msg, 4, 0)
+url: jspb.Message.getFieldWithDefault(msg, 1, ""),
+headersMap: (f = msg.getHeadersMap()) ? f.toObject(includeInstance, undefined) : [],
+insecure: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
+timeout: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -5341,7 +5323,7 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject = function(includeInst
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Configs.OTelEndpointConfig}
  */
 proto.px.api.vizierpb.Configs.OTelEndpointConfig.deserializeBinary = function(bytes) {
@@ -5366,13 +5348,13 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.deserializeBinaryFromReader = f
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setUrl(value);
       break;
     case 2:
       var value = msg.getHeadersMap();
       reader.readMessage(value, function(message, reader) {
-        jspb.Map.deserializeBinary(message, reader, jspb.BinaryReader.prototype.readString, jspb.BinaryReader.prototype.readString, null, "", "");
+        jspb.Map.deserializeBinary(message, reader, jspb.BinaryReader.prototype.readStringRequireUtf8, jspb.BinaryReader.prototype.readStringRequireUtf8, null, "", "");
          });
       break;
     case 3:
@@ -5421,7 +5403,12 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.serializeBinaryToWriter = funct
   }
   f = message.getHeadersMap(true);
   if (f && f.getLength() > 0) {
-    f.serializeBinary(2, writer, jspb.BinaryWriter.prototype.writeString, jspb.BinaryWriter.prototype.writeString);
+jspb.internal.public_for_gencode.serializeMapToBinary(
+    message.getHeadersMap(true),
+    2,
+    writer,
+    jspb.BinaryWriter.prototype.writeString,
+    jspb.BinaryWriter.prototype.writeString);
   }
   f = message.getInsecure();
   if (f) {
@@ -5549,8 +5536,8 @@ proto.px.api.vizierpb.Configs.PluginConfig.prototype.toObject = function(opt_inc
  */
 proto.px.api.vizierpb.Configs.PluginConfig.toObject = function(includeInstance, msg) {
   var f, obj = {
-    startTimeNs: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    endTimeNs: jspb.Message.getFieldWithDefault(msg, 2, 0)
+startTimeNs: jspb.Message.getFieldWithDefault(msg, 1, 0),
+endTimeNs: jspb.Message.getFieldWithDefault(msg, 2, 0)
   };
 
   if (includeInstance) {
@@ -5563,7 +5550,7 @@ proto.px.api.vizierpb.Configs.PluginConfig.toObject = function(includeInstance, 
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.Configs.PluginConfig}
  */
 proto.px.api.vizierpb.Configs.PluginConfig.deserializeBinary = function(bytes) {
@@ -5783,8 +5770,8 @@ proto.px.api.vizierpb.QueryTimingInfo.prototype.toObject = function(opt_includeI
  */
 proto.px.api.vizierpb.QueryTimingInfo.toObject = function(includeInstance, msg) {
   var f, obj = {
-    executionTimeNs: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    compilationTimeNs: jspb.Message.getFieldWithDefault(msg, 2, 0)
+executionTimeNs: jspb.Message.getFieldWithDefault(msg, 1, 0),
+compilationTimeNs: jspb.Message.getFieldWithDefault(msg, 2, 0)
   };
 
   if (includeInstance) {
@@ -5797,7 +5784,7 @@ proto.px.api.vizierpb.QueryTimingInfo.toObject = function(includeInstance, msg) 
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.QueryTimingInfo}
  */
 proto.px.api.vizierpb.QueryTimingInfo.deserializeBinary = function(bytes) {
@@ -5943,9 +5930,9 @@ proto.px.api.vizierpb.QueryExecutionStats.prototype.toObject = function(opt_incl
  */
 proto.px.api.vizierpb.QueryExecutionStats.toObject = function(includeInstance, msg) {
   var f, obj = {
-    timing: (f = msg.getTiming()) && proto.px.api.vizierpb.QueryTimingInfo.toObject(includeInstance, f),
-    bytesProcessed: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    recordsProcessed: jspb.Message.getFieldWithDefault(msg, 3, 0)
+timing: (f = msg.getTiming()) && proto.px.api.vizierpb.QueryTimingInfo.toObject(includeInstance, f),
+bytesProcessed: jspb.Message.getFieldWithDefault(msg, 2, 0),
+recordsProcessed: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
   if (includeInstance) {
@@ -5958,7 +5945,7 @@ proto.px.api.vizierpb.QueryExecutionStats.toObject = function(includeInstance, m
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.QueryExecutionStats}
  */
 proto.px.api.vizierpb.QueryExecutionStats.deserializeBinary = function(bytes) {
@@ -6154,9 +6141,9 @@ proto.px.api.vizierpb.QueryMetadata.prototype.toObject = function(opt_includeIns
  */
 proto.px.api.vizierpb.QueryMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
-    relation: (f = msg.getRelation()) && proto.px.api.vizierpb.Relation.toObject(includeInstance, f),
-    name: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    id: jspb.Message.getFieldWithDefault(msg, 3, "")
+relation: (f = msg.getRelation()) && proto.px.api.vizierpb.Relation.toObject(includeInstance, f),
+name: jspb.Message.getFieldWithDefault(msg, 2, ""),
+id: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -6169,7 +6156,7 @@ proto.px.api.vizierpb.QueryMetadata.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.QueryMetadata}
  */
 proto.px.api.vizierpb.QueryMetadata.deserializeBinary = function(bytes) {
@@ -6199,11 +6186,11 @@ proto.px.api.vizierpb.QueryMetadata.deserializeBinaryFromReader = function(msg, 
       msg.setRelation(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setName(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setId(value);
       break;
     default:
@@ -6365,9 +6352,9 @@ proto.px.api.vizierpb.QueryData.prototype.toObject = function(opt_includeInstanc
  */
 proto.px.api.vizierpb.QueryData.toObject = function(includeInstance, msg) {
   var f, obj = {
-    batch: (f = msg.getBatch()) && proto.px.api.vizierpb.RowBatchData.toObject(includeInstance, f),
-    encryptedBatch: msg.getEncryptedBatch_asB64(),
-    executionStats: (f = msg.getExecutionStats()) && proto.px.api.vizierpb.QueryExecutionStats.toObject(includeInstance, f)
+batch: (f = msg.getBatch()) && proto.px.api.vizierpb.RowBatchData.toObject(includeInstance, f),
+encryptedBatch: msg.getEncryptedBatch_asB64(),
+executionStats: (f = msg.getExecutionStats()) && proto.px.api.vizierpb.QueryExecutionStats.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -6380,7 +6367,7 @@ proto.px.api.vizierpb.QueryData.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.QueryData}
  */
 proto.px.api.vizierpb.QueryData.deserializeBinary = function(bytes) {
@@ -6647,11 +6634,11 @@ proto.px.api.vizierpb.ExecuteScriptResponse.prototype.toObject = function(opt_in
  */
 proto.px.api.vizierpb.ExecuteScriptResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f),
-    queryId: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    data: (f = msg.getData()) && proto.px.api.vizierpb.QueryData.toObject(includeInstance, f),
-    metaData: (f = msg.getMetaData()) && proto.px.api.vizierpb.QueryMetadata.toObject(includeInstance, f),
-    mutationInfo: (f = msg.getMutationInfo()) && proto.px.api.vizierpb.MutationInfo.toObject(includeInstance, f)
+status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f),
+queryId: jspb.Message.getFieldWithDefault(msg, 2, ""),
+data: (f = msg.getData()) && proto.px.api.vizierpb.QueryData.toObject(includeInstance, f),
+metaData: (f = msg.getMetaData()) && proto.px.api.vizierpb.QueryMetadata.toObject(includeInstance, f),
+mutationInfo: (f = msg.getMutationInfo()) && proto.px.api.vizierpb.MutationInfo.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -6664,7 +6651,7 @@ proto.px.api.vizierpb.ExecuteScriptResponse.toObject = function(includeInstance,
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ExecuteScriptResponse}
  */
 proto.px.api.vizierpb.ExecuteScriptResponse.deserializeBinary = function(bytes) {
@@ -6694,7 +6681,7 @@ proto.px.api.vizierpb.ExecuteScriptResponse.deserializeBinaryFromReader = functi
       msg.setStatus(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setQueryId(value);
       break;
     case 3:
@@ -6988,8 +6975,8 @@ proto.px.api.vizierpb.MutationInfo.prototype.toObject = function(opt_includeInst
  */
 proto.px.api.vizierpb.MutationInfo.toObject = function(includeInstance, msg) {
   var f, obj = {
-    status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f),
-    statesList: jspb.Message.toObjectList(msg.getStatesList(),
+status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f),
+statesList: jspb.Message.toObjectList(msg.getStatesList(),
     proto.px.api.vizierpb.MutationInfo.MutationState.toObject, includeInstance)
   };
 
@@ -7003,7 +6990,7 @@ proto.px.api.vizierpb.MutationInfo.toObject = function(includeInstance, msg) {
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.MutationInfo}
  */
 proto.px.api.vizierpb.MutationInfo.deserializeBinary = function(bytes) {
@@ -7117,9 +7104,9 @@ proto.px.api.vizierpb.MutationInfo.MutationState.prototype.toObject = function(o
  */
 proto.px.api.vizierpb.MutationInfo.MutationState.toObject = function(includeInstance, msg) {
   var f, obj = {
-    id: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    state: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    name: jspb.Message.getFieldWithDefault(msg, 3, "")
+id: jspb.Message.getFieldWithDefault(msg, 1, ""),
+state: jspb.Message.getFieldWithDefault(msg, 2, 0),
+name: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -7132,7 +7119,7 @@ proto.px.api.vizierpb.MutationInfo.MutationState.toObject = function(includeInst
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.MutationInfo.MutationState}
  */
 proto.px.api.vizierpb.MutationInfo.MutationState.deserializeBinary = function(bytes) {
@@ -7157,7 +7144,7 @@ proto.px.api.vizierpb.MutationInfo.MutationState.deserializeBinaryFromReader = f
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setId(value);
       break;
     case 2:
@@ -7165,7 +7152,7 @@ proto.px.api.vizierpb.MutationInfo.MutationState.deserializeBinaryFromReader = f
       msg.setState(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setName(value);
       break;
     default:
@@ -7382,7 +7369,7 @@ proto.px.api.vizierpb.HealthCheckRequest.prototype.toObject = function(opt_inclu
  */
 proto.px.api.vizierpb.HealthCheckRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    clusterId: jspb.Message.getFieldWithDefault(msg, 1, "")
+clusterId: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -7395,7 +7382,7 @@ proto.px.api.vizierpb.HealthCheckRequest.toObject = function(includeInstance, ms
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.HealthCheckRequest}
  */
 proto.px.api.vizierpb.HealthCheckRequest.deserializeBinary = function(bytes) {
@@ -7420,7 +7407,7 @@ proto.px.api.vizierpb.HealthCheckRequest.deserializeBinaryFromReader = function(
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setClusterId(value);
       break;
     default:
@@ -7512,7 +7499,7 @@ proto.px.api.vizierpb.HealthCheckResponse.prototype.toObject = function(opt_incl
  */
 proto.px.api.vizierpb.HealthCheckResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f)
+status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -7525,7 +7512,7 @@ proto.px.api.vizierpb.HealthCheckResponse.toObject = function(includeInstance, m
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.HealthCheckResponse}
  */
 proto.px.api.vizierpb.HealthCheckResponse.deserializeBinary = function(bytes) {
@@ -7663,8 +7650,8 @@ proto.px.api.vizierpb.GenerateOTelScriptRequest.prototype.toObject = function(op
  */
 proto.px.api.vizierpb.GenerateOTelScriptRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    clusterId: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    pxlScript: jspb.Message.getFieldWithDefault(msg, 2, "")
+clusterId: jspb.Message.getFieldWithDefault(msg, 1, ""),
+pxlScript: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -7677,7 +7664,7 @@ proto.px.api.vizierpb.GenerateOTelScriptRequest.toObject = function(includeInsta
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.GenerateOTelScriptRequest}
  */
 proto.px.api.vizierpb.GenerateOTelScriptRequest.deserializeBinary = function(bytes) {
@@ -7702,11 +7689,11 @@ proto.px.api.vizierpb.GenerateOTelScriptRequest.deserializeBinaryFromReader = fu
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setClusterId(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setPxlScript(value);
       break;
     default:
@@ -7823,8 +7810,8 @@ proto.px.api.vizierpb.GenerateOTelScriptResponse.prototype.toObject = function(o
  */
 proto.px.api.vizierpb.GenerateOTelScriptResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f),
-    otelScript: jspb.Message.getFieldWithDefault(msg, 2, "")
+status: (f = msg.getStatus()) && proto.px.api.vizierpb.Status.toObject(includeInstance, f),
+otelScript: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -7837,7 +7824,7 @@ proto.px.api.vizierpb.GenerateOTelScriptResponse.toObject = function(includeInst
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.GenerateOTelScriptResponse}
  */
 proto.px.api.vizierpb.GenerateOTelScriptResponse.deserializeBinary = function(bytes) {
@@ -7867,7 +7854,7 @@ proto.px.api.vizierpb.GenerateOTelScriptResponse.deserializeBinaryFromReader = f
       msg.setStatus(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setOtelScript(value);
       break;
     default:
@@ -8004,10 +7991,10 @@ proto.px.api.vizierpb.DebugLogRequest.prototype.toObject = function(opt_includeI
  */
 proto.px.api.vizierpb.DebugLogRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    clusterId: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    podName: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    previous: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
-    container: jspb.Message.getFieldWithDefault(msg, 4, "")
+clusterId: jspb.Message.getFieldWithDefault(msg, 1, ""),
+podName: jspb.Message.getFieldWithDefault(msg, 2, ""),
+previous: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
+container: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -8020,7 +8007,7 @@ proto.px.api.vizierpb.DebugLogRequest.toObject = function(includeInstance, msg) 
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.DebugLogRequest}
  */
 proto.px.api.vizierpb.DebugLogRequest.deserializeBinary = function(bytes) {
@@ -8045,11 +8032,11 @@ proto.px.api.vizierpb.DebugLogRequest.deserializeBinaryFromReader = function(msg
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setClusterId(value);
       break;
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setPodName(value);
       break;
     case 3:
@@ -8057,7 +8044,7 @@ proto.px.api.vizierpb.DebugLogRequest.deserializeBinaryFromReader = function(msg
       msg.setPrevious(value);
       break;
     case 4:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setContainer(value);
       break;
     default:
@@ -8224,7 +8211,7 @@ proto.px.api.vizierpb.DebugLogResponse.prototype.toObject = function(opt_include
  */
 proto.px.api.vizierpb.DebugLogResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    data: jspb.Message.getFieldWithDefault(msg, 2, "")
+data: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -8237,7 +8224,7 @@ proto.px.api.vizierpb.DebugLogResponse.toObject = function(includeInstance, msg)
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.DebugLogResponse}
  */
 proto.px.api.vizierpb.DebugLogResponse.deserializeBinary = function(bytes) {
@@ -8262,7 +8249,7 @@ proto.px.api.vizierpb.DebugLogResponse.deserializeBinaryFromReader = function(ms
     var field = reader.getFieldNumber();
     switch (field) {
     case 2:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setData(value);
       break;
     default:
@@ -8354,12 +8341,12 @@ proto.px.api.vizierpb.ContainerStatus.prototype.toObject = function(opt_includeI
  */
 proto.px.api.vizierpb.ContainerStatus.toObject = function(includeInstance, msg) {
   var f, obj = {
-    name: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    containerState: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    message: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    reason: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    startTimestampNs: jspb.Message.getFieldWithDefault(msg, 5, 0),
-    restartCount: jspb.Message.getFieldWithDefault(msg, 6, 0)
+name: jspb.Message.getFieldWithDefault(msg, 1, ""),
+containerState: jspb.Message.getFieldWithDefault(msg, 2, 0),
+message: jspb.Message.getFieldWithDefault(msg, 3, ""),
+reason: jspb.Message.getFieldWithDefault(msg, 4, ""),
+startTimestampNs: jspb.Message.getFieldWithDefault(msg, 5, 0),
+restartCount: jspb.Message.getFieldWithDefault(msg, 6, 0)
   };
 
   if (includeInstance) {
@@ -8372,7 +8359,7 @@ proto.px.api.vizierpb.ContainerStatus.toObject = function(includeInstance, msg) 
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.ContainerStatus}
  */
 proto.px.api.vizierpb.ContainerStatus.deserializeBinary = function(bytes) {
@@ -8397,7 +8384,7 @@ proto.px.api.vizierpb.ContainerStatus.deserializeBinaryFromReader = function(msg
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setName(value);
       break;
     case 2:
@@ -8405,11 +8392,11 @@ proto.px.api.vizierpb.ContainerStatus.deserializeBinaryFromReader = function(msg
       msg.setContainerState(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setMessage(value);
       break;
     case 4:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setReason(value);
       break;
     case 5:
@@ -8641,14 +8628,14 @@ proto.px.api.vizierpb.VizierPodStatus.prototype.toObject = function(opt_includeI
  */
 proto.px.api.vizierpb.VizierPodStatus.toObject = function(includeInstance, msg) {
   var f, obj = {
-    name: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    phase: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    message: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    reason: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    createdAt: jspb.Message.getFieldWithDefault(msg, 5, 0),
-    containerStatusesList: jspb.Message.toObjectList(msg.getContainerStatusesList(),
+name: jspb.Message.getFieldWithDefault(msg, 1, ""),
+phase: jspb.Message.getFieldWithDefault(msg, 2, 0),
+message: jspb.Message.getFieldWithDefault(msg, 3, ""),
+reason: jspb.Message.getFieldWithDefault(msg, 4, ""),
+createdAt: jspb.Message.getFieldWithDefault(msg, 5, 0),
+containerStatusesList: jspb.Message.toObjectList(msg.getContainerStatusesList(),
     proto.px.api.vizierpb.ContainerStatus.toObject, includeInstance),
-    restartCount: jspb.Message.getFieldWithDefault(msg, 7, 0)
+restartCount: jspb.Message.getFieldWithDefault(msg, 7, 0)
   };
 
   if (includeInstance) {
@@ -8661,7 +8648,7 @@ proto.px.api.vizierpb.VizierPodStatus.toObject = function(includeInstance, msg) 
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.VizierPodStatus}
  */
 proto.px.api.vizierpb.VizierPodStatus.deserializeBinary = function(bytes) {
@@ -8686,7 +8673,7 @@ proto.px.api.vizierpb.VizierPodStatus.deserializeBinaryFromReader = function(msg
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setName(value);
       break;
     case 2:
@@ -8694,11 +8681,11 @@ proto.px.api.vizierpb.VizierPodStatus.deserializeBinaryFromReader = function(msg
       msg.setPhase(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setMessage(value);
       break;
     case 4:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setReason(value);
       break;
     case 5:
@@ -8974,7 +8961,7 @@ proto.px.api.vizierpb.DebugPodsRequest.prototype.toObject = function(opt_include
  */
 proto.px.api.vizierpb.DebugPodsRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    clusterId: jspb.Message.getFieldWithDefault(msg, 1, "")
+clusterId: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -8987,7 +8974,7 @@ proto.px.api.vizierpb.DebugPodsRequest.toObject = function(includeInstance, msg)
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.DebugPodsRequest}
  */
 proto.px.api.vizierpb.DebugPodsRequest.deserializeBinary = function(bytes) {
@@ -9012,7 +8999,7 @@ proto.px.api.vizierpb.DebugPodsRequest.deserializeBinaryFromReader = function(ms
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {string} */ (reader.readStringRequireUtf8());
       msg.setClusterId(value);
       break;
     default:
@@ -9111,9 +9098,9 @@ proto.px.api.vizierpb.DebugPodsResponse.prototype.toObject = function(opt_includ
  */
 proto.px.api.vizierpb.DebugPodsResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataPlanePodsList: jspb.Message.toObjectList(msg.getDataPlanePodsList(),
+dataPlanePodsList: jspb.Message.toObjectList(msg.getDataPlanePodsList(),
     proto.px.api.vizierpb.VizierPodStatus.toObject, includeInstance),
-    controlPlanePodsList: jspb.Message.toObjectList(msg.getControlPlanePodsList(),
+controlPlanePodsList: jspb.Message.toObjectList(msg.getControlPlanePodsList(),
     proto.px.api.vizierpb.VizierPodStatus.toObject, includeInstance)
   };
 
@@ -9127,7 +9114,7 @@ proto.px.api.vizierpb.DebugPodsResponse.toObject = function(includeInstance, msg
 
 /**
  * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @param {jspb.binary.bytesource.ByteSource} bytes The bytes to deserialize.
  * @return {!proto.px.api.vizierpb.DebugPodsResponse}
  */
 proto.px.api.vizierpb.DebugPodsResponse.deserializeBinary = function(bytes) {

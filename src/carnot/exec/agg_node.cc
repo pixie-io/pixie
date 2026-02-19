@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <cstdint>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/plan/scalar_expression.h"

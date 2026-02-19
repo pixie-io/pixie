@@ -1,0 +1,65 @@
+diff --git a/third_party/xla/third_party/gpus/cuda_configure.bzl b/third_party/xla/third_party/gpus/cuda_configure.bzl
+index d110fa81460..80fccbfa234 100644
+--- a/third_party/xla/third_party/gpus/cuda_configure.bzl
++++ b/third_party/xla/third_party/gpus/cuda_configure.bzl
+@@ -278,7 +278,7 @@ def _cuda_include_path(repository_ctx, cuda_config):
+
+ def enable_cuda(repository_ctx):
+     """Returns whether to build with CUDA support."""
+-    return int(get_host_environ(repository_ctx, "TF_NEED_CUDA", False))
++    return int(False)
+
+ def matches_version(environ_version, detected_version):
+     """Checks whether the user-specified version matches the detected version.
+diff --git a/third_party/xla/third_party/gpus/rocm_configure.bzl b/third_party/xla/third_party/gpus/rocm_configure.bzl
+index 80c151cde4d..b044e061473 100644
+--- a/third_party/xla/third_party/gpus/rocm_configure.bzl
++++ b/third_party/xla/third_party/gpus/rocm_configure.bzl
+@@ -158,12 +158,6 @@ def _rocm_include_path(repository_ctx, rocm_config, bash_bin):
+     return inc_dirs
+
+ def _enable_rocm(repository_ctx):
+-    enable_rocm = get_host_environ(repository_ctx, "TF_NEED_ROCM")
+-    if enable_rocm == "1":
+-        if get_cpu_value(repository_ctx) != "Linux":
+-            auto_configure_warning("ROCm configure is only supported on Linux")
+-            return False
+-        return True
+     return False
+
+ def _amdgpu_targets(repository_ctx, rocm_toolkit_path, bash_bin):
+diff --git a/third_party/xla/third_party/gpus/sycl_configure.bzl b/third_party/xla/third_party/gpus/sycl_configure.bzl
+index ee63624f8e4..d60a10b10d6 100644
+--- a/third_party/xla/third_party/gpus/sycl_configure.bzl
++++ b/third_party/xla/third_party/gpus/sycl_configure.bzl
+@@ -63,7 +63,7 @@ def _sycl_include_path(repository_ctx, sycl_config, bash_bin):
+
+ def enable_sycl(repository_ctx):
+     """Returns whether to build with SYCL support."""
+-    return int(get_host_environ(repository_ctx, "TF_NEED_SYCL", False))
++    return int(False)
+
+ def auto_configure_fail(msg):
+     """Output failure message when auto configuration fails."""
+diff --git a/third_party/xla/third_party/tensorrt/tensorrt_configure.bzl b/third_party/xla/third_party/tensorrt/tensorrt_configure.bzl
+index 32c6d96f161..169df9b2a8b 100644
+--- a/third_party/xla/third_party/tensorrt/tensorrt_configure.bzl
++++ b/third_party/xla/third_party/tensorrt/tensorrt_configure.bzl
+@@ -154,7 +154,7 @@ def _create_dummy_repository(repository_ctx):
+
+ def enable_tensorrt(repository_ctx):
+     """Returns whether to build with TensorRT support."""
+-    return int(get_host_environ(repository_ctx, _TF_NEED_TENSORRT, False))
++    return int(False)
+
+ def _get_tensorrt_static_path(repository_ctx):
+     """Returns the path for TensorRT static libraries."""
+@@ -284,7 +284,7 @@ def _py_tmpl_dict(d):
+ def _tensorrt_configure_impl(repository_ctx):
+     """Implementation of the tensorrt_configure repository rule."""
+
+-    if get_host_environ(repository_ctx, _TF_TENSORRT_CONFIG_REPO) != None:
++    if False:
+         # Forward to the pre-configured remote repository.
+         remote_config_repo = repository_ctx.os.environ[_TF_TENSORRT_CONFIG_REPO]
+         repository_ctx.template("BUILD", config_repo_label(remote_config_repo, ":BUILD"), {})

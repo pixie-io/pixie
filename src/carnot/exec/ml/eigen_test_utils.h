@@ -23,7 +23,7 @@
 
 #include <vector>
 
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"
 
 MATCHER_P2(IsApproxMatrix, matrix, tol, "") {
   return matrix.isApprox(arg, static_cast<float>(tol));

@@ -30,7 +30,7 @@
 #include <vector>
 
 #include <absl/strings/numbers.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/proc_pid_path.h"
