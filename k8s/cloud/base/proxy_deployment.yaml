@@ -140,8 +140,15 @@ spec:
           type: RuntimeDefault
       volumes:
       - name: service-certs
-        secret:
-          secretName: service-tls-certs
+        projected:
+          sources:
+          - secret:
+              name: service-tls-client-certs
+              items:
+              - key: tls.crt
+                path: client.crt
+              - key: tls.key
+                path: client.key
       - name: envoy-yaml
         configMap:
           name: proxy-envoy-config

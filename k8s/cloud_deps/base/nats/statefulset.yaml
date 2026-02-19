@@ -137,8 +137,17 @@ spec:
       # Common volumes for the containers
       volumes:
       - name: nats-server-tls-volume
-        secret:
-          secretName: service-tls-certs
+        projected:
+          sources:
+          - secret:
+              name: service-tls-server-certs
+              items:
+              - key: tls.crt
+                path: server.crt
+              - key: tls.key
+                path: server.key
+              - key: ca.crt
+                path: ca.crt
       - name: config-volume
         configMap:
           name: nats-config
