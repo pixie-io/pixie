@@ -29,6 +29,8 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 
@@ -172,12 +174,46 @@ func GenerateCloudCertYAMLs(namespace string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	yaml, err := k8s.ConvertResourceToYAML(tlsCert)
+
+	var yamls []string
+
+	tcYaml, err := k8s.ConvertResourceToYAML(tlsCert)
 	if err != nil {
 		return "", err
 	}
+	yamls = append(yamls, tcYaml)
 
-	return fmt.Sprintf("---\n%s\n", yaml), nil
+	serverTLSCert, err := k8s.CreateGenericSecretFromLiterals(namespace, "service-tls-server-certs", map[string]string{
+		"tls.crt": string(serverCert),
+		"tls.key": string(serverKey),
+		"ca.crt":  string(caCert),
+	})
+	if err != nil {
+		return "", err
+	}
+	serverTLSCert.Type = v1.SecretTypeTLS
+	stYaml, err := k8s.ConvertResourceToYAML(serverTLSCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, stYaml)
+
+	clientTLSCert, err := k8s.CreateGenericSecretFromLiterals(namespace, "service-tls-client-certs", map[string]string{
+		"tls.crt": string(clientCert),
+		"tls.key": string(clientKey),
+		"ca.crt":  string(caCert),
+	})
+	if err != nil {
+		return "", err
+	}
+	clientTLSCert.Type = v1.SecretTypeTLS
+	ctYaml, err := k8s.ConvertResourceToYAML(clientTLSCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, ctYaml)
+
+	return "---\n" + strings.Join(yamls, "\n---\n"), nil
 }
 
 // GenerateVizierCertYAMLs generates the yamls for vizier certs.
