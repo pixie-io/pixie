@@ -23,7 +23,7 @@
 #include <vector>
 
 #include <absl/strings/str_format.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
