@@ -91,6 +91,20 @@ kubectl create secret generic -n "${namespace}" \
   --from-file=server.crt=./server.crt \
   --from-file=server.key=./server.key
 
+kubectl create secret generic -n "${namespace}" \
+  service-tls-server-certs \
+  --type=kubernetes.io/tls \
+  --from-file=tls.crt=./server.crt \
+  --from-file=tls.key=./server.key \
+  --from-file=ca.crt=./ca.crt
+
+kubectl create secret generic -n "${namespace}" \
+  service-tls-client-certs \
+  --type=kubernetes.io/tls \
+  --from-file=tls.crt=./client.crt \
+  --from-file=tls.key=./client.key \
+  --from-file=ca.crt=./ca.crt
+
 popd || exit 1
 
 PROXY_TLS_CERTS="$(mktemp -d)"
