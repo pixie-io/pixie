@@ -85,5 +85,21 @@ spec:
           type: RuntimeDefault
       volumes:
       - name: certs
-        secret:
-          secretName: service-tls-certs
+        projected:
+          sources:
+          - secret:
+              name: service-tls-server-certs
+              items:
+              - key: tls.crt
+                path: server.crt
+              - key: tls.key
+                path: server.key
+              - key: ca.crt
+                path: ca.crt
+          - secret:
+              name: service-tls-client-certs
+              items:
+              - key: tls.crt
+                path: client.crt
+              - key: tls.key
+                path: client.key
