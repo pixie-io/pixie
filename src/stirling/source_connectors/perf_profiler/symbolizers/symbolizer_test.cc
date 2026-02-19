@@ -217,6 +217,13 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
     if (!symbolizer->Uncacheable(child_upid_0)) {
       // Attach failed. Clear cached state so GetSymbolizerFn will re-attempt on the next iteration.
       symbolizer->DeleteUPID(child_upid_0);
+      // A failed px_jattach may have created the artifacts directory before failing (e.g., the JVM
+      // attach mechanism wasn't ready). Remove it so the next px_jattach doesn't hit a fatal
+      // "Conflicting symbolization artifacts path" error in CreateArtifactsPathOrDie().
+      const auto leftover_artifacts = java::StirlingArtifactsPath(child_upid_0);
+      if (fs::Exists(leftover_artifacts)) {
+        ASSERT_OK(fs::RemoveAll(leftover_artifacts));
+      }
     }
   }
   ASSERT_TRUE(symbolizer->Uncacheable(child_upid_0)) << "Should have found symbol file by now.";
