@@ -17,6 +17,9 @@ jobs:
     name: Build Release
     runs-on: oracle-16cpu-64gb-x86-64
     needs: get-dev-image
+    permissions:
+      contents: read
+      packages: write
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     steps:
@@ -30,15 +33,16 @@ jobs:
       with:
         download_toplevel: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
     - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+    - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
@@ -47,7 +51,6 @@ jobs:
         GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       shell: bash
       run: |

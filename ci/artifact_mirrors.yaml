@@ -4,8 +4,3 @@
 - name: gh-releases
   type: gh-releases
   url_format: 'https://github.com/${gh_repo}/releases/download/release/${component}/v${version}/${artifact_name}'
-- name: pixie-oss-gcs
-  type: gcs
-  bucket: pixie-dev-public
-  path_format: '${component}/${version}/${artifact_name}'
-  url_format: 'https://storage.googleapis.com/pixie-dev-public/${component}/${version}/${artifact_name}'
