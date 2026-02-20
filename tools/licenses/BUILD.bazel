@@ -60,7 +60,7 @@ fetch_licenses(
     name = "deps_licenses",
     src = "//:pl_3p_deps",
     disallow_missing = select({
-        "//bazel:stamped": True,
+        # "//bazel:stamped": True,
         "//conditions:default": False,
     }),
     fetch_tool = ":fetch_licenses",

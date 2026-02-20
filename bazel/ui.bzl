@@ -67,13 +67,13 @@ def _pl_webpack_library_impl(ctx):
 
     env_cmds = []
     if ctx.attr.stamp:
-        # This is some truly shady stuff. The stamping on genrules just makes this file
-        # available, but does not apply it to the environment. We parse out the file
-        # and apply it to the environment here. Hopefully,
-        # no special characters/spaces/quotes in the results ...
+        # The stamping on genrules just makes this file available, but does not
+        # apply it to the environment. We parse out the file and export each
+        # key-value pair. Using while-read instead of $(sed ...) to correctly
+        # handle values containing spaces.
         env_cmds = [
-            '$(sed -E "s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g" "{}")'.format(ctx.info_file.path),
-            '$(sed -E "s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g" "{}")'.format(ctx.version_file.path),
+            'while read -r key value || [ -n "$key" ]; do export "$key=$value"; done < "{}"'.format(ctx.info_file.path),
+            'while read -r key value || [ -n "$key" ]; do export "$key=$value"; done < "{}"'.format(ctx.version_file.path),
         ]
         all_files.append(ctx.info_file)
         all_files.append(ctx.version_file)
