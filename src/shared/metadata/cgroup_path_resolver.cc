@@ -70,24 +70,13 @@ StatusOr<std::vector<std::string>> CGroupBasePaths(std::string_view sysfs_path) 
 
 StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
   int pid = getpid();
-  std::error_code ec;
 
-  auto it = std::filesystem::recursive_directory_iterator(
-      base_path, std::filesystem::directory_options::skip_permission_denied, ec);
-  if (ec) {
-    return error::Internal("Failed to iterate cgroup path: $0", ec.message());
-  }
-
-  for (auto end = std::filesystem::recursive_directory_iterator(); it != end; it.increment(ec)) {
-    if (ec) {
-      ec.clear();
-      continue;
-    }
-    if (it->path().filename() == "cgroup.procs") {
-      std::string contents = ReadFileToString(it->path().string()).ValueOr("");
+  for (auto& p : std::filesystem::recursive_directory_iterator(base_path)) {
+    if (p.path().filename() == "cgroup.procs") {
+      std::string contents = ReadFileToString(p.path().string()).ValueOr("");
       int contents_pid;
       if (absl::SimpleAtoi(contents, &contents_pid) && pid == contents_pid) {
-        return it->path().string();
+        return p.path().string();
       }
     }
   }
