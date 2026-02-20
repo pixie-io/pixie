@@ -38,6 +38,7 @@ image_repo="gcr.io/pixie-oss/pixie-prod"
 
 bazel run -c opt \
   --config=stamp \
+  --config=x86_64_sysroot \
   --action_env=GOOGLE_APPLICATION_CREDENTIALS \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
