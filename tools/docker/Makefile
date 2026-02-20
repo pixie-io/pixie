@@ -60,7 +60,7 @@ GRAALVM_ARCHIVE_FNAME := graalvm-native-image-22.3.0.tar.gz
 GRAALVM_ARCHIVE_GS_PATH := gs://pixie-dev-public/graalvm-native-image-22.3.0-$(GRAALVM_IMAGE_VERSION).tar.gz
 
 ## Sysroot parameters
-SYSROOT_REV := pl8
+SYSROOT_REV := pl14
 SYSROOT_BUILD_DIR := $(BUILD_DIR)/sysroots
 SYSROOT_ARCHITECTURES := amd64 arm64
 SYSROOT_VARIANTS := runtime build test
@@ -266,7 +266,7 @@ build_all_sysroots: sysroot_creator/Dockerfile sysroot_creator/build_all_sysroot
 
 .PHONY: upload_all_sysroots
 upload_all_sysroots: build_all_sysroots
-	gsutil cp $(SYSROOT_BUILD_DIR)/* $(SYSROOT_GS_PATH)
+	# gsutil cp $(SYSROOT_BUILD_DIR)/* $(SYSROOT_GS_PATH)
 	$(GH_RELEASE_UPLOAD) sysroots $(SYSROOT_REV) $(SYSROOT_BUILD_DIR)/*
 	sha256sum $(SYSROOT_BUILD_DIR)/*
 

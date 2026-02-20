@@ -17,7 +17,10 @@
 FROM debian:bookworm@sha256:ee71fe8b4093251ca8462c29b2d78cdb491fd124a20350c89cd3456a43324a73
 
 RUN apt-get update -y && \
-  apt-get install -y golang curl xz-utils
+  apt-get install -y curl xz-utils
+
+RUN curl -fL https://go.dev/dl/go1.23.8.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
 
 RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64 -o /bin/yq && \
   chmod +x /bin/yq

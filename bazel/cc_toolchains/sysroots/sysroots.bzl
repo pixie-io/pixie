@@ -20,10 +20,10 @@ load("//bazel/cc_toolchains:utils.bzl", "abi")
 SYSROOT_LOCATIONS = dict(
     sysroot_x86_64_glibc2_36_runtime = dict(
         sha256 = "0f6c8147394c41a5c10715d0859ca2ef6e03d65a52b5959f6e11f1de7513f3a4",
+        sha256 = "a13c96cce26f9603fb99b5ef262f65a5ee85b9cac7817024a209bd5402f600ca",
         strip_prefix = "",
         urls = [
-            "https://github.com/pixie-io/dev-artifacts/releases/download/sysroots%2Fpl8/sysroot-amd64-runtime.tar.gz",
-            "https://storage.googleapis.com/pixie-dev-public/sysroots/pl8/sysroot-amd64-runtime.tar.gz",
+            "https://github.com/ddelnano/dev-artifacts/releases/download/sysroots%2Fpl13/sysroot-amd64-runtime.tar.gz",
         ],
     ),
     sysroot_x86_64_glibc2_36_build = dict(

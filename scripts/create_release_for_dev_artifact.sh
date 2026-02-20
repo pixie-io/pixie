@@ -16,7 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-repo="pixie-io/dev-artifacts"
+repo="ddelnano/dev-artifacts"
 
 if [[ $# -lt 3 ]]; then
   echo "Usage: $0 <release-name> <version> [<artifact>...]"
@@ -30,7 +30,7 @@ artifacts=( "${@:3}" )
 tag_name="${release_name}/${version}"
 
 repo_dir="$(mktemp -d)"
-git clone git@github.com:pixie-io/dev-artifacts.git "${repo_dir}"
+git clone git@github.com:ddelnano/dev-artifacts.git "${repo_dir}"
 
 pushd "${repo_dir}" &> /dev/null
 git tag "${tag_name}"

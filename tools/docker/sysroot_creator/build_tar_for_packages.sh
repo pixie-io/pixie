@@ -28,6 +28,7 @@ if [ "$#" -lt 4 ]; then
 fi
 
 debian_mirror="${DEBIAN_MIRROR:-http://ftp.us.debian.org/debian/}"
+debian_security_mirror="${DEBIAN_SECURITY_MIRROR:-http://security.debian.org/debian-security/}"
 
 package_satisifier_path="$(realpath "$1")"
 package_database_file="$(realpath "$2")"
@@ -40,7 +41,11 @@ done
 
 debs=()
 while read -r deb; do
-  debs+=("${debian_mirror}/${deb}")
+  if [[ "${deb}" == pool/updates/* ]]; then
+    debs+=("${debian_security_mirror}/${deb}")
+  else
+    debs+=("${debian_mirror}/${deb}")
+  fi
 done < <("${package_satisifier_path}" "${package_parser_args[@]}")
 
 echo "Dependencies to be added to archive:"
