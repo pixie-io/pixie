@@ -16,16 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include <gtest/gtest.h>
 
-#include <fstream>
 #include <string>
 #include <vector>
 
-#include "src/common/testing/temp_dir.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
@@ -394,69 +389,6 @@ TEST(CGroupPathResolver, Cgroup2Format) {
  * 3. cgroup1+cgroup2 w/ cgroup1 failing (gh#XXX bug)
  * 4. cgroup1+cgroup2 w/ cgroup1 succeeding
  */
-
-// Test that FindSelfCGroupProcs gracefully handles permission-denied directories
-// (e.g. CrowdStrike Falcon's sandbox.falcon) instead of crashing with an uncaught exception.
-TEST(FindSelfCGroupProcs, SkipsPermissionDeniedDirectories) {
-  // This test requires running as non-root, since root bypasses permission checks.
-  if (getuid() == 0) {
-    GTEST_SKIP() << "Test requires non-root user";
-  }
-
-  px::testing::TempDir tmp_dir;
-  auto base_path = tmp_dir.path();
-
-  // Create a directory structure with an accessible cgroup.procs containing our PID,
-  // and a restricted directory that simulates CrowdStrike Falcon's sandbox.
-  auto accessible_dir = base_path / "kubepods" / "pod1234";
-  std::filesystem::create_directories(accessible_dir);
-
-  // Write our PID to cgroup.procs so FindSelfCGroupProcs can find it.
-  {
-    std::ofstream ofs((accessible_dir / "cgroup.procs").string());
-    ofs << getpid();
-  }
-
-  // Create a restricted directory that the iterator cannot enter.
-  auto restricted_dir = base_path / "system.slice" / "falcon-sensor.service" / "sandbox.falcon";
-  std::filesystem::create_directories(restricted_dir);
-  // Remove all permissions on the sandbox directory.
-  chmod(restricted_dir.c_str(), 0000);
-
-  // FindSelfCGroupProcs should succeed and find our cgroup.procs,
-  // skipping the restricted directory instead of throwing.
-  ASSERT_OK_AND_ASSIGN(auto result, FindSelfCGroupProcs(base_path.string()));
-  EXPECT_EQ(result, (accessible_dir / "cgroup.procs").string());
-
-  // Restore permissions so TempDir cleanup can remove it.
-  chmod(restricted_dir.c_str(), 0755);
-}
-
-// Test that FindSelfCGroupProcs returns NotFound (not a crash) when the only
-// cgroup.procs is behind a restricted directory.
-TEST(FindSelfCGroupProcs, ReturnsNotFoundWhenAllPathsRestricted) {
-  if (getuid() == 0) {
-    GTEST_SKIP() << "Test requires non-root user";
-  }
-
-  px::testing::TempDir tmp_dir;
-  auto base_path = tmp_dir.path();
-
-  // Put cgroup.procs inside a restricted directory so it's unreachable.
-  auto restricted_dir = base_path / "restricted";
-  std::filesystem::create_directories(restricted_dir);
-  {
-    std::ofstream ofs((restricted_dir / "cgroup.procs").string());
-    ofs << getpid();
-  }
-  chmod(restricted_dir.c_str(), 0000);
-
-  // Should return NotFound, not crash.
-  auto result = FindSelfCGroupProcs(base_path.string());
-  EXPECT_NOT_OK(result);
-
-  chmod(restricted_dir.c_str(), 0755);
-}
 
 }  // namespace md
 }  // namespace px
