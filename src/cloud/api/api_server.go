@@ -58,7 +58,7 @@ const (
 func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 	pflag.String("elastic_service", "https://pl-elastic-es-http.plc-dev.svc.cluster.local:9200", "The url of the elasticsearch cluster")
-	pflag.String("elastic_ca_cert", "/elastic-certs/ca.crt", "CA Cert for elastic cluster")
+	pflag.String("elastic_ca_cert", "/elastic-certs/ca.crt", "CA Cert for elastic cluster.")
 	pflag.String("elastic_tls_cert", "/elastic-certs/tls.crt", "TLS Cert for elastic cluster")
 	pflag.String("elastic_tls_key", "/elastic-certs/tls.key", "TLS Key for elastic cluster")
 	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
