@@ -12,16 +12,16 @@
       "checksum": "9a9aee10c7804ff678719fb2887fa4758d5d94c7cb03c1b50fbccb0c4ee43dcc"
    },
    {
-      "path": "main/n/ncurses/libtinfo6_6.4-2_amd64.deb",
-      "checksum": "9627a3d3d2b9fed9fc5828962a52a6f70de8bb73dca9a9a432cab4b0159e68cb"
+      "path": "main/n/ncurses/libtinfo6_6.4-4_amd64.deb",
+      "checksum": "072d908f38f51090ca28ca5afa3b46b2957dc61fe35094c0b851426859a49a51"
    },
    {
       "path": "main/libu/libunwind/libunwind8_1.6.2-3_amd64.deb",
       "checksum": "571cb2968ba9eaa817ae3bad792e4dbb80950c72d28b92ea3ea67becd08e8711"
    },
    {
-      "path": "main/x/xz-utils/liblzma5_5.4.1-0.2_amd64.deb",
-      "checksum": "2c9c51f281997ce5963e3b22b928dec13adafb8e3079bc02f89e51db9891bfd2"
+      "path": "main/x/xz-utils/liblzma5_5.4.1-1_amd64.deb",
+      "checksum": "d321b9502b16aac534e1c691afbe3dc5e125e5091aa35bea026c59b25ebe82e7"
    },
    {
       "path": "main/z/zlib/zlib1g_1.2.13.dfsg-1ubuntu4_amd64.deb",

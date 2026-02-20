@@ -42,18 +42,18 @@ def _container_image(name, digest, repository):
     )
 
 def base_images():
-    # Based on alpine 3.15.9, using OpenResty 1.21.4.1
-    # https://hub.docker.com/layers/openresty/openresty/alpine-apk-amd64/images/sha256-2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce?context=explore
+    # Based on alpine 3.18.12, using OpenResty 1.27.1.2
+    # https://hub.docker.com/r/openresty/openresty/tags?name=1.27.1.2-11-alpine-apk
     _container_image(
         name = "openresty",
         repository = "openresty/openresty",
-        digest = "sha256:2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce",
+        digest = "sha256:56fc9f7abc449a6d3eb06f63eca536fb61c16a3a53ab3fa7b9bb4dd6af614787",
     )
 
     _container_image(
         name = "base_image",
-        repository = "distroless/base",
-        digest = "sha256:8267a5d9fa15a538227a8850e81cf6c548a78de73458e99a67e8799bbffb1ba0",
+        repository = "distroless/base-debian12",
+        digest = "sha256:1f144c77a9ecaaa132fc3037b4417d9f9fd0b7a50101c696af5cb186876aa2a3",
     )
 
     _container_image(

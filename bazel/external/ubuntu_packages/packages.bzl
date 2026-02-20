@@ -38,14 +38,14 @@ def download_ubuntu_packages():
     )
     http_file(
         name = "liblzma5",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/liblzma5_5.4.1-0.2_amd64.deb"],
-        sha256 = "2eb9eec6d213ea17938ef5c552f360a1093386acfe185e8c7cccdc60b984744d",
+        urls = ["http://deb.debian.org/debian/pool/main/x/xz-utils/liblzma5_5.4.1-1_amd64.deb"],
+        sha256 = "d321b9502b16aac534e1c691afbe3dc5e125e5091aa35bea026c59b25ebe82e7",
         downloaded_file_path = "out.deb",
     )
     http_file(
         name = "libtinfo6",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libtinfo6_6.4-2_amd64.deb"],
-        sha256 = "9d857ace717312b56acf7775b23e6400eef98c1eb7b0db111a799709c6d97353",
+        urls = ["http://deb.debian.org/debian/pool/main/n/ncurses/libtinfo6_6.4-4_amd64.deb"],
+        sha256 = "072d908f38f51090ca28ca5afa3b46b2957dc61fe35094c0b851426859a49a51",
         downloaded_file_path = "out.deb",
     )
     http_file(
