@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/blang/semver"
@@ -320,6 +321,13 @@ func UpdatePlugins(db *sqlx.DB, pClient pluginpb.DataRetentionPluginServiceClien
 }
 
 func main() {
+	defer func() {
+		// Signal sidecar containers that this job has finished.
+		if err := os.WriteFile("/tmp/pod/terminated", nil, 0644); err != nil {
+			log.WithError(err).Warn("Failed to write termination file")
+		}
+	}()
+
 	log.Info("Starting load_plugins...")
 	pflag.Parse()
 

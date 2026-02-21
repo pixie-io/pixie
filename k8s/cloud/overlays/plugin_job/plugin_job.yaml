@@ -16,11 +16,7 @@ spec:
       containers:
       - name: updater
         image: cloud-plugin-load_db:latest
-        command: ["/bin/busybox", "sh", "-c"]
-        args:
-        - |
-            trap "touch /tmp/pod/terminated" EXIT
-            src/cloud/plugin/load_db/load_db_/load_db
+        command: ["src/cloud/plugin/load_db/load_db_/load_db"]
         envFrom:
         - configMapRef:
             name: pl-db-config
