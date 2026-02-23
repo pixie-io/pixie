@@ -102,7 +102,8 @@ Status PlanFragmentWalker::CallWalkFn(const Operator& op) {
       PX_RETURN_IF_ERROR(CallAs<ClickHouseSourceOperator>(on_clickhouse_source_walk_fn_, op));
       break;
     case planpb::OperatorType::CLICKHOUSE_EXPORT_SINK_OPERATOR:
-      PX_RETURN_IF_ERROR(CallAs<ClickHouseExportSinkOperator>(on_clickhouse_export_sink_walk_fn_, op));
+      PX_RETURN_IF_ERROR(
+          CallAs<ClickHouseExportSinkOperator>(on_clickhouse_export_sink_walk_fn_, op));
       break;
     default:
       LOG(FATAL) << absl::Substitute("Operator does not exist: $0", magic_enum::enum_name(op_type));
