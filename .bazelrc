@@ -3,6 +3,7 @@
 # Use local Cache directory if building on a VM:
 # On Chef VM, create a directory and comment in the following line:
 # build --disk_cache=</tmp/bazel/> # Optional for multi-user cache: Make this directory owned by a group name e.g. "bazelcache"
+common --noenable_bzlmod --enable_workspace
 
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
@@ -28,11 +29,6 @@ test --remote_download_minimal
 run --remote_download_outputs=all
 coverage --build_runfile_links
 coverage --nocache_test_results
-
-# Needed by rules_meta.
-# Follow https://github.com/fmeum/rules_meta/issues/1#issuecomment-1255828109
-# for updates.
-common --incompatible_remove_rule_name_parameter=false
 
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status.sh
@@ -109,7 +105,7 @@ test:aarch64_sysroot --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,
 # Build for Clang using Libc++.
 build:clang --config=clang-base
 build:clang --//bazel:enable_libcpp
-build:clang --features=libc++ --features=-libstdc++
+build:clang --features=libc++ --features=-libstdc++ --host_features=libc++ --host_features=-libstdc++
 build:clang --build_tag_filters=-no_libcpp
 build:clang --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
 test:clang --config=tmp-sandbox
@@ -122,7 +118,7 @@ test:clang-libstdc++ --config=tmp-sandbox
 
 build:qemu-bpf --config=clang-base
 build:qemu-bpf --//bazel:enable_libcpp
-build:qemu-bpf --features=libc++ --features=-libstdc++
+build:qemu-bpf --features=libc++ --features=-libstdc++ --host_features=libc++ --host_features=-libstdc++
 build:qemu-bpf --build_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp
 build:qemu-bpf --test_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp,-disabled
 build:qemu-bpf --sandbox_fake_username

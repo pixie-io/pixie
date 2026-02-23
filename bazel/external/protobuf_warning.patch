@@ -14,20 +14,20 @@ index 5e9a2c418..f95684bd1 100644
            virtual_path = "";
            disk_path = parts[i];
 diff --git a/src/google/protobuf/descriptor.cc b/src/google/protobuf/descriptor.cc
-index 5f3427dc7..ab049c7c6 100644
+index 7456d3c3d..ddcd08c17 100644
 --- a/src/google/protobuf/descriptor.cc
 +++ b/src/google/protobuf/descriptor.cc
-@@ -8161,10 +8161,11 @@ void DescriptorBuilder::LogUnusedDependency(const FileDescriptorProto& proto,
+@@ -10410,10 +10410,11 @@ void DescriptorBuilder::LogUnusedDependency(const FileDescriptorProto& proto,
        if (is_error) {
-         AddError((*it)->name(), proto, DescriptorPool::ErrorCollector::IMPORT,
-                  error_message);
+         AddError(unused->name(), proto, DescriptorPool::ErrorCollector::IMPORT,
+                  make_error);
 -      } else {
--        AddWarning((*it)->name(), proto, DescriptorPool::ErrorCollector::IMPORT,
--                   error_message);
+-        AddWarning(unused->name(), proto,
+-                   DescriptorPool::ErrorCollector::IMPORT, make_error);
        }
 +      // else {
-+      // AddWarning((*it)->name(), proto, DescriptorPool::ErrorCollector::IMPORT,
-+      // error_message);
++      // AddWarning(unused->name(), proto,
++      //           DescriptorPool::ErrorCollector::IMPORT, make_error);
 +      // }
      }
    }

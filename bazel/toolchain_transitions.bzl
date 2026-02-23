@@ -14,30 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@com_github_fmeum_rules_meta//meta:defs.bzl", "meta")
+load("@with_cfg.bzl", "with_cfg")
 load("//bazel/test_runners/qemu_with_kernel:runner.bzl", "qemu_with_kernel_interactive_runner")
 
-java_graal_binary = meta.wrap_with_transition(
-    native.java_binary,
-    {
-        "java_runtime_version": meta.replace_with("remotejdk_openjdk_graal_17"),
-    },
-    executable = True,
-)
+java_graal_binary, _java_graal_binary_internal = with_cfg(native.java_binary).set(
+    "java_runtime_version", "remotejdk_openjdk_graal_17").build()
 
-cc_clang_binary = meta.wrap_with_transition(
-    native.cc_binary,
-    {
-        "@//bazel/cc_toolchains:compiler": meta.replace_with("clang"),
-        "@//bazel/cc_toolchains:libc_version": meta.replace_with("glibc2_36"),
-    },
-    executable = True,
-)
+cc_clang_binary, _cc_clang_binary_internal = with_cfg(native.cc_binary).set(
+        Label("@//bazel/cc_toolchains:compiler"), "clang").set(
+        Label("@//bazel/cc_toolchains:libc_version"), "glibc2_36").build()
 
-qemu_interactive_runner = meta.wrap_with_transition(
-    qemu_with_kernel_interactive_runner,
-    {
-        "@//bazel/cc_toolchains:libc_version": meta.replace_with("glibc2_36"),
-    },
-    executable = True,
-)
+qemu_interactive_runner, _qemu_interactive_runner_internal = with_cfg(qemu_with_kernel_interactive_runner).set(
+    Label("@//bazel/cc_toolchains:libc_version"), "glibc2_36").build()

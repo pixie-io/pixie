@@ -1,15 +1,16 @@
-diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
---- a/cc_toolchain_config.bzl	2023-01-06 15:34:50.000000000 -0800
-+++ b/cc_toolchain_config.bzl	2023-01-22 15:33:16.794758043 -0800
-@@ -27,6 +27,7 @@
-     "with_feature_set",
- )
+diff --git a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
+index 1dd0e7a6e7..29b59c6325 100644
+--- a/cc_toolchain_config.bzl
++++ b/cc_toolchain_config.bzl
+@@ -15,6 +15,7 @@
+ """A Starlark cc_toolchain configuration rule"""
+ 
  load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 +load(":toolchain_features.bzl", "pl_toolchain_pre_features", "PL_EXTRA_CC_CONFIG_ATTRS", "pl_toolchain_post_features", "pl_action_configs")
- 
- def layering_check_features(compiler):
-     if compiler != "clang":
-@@ -147,7 +148,7 @@
+ load(
+     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+     "action_config",
+@@ -228,7 +229,7 @@ def _impl(ctx):
          tool_path(name = name, path = path)
          for name, path in ctx.attr.tool_paths.items()
      ]
@@ -18,7 +19,7 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
  
      llvm_cov_action = action_config(
          action_name = ACTION_NAMES.llvm_cov,
-@@ -168,6 +169,10 @@
+@@ -278,6 +279,10 @@ def _impl(ctx):
          name = "supports_start_end_lib",
          enabled = True,
      )
@@ -27,9 +28,9 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
 +        enabled = True,
 +    )
  
-     default_compile_flags_feature = feature(
-         name = "default_compile_flags",
-@@ -203,7 +208,7 @@
+     gcc_quoting_for_param_files_feature = feature(
+         name = "gcc_quoting_for_param_files",
+@@ -323,7 +328,7 @@ def _impl(ctx):
                          flags = ctx.attr.dbg_compile_flags,
                      ),
                  ] if ctx.attr.dbg_compile_flags else []),
@@ -38,7 +39,7 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
              ),
              flag_set(
                  actions = all_compile_actions,
-@@ -212,7 +217,7 @@
+@@ -332,7 +337,7 @@ def _impl(ctx):
                          flags = ctx.attr.opt_compile_flags,
                      ),
                  ] if ctx.attr.opt_compile_flags else []),
@@ -46,8 +47,8 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
 +                with_features = [with_feature_set(features = ["opt", "default_opt_level_flags"])],
              ),
              flag_set(
-                 actions = all_cpp_compile_actions + [ACTION_NAMES.lto_backend],
-@@ -244,7 +249,7 @@
+                 actions = [ACTION_NAMES.c_compile],
+@@ -372,7 +377,7 @@ def _impl(ctx):
                          flags = ctx.attr.opt_link_flags,
                      ),
                  ] if ctx.attr.opt_link_flags else []),
@@ -55,32 +56,72 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
 +                with_features = [with_feature_set(features = ["opt", "default_opt_level_flags"])],
              ),
          ],
+         env_sets = [
+@@ -1473,27 +1478,6 @@ def _impl(ctx):
+         enabled = True,
      )
-@@ -1255,6 +1260,7 @@
+ 
+-    asan_feature = _sanitizer_feature(
+-        name = "asan",
+-        specific_compile_flags = [
+-            "-fsanitize=address",
+-            "-fno-common",
+-        ],
+-        specific_link_flags = [
+-            "-fsanitize=address",
+-        ],
+-    )
+-
+-    tsan_feature = _sanitizer_feature(
+-        name = "tsan",
+-        specific_compile_flags = [
+-            "-fsanitize=thread",
+-        ],
+-        specific_link_flags = [
+-            "-fsanitize=thread",
+-        ],
+-    )
+-
+     ubsan_feature = _sanitizer_feature(
+         name = "ubsan",
+         specific_compile_flags = [
+@@ -1569,11 +1553,10 @@ def _impl(ctx):
              strip_debug_symbols_feature,
              coverage_feature,
              supports_pic_feature,
+-            asan_feature,
+-            tsan_feature,
+             ubsan_feature,
+             gcc_quoting_for_param_files_feature,
+             static_link_cpp_runtimes_feature,
 +            default_opt_level_flags_feature,
          ] + (
              [
                  supports_start_end_lib_feature,
-@@ -1276,6 +1282,7 @@
-     else:
-         features = [
-             supports_pic_feature,
+@@ -1613,11 +1596,10 @@ def _impl(ctx):
+             set_install_name_feature,
+             libtool_feature,
+             archiver_flags_feature,
+-            asan_feature,
+-            tsan_feature,
+             ubsan_feature,
+             gcc_quoting_for_param_files_feature,
+             static_link_cpp_runtimes_feature,
 +            default_opt_level_flags_feature,
          ] + (
              [
                  supports_start_end_lib_feature,
-@@ -1294,6 +1301,7 @@
-             unfiltered_compile_flags_feature,
-         ] + layering_check_features(ctx.attr.compiler)
+@@ -1643,8 +1625,8 @@ def _impl(ctx):
+     parse_headers_action_configs, parse_headers_features = parse_headers_support(
+         parse_headers_tool_path = ctx.attr.tool_paths.get("parse_headers"),
+     )
++    features = pl_toolchain_pre_features(ctx) + features + parse_headers_features + pl_toolchain_post_features(ctx)
+     action_configs += parse_headers_action_configs
+-    features += parse_headers_features
  
-+    features = pl_toolchain_pre_features(ctx) + features + pl_toolchain_post_features(ctx)
-     return cc_common.create_cc_toolchain_config_info(
-         ctx = ctx,
-         features = features,
-@@ -1313,7 +1321,7 @@
+     if symbol_check:
+         features.append(symbol_check)
+@@ -1669,7 +1651,7 @@ def _impl(ctx):
  
  cc_toolchain_config = rule(
      implementation = _impl,
@@ -89,11 +130,12 @@ diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
          "cpu": attr.string(mandatory = True),
          "compiler": attr.string(mandatory = True),
          "toolchain_identifier": attr.string(mandatory = True),
-@@ -1336,6 +1344,6 @@
-         "coverage_link_flags": attr.string_list(),
-         "supports_start_end_lib": attr.bool(),
-         "builtin_sysroot": attr.string(),
+@@ -1699,7 +1681,7 @@ cc_toolchain_config = rule(
+             fragment = "apple",
+             name = "xcode_config_label",
+         )),
 -    },
 +    }, **PL_EXTRA_CC_CONFIG_ATTRS),
+     fragments = ["apple", "cpp"],
      provides = [CcToolchainConfigInfo],
  )

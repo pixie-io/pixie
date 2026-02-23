@@ -29,7 +29,7 @@
 #include <variant>
 #include <vector>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"

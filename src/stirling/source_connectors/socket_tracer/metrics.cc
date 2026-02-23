@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/source_connectors/socket_tracer/metrics.h"
 

@@ -111,7 +111,7 @@ TEST(Status, context_copy_tests) {
   Status s2 = s1;
   EXPECT_TRUE(s2.has_context());
   EXPECT_EQ(s1, s2);
-  EXPECT_EQ(s1.context()->DebugString(), s2.context()->DebugString());
+  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(*s1.context(), *s2.context()));
 }
 
 TEST(Status, context_vs_no_context_status) {
@@ -120,7 +120,7 @@ TEST(Status, context_vs_no_context_status) {
   EXPECT_NE(s1, s2);
   EXPECT_FALSE(s2.has_context());
   EXPECT_EQ(s2.context(), nullptr);
-  EXPECT_NE(s1.ToProto().DebugString(), s2.ToProto().DebugString());
+  EXPECT_FALSE(google::protobuf::util::MessageDifferencer::Equals(s1.ToProto(), s2.ToProto()));
 }
 
 TEST(StatusAdapter, proto_with_context_test) {

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum_all.hpp>
 #include "src/common/testing/testing.h"
 
 // The following test cases are mostly from MagicEnum docs: https://github.com/Neargye/magic_enum.

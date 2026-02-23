@@ -30,7 +30,7 @@
 #include <absl/numeric/int128.h>
 #include <clickhouse/client.h>
 #include <grpcpp/grpcpp.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
@@ -1081,7 +1081,7 @@ namespace clickhouse_schema {
  * Based on the mapping used in carnot_executable.cc for http_events table.
  */
 inline std::string PixieTypeToClickHouseType(types::DataType pixie_type,
-                                              const std::string& column_name) {
+                                             const std::string& column_name) {
   switch (pixie_type) {
     case types::DataType::INT64:
       return "Int64";
@@ -1141,14 +1141,16 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
         UDTFArg::Make<types::DataType::STRING>("host", "ClickHouse server host", "'localhost'"),
         UDTFArg::Make<types::DataType::INT64>("port", "ClickHouse server port", 9000),
         UDTFArg::Make<types::DataType::STRING>("username", "ClickHouse username", "'default'"),
-        UDTFArg::Make<types::DataType::STRING>("password", "ClickHouse password", "'test_password'"),
+        UDTFArg::Make<types::DataType::STRING>("password", "ClickHouse password",
+                                               "'test_password'"),
         UDTFArg::Make<types::DataType::STRING>("database", "ClickHouse database", "'default'"),
-        UDTFArg::Make<types::BOOLEAN>("use_if_not_exists", "Whether to use IF NOT EXISTS in CREATE TABLE statements", true));
+        UDTFArg::Make<types::BOOLEAN>(
+            "use_if_not_exists", "Whether to use IF NOT EXISTS in CREATE TABLE statements", true));
   }
 
   Status Init(FunctionContext*, types::StringValue host, types::Int64Value port,
-              types::StringValue username, types::StringValue password,
-              types::StringValue database, types::BoolValue use_if_not_exists) {
+              types::StringValue username, types::StringValue password, types::StringValue database,
+              types::BoolValue use_if_not_exists) {
     // Store ClickHouse connection parameters
     host_ = std::string(host);
     port_ = port.val;
@@ -1165,8 +1167,7 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
     add_context_authentication_func_(&ctx);
     auto s = stub_->GetSchemas(&ctx, req, &resp);
     if (!s.ok()) {
-      return error::Internal("Failed to make RPC call to metadata service: $0",
-                             s.error_message());
+      return error::Internal("Failed to make RPC call to metadata service: $0", s.error_message());
     }
 
     // Connect to ClickHouse
@@ -1182,8 +1183,8 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
       // Test connection
       clickhouse_client_->Execute("SELECT 1");
     } catch (const std::exception& e) {
-      return error::Internal("Failed to connect to ClickHouse at $0:$1 - $2",
-                             host_, port_, e.what());
+      return error::Internal("Failed to connect to ClickHouse at $0:$1 - $2", host_, port_,
+                             e.what());
     }
 
     for (const auto& [rel_table_name, rel] : resp.schema().relation_map()) {
@@ -1194,8 +1195,7 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
       // Check if table has a time_ column (required for partitioning)
       bool has_time_column = false;
       for (const auto& col : rel.columns()) {
-        if (col.column_name() == "time_" &&
-            col.column_type() == types::DataType::TIME64NS) {
+        if (col.column_name() == "time_" && col.column_type() == types::DataType::TIME64NS) {
           has_time_column = true;
           break;
         }
@@ -1275,8 +1275,8 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
    * - Uses ORDER BY (hostname, event_time)
    */
   std::string GenerateCreateTableSQL(const std::string& table_name,
-                                      const px::table_store::schemapb::Relation& schema,
-                                      bool use_if_not_exists) {
+                                     const px::table_store::schemapb::Relation& schema,
+                                     bool use_if_not_exists) {
     std::vector<std::string> column_defs;
 
     // Add columns from schema
@@ -1286,8 +1286,8 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
         // event_time and hostname are added separately
         continue;
       }
-      std::string clickhouse_type = clickhouse_schema::PixieTypeToClickHouseType(
-          col.column_type(), column_name);
+      std::string clickhouse_type =
+          clickhouse_schema::PixieTypeToClickHouseType(col.column_type(), column_name);
       column_defs.push_back(absl::Substitute("$0 $1", column_name, clickhouse_type));
     }
 
@@ -1307,7 +1307,8 @@ class CreateClickHouseSchemas final : public carnot::udf::UDTF<CreateClickHouseS
       ) ENGINE = MergeTree()
       PARTITION BY toYYYYMM(event_time)
       ORDER BY (hostname, event_time)
-    )", if_not_exists_clause, table_name, columns_str);
+    )",
+                                              if_not_exists_clause, table_name, columns_str);
 
     return create_sql;
   }

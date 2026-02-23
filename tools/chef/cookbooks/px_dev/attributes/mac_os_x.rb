@@ -23,10 +23,10 @@ end
 default['owner'] = node['current_user']
 default['group'] = 'wheel'
 
-default['bazel']['download_path'] =
-  "https://github.com/bazelbuild/bazel/releases/download/6.2.0/bazel-6.2.0-darwin-x86_64"
-default['bazel']['sha256'] =
-  'd2356012843ce3a2fbba89f88191673a6ad2f7716cc46ad43ec1bcee78d36b44'
+default['bazelisk']['download_path'] =
+  "https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-darwin-amd64"
+default['bazelisk']['sha256'] =
+  '8fcd7ba828f673ba4b1529425e01e15ac42599ef566c17f320d8cbfe7b96a167'
 
 default['codecov']['download_path'] =
   'https://uploader.codecov.io/v0.2.3/macos/codecov'

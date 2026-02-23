@@ -19,7 +19,7 @@
 #    * Adds a --config=clang by default if it's missing from the command line.
 # Check if this is this pixie repo, otherwise just passthrough to bazel_core.
 if ! grep 'workspace(name\s=\s"px")' "$(git rev-parse --show-toplevel 2> /dev/null)/WORKSPACE" &> /dev/null; then
-  /opt/px_dev/bin/bazel_core "$@"
+  /opt/px_dev/bin/bazelisk "$@"
   exit $?
 fi;
 
@@ -36,4 +36,4 @@ fi;
 cmd=$1
 shift
 
-/opt/px_dev/bin/bazel_core ${cmd:+"$cmd"} ${config:+"$config"} "$@"
+/opt/px_dev/bin/bazelisk ${cmd:+"$cmd"} ${config:+"$config"} "$@"

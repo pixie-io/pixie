@@ -25,7 +25,7 @@
 #include <utility>
 
 #include <absl/strings/ascii.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/stirling/utils/binary_decoder.h"
