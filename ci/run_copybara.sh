@@ -26,6 +26,7 @@ then
   echo "Usage: $0 <sky_file>"
   exit 1
 fi
+shift
 
 # Copybara needs this configured, otherwise it's unhappy.
 git config --global user.name ${git_committer_name}
@@ -35,11 +36,13 @@ echo "${COPYBARA_GPG_KEY}" | base64 -d | gpg --no-tty --batch --import
 git config --global user.signingkey "${COPYBARA_GPG_KEY_ID}"
 git config --global commit.gpgsign true
 
-copybara_args=""
+copybara_args=(
+  "$@"
+)
 
 sky_file_dir=$(dirname "$sky_file_path")
 pushd "${sky_file_dir}" || exit
-copybara copy.bara.sky "${copybara_args}"
+copybara migrate copy.bara.sky "${copybara_args[@]}"
 retval=$?
 if [[ $retval -ne 0 && $retval -ne 4 ]]
 then
