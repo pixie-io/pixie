@@ -1,0 +1,26 @@
+---
+name: upstream-sync-copybara
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
+permissions:
+  contents: read
+jobs:
+  run-copybara:
+    runs-on: ubuntu-latest
+    container:
+      image: gcr.io/pixie-oss/pixie-dev-public/copybara:20210420
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+    - id: create-ssh-key
+      env:
+        COPYBARA_SSH_KEY: ${{ secrets.COPYBARA_SSH_KEY }}
+      run: echo "$COPYBARA_SSH_KEY" > /tmp/sshkey && chmod 600 /tmp/sshkey
+    - id: upstream-sync-copybara
+      env:
+        COPYBARA_GPG_KEY: ${{ secrets.COPYBARA_GPG_KEY }}
+        COPYBARA_GPG_KEY_ID: ${{ secrets.COPYBARA_GPG_KEY_ID }}
+      run: >
+        GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/sshkey'
+        ./ci/run_copybara.sh tools/copybara/upstream_sync/copy.bara.sky

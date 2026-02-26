@@ -308,7 +308,7 @@ pl_cc_test(
     timeout = "long",
     srcs = ["clickhouse_source_node_test.cc"],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:clickhouse.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse",
     ],
     tags = [
         "exclusive",
@@ -329,7 +329,7 @@ pl_cc_test(
     timeout = "long",
     srcs = ["clickhouse_export_sink_node_test.cc"],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:clickhouse.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse",
     ],
     tags = [
         "exclusive",
