@@ -22,8 +22,8 @@ jobs:
       env:
         COPYBARA_GPG_KEY: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
         COPYBARA_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
-      # ac4d4e38c1a03b750045211335a682b11443fb56 is when fork started
+      # 9ae660bce072d1bc1dfbbddada333c88333f4a9a is when fork started
       # This is only needed for the first copybara run (supplied via --last-rev ${sha} flag)
       run: >
         GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/sshkey'
-        ./ci/run_copybara.sh tools/copybara/upstream_sync/copy.bara.sky --last-rev ac4d4e38c1a03b750045211335a682b11443fb56
+        ./ci/run_copybara.sh tools/copybara/upstream_sync/copy.bara.sky --last-rev 9ae660bce072d1bc1dfbbddada333c88333f4a9a
