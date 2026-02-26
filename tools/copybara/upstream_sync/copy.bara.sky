@@ -57,6 +57,7 @@ ignored_dirs = [
     "src/carnot/planner/objects/otel.cc", # To be upstreamed
     "src/carnot/planner/objects/otel.h", # To be upstreamed
     "src/carnot/planner/objects/qlobject.h", # To be upstreamed
+    "src/carnot/planner/plannerpb/service.proto", # To be upstreamed
     "src/carnot/planner/plannerpb/service.pb.go", # To be upstreamed
     "src/carnot/planpb/plan.pb.go", # To be upstreamed
     "src/carnot/planpb/plan.proto", # To be upstreamed
@@ -72,6 +73,7 @@ ignored_dirs = [
     "src/stirling/core/BUILD.bazel", # To be upstreamed
     "src/stirling/obj_tools/BUILD.bazel", # Issue with k8sstormcenter CI infra
     "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer_test.cc", # To be upstreamed
+    "src/stirling/source_connectors/socket_tracer/BUILD.bazel", # To be upstreamed
     "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse/**",
     "src/ui/README.md", # should be moved to fork only file
     "src/utils/testingutils/docker/elastic.go", # To be upstreamed
