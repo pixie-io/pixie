@@ -83,6 +83,7 @@ ignored_dirs = [
     "src/vizier/services/metadata/local/**", # clickhouse testing changes, likely can be removed
     "src/api/go/pxapi/vizier.go", # mutation support
     "src/vizier/services/query_broker/**", # mutation and clickhouse changes to upstream
+    "src/pixie_cli/BUILD.bazel", # fork customizations, see if this can be parameterized
     "tools/**",
     "WORKSPACE", # upstream misspelling
 ]
@@ -90,7 +91,6 @@ ignored_dirs = [
 # Files/dirs that exist only in the fork and must not be deleted by copybara.
 fork_only_files = [
     "PLATFORM.md",
-    "src/pixie_cli/BUILD.bazel", # see if this can be parameterized
     "bazel/external/rules_docker_pusher_cfg.patch",
     "k8s/vizier/bootstrap/adaptive_export_*",
     "k8s/vizier/bootstrap/kustomization.yaml",
