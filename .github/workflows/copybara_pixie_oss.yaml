@@ -10,7 +10,8 @@ jobs:
   run-copybara:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/k8sstormcenter/copybara:9675cc2a
+      # image built from upstream's 9675cc2a commit with ssh added
+      image: ghcr.io/k8sstormcenter/copybara:9675cc2a-ssh
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
     - id: create-ssh-key
