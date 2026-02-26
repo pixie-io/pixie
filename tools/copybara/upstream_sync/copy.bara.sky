@@ -109,8 +109,8 @@ core.workflow(
     ),
     destination = git.destination(
         url = dest_repo,
-        fetch = "copybara-test",
-        push = "copybara-test",
+        fetch = "main",
+        push = "main",
     ),
     origin_files = glob(
         ["**"],
