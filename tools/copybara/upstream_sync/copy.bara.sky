@@ -36,12 +36,50 @@ ignored_dirs = [
     "src/carnot/exec/BUILD.bazel",   # To be upstreamed
     "src/carnot/exec/clickhouse_*",  # To be upstreamed
     "src/carnot/exec/exec_graph.cc", # To be upstreamed
+    "src/carnot/funcs/builtins/BUILD.bazel", # To be upstreamed
+    "src/carnot/plan/operators.cc", # To be upstreamed
+    "src/carnot/plan/operators.h",  # To be upstreamed
+    "src/carnot/plan/plan_fragment.cc", # To be upstreamed
+    "src/carnot/plan/plan_fragment.h", # To be upstreamed
+    "src/carnot/planner/cgo_export.cc",
+    "src/carnot/planner/compiler/graph_comparison.h", # To be upstreamed
+    "src/carnot/planner/compiler_state/compiler_state.h", # To be upstreamed
+    "src/carnot/planner/distributed/splitter/splitter.h", # To be upstreamed
+    "src/carnot/planner/distributedpb/distributed_plan.pb.go", # To be upstreamed
+    "src/carnot/planner/distributedpb/distributed_plan.proto", # To be upstreamed
+    "src/carnot/planner/ir/BUILD.bazel", # To be upstreamed
+    "src/carnot/planner/ir/all_ir_nodes.h", # To be upstreamed
+    "src/carnot/planner/ir/operators.inl", # To be upstreamed
+    "src/carnot/planner/ir/pattern_match.h", # To be upstreamed
+    "src/carnot/planner/logical_planner.cc", # To be upstreamed
+    "src/carnot/planner/logical_planner_test.cc", # To be upstreamed
+    "src/carnot/planner/objects/dataframe.cc", # To be upstreamed
+    "src/carnot/planner/objects/otel.cc", # To be upstreamed
+    "src/carnot/planner/objects/otel.h", # To be upstreamed
+    "src/carnot/planner/objects/qlobject.h", # To be upstreamed
+    "src/carnot/planner/plannerpb/service.pb.go", # To be upstreamed
+    "src/carnot/planpb/plan.pb.go", # To be upstreamed
+    "src/carnot/planpb/plan.proto", # To be upstreamed
+    "src/carnot/planpb/test_proto.h", # To be upstreamed
+    "src/common/testing/protobuf.h", # To be upstreamed
+    "src/common/uuid/uuid_utils.h", # To be upstreamed
+    "src/experimental/standalone_pem/BUILD.bazel", # To be upstreamed
+    "src/experimental/standalone_pem/vizier_server.h", # To be upstreamed
+    "src/experimental/standalone_pem/standalone_pem_manager.h", # To be upstreamed
+    "src/experimental/standalone_pem/standalone_pem_manager.cc", # To be upstreamed
+    "src/shared/services/pgtest/pgtest.go", # To be upstreamed
+    "src/shared/version/BUILD.bazel", # To be upstreamed
+    "src/stirling/core/BUILD.bazel", # To be upstreamed
+    "src/stirling/obj_tools/BUILD.bazel", # Issue with k8sstormcenter CI infra
+    "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer_test.cc", # To be upstreamed
     "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse/**",
     "src/ui/README.md", # should be moved to fork only file
+    "src/utils/testingutils/docker/elastic.go", # To be upstreamed
     "src/utils/shared/certs/**", # cert-manager support (upstream)
     "src/vizier/funcs/md_udtfs/**", # Clickhouse UDTF changes
     "src/vizier/services/agent/shared/manager/BUILD.bazel", # ASAN build changes. Likely to be upstreamed
     "src/vizier/services/cloud_connector/bridge/**", # should be made generic and upstreamed
+    "src/vizier/services/metadata/metadatapb/BUILD.bazel",
     "src/vizier/services/metadata/local/**", # clickhouse testing changes, likely can be removed
     "src/api/go/pxapi/vizier.go", # mutation support
     "src/vizier/services/query_broker/**", # mutation and clickhouse changes to upstream
@@ -52,6 +90,7 @@ ignored_dirs = [
 # Files/dirs that exist only in the fork and must not be deleted by copybara.
 fork_only_files = [
     "PLATFORM.md",
+    "src/pixie_cli/BUILD.bazel", # see if this can be parameterized
     "bazel/external/rules_docker_pusher_cfg.patch",
     "k8s/vizier/bootstrap/adaptive_export_*",
     "k8s/vizier/bootstrap/kustomization.yaml",
