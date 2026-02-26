@@ -277,7 +277,7 @@ void TableToCsv(const std::string& filename,
 
 // ClickHouse container configuration
 constexpr char kClickHouseImage[] =
-    "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse.tar";
+    "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse/clickhouse.tar";
 constexpr char kClickHouseReadyMessage[] = "Ready for connections";
 constexpr int kClickHousePort = 9000;
 

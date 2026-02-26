@@ -54,7 +54,7 @@ using ::testing::_;
 class ClickHouseExportSinkNodeTest : public ::testing::Test {
  protected:
   static constexpr char kClickHouseImage[] =
-      "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse/clickhouse.tar";
   static constexpr char kClickHouseReadyMessage[] = "Ready for connections";
   static constexpr int kClickHousePort = 9000;
 

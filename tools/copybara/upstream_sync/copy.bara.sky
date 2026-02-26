@@ -1,0 +1,86 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+source_repo = "git@github.com:pixie-io/pixie.git"
+dest_repo = "git@github.com:k8sstormcenter/pixie.git"
+
+# Directories with fork-specific customizations that will be upstreamed separately.
+ignored_dirs = [
+    ".bazelrc",      # upstream + fork only changes
+    ".github/**",    # upstream + fork only changes
+    "DEVELOPMENT.md", # Should be moved to a fork only file
+    "ci/**",          # upstream
+    "k8s/**",                          # cert-manager support (upstream)
+    "scripts/create_cloud_secrets.sh", # cert-manager support (upstream)
+    "skaffold/**",
+    "bazel/repositories.bzl", # to be upstreamed
+    "bazel/repository_locations.bzl", # to be upstreamed
+    "bazel/container_images.bzl", # to be upstreamed
+    "bazel/external/clickhouse_cpp.BUILD", # to be upstreamd
+    "src/carnot/BUILD.bazel", # To be upstreamed
+    "src/carnot/carnot.cc",   # To be upstreamed
+    "src/carnot/carnot_executable.cc", # To be upstreamed or removed after equivalent test coverage is upstreamed
+    "src/carnot/exec/BUILD.bazel",   # To be upstreamed
+    "src/carnot/exec/clickhouse_*",  # To be upstreamed
+    "src/carnot/exec/exec_graph.cc", # To be upstreamed
+    "src/stirling/source_connectors/socket_tracer/testing/container_images/clickhouse/**",
+    "src/ui/README.md", # should be moved to fork only file
+    "src/utils/shared/certs/**", # cert-manager support (upstream)
+    "src/vizier/funcs/md_udtfs/**", # Clickhouse UDTF changes
+    "src/vizier/services/agent/shared/manager/BUILD.bazel", # ASAN build changes. Likely to be upstreamed
+    "src/vizier/services/cloud_connector/bridge/**", # should be made generic and upstreamed
+    "src/vizier/services/metadata/local/**", # clickhouse testing changes, likely can be removed
+    "src/api/go/pxapi/vizier.go", # mutation support
+    "src/vizier/services/query_broker/**", # mutation and clickhouse changes to upstream
+    "tools/**",
+    "WORKSPACE", # upstream misspelling
+]
+
+# Files/dirs that exist only in the fork and must not be deleted by copybara.
+fork_only_files = [
+    "PLATFORM.md",
+    "bazel/external/rules_docker_pusher_cfg.patch",
+    "k8s/vizier/bootstrap/adaptive_export_*",
+    "k8s/vizier/bootstrap/kustomization.yaml",
+    "src/carnot/planner/ir/clickhouse_*",
+    "src/vizier/services/adaptive_export/**",
+    "src/vizier/services/metadata/local/**",
+    "tools/licenses/BUILD.bazel",
+]
+
+core.workflow(
+    name = "default",
+    origin = git.origin(
+        url = source_repo,
+        ref = "main",
+    ),
+    destination = git.destination(
+        url = dest_repo,
+        fetch = "copybara-test",
+        push = "copybara-test",
+    ),
+    origin_files = glob(
+        ["**"],
+        exclude = ignored_dirs,
+    ),
+    destination_files = glob(
+        ["**"],
+        exclude = ignored_dirs + fork_only_files,
+    ),
+    authoring = authoring.pass_thru("k8sstormcenter-buildbot <info@fusioncore.ai>"),
+    mode = "ITERATIVE",
+    transformations = [],
+)

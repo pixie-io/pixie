@@ -1,0 +1,28 @@
+---
+name: pixie-oss-copybara
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 15 * * *'
+permissions:
+  contents: read
+jobs:
+  run-copybara:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/k8sstormcenter/copybara:9675cc2a
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - id: create-ssh-key
+      env:
+        COPYBARA_SSH_KEY: ${{ secrets.COPYBARA_SSH_KEY }}
+      run: echo "$COPYBARA_SSH_KEY" > /tmp/sshkey && chmod 600 /tmp/sshkey
+    - id: pxapi-copybara
+      env:
+        COPYBARA_GPG_KEY: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+        COPYBARA_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+      # ac4d4e38c1a03b750045211335a682b11443fb56 is when fork started
+      # This is only needed for the first copybara run (supplied via --last-rev ${sha} flag)
+      run: >
+        GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/sshkey'
+        ./ci/run_copybara.sh private/tools/copybara/copy.bara.sky --last-rev ac4d4e38c1a03b750045211335a682b11443fb56
