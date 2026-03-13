@@ -6,6 +6,7 @@ on:
     - release/vizier/**
 permissions:
   contents: read
+  packages: write
 env:
   VERSIONS_FILE: "VERSIONS.json"
 jobs:
@@ -33,10 +34,8 @@ jobs:
       with:
         download_toplevel: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
+    - name: Login to GHCR
+      run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
     - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
@@ -49,7 +48,6 @@ jobs:
         JOB_NAME: ${{ github.job }}
         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
         GH_REPO: ${{ github.repository }}
       shell: bash
@@ -60,20 +58,6 @@ jobs:
         export INDEX_FILE="$(pwd)/index.yaml"
         ./ci/save_version_info.sh
         ./ci/vizier_build_release.sh
-    - name: Build & Export Docs
-      env:
-        PXL_DOCS_GCS_PATH: "gs://pixie-dev-public/pxl-docs.json"
-      run: |
-        docs="$(mktemp)"
-        bazel run //src/carnot/docstring:docstring -- --output_json "${docs}"
-        gsutil cp "${docs}" "${PXL_DOCS_GCS_PATH}"
-    - name: Update GCS Manifest
-      env:
-        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
-        # Use the old style versions file instead of the new updates for the gcs manifest.
-        MANIFEST_UPDATES: ""
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
-      run: ./ci/update_artifact_manifest.sh
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: manifest-updates

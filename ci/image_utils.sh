@@ -42,13 +42,11 @@ push_multiarch_image() {
   x86_image="${multiarch_image}-x86_64"
   aarch64_image="${multiarch_image}-aarch64"
   echo "Building ${multiarch_image} manifest"
-  # If the multiarch manifest list already exists locally, remove it before building a new one.
-  # otherwise, the docker manifest create step will fail because it can't amend manifests to an existing image.
-  # We could use the --amend flag to `manifest create` but it doesn't seem to overwrite existing images with the same tag,
-  # instead it seems to just ignore images that already exist in the local manifest.
-  docker manifest rm "${multiarch_image}" || true
-  docker manifest create "${multiarch_image}" "${x86_image}" "${aarch64_image}"
-  pushed_digest=$(docker manifest push "${multiarch_image}")
+  crane index append \
+    --manifest "${x86_image}" \
+    --manifest "${aarch64_image}" \
+    --tag "${multiarch_image}"
+  pushed_digest=$(crane digest "${multiarch_image}")
 
   sign_image "${multiarch_image}" "${pushed_digest}"
 }

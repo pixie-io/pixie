@@ -35,7 +35,7 @@ namespace md {
 
 StatusOr<std::vector<std::string>> CGroupBasePaths(std::string_view sysfs_path) {
   std::vector<std::string> base_paths;
-  // Different hosts may mount different cgroup dirs. Try a couple for robustness.
+  // Different hosts may mount different cgroup dirs. Try a couple for robustness
   const std::vector<std::string> cgroup_dirs = {"cpu,cpuacct", "cpu", "pids"};
 
   for (const auto& cgroup_dir : cgroup_dirs) {
