@@ -84,9 +84,9 @@ default['sops']['sha256'] =
   'dece9b0131af5ced0f8c278a53c0cf06a4f0d1d70a177c0979f6d111654397ce'
 
 default['trivy']['download_path'] =
-  'https://github.com/aquasecurity/trivy/releases/download/v0.64.1/trivy_0.64.1_macOS-64bit.tar.gz'
+  'https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_macOS-64bit.tar.gz'
 default['trivy']['sha256'] =
-  '107a874b41c1f0a48849f859b756f500d8be06f2d2b8956a046a97ae38088bf6'
+  'fec4a9f7569b624dd9d044fca019e5da69e032700edbb1d7318972c448ec2f4e'
 
 default['yq']['download_path'] =
   'https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_darwin_amd64'
