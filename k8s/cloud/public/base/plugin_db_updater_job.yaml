@@ -40,6 +40,8 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
+        - name: plugin-configs
+          mountPath: /plugins
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:
@@ -63,6 +65,8 @@ spec:
               key: PL_PLUGIN_SERVICE
         - name: PL_PLUGIN_REPO
           value: "pixie-io/pixie-plugin"
+        - name: PL_PLUGIN_DIR
+          value: "/plugins"
       restartPolicy: Never
       volumes:
       - name: pl-db-secrets
@@ -71,6 +75,15 @@ spec:
       - name: certs
         secret:
           secretName: service-tls-certs
+      # For airgapped installs, create this ConfigMap with plugin YAML files:
+      #   kubectl create configmap pl-plugin-configs --from-file=plugins/
+      # Where plugins/ has subdirectories per plugin containing plugin.yaml
+      # and retention.yaml. If the ConfigMap doesn't exist, the job falls
+      # back to fetching from GitHub.
+      - name: plugin-configs
+        configMap:
+          name: pl-plugin-configs
+          optional: true
   backoffLimit: 1
   parallelism: 1
   completions: 1

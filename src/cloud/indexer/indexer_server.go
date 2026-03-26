@@ -51,7 +51,7 @@ func init() {
 
 	pflag.String("md_index_name", "", "The elastic index name for metadata.")
 	pflag.String("md_index_max_age", "", "The amount of time before rolling over the elastic index as a string, eg '30d'")
-	pflag.String("md_index_delete_after", "", "The amount of time after rollover to delete old elastic indices, as a string, eg '30d'")
+	pflag.String("md_index_delete_after", "", "The amount of time after rollover to delete old elastic indices, as a string, eg '30d'.")
 	pflag.Int("md_index_replicas", 4, "The number of replicas to setup for the metadata index.")
 	pflag.Bool("md_manual_index_management", false, "Skip creation of managed elastic indices. Requires manually deploying an elastic index with md_index_name")
 }
