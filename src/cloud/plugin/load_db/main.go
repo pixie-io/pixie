@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/blang/semver"
@@ -56,6 +57,7 @@ const githubArchiveTmpl = "https://api.github.com/repos/%s/tarball"
 // bazel run //src/cloud/plugin/load_db:push_plugin_db_updater_image
 func init() {
 	pflag.String("plugin_repo", "pixie-io/pixie-plugin", "The name of the plugin repo.")
+	pflag.String("plugin_dir", "", "Local directory containing plugin configs. When set, plugins are loaded from this directory instead of fetching from GitHub. Expected structure: <plugin_dir>/<plugin_name>/{plugin.yaml,retention.yaml}")
 	pflag.String("plugin_service", "plugin-service.plc.svc.cluster.local:50600", "The plugin service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
@@ -92,11 +94,55 @@ type configSet struct {
 var configsByPath = make(map[string]*configSet)
 
 func loadPlugins(db *sqlx.DB) {
-	pluginRepo := viper.GetString("plugin_repo")
-	if pluginRepo == "" {
-		log.Fatal("Must specify --plugin_repo")
+	pluginDir := viper.GetString("plugin_dir")
+	if pluginDir != "" {
+		if loadPluginsFromDir(pluginDir, db) {
+			log.Infof("Loaded plugins from local directory: %s", pluginDir)
+			return
+		}
+		log.Infof("Plugin directory %s is empty or missing, falling back to GitHub", pluginDir)
 	}
 
+	pluginRepo := viper.GetString("plugin_repo")
+	if pluginRepo == "" {
+		log.Fatal("Must specify --plugin_repo or --plugin_dir")
+	}
+
+	loadPluginsFromGitHub(pluginRepo, db)
+}
+
+// loadPluginsFromDir walks a local directory for plugin YAML files.
+// Returns true if any files were found and processed.
+func loadPluginsFromDir(dir string, db *sqlx.DB) bool {
+	info, err := os.Stat(dir)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+
+	found := false
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open %s: %w", path, err)
+		}
+		defer f.Close()
+		found = true
+		processFile(path, f, db)
+		return nil
+	})
+	if err != nil {
+		log.WithError(err).Fatal("Failed to read plugin directory")
+	}
+	return found
+}
+
+func loadPluginsFromGitHub(pluginRepo string, db *sqlx.DB) {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf(githubArchiveTmpl, pluginRepo), nil)
 	if err != nil {

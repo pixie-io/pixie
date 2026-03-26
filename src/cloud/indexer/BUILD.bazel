@@ -44,6 +44,7 @@ go_library(
     ],
 )
 
+# Dummy chan
 pl_go_binary(
     name = "indexer_server",
     embed = [":indexer_lib"],
