@@ -29,7 +29,7 @@ push_images_for_arch() {
   release_tag="$3"
   image_repo="$4"
 
-  bazel run -c opt \
+  bazel run -c dbg \
     --config=stamp \
     --config="${arch}_sysroot" \
     --//k8s:image_repository="${image_repo}" \
@@ -63,7 +63,7 @@ push_all_multiarch_images() {
   while read -r image;
   do
     push_multiarch_image "${image}"
-  done < <(bazel run -c opt \
+  done < <(bazel run -c dbg \
     --config=stamp \
     --//k8s:image_repository="${image_repo}" \
     --//k8s:image_version="${release_tag}" \
