@@ -18,6 +18,7 @@
 
 #include <sole.hpp>
 
+
 #include "src/integrations/grpc_clocksync/grpc_clock_converter.h"
 #include "src/vizier/services/agent/pem/pem_manager.h"
 #include "src/vizier/services/agent/shared/base/lifecycle.h"
@@ -29,7 +30,7 @@
 #include "src/shared/version/version.h"
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
-              "The host address of the nats cluster");
+              "The host address of the nats cluster.");
 DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
               "The name of the POD the PEM is running on");
 DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
