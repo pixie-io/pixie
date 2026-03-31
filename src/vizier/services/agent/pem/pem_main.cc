@@ -37,7 +37,7 @@ DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
               "The IP of the host this service is running on");
 DEFINE_string(clock_converter, gflags::StringFromEnv("PL_CLOCK_CONVERTER", "default"),
               "Which ClockConverter to use for converting from mono to reference time. Current "
-              "options are 'default' or 'grpc'");
+              "options are 'default' or 'grpc'.");
 
 using ::px::vizier::agent::DefaultDeathHandler;
 using ::px::vizier::agent::PEMManager;

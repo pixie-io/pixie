@@ -52,7 +52,7 @@ upload_artifact_to_mirrors "vizier" "${release_tag}" "${yamls_tar}" "vizier_yaml
 
 # Upload templated YAMLs.
 tmp_dir="$(mktemp -d)"
-bazel run -c dbg //src/utils/template_generator:template_generator -- \
+bazel run -c opt //src/utils/template_generator:template_generator -- \
       --base "${yamls_tar}" --version "${release_tag}" --out "${tmp_dir}"
 tmpl_path="${tmp_dir}/yamls.tar"
 upload_artifact_to_mirrors "vizier" "${release_tag}" "${tmpl_path}" "vizier_template_yamls.tar" AT_CONTAINER_SET_TEMPLATE_YAMLS
