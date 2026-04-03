@@ -461,6 +461,107 @@ TEST_F(DNSParserTest, PartialRecords) {
   }
 }
 
+// Regression test: RFC 1035 s4.1.4 compression pointers are 2 bytes with a 14-bit offset.
+// The bug was in dnsReadName: when it encountered a compression pointer inside a name, it
+// only read the low byte of the 2-byte pointer, discarding the upper 6 bits of the offset.
+// This test exercises that code path by constructing a valid DNS response where dnsReadName
+// encounters a chained compression pointer whose offset is > 255.
+//
+// The critical path: answer 19 is a CNAME whose rdata name is "cdn" followed by a compression
+// pointer to "example.com" label-encoded at offset > 255. When dnsReadName parses this CNAME
+// rdata, it reads "cdn", then hits the compression pointer and recurses — this is the code
+// path where the old 1-byte offset read would compute the wrong offset.
+TEST_F(DNSParserTest, CompressionPointerOffset14Bit) {
+  std::vector<uint8_t> pkt;
+
+  // --- DNS Header (12 bytes) ---
+  pkt.push_back(0xAB); pkt.push_back(0xCD);  // txid
+  pkt.push_back(0x81); pkt.push_back(0x80);  // flags: standard response
+  pkt.push_back(0x00); pkt.push_back(0x01);  // 1 query
+  pkt.push_back(0x00); pkt.push_back(0x14);  // 20 answers
+  pkt.push_back(0x00); pkt.push_back(0x00);  // 0 authority
+  pkt.push_back(0x00); pkt.push_back(0x00);  // 0 additional
+
+  // --- Query section (offset 12) ---
+  // Name: "www.example.com"
+  ASSERT_EQ(pkt.size(), 12u);
+  pkt.push_back(0x03); pkt.insert(pkt.end(), {'w','w','w'});
+  pkt.push_back(0x07); pkt.insert(pkt.end(), {'e','x','a','m','p','l','e'});
+  pkt.push_back(0x03); pkt.insert(pkt.end(), {'c','o','m'});
+  pkt.push_back(0x00);
+  pkt.push_back(0x00); pkt.push_back(0x01);  // type A
+  pkt.push_back(0x00); pkt.push_back(0x01);  // class IN
+  // Query ends at offset 33.
+
+  // --- Answers 1-18: A records (18 * 16 = 288 bytes, offsets 33-320) ---
+  for (int i = 0; i < 18; i++) {
+    pkt.push_back(0xC0); pkt.push_back(0x0C);  // name: ptr to offset 12
+    pkt.push_back(0x00); pkt.push_back(0x01);  // type A
+    pkt.push_back(0x00); pkt.push_back(0x01);  // class IN
+    pkt.push_back(0x00); pkt.push_back(0x00);
+    pkt.push_back(0x00); pkt.push_back(0x3C);  // TTL=60
+    pkt.push_back(0x00); pkt.push_back(0x04);  // rdlength=4
+    pkt.push_back(10); pkt.push_back(0);
+    pkt.push_back(0); pkt.push_back(static_cast<uint8_t>(i + 1));
+  }
+  ASSERT_EQ(pkt.size(), 321u);
+
+  // --- Answer 19 (offset 321): A record with inline name that puts "example.com"
+  //     label-encoded at a known offset > 255. ---
+  // Name: "other.example.com" written inline so "example.com" starts at offset 327.
+  // offset 321
+  pkt.push_back(0x05); pkt.insert(pkt.end(), {'o','t','h','e','r'});
+  // "example" label starts here:
+  size_t example_offset = pkt.size();  // 327 = 0x147
+  pkt.push_back(0x07); pkt.insert(pkt.end(), {'e','x','a','m','p','l','e'});
+  pkt.push_back(0x03); pkt.insert(pkt.end(), {'c','o','m'});
+  pkt.push_back(0x00);
+  ASSERT_EQ(example_offset, 327u);
+  // type A, class IN, TTL, rdlen, addr
+  pkt.push_back(0x00); pkt.push_back(0x01);
+  pkt.push_back(0x00); pkt.push_back(0x01);
+  pkt.push_back(0x00); pkt.push_back(0x00);
+  pkt.push_back(0x00); pkt.push_back(0x3C);
+  pkt.push_back(0x00); pkt.push_back(0x04);
+  pkt.push_back(10); pkt.push_back(0); pkt.push_back(0); pkt.push_back(19);
+
+  // --- Answer 20 (offset ~357): CNAME record whose rdata name contains a chained
+  //     compression pointer to offset 327 (0x147) = "example.com".
+  //     rdata name: "cdn" + compression pointer 0xC1 0x47 → "cdn.example.com"
+  //     This is the code path through dnsReadName that triggers the bug. ---
+  pkt.push_back(0xC0); pkt.push_back(0x0C);  // name: ptr to "www.example.com"
+  pkt.push_back(0x00); pkt.push_back(0x05);  // type CNAME
+  pkt.push_back(0x00); pkt.push_back(0x01);  // class IN
+  pkt.push_back(0x00); pkt.push_back(0x00);
+  pkt.push_back(0x00); pkt.push_back(0x3C);  // TTL=60
+  // rdata: "cdn" (4 bytes) + compression pointer (2 bytes) = 6 bytes
+  pkt.push_back(0x00); pkt.push_back(0x06);  // rdlength=6
+  // rdata: label "cdn" then pointer to offset 327 (0xC1 0x47)
+  pkt.push_back(0x03); pkt.insert(pkt.end(), {'c','d','n'});
+  pkt.push_back(0xC1); pkt.push_back(0x47);  // ptr to offset 0x147 = 327
+
+  auto frame_view = CreateStringView<char>(
+      std::string_view(reinterpret_cast<const char*>(pkt.data()), pkt.size()));
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+
+  stream_id_t only_key = frames.begin()->first;
+  ASSERT_EQ(frames[only_key].size(), 1);
+  Frame& frame = frames[only_key][0];
+
+  ASSERT_EQ(frame.records().size(), 20);
+
+  // The critical assertion: answer 20's CNAME rdata was parsed by dnsReadName which
+  // encountered "cdn" then a compression pointer 0xC1 0x47 (offset 327). With the old
+  // code this would read only 0x47 (71) — wrong offset. With the fix it correctly reads
+  // 327 and resolves to "cdn.example.com".
+  EXPECT_EQ(frame.records()[19].cname, "cdn.example.com");
+}
+
 }  // namespace dns
 }  // namespace protocols
 }  // namespace stirling
