@@ -74,12 +74,12 @@ LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
 LINUX_HEADER_ASSETS_BUILD_DIR := $(LINUX_HEADER_BUILD_DIR)/assets
 LINUX_KERNEL_VERSIONS := 4.18.20 \
         5.10.252 \
-	5.14.21 \
-	6.1.167 \
-	6.6.132 \
-	6.12.80 \
-	6.18.21 \
-	6.19.10
+        5.14.21 \
+        6.1.167 \
+        6.6.132 \
+        6.12.80 \
+        6.18.21 \
+        6.19.10
 
 
 LINUX_HEADER_TEMPLATE := linux-headers-%.tar.gz
@@ -114,7 +114,8 @@ elasticsearch_image_tag := "gcr.io/pixie-oss/pixie-dev-public/elasticsearch:$(EL
 
 ## Linux kernel for qemu/BPF tests.
 KERNEL_BUILD_DIR := $(BUILD_DIR)/kernel_build
-KERNEL_BUILD_VERSIONS := 5.10.252 \
+KERNEL_BUILD_VERSIONS := 4.14.309 \
+        5.10.252 \
 	5.14.21 \
 	6.1.167 \
 	6.6.132 \
