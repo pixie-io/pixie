@@ -27,6 +27,7 @@ RUN apt-get update
 RUN apt-get upgrade -y -q
 RUN apt-get install -y -q build-essential \
   bc \
+  libdw-dev \
   libelf-dev \
   libssl-dev \
   flex \
@@ -40,6 +41,14 @@ RUN apt-get install -y -q build-essential \
   dwarves \
   debhelper \
   python3
+
+# opensslconf.h lives at the multiarch path (e.g. /usr/include/x86_64-linux-gnu/openssl/).
+# During cross-compilation, dpkg-buildpackage alters include paths so host tools
+# (like scripts/sign-file) can no longer find it. Symlink it to the standard path.
+RUN if [ -f /usr/include/x86_64-linux-gnu/openssl/opensslconf.h ] && \
+       [ ! -f /usr/include/openssl/opensslconf.h ]; then \
+      ln -s /usr/include/x86_64-linux-gnu/openssl/opensslconf.h /usr/include/openssl/opensslconf.h; \
+    fi
 
 WORKDIR /configs
 ADD x86_64_config /configs/x86_64

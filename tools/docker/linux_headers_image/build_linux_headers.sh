@@ -73,7 +73,13 @@ if [ "${KERN_MAJ}" -lt 6 ] || { [ "${KERN_MAJ}" -le 6 ] && [ "${KERN_MIN}" -lt 3
 fi
 echo "Building ${TARGET} for ${KERN_VERSION}${LOCALVERSION} (${ARCH})"
 
-make ARCH="${ARCH}" -j "$(nproc)" "${TARGET}" LOCALVERSION="${LOCALVERSION}"
+EXTRA_MAKE_ARGS=""
+if [ "${ARCH}" != "$(uname -m)" ]; then
+    # Skip dpkg dependency checks when cross-compiling, since host packages
+    # (e.g. libssl-dev) won't satisfy target arch requirements.
+    EXTRA_MAKE_ARGS="DPKG_FLAGS=-d"
+fi
+make ARCH="${ARCH}" -j "$(nproc)" "${TARGET}" LOCALVERSION="${LOCALVERSION}" ${EXTRA_MAKE_ARGS}
 
 popd || exit
 popd || exit
