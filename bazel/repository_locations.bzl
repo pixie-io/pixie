@@ -185,9 +185,9 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "c069c0d96137cf005d34411fa67dd3b6f1f8c64af1e7fb2fe0089a41c425acd7",
     ),
     com_github_packetzero_dnsparser = dict(
-        sha256 = "bdf6c7f56f33725c1c32e672a4779576fb639dd2df565115778eb6be48296431",
-        strip_prefix = "dnsparser-77398ffc200765db1cea9000d9f550ea99a29f7b",
-        urls = ["https://github.com/pixie-io/dnsparser/archive/77398ffc200765db1cea9000d9f550ea99a29f7b.tar.gz"],
+        sha256 = "de1c4270ddaf03c2d25ec02afd4b9b25e0748f84155449a2b68127813abad3a4",
+        strip_prefix = "dnsparser-362f3988b06b0831683155e110fdac946795c469",
+        urls = ["https://github.com/ddelnano/dnsparser/archive/362f3988b06b0831683155e110fdac946795c469.tar.gz"],
     ),
     com_github_pgcodekeeper_pgcodekeeper = dict(
         urls = ["https://github.com/pgcodekeeper/pgcodekeeper/archive/refs/tags/v5.11.3.tar.gz"],
