@@ -43,7 +43,7 @@ py_wheel(
         "protobuf==6.33.1",
     ],
     strip_path_prefixes = ["src/api/python/"],
-    version = "0.9.0",
+    version = "0.9.1",
     deps = [
         "//src/api/python/pxapi:pxapi_library",
         "//src/api/python/pxapi/proto:pxapi_py_proto_library",
