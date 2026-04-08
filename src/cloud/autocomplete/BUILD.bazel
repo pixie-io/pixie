@@ -21,6 +21,7 @@ go_library(
     name = "autocomplete",
     srcs = [
         "autocomplete.go",
+        "noop_suggester.go",
         "suggester.go",
     ],
     importpath = "px.dev/pixie/src/cloud/autocomplete",
