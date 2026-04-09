@@ -86,12 +86,18 @@ struct Go1_22TLSClientServerContainers {
 
 struct Go1_23TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_23_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_23_TLSClientContainer;
+  // Go 1.23 client container is no longer built; use 1.24 client instead.
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
 };
 
 struct Go1_24TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_24_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_24_TLSClientContainer;
+};
+
+struct Go1_25TLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_25_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_25_TLSClientContainer;
 };
 
 struct GoBoringCryptoTLSClientServerContainers {
@@ -102,7 +108,8 @@ struct GoBoringCryptoTLSClientServerContainers {
 typedef ::testing::Types<GoBoringCryptoTLSClientServerContainers, Go1_18TLSClientServerContainers,
                          Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers,
                          Go1_21TLSClientServerContainers, Go1_22TLSClientServerContainers,
-                         Go1_23TLSClientServerContainers, Go1_24TLSClientServerContainers>
+                         Go1_23TLSClientServerContainers, Go1_24TLSClientServerContainers,
+                         Go1_25TLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 

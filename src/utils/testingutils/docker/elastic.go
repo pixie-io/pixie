@@ -19,13 +19,38 @@
 package docker
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"regexp"
+	"time"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 )
+
+// selfContainerID returns the current Docker container ID by parsing
+// /proc/self/mountinfo. Docker bind-mounts /etc/hostname from
+// /var/lib/docker/containers/<id>/hostname, exposing the container ID.
+// Returns empty string if not running inside a Docker container.
+func selfContainerID() string {
+	f, err := os.Open("/proc/self/mountinfo")
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	re := regexp.MustCompile(`/containers/([a-f0-9]{64})/hostname`)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		if m := re.FindStringSubmatch(scanner.Text()); m != nil {
+			return m[1]
+		}
+	}
+	return ""
+}
 
 func connectElastic(esURL string, esUser string, esPass string) (*elastic.Client, error) {
 	es, err := elastic.NewClient(elastic.SetURL(esURL),
@@ -104,12 +129,52 @@ func SetupElastic() (*elastic.Client, func(), error) {
 		return nil, cleanup, err
 	}
 
-	clientPort := resource.GetPort("9200/tcp")
+	// When running inside a container (e.g. CI), the ES container is on
+	// a different Docker network and we can't reach it via host port mapping.
+	// Detect this and connect ES to our network instead.
+	esHost := resource.Container.NetworkSettings.Gateway
+	esPort := resource.GetPort("9200/tcp")
+	selfID := selfContainerID()
+	log.Infof("selfContainerID: %q", selfID)
+	if selfID != "" {
+		selfContainer, err := pool.Client.InspectContainer(selfID)
+		if err != nil {
+			return nil, cleanup, fmt.Errorf("failed to inspect self container %s: %w", selfID, err)
+		}
+		for netName, net := range selfContainer.NetworkSettings.Networks {
+			if netName == "host" {
+				continue
+			}
+			err := pool.Client.ConnectNetwork(net.NetworkID, docker.NetworkConnectionOptions{
+				Container: resource.Container.ID,
+			})
+			if err != nil {
+				return nil, cleanup, fmt.Errorf("failed to connect ES to network %s: %w", netName, err)
+			}
+			// Re-inspect to get the ES container's IP on our network.
+			updated, err := pool.Client.InspectContainer(resource.Container.ID)
+			if err != nil {
+				return nil, cleanup, fmt.Errorf("failed to re-inspect ES container: %w", err)
+			}
+			resource.Container = updated
+			if esNet, ok := updated.NetworkSettings.Networks[netName]; ok {
+				esHost = esNet.IPAddress
+				esPort = "9200"
+				log.Infof("esHost set to %s:%s via network %s", esHost, esPort, netName)
+			}
+			break
+		}
+	}
+	if esHost == "" {
+		esHost = "localhost"
+	}
+
+	pool.MaxWait = 10 * time.Minute
 	var client *elastic.Client
 	err = pool.Retry(func() error {
 		var err error
 		client, err = connectElastic(fmt.Sprintf("http://%s:%s",
-			resource.Container.NetworkSettings.Gateway, clientPort), "elastic", esPass)
+			esHost, esPort), "elastic", esPass)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to connect to elasticsearch.")
 		}

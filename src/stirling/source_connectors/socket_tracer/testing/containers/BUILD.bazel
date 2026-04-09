@@ -157,6 +157,11 @@ container_image(
 )
 
 container_image(
+    name = "golang_1_23_https_server_with_buildinfo",
+    base = "@golang_1_23_https_server_with_buildinfo//image",
+)
+
+container_image(
     name = "golang_1_18_grpc_server_with_buildinfo",
     base = "@golang_1_18_grpc_server_with_buildinfo//image",
 )
@@ -179,6 +184,11 @@ container_image(
 container_image(
     name = "golang_1_22_grpc_server_with_buildinfo",
     base = "@golang_1_22_grpc_server_with_buildinfo//image",
+)
+
+container_image(
+    name = "golang_1_23_grpc_server_with_buildinfo",
+    base = "@golang_1_23_grpc_server_with_buildinfo//image",
 )
 
 container_image(
