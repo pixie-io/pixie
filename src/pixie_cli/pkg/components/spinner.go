@@ -108,6 +108,9 @@ func (d *statusDecorator) Decor(stat *decor.Statistics) string {
 		return ""
 	}
 	if d.err != nil {
+		if _, ok := d.err.(*UIWarning); ok {
+			return StatusWarn(d.width)
+		}
 		return StatusErr(d.width)
 	}
 	return StatusOK(d.width)
@@ -135,6 +138,9 @@ func (d *errorViewDecorator) Decor(stat *decor.Statistics) string {
 	}
 	if d.err == nil {
 		return ""
+	}
+	if _, ok := d.err.(*UIWarning); ok {
+		return color.YellowString(fmt.Sprintf(" WARN: %s", d.err.Error()))
 	}
 	return color.RedString(fmt.Sprintf(" ERR: %s", d.err.Error()))
 }

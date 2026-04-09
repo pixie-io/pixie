@@ -25,9 +25,25 @@ import (
 )
 
 var (
-	statusOK  = "\u2714"
-	statusErr = "\u2715"
+	statusOK   = "\u2714"
+	statusErr  = "\u2715"
+	statusWarn = "\u26a0"
 )
+
+// UIWarning is a wrapper type that marks errors as warnings for UI display.
+// Errors wrapped in UIWarning will be displayed with yellow warning colors
+// instead of red error colors in the spinner table.
+type UIWarning struct {
+	Err error
+}
+
+func (w UIWarning) Error() string {
+	return w.Err.Error()
+}
+
+func (w UIWarning) Unwrap() error {
+	return w.Err
+}
 
 func computePadding(s string, pad int) (int, int) {
 	var padS, padE int
@@ -54,4 +70,10 @@ func StatusOK(pad int) string {
 func StatusErr(pad int) string {
 	padS, padE := computePadding(statusErr, pad)
 	return strings.Repeat(" ", padS) + color.RedString(statusErr) + strings.Repeat(" ", padE)
+}
+
+// StatusWarn prints out the default Warn symbol, center padded to the size specified.
+func StatusWarn(pad int) string {
+	padS, padE := computePadding(statusWarn, pad)
+	return strings.Repeat(" ", padS) + color.YellowString(statusWarn) + strings.Repeat(" ", padE)
 }
