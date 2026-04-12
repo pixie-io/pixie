@@ -26,4 +26,4 @@ jobs:
       # This is only needed for the first copybara run (supplied via --last-rev ${sha} flag)
       run: >
         GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/sshkey'
-        ./ci/run_copybara.sh tools/copybara/upstream_sync/copy.bara.sky --last-rev 9ae660bce072d1bc1dfbbddada333c88333f4a9a
+        ./ci/run_copybara.sh tools/copybara/upstream_sync/copy.bara.sky
