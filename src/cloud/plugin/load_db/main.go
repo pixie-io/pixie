@@ -51,7 +51,7 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-const githubArchiveTmpl = "https://api.github.com/repos/%s/tarball"
+const githubArchiveTmpl = "https://%s/repos/%s/tarball"
 
 // NOTE: After changing this file, remember to push a generated image by running
 // bazel run //src/cloud/plugin/load_db:push_plugin_db_updater_image
@@ -59,6 +59,7 @@ func init() {
 	pflag.String("plugin_repo", "pixie-io/pixie-plugin", "The name of the plugin repo.")
 	pflag.String("plugin_service", "plugin-service.plc.svc.cluster.local:50600", "The plugin service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
+	pflag.String("gh_api_host", "api.github.com", "The GitHub API host (e.g. api.github.com for github.com, or ghe.example.com/api/v3 for GitHub Enterprise Server)")
 }
 
 func initDB() *sqlx.DB {
@@ -99,7 +100,7 @@ func loadPlugins(db *sqlx.DB) {
 	}
 
 	client := http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf(githubArchiveTmpl, pluginRepo), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(githubArchiveTmpl, viper.GetString("gh_api_host"), pluginRepo), nil)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create req")
 	}
