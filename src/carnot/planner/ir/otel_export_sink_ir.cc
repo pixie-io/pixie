@@ -160,6 +160,29 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
     new_span.span_kind = span.span_kind;
     data_.spans.push_back(std::move(new_span));
   }
+  for (const auto& log : data.logs) {
+    OTelLog new_log;
+
+    PX_ASSIGN_OR_RETURN(new_log.time_column, AddColumn(log.time_column));
+    PX_ASSIGN_OR_RETURN(new_log.body_column, AddColumn(log.body_column));
+    if (log.observed_time_column != nullptr) {
+      PX_ASSIGN_OR_RETURN(new_log.observed_time_column, AddColumn(log.observed_time_column));
+    }
+
+    new_log.severity_text = log.severity_text;
+    new_log.severity_number = log.severity_number;
+
+    for (const auto& attr : log.attributes) {
+      if (attr.column_reference == nullptr) {
+        new_log.attributes.push_back({attr.name, nullptr, attr.string_value});
+        continue;
+      }
+      PX_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
+      new_log.attributes.push_back({attr.name, column, ""});
+    }
+
+    data_.logs.push_back(std::move(new_log));
+  }
   return Status::OK();
 }
 
@@ -329,6 +352,46 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
       PX_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
     }
     span_pb->set_kind_value(span.span_kind);
+  }
+  for (const auto& log : data_.logs) {
+    auto log_pb = otel_op->add_logs();
+
+    if (log.time_column->EvaluatedDataType() != types::TIME64NS) {
+      return log.time_column->CreateIRNodeError(
+          "Expected time column '$0' to be TIME64NS, received $1", log.time_column->col_name(),
+          types::ToString(log.time_column->EvaluatedDataType()));
+    }
+    PX_ASSIGN_OR_RETURN(auto time_column_index, log.time_column->GetColumnIndex());
+    log_pb->set_time_column_index(time_column_index);
+
+    if (log.observed_time_column != nullptr) {
+      if (log.observed_time_column->EvaluatedDataType() != types::TIME64NS) {
+        return log.observed_time_column->CreateIRNodeError(
+            "Expected observed_time column '$0' to be TIME64NS, received $1",
+            log.observed_time_column->col_name(),
+            types::ToString(log.observed_time_column->EvaluatedDataType()));
+      }
+      PX_ASSIGN_OR_RETURN(auto observed_time_column_index,
+                          log.observed_time_column->GetColumnIndex());
+      log_pb->set_observed_time_column_index(observed_time_column_index);
+    } else {
+      log_pb->set_observed_time_column_index(-1);
+    }
+
+    log_pb->set_severity_text(log.severity_text);
+    log_pb->set_severity_number(log.severity_number);
+
+    if (log.body_column->EvaluatedDataType() != types::STRING) {
+      return log.body_column->CreateIRNodeError(
+          "Expected body column '$0' to be STRING, received $1", log.body_column->col_name(),
+          types::ToString(log.body_column->EvaluatedDataType()));
+    }
+    PX_ASSIGN_OR_RETURN(auto body_column_index, log.body_column->GetColumnIndex());
+    log_pb->set_body_column_index(body_column_index);
+
+    for (const auto& attribute : log.attributes) {
+      PX_RETURN_IF_ERROR(attribute.ToProto(log_pb->add_attributes()));
+    }
   }
   return Status::OK();
 }
