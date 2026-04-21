@@ -33,20 +33,39 @@ import (
 )
 
 const (
-	envVerbose                  = "VERBOSE"
-	envClickHouseDSN            = "CLICKHOUSE_DSN"
-	envPixieClusterID           = "PIXIE_CLUSTER_ID"
-	envPixieEndpoint            = "PIXIE_ENDPOINT"
-	envPixieAPIKey              = "PIXIE_API_KEY"
-	envClusterName              = "CLUSTER_NAME"
-	envCollectInterval          = "COLLECT_INTERVAL_SEC"
-	envDetectionInterval        = "DETECTION_INTERVAL_SEC"
-	envDetectionLookback        = "DETECTION_LOOKBACK_SEC"
-	defPixieHostname            = "work.withpixie.ai:443"
-	boolTrue                    = "true"
-	defCollectInterval          = 30
-	defDetectionInterval        = 10
-	defDetectionLookback        = 15
+	envVerbose           = "VERBOSE"
+	envClickHouseDSN     = "CLICKHOUSE_DSN"
+	envClickHouseHost    = "CLICKHOUSE_HOST"
+	envClickHousePort    = "CLICKHOUSE_PORT"
+	envClickHouseUser    = "CLICKHOUSE_USER"
+	envClickHousePass    = "CLICKHOUSE_PASSWORD"
+	envClickHouseDB      = "CLICKHOUSE_DATABASE"
+	envKubescapeTable    = "KUBESCAPE_TABLE"
+	envPixieClusterID    = "PIXIE_CLUSTER_ID"
+	envPixieEndpoint     = "PIXIE_ENDPOINT"
+	envPixieAPIKey       = "PIXIE_API_KEY"
+	envClusterName       = "CLUSTER_NAME"
+	envCollectInterval   = "COLLECT_INTERVAL_SEC"
+	envDetectionInterval = "DETECTION_INTERVAL_SEC"
+	envDetectionLookback = "DETECTION_LOOKBACK_SEC"
+	envExportMode        = "EXPORT_MODE"
+	envExportQuietTicks  = "EXPORT_QUIET_TICKS"
+	defPixieHostname     = "work.pixie.austrianopencloudcommunity.org:443"
+	defClickHousePort    = "9000"
+	defKubescapeTable    = "kubescape_logs"
+	defExportMode        = "auto"
+	defExportQuietTicks  = 6
+	boolTrue             = "true"
+	defCollectInterval   = 30
+	defDetectionInterval = 10
+	defDetectionLookback = 15
+)
+
+// ExportMode values.
+const (
+	ExportModeAuto   = "auto"
+	ExportModeAlways = "always"
+	ExportModeNever  = "never"
 )
 
 var (
@@ -206,6 +225,32 @@ func setUpConfig() error {
 		return err
 	}
 
+	exportQuietTicks, err := getIntEnvWithDefault(envExportQuietTicks, defExportQuietTicks)
+	if err != nil {
+		return err
+	}
+
+	exportMode := strings.ToLower(getEnvWithDefault(envExportMode, defExportMode))
+	switch exportMode {
+	case ExportModeAuto, ExportModeAlways, ExportModeNever:
+	default:
+		return fmt.Errorf("invalid %s=%q (must be auto|always|never)", envExportMode, exportMode)
+	}
+
+	// Parse the DSN into its parts; individual env vars override the parsed values.
+	dsnHost, dsnPort, dsnUser, dsnPass, dsnDB := parseDSN(clickhouseDSN)
+	chHost := getEnvWithDefault(envClickHouseHost, dsnHost)
+	chPort := getEnvWithDefault(envClickHousePort, firstNonEmpty(dsnPort, defClickHousePort))
+	chUser := getEnvWithDefault(envClickHouseUser, dsnUser)
+	chPass := getEnvWithDefault(envClickHousePass, dsnPass)
+	chDB := getEnvWithDefault(envClickHouseDB, dsnDB)
+	chTable := getEnvWithDefault(envKubescapeTable, defKubescapeTable)
+
+	// If individual fields were provided but CLICKHOUSE_DSN was not, build one.
+	if clickhouseDSN == "" && chHost != "" && chUser != "" {
+		clickhouseDSN = fmt.Sprintf("%s:%s@%s:%s/%s", chUser, chPass, chHost, chPort, chDB)
+	}
+
 	instance = &config{
 		settings: &settings{
 			buildDate: buildDate,
@@ -213,14 +258,22 @@ func setUpConfig() error {
 			version:   integrationVersion,
 		},
 		worker: &worker{
-			clusterName:        clusterName,
-			pixieClusterID:     pixieClusterID,
-			collectInterval:    collectInterval,
-			detectionInterval:  detectionInterval,
-			detectionLookback:  detectionLookback,
+			clusterName:       clusterName,
+			pixieClusterID:    pixieClusterID,
+			collectInterval:   collectInterval,
+			detectionInterval: detectionInterval,
+			detectionLookback: detectionLookback,
+			exportMode:        exportMode,
+			exportQuietTicks:  exportQuietTicks,
 		},
 		clickhouse: &clickhouse{
 			dsn:       clickhouseDSN,
+			host:      chHost,
+			port:      chPort,
+			user:      chUser,
+			password:  chPass,
+			database:  chDB,
+			table:     chTable,
 			userAgent: "pixie-clickhouse/" + integrationVersion,
 		},
 		pixie: &pixie{
@@ -230,6 +283,47 @@ func setUpConfig() error {
 		},
 	}
 	return instance.validate()
+}
+
+// parseDSN best-effort splits `user:pass@host:port/db`. Missing parts come back empty.
+func parseDSN(dsn string) (host, port, user, pass, db string) {
+	if dsn == "" {
+		return
+	}
+	at := strings.LastIndex(dsn, "@")
+	if at < 0 {
+		return
+	}
+	creds := dsn[:at]
+	rest := dsn[at+1:]
+
+	if i := strings.Index(creds, ":"); i >= 0 {
+		user = creds[:i]
+		pass = creds[i+1:]
+	} else {
+		user = creds
+	}
+
+	if i := strings.Index(rest, "/"); i >= 0 {
+		db = rest[i+1:]
+		rest = rest[:i]
+	}
+	if i := strings.Index(rest, ":"); i >= 0 {
+		host = rest[:i]
+		port = rest[i+1:]
+	} else {
+		host = rest
+	}
+	return
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func getEnvWithDefault(key, defaultValue string) string {
@@ -325,29 +419,46 @@ func (s *settings) BuildDate() string {
 
 type ClickHouse interface {
 	DSN() string
+	Host() string
+	Port() string
+	User() string
+	Password() string
+	Database() string
+	Table() string
 	UserAgent() string
 	validate() error
 }
 
 type clickhouse struct {
 	dsn       string
+	host      string
+	port      string
+	user      string
+	password  string
+	database  string
+	table     string
 	userAgent string
 }
 
 func (c *clickhouse) validate() error {
 	if c.dsn == "" {
-		return fmt.Errorf("missing required env variable '%s'", envClickHouseDSN)
+		return fmt.Errorf("missing required env variable '%s' (or provide %s/%s/%s/%s/%s)",
+			envClickHouseDSN, envClickHouseHost, envClickHousePort, envClickHouseUser, envClickHousePass, envClickHouseDB)
+	}
+	if c.host == "" || c.user == "" || c.database == "" {
+		return fmt.Errorf("ClickHouse host/user/database could not be derived from %s=%q", envClickHouseDSN, c.dsn)
 	}
 	return nil
 }
 
-func (c *clickhouse) DSN() string {
-	return c.dsn
-}
-
-func (c *clickhouse) UserAgent() string {
-	return c.userAgent
-}
+func (c *clickhouse) DSN() string       { return c.dsn }
+func (c *clickhouse) Host() string      { return c.host }
+func (c *clickhouse) Port() string      { return c.port }
+func (c *clickhouse) User() string      { return c.user }
+func (c *clickhouse) Password() string  { return c.password }
+func (c *clickhouse) Database() string  { return c.database }
+func (c *clickhouse) Table() string     { return c.table }
+func (c *clickhouse) UserAgent() string { return c.userAgent }
 
 type Pixie interface {
 	APIKey() string
@@ -390,15 +501,19 @@ type Worker interface {
 	CollectInterval() int64
 	DetectionInterval() int64
 	DetectionLookback() int64
+	ExportMode() string
+	ExportQuietTicks() int64
 	validate() error
 }
 
 type worker struct {
-	clusterName        string
-	pixieClusterID     string
-	collectInterval    int64
-	detectionInterval  int64
-	detectionLookback  int64
+	clusterName       string
+	pixieClusterID    string
+	collectInterval   int64
+	detectionInterval int64
+	detectionLookback int64
+	exportMode        string
+	exportQuietTicks  int64
 }
 
 func (a *worker) validate() error {
@@ -408,22 +523,10 @@ func (a *worker) validate() error {
 	return nil
 }
 
-func (a *worker) ClusterName() string {
-	return a.clusterName
-}
-
-func (a *worker) PixieClusterID() string {
-	return a.pixieClusterID
-}
-
-func (a *worker) CollectInterval() int64 {
-	return a.collectInterval
-}
-
-func (a *worker) DetectionInterval() int64 {
-	return a.detectionInterval
-}
-
-func (a *worker) DetectionLookback() int64 {
-	return a.detectionLookback
-}
+func (a *worker) ClusterName() string      { return a.clusterName }
+func (a *worker) PixieClusterID() string   { return a.pixieClusterID }
+func (a *worker) CollectInterval() int64   { return a.collectInterval }
+func (a *worker) DetectionInterval() int64 { return a.detectionInterval }
+func (a *worker) DetectionLookback() int64 { return a.detectionLookback }
+func (a *worker) ExportMode() string       { return a.exportMode }
+func (a *worker) ExportQuietTicks() int64  { return a.exportQuietTicks }

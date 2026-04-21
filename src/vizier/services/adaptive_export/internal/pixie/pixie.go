@@ -146,6 +146,18 @@ func (c *Client) EnableClickHousePlugin(config *ClickHousePluginConfig, version 
 	return err
 }
 
+// DisableClickHousePlugin flips the retention plugin off without touching scripts.
+// Scripts are expected to be removed separately via DeleteDataRetentionScript.
+func (c *Client) DisableClickHousePlugin(version string) error {
+	req := &cloudpb.UpdateRetentionPluginConfigRequest{
+		PluginId: clickhousePluginId,
+		Enabled:  &types.BoolValue{Value: false},
+		Version:  &types.StringValue{Value: version},
+	}
+	_, err := c.pluginClient.UpdateRetentionPluginConfig(c.ctx, req)
+	return err
+}
+
 func (c *Client) GetPresetScripts() ([]*script.ScriptDefinition, error) {
 	resp, err := c.pluginClient.GetRetentionScripts(c.ctx, &cloudpb.GetRetentionScriptsRequest{})
 	if err != nil {

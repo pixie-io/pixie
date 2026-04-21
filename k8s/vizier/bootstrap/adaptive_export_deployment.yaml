@@ -57,6 +57,29 @@ spec:
           value: "10"
         - name: DETECTION_LOOKBACK_SEC
           value: "30"
+        # EXPORT_MODE controls the reconcile behaviour:
+        #   auto    - detection drives on/off (default)
+        #   always  - plugin always enabled (bypass detection)
+        #   never   - plugin always disabled and ch-* scripts purged
+        - name: EXPORT_MODE
+          value: "auto"
+        # Number of consecutive empty detection ticks before auto-disable fires.
+        - name: EXPORT_QUIET_TICKS
+          value: "6"
+        # Optional overrides for the ClickHouse PxL scripts. When unset they are
+        # parsed from CLICKHOUSE_DSN. Individual fields win over the parsed DSN.
+        - name: KUBESCAPE_TABLE
+          value: "kubescape_logs"
+        # - name: CLICKHOUSE_HOST
+        #   value: "clickhouse-forensic-soc-db.clickhouse.svc.cluster.local"
+        # - name: CLICKHOUSE_PORT
+        #   value: "9000"
+        # - name: CLICKHOUSE_USER
+        #   value: "otelcollector"
+        # - name: CLICKHOUSE_PASSWORD
+        #   value: "changeme"
+        # - name: CLICKHOUSE_DATABASE
+        #   value: "default"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
