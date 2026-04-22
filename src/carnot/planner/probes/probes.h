@@ -78,7 +78,7 @@ class TracepointIR {
    * @brief Serializes this probe definition as a protobuf.
    *
    * @param pb
-   * @return Any error that occured during serialization.
+   * @return Any error that occurred during serialization.
    */
   Status ToProto(carnot::planner::dynamic_tracing::ir::logical::TracepointSpec* pb,
                  const std::string& name);

@@ -81,7 +81,7 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   Status DeleteGRPCSourceNode(sole::uuid query_id, int64_t source_id);
 
   /**
-   * @brief Get any errors that may have occured in the incoming worker nodes.
+   * @brief Get any errors that may have occurred in the incoming worker nodes.
    *
    * @param query_id
    * @return StatusOr<std::vector<statuspb::Status>>

@@ -180,7 +180,7 @@ class TableStore {
    *
    * @param table_id: table_id within which to create a tablet.
    * @param tablet_id: the tablet to create for the tablet.
-   * @return StatusOr<Table*>: the table object or an error if the table is nonexistant.
+   * @return StatusOr<Table*>: the table object or an error if the table is nonexistent.
    */
   StatusOr<Table*> CreateNewTablet(uint64_t table_id, const types::TabletID& tablet_id);
 

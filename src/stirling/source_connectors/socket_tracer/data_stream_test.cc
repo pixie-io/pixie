@@ -495,7 +495,7 @@ TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunkAndSSLEnabled) {
 }
 
 TEST_F(DataStreamTest, ResyncCausesDuplicateEventBug) {
-  // Test to catch regression on a bug. The bug occured when a resync occurs in ParseFrames, leading
+  // Test to catch regression on a bug. The bug occurred when a resync occurs in ParseFrames, leading
   // to an invalid state where the data stream buffer still had data that had already been
   // processed.
   std::unique_ptr<SocketDataEvent> req0a =

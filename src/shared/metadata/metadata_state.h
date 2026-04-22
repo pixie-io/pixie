@@ -157,7 +157,7 @@ class K8sMetadataState : NotCopyable {
   /**
    * PodIDByIPAtTime returns the PodID for the pod with the given IP at the given timestamp.
    * @param pod_ip string of the pod IP.
-   * @param timestamp_ns time at which this request occured.
+   * @param timestamp_ns time at which this request occurred.
    * @return the pod_id or empty string if the pod does not exist.
    */
   UID PodIDByIPAtTime(std::string_view pod_ip, int64_t timestamp_ns) const;

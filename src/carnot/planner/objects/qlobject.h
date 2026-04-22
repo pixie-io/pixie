@@ -189,7 +189,7 @@ class QLObject {
 
   /**
    * @brief Creates an error for this objects. Packages checks to make sure you have an ir node for
-   * line,col error resporting. Defaults to standard error in case an ir node is nonexistant..
+   * line,col error resporting. Defaults to standard error in case an ir node is nonexistent.
    *
    * @return Status
    */

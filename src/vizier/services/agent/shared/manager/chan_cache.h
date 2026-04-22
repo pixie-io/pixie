@@ -72,7 +72,7 @@ class ChanCache {
    * The period where a connection goes from READY to IDLE can be adjusted with the channel
    * argument: GRPC_ARG_CLIENT_IDLE_TIMEOUT_MS. See the test for an example.
    *
-   * @return Status: whether an error occured while cleaning up Idle/Dead Channels.
+   * @return Status: whether an error occurred while cleaning up Idle/Dead Channels.
    */
   Status CleanupChans();
 

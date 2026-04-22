@@ -141,7 +141,7 @@ std::ostream& operator<<(std::ostream& os, const NormalizeResult& result);
 
 struct NormalizationState {
   // Number of characters to shift character indices into the query by, to account for replacements
-  // that have already occured.
+  // that have already occurred.
   int n_shift_query = 0;
   std::vector<int> line_start_offsets;
   std::string next_placeholder;

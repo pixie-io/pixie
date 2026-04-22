@@ -114,7 +114,7 @@ StatusOr<bool> MergeSameNodeGRPCBridgeRule::Apply(IRNode* ir_node) {
   int64_t dest_id = grpc_sink->agent_id_to_destination_id().at(current_agent_id_);
   auto node = grpc_sink->graph()->Get(dest_id);
   if (!Match(node, GRPCSource())) {
-    return node->CreateIRNodeError("Expected node to be a 'GRPCSource', but recieved a '$0'",
+    return node->CreateIRNodeError("Expected node to be a 'GRPCSource', but received a '$0'",
                                    node->DebugString());
   }
   auto grpc_sink_parent = grpc_sink->parents()[0];

@@ -542,7 +542,7 @@ TEST_F(MetadataOpsTest, pod_name_to_stop_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // pl/terminating_pod is the Pod name for a terminating pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/terminating_pod").val, 15);
-  // pl/blah is a nonexistant Pod, should return 0.
+  // pl/blah is a nonexistent Pod, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
 }
 
