@@ -95,3 +95,8 @@ upload_artifacts "${release_tag}"
 if [[ ! $release_tag == *"-"* ]]; then
   upload_artifacts "latest"
 fi
+
+# Create manifest update for downstream jobs.
+if [[ -n "${MANIFEST_UPDATES:-}" ]]; then
+  create_manifest_update "cli" "${release_tag}" > "${MANIFEST_UPDATES}"
+fi
