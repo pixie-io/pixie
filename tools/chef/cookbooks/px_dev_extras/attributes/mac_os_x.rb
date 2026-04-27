@@ -24,9 +24,9 @@ default['owner'] = node['current_user']
 default['group'] = 'wheel'
 
 default['docker-buildx']['download_path'] =
-  'https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.darwin-amd64'
+  'https://github.com/docker/buildx/releases/download/v0.33.0/buildx-v0.33.0.darwin-amd64'
 default['docker-buildx']['sha256'] =
-  '63aadf0095a583963c9613b3bc6e5782c8c56ed881ca9aa65f41896f4267a9ee'
+  'b1b5a38f78311cfed70a0e68096df0e9ed7dd1b1fcd09adbb117d74e3bad6f32'
 
 default['faq']['download_path'] =
   'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-darwin-amd64'

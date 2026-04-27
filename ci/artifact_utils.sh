@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 gh_artifacts_dir="${ARTIFACTS_DIR}"
-gh_repo="${GH_REPO:-pixie-io/pixie}"
+gh_repo="${GH_REPO:-${GITHUB_REPOSITORY:-pixie-io/pixie}}"
 workspace=$(git rev-parse --show-toplevel)
 mirrors_file="${workspace}/ci/artifact_mirrors.yaml"
 

@@ -17,6 +17,9 @@ jobs:
     name: Build Release
     runs-on: oracle-16cpu-64gb-x86-64
     needs: get-dev-image
+    permissions:
+      contents: read
+      packages: write
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     steps:
@@ -30,15 +33,17 @@ jobs:
       with:
         download_toplevel: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
     - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+    - name: Login to GHCR
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3.7.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
@@ -47,8 +52,9 @@ jobs:
         GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+        IMAGE_REPO: ${{ vars.IMAGE_REPO || 'ghcr.io/pixie-io' }}
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -76,8 +82,7 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
-        OWNER: pixie-io
-        REPO: pixie
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"

@@ -23,9 +23,9 @@ default['owner'] = 'root'
 default['group'] = 'root'
 
 default['docker-buildx']['download_path'] =
-  'https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64'
+  'https://github.com/docker/buildx/releases/download/v0.33.0/buildx-v0.33.0.linux-amd64'
 default['docker-buildx']['sha256'] =
-  'dbe68cdc537d0150fc83e3f30974cd0ca11c179dafbf27f32d6f063be26e869b'
+  '9426a15411f35f635afef3f5d3bae53155c3e30d26dee430cc968e13d34be49f'
 
 default['faq']['download_path'] =
   'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-linux-amd64'

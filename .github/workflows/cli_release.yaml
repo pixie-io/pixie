@@ -17,10 +17,15 @@ jobs:
     name: Build Release
     runs-on: oracle-16cpu-64gb-x86-64
     needs: get-dev-image
+    permissions:
+      contents: read
+      packages: write
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     env:
       ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
+      # When macOS signing is enabled, push-signed-artifacts owns the manifest update.
+      MANIFEST_UPDATES: ${{ vars.ENABLE_MACOS_SIGNING == 'true' && '' || 'manifest_updates.json' }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
@@ -42,10 +47,12 @@ jobs:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
+    - name: Login to GHCR
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3.7.0
       with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
@@ -53,7 +60,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BUILD_NUMBER: ${{ github.run_attempt }}
         JOB_NAME: ${{ github.job }}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
+        GH_REPO: ${{ github.repository }}
+        IMAGE_REPO: ${{ vars.IMAGE_REPO || 'ghcr.io/pixie-io' }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -61,24 +69,26 @@ jobs:
         export ARTIFACTS_DIR="$(realpath artifacts/)"
         ./ci/save_version_info.sh
         ./ci/cli_build_release.sh
+    # Despite the name, linux-artifacts also contains the unsigned darwin
+    # binaries (cli_darwin_{amd64,arm64}_unsigned). sign-release downloads
+    # this artifact to feed cli_merge_sign.sh.
     - name: Upload Github Artifacts
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: linux-artifacts
         path: artifacts/
-    - name: Update GCS Manifest
-      env:
-        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
-        # Use the old style versions file instead of the new updates for the gcs manifest.
-        MANIFEST_UPDATES: ""
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
-      run: ./ci/update_artifact_manifest.sh
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: artifact-upload-log
         path: ${{ env.ARTIFACT_UPLOAD_LOG }}
+    - if: vars.ENABLE_MACOS_SIGNING != 'true'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+      with:
+        name: manifest-updates
+        path: manifest_updates.json
   sign-release:
     name: Sign Release for MacOS
+    if: vars.ENABLE_MACOS_SIGNING == 'true'
     runs-on: macos-latest
     needs: build-release
     steps:
@@ -87,6 +97,10 @@ jobs:
         fetch-depth: 0
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+      with:
+        name: linux-artifacts
+        path: artifacts/
     - name: Install gon
       run: brew install Bearer/tap/gon
     - name: Sign CLI release
@@ -101,7 +115,6 @@ jobs:
         export CERT_PATH="pixie.cert"
         echo -n "$CERT_BASE64" | base64 --decode -o "$CERT_PATH"
         export TAG_NAME="${REF#*/tags/}"
-        mkdir -p "artifacts/"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         ./ci/cli_merge_sign.sh
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
@@ -110,6 +123,7 @@ jobs:
         path: artifacts/
   push-signed-artifacts:
     name: Push Signed Artifacts for MacOS
+    if: vars.ENABLE_MACOS_SIGNING == 'true'
     runs-on: ubuntu-latest
     needs: [get-dev-image, sign-release]
     container:
@@ -131,10 +145,6 @@ jobs:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
         echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
-    - id: gcloud-creds
-      uses: ./.github/actions/gcloud_creds
-      with:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
     - name: Add pwd to git safe dir
       run: |
         git config --global --add safe.directory `pwd`
@@ -142,8 +152,8 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -161,7 +171,11 @@ jobs:
   create-github-release:
     name: Create Release on Github
     runs-on: ubuntu-latest
-    needs: push-signed-artifacts
+    needs: [build-release, push-signed-artifacts]
+    if: |
+      always() &&
+      needs.build-release.result == 'success' &&
+      (needs.push-signed-artifacts.result == 'success' || needs.push-signed-artifacts.result == 'skipped')
     permissions:
       contents: write
     steps:
@@ -186,8 +200,15 @@ jobs:
         gh release create "${TAG_NAME}" "${prerelease[@]}" \
           --title "CLI ${TAG_NAME#release/cli/}" \
           --notes $'Pixie CLI Release:\n'"${changelog}"
-        gh release upload "${TAG_NAME}" linux-artifacts/* macos-artifacts/*
+        shopt -s nullglob
+        upload_paths=(linux-artifacts/*)
+        if [[ -d macos-artifacts ]]; then
+          upload_paths+=(macos-artifacts/*)
+        fi
+        gh release upload "${TAG_NAME}" "${upload_paths[@]}"
   update-gh-artifacts-manifest:
+    if: |
+      always() && needs.create-github-release.result == 'success'
     runs-on: oracle-8cpu-32gb-x86-64
     needs: [get-dev-image, create-github-release]
     container:
@@ -217,8 +238,8 @@ jobs:
       env:
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       run: |
-        git config --global user.name 'pixie-io-buildbot'
-        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.name "${{ vars.BUILDBOT_NAME || 'pixie-io-buildbot' }}"
+        git config --global user.email "${{ vars.BUILDBOT_EMAIL || 'build@pixielabs.ai' }}"
         git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
         git config --global commit.gpgsign true
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
