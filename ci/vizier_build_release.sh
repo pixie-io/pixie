@@ -40,6 +40,7 @@ image_repo="gcr.io/pixie-oss/pixie-prod"
 push_all_multiarch_images "//k8s/vizier:vizier_images_push" "//k8s/vizier:list_image_bundle" "${release_tag}" "${image_repo}"
 
 bazel build -c opt \
+  --config=clang \
   --config=stamp \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
