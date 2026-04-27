@@ -50,6 +50,7 @@ jobs:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
         IMAGE_REPO: ${{ vars.IMAGE_REPO || 'gcr.io/pixie-oss/pixie-prod' }}
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -77,8 +78,7 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
-        OWNER: pixie-io
-        REPO: pixie
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"

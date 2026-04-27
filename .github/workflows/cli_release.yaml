@@ -54,6 +54,7 @@ jobs:
         BUILD_NUMBER: ${{ github.run_attempt }}
         JOB_NAME: ${{ github.job }}
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -217,8 +218,8 @@ jobs:
       env:
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       run: |
-        git config --global user.name 'pixie-io-buildbot'
-        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.name "${{ vars.BUILDBOT_NAME || 'pixie-io-buildbot' }}"
+        git config --global user.email "${{ vars.BUILDBOT_EMAIL || 'build@pixielabs.ai' }}"
         git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
         git config --global commit.gpgsign true
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
