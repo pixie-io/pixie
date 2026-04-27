@@ -33,16 +33,9 @@ security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${KEYCHAI
 security default-keychain -s "${KEYCHAIN_PATH}"
 security find-identity -v
 
-release_tag=${TAG_NAME##*/v}
-bucket="pixie-dev-public"
-ARTIFACT_BASE_PATH="https://storage.googleapis.com/${bucket}/cli"
-
 for arch in amd64 arm64
 do
-  url="${ARTIFACT_BASE_PATH}/${release_tag}/cli_darwin_${arch}_unsigned"
-  rm -f "cli_darwin_${arch}_unsigned"
-  wget "${url}"
-  mv "cli_darwin_${arch}_unsigned" "cli_darwin_${arch}"
+  cp "${artifacts_dir}/cli_darwin_${arch}_unsigned" "cli_darwin_${arch}"
 done
 
 # Create a universal binary.

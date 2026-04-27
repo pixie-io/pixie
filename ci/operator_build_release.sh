@@ -37,7 +37,7 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
     | grep "release/operator" | grep -v "\-" || true)
 
-image_repo="${IMAGE_REPO:-gcr.io/pixie-oss/pixie-prod}"
+image_repo="${IMAGE_REPO:-ghcr.io/pixie-io}"
 image_paths=$(bazel cquery //k8s/operator:image_bundle \
   --//k8s:image_repository="${image_repo}" \
   --//k8s:image_version="${release_tag}" \
