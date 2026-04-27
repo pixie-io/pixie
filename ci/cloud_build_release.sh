@@ -34,7 +34,7 @@ if [[ "${release_tag}" == *"-"* ]]; then
 fi
 
 echo "The image tag is: ${release_tag}"
-image_repo="gcr.io/pixie-oss/pixie-prod"
+image_repo="${IMAGE_REPO:-gcr.io/pixie-oss/pixie-prod}"
 
 bazel run -c opt \
   --config=stamp \
