@@ -31,14 +31,10 @@ RUN apt-get install -y -q build-essential \
   libssl-dev \
   flex \
   bison \
-  kmod \
-  cpio \
   rsync \
   wget \
   binutils-aarch64-linux-gnu \
   gcc-aarch64-linux-gnu \
-  dwarves \
-  debhelper \
   python3
 
 WORKDIR /configs
