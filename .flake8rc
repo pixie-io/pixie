@@ -3,4 +3,9 @@ max-line-length = 120
 
 # N802: Function names have to be lower case. This is for GRPC service.
 # E999: Mistaken error see https://github.com/PyCQA/pycodestyle/issues/584
-ignore = N802,E999,W503
+# T499: Output from `flake8-mypy`, which has been deprecated since 2020 and is
+# stuck on an older interpreter under Ubuntu noble. The dedicated `mypy` linter
+# entry in `.arclint` already runs `mypy --config-file=mypy.ini` against the
+# proper interpreter, so flake8-mypy is redundant here. Silencing T499 avoids
+# the broken-plugin output without touching the linter image. See issue #1955.
+ignore = N802,E999,W503,T499
