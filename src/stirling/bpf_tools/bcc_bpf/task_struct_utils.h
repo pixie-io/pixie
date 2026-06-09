@@ -23,8 +23,8 @@
 
 #pragma once
 
-#include <linux/sched.h>
 #include <linux/math64.h>
+#include <linux/sched.h>
 
 // Between linux v6.1 and v6.8, NSEC_PER_SEC is no longer defined by including
 // linux/sched.h. This ifndef covers newer kernels that won't have it defined.
