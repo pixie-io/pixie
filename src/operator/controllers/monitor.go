@@ -250,12 +250,30 @@ func (m *VizierMonitor) watchCerts() {
 	}()
 }
 
+// getServerTLSCerts returns the server certificate and CA certificate PEM bytes for
+// Vizier's TLS material. It prefers the kubernetes.io/tls typed service-tls-server-certs
+// secret (which is also the shape produced by cert-manager), falling back to the legacy
+// service-tls-certs secret so existing clusters that have not regenerated certs keep working.
+func (m *VizierMonitor) getServerTLSCerts() (serverCert []byte, caCert []byte, err error) {
+	tlsSecret, err := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-server-certs", metav1.GetOptions{})
+	if err == nil {
+		return tlsSecret.Data["tls.crt"], tlsSecret.Data["ca.crt"], nil
+	}
+
+	legacySecret, legacyErr := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-certs", metav1.GetOptions{})
+	if legacyErr != nil {
+		// Return the original error referencing the preferred secret.
+		return nil, nil, err
+	}
+	return legacySecret.Data["server.crt"], legacySecret.Data["ca.crt"], nil
+}
+
 func (m *VizierMonitor) checkCerts() error {
-	tlsSecret, err := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-certs", metav1.GetOptions{})
+	serverCert, _, err := m.getServerTLSCerts()
 	if err != nil {
 		return err
 	}
-	cert, _ := pem.Decode(tlsSecret.Data["server.crt"])
+	cert, _ := pem.Decode(serverCert)
 	x509cert, err := x509.ParseCertificate(cert.Bytes)
 	if err != nil {
 		log.WithError(err).Error("failed to parse cert")
@@ -273,14 +291,14 @@ func (m *VizierMonitor) getTLSConfig() *tls.Config {
 	// This is used as a fallback incase we somehow fail to get the CA for the vizier.
 	fallbackInsecureConfig := &tls.Config{InsecureSkipVerify: true} // lgtm [go/disabled-certificate-check]
 
-	tlsSecret, err := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-certs", metav1.GetOptions{})
+	_, caCert, err := m.getServerTLSCerts()
 	if err != nil {
 		log.WithError(err).Warn("failed to get certs secret, monitor will use insecure tls to check /statusz")
 		return fallbackInsecureConfig
 	}
 
 	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM(tlsSecret.Data["ca.crt"]); !ok {
+	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
 		log.WithError(err).Warn("failed add CA to pool, monitor will use insecure tls to check /statusz")
 		return fallbackInsecureConfig
 	}
