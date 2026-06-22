@@ -254,7 +254,7 @@ func (m *VizierMonitor) watchCerts() {
 // Vizier's TLS material. It prefers the kubernetes.io/tls typed service-tls-server-certs
 // secret (which is also the shape produced by cert-manager), falling back to the legacy
 // service-tls-certs secret so existing clusters that have not regenerated certs keep working.
-func (m *VizierMonitor) getServerTLSCerts() (serverCert []byte, caCert []byte, err error) {
+func (m *VizierMonitor) getServerTLSCerts() ([]byte, []byte, error) {
 	tlsSecret, err := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-server-certs", metav1.GetOptions{})
 	if err == nil {
 		return tlsSecret.Data["tls.crt"], tlsSecret.Data["ca.crt"], nil
