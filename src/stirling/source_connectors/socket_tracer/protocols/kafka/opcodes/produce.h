@@ -45,9 +45,14 @@ struct ProduceReqPartition {
 
 struct ProduceReqTopic {
   std::string name;
+  // Topic id (UUID) replaces the topic name in api_version >= 13 (KIP-516).
+  std::string topic_id;
   std::vector<ProduceReqPartition> partitions;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
+    if (!topic_id.empty()) {
+      builder->WriteKV("topic_id", topic_id);
+    }
     builder->WriteKV("name", name);
     builder->WriteKVArrayRecursive<ProduceReqPartition>("partitions", partitions);
   }
@@ -100,9 +105,14 @@ struct ProduceRespPartition {
 
 struct ProduceRespTopic {
   std::string name;
+  // Topic id (UUID) replaces the topic name in api_version >= 13 (KIP-516).
+  std::string topic_id;
   std::vector<ProduceRespPartition> partitions;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
+    if (!topic_id.empty()) {
+      builder->WriteKV("topic_id", topic_id);
+    }
     builder->WriteKV("name", name);
     builder->WriteKVArrayRecursive<ProduceRespPartition>("partitions", partitions);
   }
