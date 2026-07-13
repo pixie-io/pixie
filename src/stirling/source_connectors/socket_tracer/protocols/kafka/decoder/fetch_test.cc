@@ -47,6 +47,9 @@ bool operator==(const FetchReqTopic& lhs, const FetchReqTopic& rhs) {
   if (lhs.name != rhs.name) {
     return false;
   }
+  if (lhs.topic_id != rhs.topic_id) {
+    return false;
+  }
   if (lhs.partitions.size() != rhs.partitions.size()) {
     return false;
   }
@@ -62,6 +65,9 @@ bool operator!=(const FetchReqTopic& lhs, const FetchReqTopic& rhs) { return !(l
 
 bool operator==(const FetchForgottenTopicsData& lhs, const FetchForgottenTopicsData& rhs) {
   if (lhs.name != rhs.name) {
+    return false;
+  }
+  if (lhs.topic_id != rhs.topic_id) {
     return false;
   }
   if (lhs.partition_indices.size() != rhs.partition_indices.size()) {
@@ -141,6 +147,9 @@ bool operator!=(const FetchRespPartition& lhs, const FetchRespPartition& rhs) {
 
 bool operator==(const FetchRespTopic& lhs, const FetchRespTopic& rhs) {
   if (lhs.name != rhs.name) {
+    return false;
+  }
+  if (lhs.topic_id != rhs.topic_id) {
     return false;
   }
   if (lhs.partitions.size() != rhs.partitions.size()) {
@@ -259,6 +268,74 @@ TEST(KafkaPacketDecoder, TestExtractFetchReqV12) {
   };
   PacketDecoder decoder(input);
   decoder.SetAPIInfo(APIKey::kFetch, 12);
+  EXPECT_OK_AND_EQ(decoder.ExtractFetchReq(), expected_result);
+}
+
+// In api_version >= 13, the topic is identified by a 16-byte UUID (topic_id) instead of a name.
+// This input is TestExtractFetchReqV12 with the topic name replaced by a topic_id UUID.
+TEST(KafkaPacketDecoder, TestExtractFetchReqV13) {
+  const std::string_view input = CreateStringView<char>(
+      "\xff\xff\xff\xff\x00\x00\x01\xf4\x00\x00\x00\x01\x03\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x02\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x02\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff"
+      "\xff\xff\xff\xff\x00\x10\x00\x00\x00\x00\x01\x01\x00");
+
+  FetchReqPartition partition{
+      .index = 0,
+      .current_leader_epoch = 0,
+      .fetch_offset = 0,
+      .log_start_offset = -1,
+      .partition_max_bytes = 1048576,
+  };
+  FetchReqTopic topic{
+      .topic_id = "00010203-0405-0607-0809-0a0b0c0d0e0f",
+      .partitions = {partition},
+  };
+  FetchReq expected_result{
+      .replica_id = -1,
+      .session_id = 0,
+      .session_epoch = 0,
+      .topics = {topic},
+      .forgotten_topics = {},
+      .rack_id = "",
+  };
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kFetch, 13);
+  EXPECT_OK_AND_EQ(decoder.ExtractFetchReq(), expected_result);
+}
+
+// In api_version >= 15, the top-level ReplicaId field was removed (moved to a tagged
+// ReplicaState field), so the body no longer begins with it. This input is TestExtractFetchReqV13
+// with the leading 4-byte replica_id removed.
+TEST(KafkaPacketDecoder, TestExtractFetchReqV15) {
+  const std::string_view input = CreateStringView<char>(
+      "\x00\x00\x01\xf4\x00\x00\x00\x01\x03\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x02\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x02\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff"
+      "\xff\xff\xff\xff\x00\x10\x00\x00\x00\x00\x01\x01\x00");
+
+  FetchReqPartition partition{
+      .index = 0,
+      .current_leader_epoch = 0,
+      .fetch_offset = 0,
+      .log_start_offset = -1,
+      .partition_max_bytes = 1048576,
+  };
+  FetchReqTopic topic{
+      .topic_id = "00010203-0405-0607-0809-0a0b0c0d0e0f",
+      .partitions = {partition},
+  };
+  FetchReq expected_result{
+      // replica_id is not present in the wire format for v15+, so it keeps its default value.
+      .replica_id = 0,
+      .session_id = 0,
+      .session_epoch = 0,
+      .topics = {topic},
+      .forgotten_topics = {},
+      .rack_id = "",
+  };
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kFetch, 15);
   EXPECT_OK_AND_EQ(decoder.ExtractFetchReq(), expected_result);
 }
 
