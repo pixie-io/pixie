@@ -49,6 +49,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<IPToPodIDAtTimeUDF>("ip_to_pod_id");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pod_id_to_pod_name");
   registry->RegisterOrDie<PodIDToPodLabelsUDF>("pod_id_to_pod_labels");
+  registry->RegisterOrDie<PodIDToPodAnnotationsUDF>("pod_id_to_pod_annotations");
   registry->RegisterOrDie<PodIDToNamespaceUDF>("pod_id_to_namespace");
   registry->RegisterOrDie<PodIDToNodeNameUDF>("pod_id_to_node_name");
   registry->RegisterOrDie<PodIDToReplicaSetNameUDF>("pod_id_to_replicaset_name");
