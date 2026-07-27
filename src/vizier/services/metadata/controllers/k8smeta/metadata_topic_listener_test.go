@@ -136,7 +136,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mds := &FakeStore{}
 			updateCh := make(chan *K8sResourceMessage)
-			mdh := NewHandler(updateCh, mds, mds, nil)
+			mdh := NewHandler(updateCh, mds, mds, nil, nil)
 			mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
 				return nil
 			})
@@ -176,7 +176,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	mds := &FakeStore{}
 	updateCh := make(chan *K8sResourceMessage)
-	mdh := NewHandler(updateCh, mds, mds, nil)
+	mdh := NewHandler(updateCh, mds, mds, nil, nil)
 
 	sentUpdates := make([]*messagespb.VizierMessage, 0)
 	mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {

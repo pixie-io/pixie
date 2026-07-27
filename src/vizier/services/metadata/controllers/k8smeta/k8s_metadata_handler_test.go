@@ -399,7 +399,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 	require.NoError(t, err)
 
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
-	mdh := k8smeta.NewHandler(updateCh, mds, lps, nil)
+	mdh := k8smeta.NewHandler(updateCh, mds, lps, nil, nil)
 	defer mdh.Stop()
 	updates, err := mdh.GetUpdatesForIP("", 0, 0)
 	require.NoError(t, err)
@@ -448,7 +448,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
 
-	mdh := k8smeta.NewHandler(updateCh, mds, lps, nc)
+	mdh := k8smeta.NewHandler(updateCh, mds, lps, nc, nil)
 	defer mdh.Stop()
 
 	expectedNSMsg := &messagespb.VizierMessage{
