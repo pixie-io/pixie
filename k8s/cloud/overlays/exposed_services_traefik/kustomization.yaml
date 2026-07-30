@@ -1,0 +1,13 @@
+---
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- proxy_service.yaml
+- vzconn_service.yaml
+- cloud_ingress.yaml
+- servers_transport.yaml
+patches:
+- path: api_service.yaml
+  target:
+    kind: Service
+    name: api-service

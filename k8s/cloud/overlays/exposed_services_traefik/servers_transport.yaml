@@ -1,0 +1,8 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: cloud-backend-transport
+spec:
+  serverName: pixie.example.com
+  insecureSkipVerify: true

@@ -1,0 +1,76 @@
+## Replace all occurrences of pixie.example.com with the custom domain name you wish to use
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloud-ingress
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - pixie.example.com
+    - work.pixie.example.com
+    secretName: cloud-proxy-tls-certs
+  rules:
+  - host: pixie.example.com
+    http:
+      paths:
+      - path: /px.services
+        pathType: Prefix
+        backend:
+          service:
+            name: vzconn-service
+            port:
+              number: 51600
+      - path: /px.cloudapi
+        pathType: Prefix
+        backend:
+          service:
+            name: api-service
+            port:
+              number: 51200
+      - path: /px.api
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 4444
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 443
+  - host: work.pixie.example.com
+    http:
+      paths:
+      - path: /px.services
+        pathType: Prefix
+        backend:
+          service:
+            name: vzconn-service
+            port:
+              number: 51600
+      - path: /px.cloudapi
+        pathType: Prefix
+        backend:
+          service:
+            name: api-service
+            port:
+              number: 51200
+      - path: /px.api
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 4444
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 443
