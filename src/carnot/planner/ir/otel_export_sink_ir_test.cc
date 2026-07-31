@@ -444,6 +444,84 @@ INSTANTIATE_TEST_SUITE_P(
             },
         },
         {
+            "logs_basic",
+            table_store::schema::Relation{{types::TIME64NS, types::STRING, types::STRING},
+                                          {"start_time", "attribute_str", "log_message"},
+                                          {types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            R"pb(
+            endpoint_config {}
+            resource {}
+            logs {
+              attributes {
+                name: "service.name"
+                column {
+                  column_type: STRING
+                  column_index: 1
+                }
+              }
+              time_column_index: 0
+              observed_time_column_index: -1
+              severity_number: 4
+              severity_text: "INFO"
+              body_column_index: 2
+            }
+            )pb",
+            [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
+              OTelData data;
+
+              auto& log = data.logs.emplace_back();
+              log.time_column = CreateTypedColumn(graph, "start_time", relation);
+              log.attributes.push_back(
+                  {"service.name", CreateTypedColumn(graph, "attribute_str", relation), ""});
+              log.severity_number = 4;
+              log.severity_text = "INFO";
+              log.body_column = CreateTypedColumn(graph, "log_message", relation);
+
+              return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
+                  .ConsumeValueOrDie();
+            },
+        },
+        {
+            "logs_with_observed_time_col",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::TIME64NS, types::STRING, types::STRING},
+                {"start_time", "observed_time", "attribute_str", "log_message"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            R"pb(
+            endpoint_config {}
+            resource {}
+            logs {
+              attributes {
+                name: "service.name"
+                column {
+                  column_type: STRING
+                  column_index: 2
+                }
+              }
+              time_column_index: 0
+              observed_time_column_index: 1
+              severity_number: 4
+              severity_text: "INFO"
+              body_column_index: 3
+            }
+            )pb",
+            [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
+              OTelData data;
+
+              auto& log = data.logs.emplace_back();
+              log.time_column = CreateTypedColumn(graph, "start_time", relation);
+              log.observed_time_column = CreateTypedColumn(graph, "observed_time", relation);
+              log.attributes.push_back(
+                  {"service.name", CreateTypedColumn(graph, "attribute_str", relation), ""});
+              log.severity_number = 4;
+              log.severity_text = "INFO";
+              log.body_column = CreateTypedColumn(graph, "log_message", relation);
+
+              return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
+                  .ConsumeValueOrDie();
+            },
+        },
+        {
             "string_value_attributes",
             table_store::schema::Relation{{types::TIME64NS, types::INT64},
                                           {"time_", "latency_ns"},
@@ -553,6 +631,33 @@ OTelExportSinkIR* CreateSpanWithNameString(IR* graph, OperatorIR* parent,
   span.trace_id_column = CreateTypedColumn(graph, "trace_id", relation);
   span.span_id_column = CreateTypedColumn(graph, "span_id", relation);
   span.parent_span_id_column = CreateTypedColumn(graph, "parent_span_id", relation);
+
+  return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data).ConsumeValueOrDie();
+}
+
+OTelExportSinkIR* CreateLog(IR* graph, OperatorIR* parent,
+                            table_store::schema::Relation* relation) {
+  OTelData data;
+
+  auto& log = data.logs.emplace_back();
+  log.time_column = CreateTypedColumn(graph, "start_time", relation);
+  log.body_column = CreateTypedColumn(graph, "log_message", relation);
+  log.severity_number = 4;
+  log.severity_text = "INFO";
+
+  return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data).ConsumeValueOrDie();
+}
+
+OTelExportSinkIR* CreateLogWithObservedTime(IR* graph, OperatorIR* parent,
+                                            table_store::schema::Relation* relation) {
+  OTelData data;
+
+  auto& log = data.logs.emplace_back();
+  log.time_column = CreateTypedColumn(graph, "start_time", relation);
+  log.observed_time_column = CreateTypedColumn(graph, "observed_time", relation);
+  log.body_column = CreateTypedColumn(graph, "log_message", relation);
+  log.severity_number = 4;
+  log.severity_text = "INFO";
 
   return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data).ConsumeValueOrDie();
 }
@@ -722,6 +827,31 @@ INSTANTIATE_TEST_SUITE_P(
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
                   .ConsumeValueOrDie();
             },
+        },
+        {
+            "log_time_column_wrong",
+            table_store::schema::Relation{{types::INT64, types::STRING, types::STRING},
+                                          {"start_time", "attribute_str", "log_message"},
+                                          {types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected time column 'start_time' to be TIME64NS, received INT64",
+            &CreateLog,
+        },
+        {
+            "log_body_column_wrong",
+            table_store::schema::Relation{{types::TIME64NS, types::STRING, types::TIME64NS},
+                                          {"start_time", "attribute_str", "log_message"},
+                                          {types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected body column 'log_message' to be STRING, received TIME64NS",
+            &CreateLog,
+        },
+        {
+            "log_observed_time_column_wrong",
+            table_store::schema::Relation{
+                {types::TIME64NS, types::INT64, types::STRING, types::STRING},
+                {"start_time", "observed_time", "attribute_str", "log_message"},
+                {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE}},
+            "Expected observed_time column 'observed_time' to be TIME64NS, received INT64",
+            &CreateLogWithObservedTime,
         },
     }),
     [](const ::testing::TestParamInfo<WrongColumnTypesTestCase>& info) { return info.param.name; });
