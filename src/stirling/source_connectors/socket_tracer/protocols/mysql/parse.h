@@ -34,7 +34,7 @@ namespace protocols {
  */
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, mysql::Packet* frame,
-                      mysql::StateWrapper* state);
+                      mysql::StateWrapper* state, bool lazy_parsing_enabled);
 
 template <>
 size_t FindFrameBoundary<mysql::Packet>(message_type_t type, std::string_view buf, size_t start_pos,

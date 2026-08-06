@@ -34,7 +34,7 @@ ParseState ParseFrame(BinaryDecoder* decoder, Frame* frame, State* state);
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame* frame,
-                      mongodb::StateWrapper* state);
+                      mongodb::StateWrapper* state, bool /*lazy_parsing_enabled*/);
 
 template <>
 size_t FindFrameBoundary<mongodb::Frame>(message_type_t type, std::string_view buf,

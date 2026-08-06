@@ -34,6 +34,7 @@ struct TestParams {
 
 class ChunkedDecoderTest : public ::testing::TestWithParam<TestParams> {
  public:
+  //  Note that pico chunked decoder does not support lazy parsing!
   ChunkedDecoderTest() { FLAGS_use_pico_chunked_decoder = false; }
   void SetUp() {
     auto params = GetParam();
@@ -118,6 +119,46 @@ TEST_P(ChunkedDecoderTest, Incomplete) {
   }
 }
 
+TEST_P(ChunkedDecoderTest, IncompleteLazyParsing) {
+  std::string_view body =
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\r\n"
+      " is awesome!\r\n"
+      "0\r\n"
+      "\r\n";
+  std::string original(body);
+
+  for (size_t i = 0; i < body.size(); ++i) {
+    std::string_view body_substr = body.substr(0, i);
+
+    std::string out;
+    size_t body_size;
+    ParseState result = ParseChunked(&body_substr, kBodySizeLimitBytes, &out, &body_size,
+                                     true);  // lazy parsing enabled
+
+    auto params = GetParam();
+    // Lazy parsing is not fully supported by pico parser
+    if (params.use_pico_chunked_decoder) {
+      EXPECT_EQ(result, ParseState::kMetadataComplete);
+      EXPECT_EQ(out, "");
+      EXPECT_EQ(body_substr, original.substr(0, i));
+      EXPECT_EQ(body, original);
+    } else {
+      // Custom parser parses chunk by chunk
+      EXPECT_EQ(result, ParseState::kMetadataComplete);
+      if (i > 13 && i <= 30) {
+        EXPECT_EQ(out, "pixielabs");
+      } else if (i >= 31) {
+        EXPECT_EQ(out, "pixielabs is awesome!");
+      } else {
+        EXPECT_EQ(out, "");
+      }
+      EXPECT_EQ(body, original);
+    }
+  }
+}
+
 TEST_P(ChunkedDecoderTest, InconsistentLength) {
   std::string_view body =
       "B\r\n"
@@ -161,6 +202,35 @@ TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInLength) {
   EXPECT_EQ(body, original);
 }
 
+TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInLengthLazyParsing) {
+  std::string_view body =
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\rx"
+      " is awesome!\r\n"
+      "0\r\n"
+      "\r\n";
+  std::string original(body);
+
+  std::string out;
+  size_t body_size;
+  ParseState result =
+      ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size, true);  // lazy parsing enabled
+
+  auto params = GetParam();
+
+  // The two implementations differ in behavior.
+  // Our custom decoder applies the spec more strictly.
+  EXPECT_EQ(result,
+            params.use_pico_chunked_decoder ? ParseState::kMetadataComplete : ParseState::kInvalid);
+  if (params.use_pico_chunked_decoder) {
+    EXPECT_EQ(out, "");
+  } else {
+    EXPECT_EQ(out, "pixielabs");
+  }
+  EXPECT_EQ(body, original);
+}
+
 TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInData) {
   std::string_view body =
       "9\r\n"
@@ -180,6 +250,30 @@ TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInData) {
   EXPECT_EQ(body, original);
 }
 
+TEST_P(ChunkedDecoderTest, UnexpectedTerminatorInDataLazyParsing) {
+  std::string_view body =
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\r\n"
+      " is awesome!\rx"
+      "0\r\n"
+      "\r\n";
+  std::string original(body);
+
+  std::string out;
+  size_t body_size;
+  ParseState result =
+      ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size, true);  // lazy parsing enabled
+
+  EXPECT_EQ(result, ParseState::kInvalid);
+  if (GetParam().use_pico_chunked_decoder) {
+    EXPECT_EQ(out, "");
+  } else {
+    EXPECT_EQ(out, "pixielabs");
+  }
+  EXPECT_EQ(body, original);
+}
+
 TEST_P(ChunkedDecoderTest, UnexpectedTerminatorAtEnd) {
   std::string_view body =
       "9\r\n"
@@ -196,6 +290,30 @@ TEST_P(ChunkedDecoderTest, UnexpectedTerminatorAtEnd) {
 
   EXPECT_EQ(result, ParseState::kInvalid);
   EXPECT_EQ(out, "");
+  EXPECT_EQ(body, original);
+}
+
+TEST_P(ChunkedDecoderTest, UnexpectedTerminatorAtEndLazyParsing) {
+  std::string_view body =
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\r\n"
+      " is awesome!\rx"
+      "0\r\n"
+      "\rx";
+  std::string original(body);
+
+  std::string out;
+  size_t body_size;
+  ParseState result =
+      ParseChunked(&body, kBodySizeLimitBytes, &out, &body_size, true);  // lazy parsing enabled
+
+  EXPECT_EQ(result, ParseState::kInvalid);
+  if (GetParam().use_pico_chunked_decoder) {
+    EXPECT_EQ(out, "");
+  } else {
+    EXPECT_EQ(out, "pixielabs");
+  }
   EXPECT_EQ(body, original);
 }
 

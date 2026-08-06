@@ -114,7 +114,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 }  // namespace mux
 
 template <>
-ParseState ParseFrame(message_type_t, std::string_view* buf, mux::Frame* frame, NoState*) {
+ParseState ParseFrame(message_type_t, std::string_view* buf, mux::Frame* frame, NoState*,
+                      bool /*lazy_parsing_enabled*/) {
   BinaryDecoder decoder(*buf);
 
   PX_ASSIGN_OR(frame->length, decoder.ExtractBEInt<int32_t>(), return ParseState::kInvalid);

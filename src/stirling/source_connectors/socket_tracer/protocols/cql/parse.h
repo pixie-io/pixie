@@ -34,7 +34,7 @@ namespace protocols {
  */
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, cass::Frame* frame,
-                      NoState* state);
+                      NoState* state, bool lazy_parsing_enabled);
 
 template <>
 size_t FindFrameBoundary<cass::Frame>(message_type_t type, std::string_view buf, size_t start_pos,
