@@ -140,6 +140,13 @@ class BCCWrapper {
   virtual Status AttachSamplingProbe(const SamplingProbeSpec& probe) = 0;
 
   /**
+   * Attach a single kfunc.
+   * @param probe Specifications of the kfunc.
+   * @return Error if probe fails to attach.
+   */
+  virtual Status AttachKFunc(const KFuncSpec& probe) = 0;
+
+  /**
    * Open a perf buffer for reading events.
    * @param perf_buff Specifications of the perf buffer (name, callback function, etc.).
    * @return Error if perf buffer cannot be opened (e.g. perf buffer does not exist).
@@ -181,6 +188,13 @@ class BCCWrapper {
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
   virtual Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes) = 0;
+
+  /**
+   * Convenience function that attaches multiple kfuncs.
+   * @param probes Vector of probes.
+   * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
+   */
+  virtual Status AttachKFuncs(const ArrayView<KFuncSpec>& probes) = 0;
 
   /**
    * Convenience function that attaches a XDP program.
@@ -260,6 +274,7 @@ class BCCWrapper {
   inline static size_t num_attached_tracepoints_;
   inline static size_t num_open_perf_buffers_;
   inline static size_t num_attached_perf_events_;
+  inline static size_t num_attached_kfuncs_;
 
  private:
   // This is shared by all source connectors that uses BCCWrapper.
@@ -289,12 +304,14 @@ class BCCWrapperImpl : public BCCWrapper {
   Status AttachUProbe(const UProbeSpec& probe) override;
   Status AttachTracepoint(const TracepointSpec& probe) override;
   Status AttachSamplingProbe(const SamplingProbeSpec& probe) override;
+  Status AttachKFunc(const KFuncSpec& probe) override;
   Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer) override;
   Status AttachPerfEvent(const PerfEventSpec& perf_event) override;
   Status AttachKProbes(const ArrayView<KProbeSpec>& probes) override;
   Status AttachTracepoints(const ArrayView<TracepointSpec>& probes) override;
   Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes) override;
   Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes) override;
+  Status AttachKFuncs(const ArrayView<KFuncSpec>& probes) override;
   Status AttachXDP(const std::string& dev_name, const std::string& fn_name) override;
   Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers) override;
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events) override;
@@ -316,14 +333,16 @@ class BCCWrapperImpl : public BCCWrapper {
   Status DetachUProbe(const UProbeSpec& probe);
   Status DetachTracepoint(const TracepointSpec& probe);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
+  Status UnloadKFunc(const KFuncSpec& probe);
 
-  // Detaches all kprobes/uprobes/perf buffers/perf events that were attached by the wrapper.
+  // Detaches all kprobes/uprobes/perf buffers/perf events/kfuncs that were attached by the wrapper.
   // If any fails to detach, an error is logged, and the function continues.
   void DetachKProbes();
   void DetachUProbes();
   void DetachTracepoints();
   void ClosePerfBuffers();
   void DetachPerfEvents();
+  void UnloadKFuncs();
 
   // Returns the name that identifies the target to attach this k-probe.
   std::string GetKProbeTargetName(const KProbeSpec& probe);
@@ -332,6 +351,7 @@ class BCCWrapperImpl : public BCCWrapper {
   std::vector<UProbeSpec> uprobes_;
   std::vector<TracepointSpec> tracepoints_;
   std::vector<PerfEventSpec> perf_events_;
+  std::vector<KFuncSpec> kfuncs_;
 
  protected:
   std::vector<PerfBufferSpec> perf_buffer_specs_;
@@ -395,11 +415,13 @@ class ReplayingBCCWrapperImpl : public BCCWrapper {
   Status AttachUProbe(const UProbeSpec&) override { return Status::OK(); }
   Status AttachTracepoint(const TracepointSpec&) override { return Status::OK(); }
   Status AttachSamplingProbe(const SamplingProbeSpec&) override { return Status::OK(); }
+  Status AttachKFunc(const KFuncSpec&) override { return Status::OK(); }
   Status AttachPerfEvent(const PerfEventSpec&) override { return Status::OK(); }
   Status AttachKProbes(const ArrayView<KProbeSpec>&) override { return Status::OK(); }
   Status AttachTracepoints(const ArrayView<TracepointSpec>&) override { return Status::OK(); }
   Status AttachUProbes(const ArrayView<UProbeSpec>&) override { return Status::OK(); }
   Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>&) override { return Status::OK(); }
+  Status AttachKFuncs(const ArrayView<KFuncSpec>&) override { return Status::OK(); }
   Status AttachXDP(const std::string&, const std::string&) override { return Status::OK(); }
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>&) override { return Status::OK(); }
   Status PopulateBPFPerfArray(const std::string&, const uint32_t, const uint64_t) override {
