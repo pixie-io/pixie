@@ -35,7 +35,8 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
         max_gap_size_(max_gap_size),
         allow_before_gap_size_(allow_before_gap_size) {}
 
-  void Add(size_t pos, std::string_view data, uint64_t timestamp) override;
+  void Add(size_t pos, std::string_view data, uint64_t timestamp,
+           chunk_t incomplete_chunk = chunk_t::kFullyFormed, size_t gap_size = 0) override;
 
   std::string_view Head() override { return Get(position_); }
 
@@ -59,9 +60,16 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
 
   void ShrinkToFit() override { buffer_.shrink_to_fit(); }
 
+  // For a contiguous section pointed to by position_ (the head), return
+  // ChunkInfo, which contains the size of the chunk and whether it is incomplete.
+  // If incomplete, ChunkInfo also tells us where the incomplete event starts
+  // Note that with filler events, a single contiguous head may contain multiple
+  // incomplete chunks joined together with filler bytes.
+  ChunkInfo GetChunkInfoForHead() override;
+
  private:
-  std::map<size_t, size_t>::const_iterator GetChunkForPos(size_t pos) const;
-  void AddNewChunk(size_t pos, size_t size);
+  std::map<size_t, ChunkInfo>::const_iterator GetChunkForPos(size_t pos) const;
+  void AddNewChunk(size_t pos, size_t size, chunk_t incomplete_chunk, size_t gap_size);
   void AddNewTimestamp(size_t pos, uint64_t timestamp);
 
   // CheckOverlap checks if the chunk to be added as indicated by pos and size
@@ -98,7 +106,7 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
   // Map of chunk start positions to chunk sizes.
   // A chunk is a contiguous sequence of bytes.
   // Adjacent chunks are always fused, so a chunk either ends at a gap or the end of the buffer.
-  std::map<size_t, size_t> chunks_;
+  std::map<size_t, ChunkInfo> chunks_;
 
   // Map of positions to timestamps.
   // Unlike chunks_, which will fuse when adjacent, timestamps never fuse.

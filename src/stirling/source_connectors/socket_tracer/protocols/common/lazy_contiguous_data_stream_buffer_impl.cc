@@ -60,8 +60,12 @@ uint8_t* FixedSizeContiguousBuffer::Data() {
 size_t FixedSizeContiguousBuffer::Size() const { return capacity_ - offset_; }
 size_t FixedSizeContiguousBuffer::Capacity() const { return capacity_; }
 
-void LazyContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data,
-                                             uint64_t timestamp) {
+// TODO(@benkilimnik): If we switch to using the lazy contiguous buffer implementation,
+// implement the gap metadata.
+ChunkInfo LazyContiguousDataStreamBufferImpl::GetChunkInfoForHead() { return ChunkInfo(); }
+
+void LazyContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data, uint64_t timestamp,
+                                             chunk_t /*incomplete_chunk*/, size_t /*gap_size*/) {
   if (data.size() == 0) {
     // Ignore empty events.
     return;
