@@ -50,7 +50,7 @@ class CarnotTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>();
+    ASSERT_OK_AND_ASSIGN(result_server_, exec::LocalGRPCResultSinkServer::Create());
 
     auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
     funcs::RegisterFuncsOrDie(func_registry.get());
