@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <grpcpp/grpcpp.h>
 #include <chrono>
 #include <memory>
 #include <numeric>
@@ -26,8 +27,11 @@
 
 #include <prometheus/gauge.h>
 
+#include "src/carnot/carnot.h"
+#include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/common/system/kernel_version.h"
 #include "src/stirling/stirling.h"
+#include "src/vizier/services/agent/pem/direct_query_server.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
 
@@ -101,6 +105,18 @@ class PEMManager : public Manager {
         FLAGS_stirling_profiler_stack_trace_sample_period_ms);
     return parameters;
   }
+
+  // Direct-query gRPC endpoint on the live PEM. All four are nullptr when
+  // FLAGS_direct_query_enabled is false (the default), so the PEM stays
+  // byte-identical to prior behavior. When enabled, PostRegisterHookImpl
+  // stands them up sharing the base manager's table_store + agent metadata
+  // callback; StopImpl tears them down.
+  Status MaybeStartDirectQueryServer();
+  void StopDirectQueryServer();
+  std::unique_ptr<carnot::exec::LocalGRPCResultSinkServer> direct_query_sink_;
+  std::unique_ptr<carnot::Carnot> direct_query_carnot_;
+  std::unique_ptr<DirectQueryServer> direct_query_service_;
+  std::unique_ptr<grpc::Server> direct_query_grpc_server_;
 
   std::unique_ptr<stirling::Stirling> stirling_;
   std::shared_ptr<TracepointManager> tracepoint_manager_;

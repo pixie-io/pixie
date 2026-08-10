@@ -20,6 +20,18 @@ load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
 
+# Compile-time kill switch for the direct-query endpoint.
+# Operators who do not want the feature available even as a disabled-by-default
+# option build with `bazel build … --//src/vizier/services/agent/pem:direct_query=disabled`
+# (or `--define=PX_PEM_DIRECT_QUERY=disabled`). This propagates
+# `-DPX_PEM_DIRECT_QUERY_DISABLED` into cc_library; the entire feature body
+# in direct_query_server.cc and pem_manager.cc is `#ifndef`'d out and
+# stub methods return UNIMPLEMENTED. See DIRECT_QUERY_SECURITY.md.
+config_setting(
+    name = "direct_query_disabled",
+    define_values = {"PX_PEM_DIRECT_QUERY": "disabled"},
+)
+
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
@@ -30,7 +42,27 @@ pl_cc_library(
         ],
     ),
     hdrs = glob(["*.h"]),
+    defines = select({
+        ":direct_query_disabled": ["PX_PEM_DIRECT_QUERY_DISABLED"],
+        "//conditions:default": [],
+    }),
     deps = [
+        # direct-query server deps (direct_query_server.{h,cc}):
+        "//src/api/proto/vizierpb:vizier_pl_cc_proto",
+        "//src/carnot",
+        "//src/carnot:cc_library",
+        "//src/carnot/carnotpb:carnot_pl_cc_proto",
+        "//src/carnot/exec:cc_library",
+        "//src/carnot/funcs:cc_library",
+        "//src/carnot/planner/compiler:cc_library",
+        "//src/carnot/planpb:plan_pl_cc_proto",
+        "//src/carnot/udf:cc_library",
+        # HS256 verify uses BoringSSL HMAC directly and parses claims via rapidjson.
+        "@boringssl//:crypto",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_rlyeh_sole//:sole",
+        "@com_github_tencent_rapidjson//:rapidjson",
+        # existing PEM deps:
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
         "//src/integrations/grpc_clocksync:cc_library",
         "//src/shared/tracepoint_translation:cc_library",
@@ -48,6 +80,26 @@ pl_cc_test(
         "//src/common/testing/event:cc_library",
         "//src/stirling/testing:stirling_mock",
         "//src/vizier/services/agent/shared/manager:test_utils",
+    ],
+)
+
+# TDD contract for the PEM direct-query endpoint.
+# See DIRECT_QUERY_CONTRACT.md for the behavioral spec.
+pl_cc_test(
+    name = "direct_query_server_test",
+    srcs = ["direct_query_server_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/api/proto/vizierpb:vizier_pl_cc_proto",
+        "//src/carnot",
+        "//src/carnot:cc_library",
+        "//src/carnot/exec:cc_library",
+        "//src/carnot/funcs:cc_library",
+        "//src/carnot/udf:cc_library",
+        "//src/table_store:cc_library",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_rlyeh_sole//:sole",
     ],
 )
 
