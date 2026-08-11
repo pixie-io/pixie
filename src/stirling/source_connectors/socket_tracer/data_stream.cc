@@ -111,6 +111,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
   while (keep_processing && !data_buffer_.empty()) {
     size_t contiguous_bytes = data_buffer_.Head().size();
+    auto chunk_info = data_buffer_.GetChunkInfoForHead();
 
     // Now parse the raw data.
     parse_result =
@@ -132,6 +133,46 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
       }
 
       keep_processing = false;
+    }
+    if (parse_result.state == ParseState::kInvalid ||
+        parse_result.state == ParseState::kNeedsMoreData ||
+        parse_result.state == ParseState::kMetadataComplete) {
+      if (chunk_info.HasIncompleteChunks()) {
+        // We attribute all bytes lost (invalid frames) in an incomplete head to the presence of a
+        // gap from bpf (whether filled with null bytes or not). If lazy parsing is turned on (or
+        // filler events disabled), each head contains at most one gap. If lazy parsing is turned
+        // off, there can be multiple filled gaps in a head.
+        //
+        // incomplete_event     event                incomplete_event
+        // v                    v                    v
+        // _________________________________         ______________________
+        // |         |          |          |         |         |          |
+        // |         |          |          |         |         |          |
+        // |         |          |          |         |         |          |
+        // |         |    gap   |          |         |         |    gap   |
+        // |         |  filled  |          |   OR    |         |          |
+        // |         |   with   |          |         |         |          |
+        // |         |    \0    |          |         |         |          |
+        // |         |          |          |         |         |          |
+        // |_________|__________|__________|         |_________|__________|
+        //
+        // Note that theoretically there could be other reasons for parsing failure in a head with
+        // incomplete events, but that is unlikely.
+        // We compute the bytes rendered unparseable as the bytes in this contiguous head - bytes
+        // successfully parsed before the gap - total gap size(s) (should be non-zero if filled) If
+        // lazy parsing is turned on, we need not subtract the gap size because filling gaps with
+        // null bytes is turned off.
+        // TODO(benkilimnik): our metric currently only lists the most recent incomplete chunk
+        // reason. With filler events plugging gaps, multiple incomplete chunks can be present in a
+        // head. We should update the metric to account for all incomplete chunks in this contiguous
+        // section.
+        size_t filled_gap_size = lazy_parsing_enabled_ ? 0 : chunk_info.TotalGapSize();
+        SocketTracerMetrics::GetProtocolMetrics(
+            protocol_, ssl_source_, chunk_info.MostRecentIncompleteChunkInfo().incomplete_chunk,
+            lazy_parsing_enabled_)
+            .unparseable_bytes_before_gap.Increment(contiguous_bytes - parse_result.frame_bytes -
+                                                    filled_gap_size);
+      }
     }
 
     for (const auto& [stream, positions] : parse_result.frame_positions) {
@@ -170,6 +211,8 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   ssize_t num_bytes_advanced = data_buffer_.position() - last_processed_pos_;
   if (num_bytes_advanced > 0 && static_cast<size_t>(num_bytes_advanced) > frame_bytes) {
     size_t bytes_lost = num_bytes_advanced - frame_bytes;
+    // Note that data_loss = gaps + total unparsable data
+    // but data_loss != gaps (incomplete chunks) + data rendered unparsable due to gap.
     SocketTracerMetrics::GetProtocolMetrics(protocol_, ssl_source_)
         .data_loss_bytes.Increment(bytes_lost);
   }
