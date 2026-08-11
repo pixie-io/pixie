@@ -1,4 +1,4 @@
 Authlib>=1.6.0,<1.7.0
 grpcio==1.76.0
 grpcio-tools==1.76.0
-protobuf==6.33.1
+protobuf==6.33.5
