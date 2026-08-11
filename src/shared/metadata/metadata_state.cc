@@ -292,6 +292,7 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   pod_info->set_phase_message(update.message());
   pod_info->set_phase_reason(update.reason());
   pod_info->set_pod_labels(update.labels());
+  pod_info->set_pod_annotations(update.annotations());
 
   pods_by_name_[{ns, name}] = object_uid;
   // Filter out daemonsets which don't have their own, unique podIP.
