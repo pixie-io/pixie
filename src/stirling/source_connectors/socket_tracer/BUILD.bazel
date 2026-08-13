@@ -426,7 +426,6 @@ pl_cc_bpf_test(
         "//src/common/testing/test_utils:cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:kafka_container",
-        "//src/stirling/source_connectors/socket_tracer/testing/container_images:zookeeper_container",
     ],
 )
 

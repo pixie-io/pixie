@@ -95,6 +95,12 @@ class PacketDecoder {
   StatusOr<std::string> ExtractString();
   StatusOr<std::string> ExtractNullableString();
 
+  // Represents a type 4 immutable universally unique identifier (UUID). Encoded as 16 raw bytes,
+  // independent of the flexible version encoding. Returned as a canonical hex string
+  // (8-4-4-4-12). Introduced by KIP-516 (topic IDs) and used in Produce v13+, Fetch v13+, and
+  // Metadata v10+.
+  StatusOr<std::string> ExtractUUID();
+
   StatusOr<std::string> ExtractBytes();
   StatusOr<std::string> ExtractNullableBytes();
 

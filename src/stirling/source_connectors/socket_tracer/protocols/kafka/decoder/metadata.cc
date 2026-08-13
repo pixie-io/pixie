@@ -27,8 +27,10 @@ namespace kafka {
 StatusOr<MetadataReqTopic> PacketDecoder::ExtractMetadataReqTopic() {
   MetadataReqTopic r;
 
+  // The topic id is a UUID (16 raw bytes), present in api_version >= 10 (KIP-516). Note that in
+  // Metadata the UUID is additive: the topic name is still present (nullable in v10+).
   if (api_version_ >= 10) {
-    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractString());
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractUUID());
   }
 
   if (api_version_ <= 9) {
