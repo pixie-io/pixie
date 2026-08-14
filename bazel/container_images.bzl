@@ -367,3 +367,11 @@ def stirling_test_images():
         repository = "golang_1_22_grpc_server_with_buildinfo",
         digest = "sha256:67adba5e8513670fa37bd042862e7844f26239e8d2997ed8c3b0aa527bc04cc3",
     )
+
+    # ClickHouse server image for testing.
+    # clickhouse/clickhouse-server:25.7-alpine
+    _container_image(
+        name = "clickhouse_server_image_25_7",
+        repository = "clickhouse_server_image_25_7",
+        digest = "sha256:60c53a520a1caad6555eb6772a8a9c91bb09774c1c7ec87e3371ea3da254eeab",
+    )

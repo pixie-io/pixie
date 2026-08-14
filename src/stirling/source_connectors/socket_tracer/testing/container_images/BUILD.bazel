@@ -17,7 +17,10 @@
 load("//bazel:go_container.bzl", "go_container_libraries")
 load("//bazel:pl_build_system.bzl", "pl_all_supported_go_sdk_versions", "pl_cc_test_library", "pl_go_test_versions")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = [
+    "//src/carnot:__subpackages__",
+    "//src/stirling:__subpackages__",
+])
 
 # Generate all Go container library permutations for supported Go versions.
 go_container_libraries(
