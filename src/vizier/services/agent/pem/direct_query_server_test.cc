@@ -49,7 +49,9 @@ namespace vizier {
 namespace agent {
 
 constexpr char kTestSigningKey[] = "test-signing-key-do-not-use-in-prod";
-constexpr char kWrongSigningKey[] = "a-different-key";
+// Only the enabled-path tests mint a wrong-key token; a
+// --//src/vizier/services/agent/pem:direct_query=false build compiles those out.
+[[maybe_unused]] constexpr char kWrongSigningKey[] = "a-different-key";
 
 // TokenKind drives MakeBearerToken's claim shape. The verifier
 // (direct_query_server.cc:verifyHs256Jwt) checks: HS256 alg, signature, iss=PL,
@@ -195,6 +197,13 @@ class DirectQueryServerTest : public ::testing::Test {
   std::unique_ptr<::grpc::Server> server_;
   std::unique_ptr<::px::api::vizierpb::VizierService::Stub> stub_;
 };
+
+// Everything from here to the toggle section exercises the feature body, so it
+// is meaningful only when the feature is compiled in. In a
+// --//src/vizier/services/agent/pem:direct_query=false build these entry points
+// are linker stubs and the assertions below do not apply; the disabled build's
+// contract is covered by the CompiledOut_* tests instead.
+#ifndef PX_PEM_DIRECT_QUERY_DISABLED
 
 // 3a. No token → UNAUTHENTICATED (passes against the fail-closed stub today).
 TEST_F(DirectQueryServerTest, NoToken_Unauthenticated) {
@@ -823,21 +832,33 @@ TEST_F(DirectQueryServerExecTest, FailSoft_BrokerFailureToleratedByDirectQuery) 
 // PxL contents. The fixture's auth-only nullptr Carnot is sufficient.
 // ===========================================================================
 
+#endif  // !PX_PEM_DIRECT_QUERY_DISABLED — end of enabled-path tests
+
 #ifdef PX_PEM_DIRECT_QUERY_DISABLED
 
-// When compiled with PX_PEM_DIRECT_QUERY_DISABLED, every call must short-
-// circuit to UNAUTHENTICATED (no JWT verification path exists). This
-// includes calls with a valid token — the compile-time toggle is harder
-// than the runtime toggle: not even a valid bearer unlocks anything.
-TEST_F(DirectQueryServerTest, CompiledOut_ValidToken_StillUnauthenticated) {
+// When compiled with PX_PEM_DIRECT_QUERY_DISABLED the RPC is a stub: it
+// returns UNIMPLEMENTED without consulting credentials at all, which is both
+// what direct_query_server.cc's #else branch does and what
+// DIRECT_QUERY_SECURITY.md documents as the user-visible error. A valid token
+// changes nothing — the compile-time toggle is harder than the runtime one,
+// since no bearer can re-enable a feature that is not in the binary.
+TEST_F(DirectQueryServerTest, CompiledOut_ValidToken_StillUnimplemented) {
   auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code())
-      << "PX_PEM_DIRECT_QUERY_DISABLED build must short-circuit AT auth — no "
-         "valid token can re-enable the feature post-compile.";
+  EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, CallExecuteScript(tok).error_code())
+      << "PX_PEM_DIRECT_QUERY_DISABLED build must refuse every call — no valid "
+         "token can re-enable the feature post-compile.";
 }
 
-TEST_F(DirectQueryServerTest, CompiledOut_NoToken_Unauthenticated) {
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript("").error_code());
+TEST_F(DirectQueryServerTest, CompiledOut_NoToken_Unimplemented) {
+  EXPECT_EQ(::grpc::StatusCode::UNIMPLEMENTED, CallExecuteScript("").error_code());
+}
+
+// The auth entry point still exists as a stub and still fails closed, so a
+// caller that reaches it (rather than ExecuteScript) cannot authenticate
+// either. Called directly: the stub ignores both arguments.
+TEST(DirectQueryServerCompiledOut, AuthenticateRequest_FailsClosed) {
+  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED,
+            AuthenticateRequest(nullptr, "any-signing-key").error_code());
 }
 
 #else  // PX_PEM_DIRECT_QUERY_DISABLED
@@ -871,12 +892,14 @@ TEST_F(DirectQueryServerTest, ToggleContract_DocumentBothLevels) {
 // harness, not a gtest). Tracked as a follow-up; this SKIP names it in
 // code so the gap is greppable.
 // ===========================================================================
+#ifndef PX_PEM_DIRECT_QUERY_DISABLED
 TEST_F(DirectQueryServerExecTest, Benchmark_PemDirect_Vs_BrokerPath_RedPlaceholder) {
   GTEST_SKIP() << "Follow-up: apples-to-apples bench harness vs the broker path. "
                   "Dominant latency factor is the dedicated second Carnot exec on "
                   "the PEM (shared-Carnot path would close it). Integration-level "
                   "workload, not a gtest.";
 }
+#endif  // !PX_PEM_DIRECT_QUERY_DISABLED
 
 }  // namespace agent
 }  // namespace vizier
