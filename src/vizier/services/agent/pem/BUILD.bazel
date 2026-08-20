@@ -14,22 +14,34 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
 
-# Compile-time kill switch for the direct-query endpoint.
-# Operators who do not want the feature available even as a disabled-by-default
-# option build with `bazel build … --//src/vizier/services/agent/pem:direct_query=disabled`
-# (or `--define=PX_PEM_DIRECT_QUERY=disabled`). This propagates
-# `-DPX_PEM_DIRECT_QUERY_DISABLED` into cc_library; the entire feature body
-# in direct_query_server.cc and pem_manager.cc is `#ifndef`'d out and
-# stub methods return UNIMPLEMENTED. See DIRECT_QUERY_SECURITY.md.
+# Compile-time kill switch for the direct-query endpoint. Defaults to True, so
+# the feature is compiled in and gated at runtime by --direct_query_enabled
+# (itself false by default). Operators who do not want the feature present in
+# the binary at all build with
+# `bazel build … --//src/vizier/services/agent/pem:direct_query=false`, which
+# puts `-DPX_PEM_DIRECT_QUERY_DISABLED` on this package's compilations only:
+# the feature body in direct_query_server.cc and pem_manager.cc is `#ifndef`'d
+# out and stub methods return UNIMPLEMENTED. See DIRECT_QUERY_SECURITY.md.
+#
+# A build setting rather than `--define`: `--define` lives in the global
+# configuration key, so it applies to every target in the build and shows up in
+# every dependency's configuration; this flag is scoped to the targets that
+# read it.
+bool_flag(
+    name = "direct_query",
+    build_setting_default = True,
+)
+
 config_setting(
     name = "direct_query_disabled",
-    define_values = {"PX_PEM_DIRECT_QUERY": "disabled"},
+    flag_values = {":direct_query": "False"},
 )
 
 pl_cc_library(
@@ -42,7 +54,11 @@ pl_cc_library(
         ],
     ),
     hdrs = glob(["*.h"]),
-    defines = select({
+    # local_defines, not defines: the macro only guards this package's sources,
+    # so there is no reason to push it onto every transitive dependent's
+    # compilation. Targets that need to compile against the disabled build
+    # (direct_query_server_test below) select on the same config_setting.
+    local_defines = select({
         ":direct_query_disabled": ["PX_PEM_DIRECT_QUERY_DISABLED"],
         "//conditions:default": [],
     }),
@@ -88,6 +104,14 @@ pl_cc_test(
 pl_cc_test(
     name = "direct_query_server_test",
     srcs = ["direct_query_server_test.cc"],
+    # The kill-switch assertions are `#ifdef PX_PEM_DIRECT_QUERY_DISABLED`, and
+    # cc_library's local_defines deliberately do not reach here — so select on
+    # the flag again, otherwise a `--//…:direct_query=false` run would silently
+    # compile the enabled branch and skip the coverage entirely.
+    defines = select({
+        ":direct_query_disabled": ["PX_PEM_DIRECT_QUERY_DISABLED"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":cc_library",
         "//src/api/proto/vizierpb:vizier_pl_cc_proto",
