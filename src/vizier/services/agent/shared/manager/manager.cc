@@ -138,6 +138,16 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
 }
 
 Status Manager::Init() {
+  // Fail fast if PL_JWT_SIGNING_KEY is unset. GenerateServiceToken calls
+  // cpp_jwt's obj.signature() which throws an uncaught jwt::SigningError when
+  // the key is empty, crashing the process on the first outgoing service call.
+  // Refusing to start here gives a clear error instead of a mid-stream crash.
+  if (FLAGS_jwt_signing_key.empty()) {
+    return error::InvalidArgument(
+        "PL_JWT_SIGNING_KEY is unset; refusing to start. "
+        "Set it via the pl-cluster-secrets/jwt-signing-key secretKeyRef "
+        "(already in k8s/vizier/pem/base/pem_daemonset.yaml).");
+  }
   PX_ASSIGN_OR_RETURN(
       agent_metadata_filter_,
       md::AgentMetadataFilter::Create(kMetadataFilterMaxEntries, kMetadataFilterMaxErrorRate,
