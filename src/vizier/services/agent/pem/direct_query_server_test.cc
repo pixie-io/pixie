@@ -446,6 +446,23 @@ TEST_F(DirectQueryServerTest, ConcatenatedTokens_Unauthenticated) {
 // is the explicit "alg substitution" attack from RFC 8725 §2.6 (the more
 // classic variant uses RS256 / public-key confusion; we don't sign with
 // asymmetric keys so the HMAC-flavoured variant is what we guard against).
+// Segments containing characters outside the base64url alphabet must be
+// rejected. The decoder itself is allowed to be lenient — cpp_jwt's header-only
+// base64 returns a partial decode rather than an error — so this pins the
+// property at the level that matters: a token whose payload is not valid
+// base64url never authenticates, no matter which decoder is underneath. It is
+// the HMAC over header.payload that closes the door, and the truncated JSON
+// behind it fails to parse anyway.
+TEST_F(DirectQueryServerTest, NonBase64UrlCharInPayload_Unauthenticated) {
+  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
+  auto [p_start, p_end] = SegmentIndex(tok, 1);
+  ASSERT_NE(std::string::npos, p_start);
+  ASSERT_GT(p_end, p_start + 1);
+  auto corrupted = tok;
+  corrupted[p_start + 1] = '!';  // '!' is not in the base64url alphabet.
+  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(corrupted).error_code());
+}
+
 TEST_F(DirectQueryServerTest, AlgConfusion_HS384_Unauthenticated) {
   // Header: {"alg":"HS384","typ":"JWT"} → base64url, no padding.
   constexpr char kHS384Header[] = "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9";

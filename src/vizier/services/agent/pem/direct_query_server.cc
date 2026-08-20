@@ -30,6 +30,7 @@
 // "missing include". The disabled build pays a few KB of unused header
 // parse cost; the .cc emits nothing for them.
 #include <openssl/hmac.h>
+#include <openssl/mem.h>
 #include <openssl/sha.h>
 #include <rapidjson/document.h>
 
@@ -39,10 +40,10 @@
 #include <string>
 #include <vector>
 
-#include <absl/strings/escaping.h>
 #include <absl/strings/str_split.h>
 #include <absl/strings/string_view.h>
 #include <absl/strings/substitute.h>
+#include <jwt/base64.hpp>
 #include <sole.hpp>
 
 // Compile-time kill switch. When PX_PEM_DIRECT_QUERY_DISABLED is defined
@@ -78,10 +79,16 @@ constexpr char kExpectedIssuer[] = "PL";
 // the serviceID, e.g. "dx"). See GenerateJWTForService (claims.go) + jwt.go:56.
 constexpr char kServiceScope[] = "service";
 
-// We don't link cpp_jwt's HMAC verifier here because its impl calls
-// BIO_f_base64() which lives in BoringSSL's decrepit/ tree — not exposed as a
-// bazel target on this fork. Instead we parse the JWT envelope manually and
-// HMAC with BoringSSL natively. ~50 lines vs. carrying a boringssl patch.
+// cpp_jwt mints our outgoing service tokens (shared/manager/manager.cc), but we
+// cannot use it to VERIFY here: HMACSign<>::verify (impl/algorithm.ipp) base64s
+// through BIO_f_base64(). BoringSSL declares that in the public bio.h but
+// implements it in decrepit/bio/base64_bio.c, which @boringssl//:crypto does not
+// build — linking a jwt::decode(..., verify(true)) call fails with
+// `undefined symbol: BIO_f_base64`. (Signing links because HMACSign<>::sign uses
+// HMAC() plus cpp_jwt's header-only base64, no BIO.) Using the library for
+// verification would mean patching the BoringSSL external to add a decrepit
+// target; instead we parse the envelope here and HMAC with BoringSSL natively.
+// Its base64url decoder needs no BIO, so we do reuse that below.
 
 // stripBearerPrefix returns the token slice after a case-insensitive "Bearer "
 // prefix, or an empty string if the prefix is missing. gRPC normalises metadata
@@ -100,39 +107,21 @@ absl::string_view stripBearerPrefix(absl::string_view value) {
   return value.substr(kBearerPrefixLen);
 }
 
-// constantTimeEquals: short-circuit-free byte compare. Mismatched-length inputs
-// trivially differ but we still walk the shorter to keep timing predictable
-// across malformed lengths.
+// constantTimeEquals: BoringSSL's CRYPTO_memcmp, which is the library's own
+// constant-time comparison — no hand-rolled crypto here. Length is compared
+// first: the signature length is a function of the algorithm, not of the
+// secret, so leaking "wrong length" leaks nothing about the key.
 bool constantTimeEquals(absl::string_view a, absl::string_view b) {
   if (a.size() != b.size()) return false;
-  uint8_t acc = 0;
-  for (size_t i = 0; i < a.size(); ++i) {
-    acc |= static_cast<uint8_t>(a[i] ^ b[i]);
-  }
-  return acc == 0;
+  return CRYPTO_memcmp(a.data(), b.data(), a.size()) == 0;
 }
 
-// base64UrlDecode handles RFC 7515 base64url (no padding, '-' / '_' alphabet).
-// Returns false on any non-alphabet character.
+// base64UrlDecode handles RFC 7515 base64url (no padding, '-' / '_' alphabet),
+// delegating the transform to cpp_jwt's header-only decoder (the one part of
+// that library that needs no BIO, so it links against our BoringSSL).
 bool base64UrlDecode(absl::string_view in, std::string* out) {
-  // absl handles standard base64 with '+'/'/'; translate URL-safe alphabet and
-  // pad to a multiple of 4 first.
-  std::string std_b64;
-  std_b64.reserve(in.size() + 4);
-  for (char c : in) {
-    if (c == '-') {
-      std_b64.push_back('+');
-    } else if (c == '_') {
-      std_b64.push_back('/');
-    } else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
-               c == '+' || c == '/') {
-      std_b64.push_back(c);
-    } else {
-      return false;
-    }
-  }
-  while (std_b64.size() % 4 != 0) std_b64.push_back('=');
-  return absl::Base64Unescape(std_b64, out);
+  *out = jwt::base64_uri_decode(in.data(), in.size());
+  return true;
 }
 
 // hmacSha256: BoringSSL HMAC over `data`, returns raw 32 bytes.

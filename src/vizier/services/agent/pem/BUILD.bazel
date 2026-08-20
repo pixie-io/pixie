@@ -75,6 +75,7 @@ pl_cc_library(
         "//src/carnot/udf:cc_library",
         # HS256 verify uses BoringSSL HMAC directly and parses claims via rapidjson.
         "@boringssl//:crypto",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_rlyeh_sole//:sole",
         "@com_github_tencent_rapidjson//:rapidjson",
