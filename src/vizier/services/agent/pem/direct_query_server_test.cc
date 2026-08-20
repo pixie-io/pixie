@@ -816,7 +816,7 @@ TEST_F(DirectQueryServerExecTest, FailSoft_BrokerFailureToleratedByDirectQuery) 
 // stand it up here; the visible contract is: the runtime flag's early return
 // short-circuits before line 1 of feature code runs.
 //
-// Compile-time toggle (PX_PEM_DIRECT_QUERY=disabled) is asserted in code
+// Compile-time toggle (--//src/vizier/services/agent/pem:direct_query=false) is asserted in code
 // below: when compiled with the macro, AuthenticateRequest and
 // DirectQueryServer::ExecuteScript both return
 // UNAUTHENTICATED/UNIMPLEMENTED unconditionally, independent of token or
@@ -852,7 +852,8 @@ TEST_F(DirectQueryServerTest, CompiledOut_NoToken_Unauthenticated) {
 TEST_F(DirectQueryServerTest, ToggleContract_DocumentBothLevels) {
   SUCCEED() << "Default build: runtime --direct_query_enabled gates port :50305 "
                "binding (pem_manager.cc:MaybeStartDirectQueryServer early-returns). "
-               "Compile-time PX_PEM_DIRECT_QUERY=disabled additionally drops all "
+               "Compile-time --//src/vizier/services/agent/pem:direct_query=false "
+               "additionally drops all "
                "feature bytes from the binary (no JWT verifier, no Carnot driver, "
                "no openssl/rapidjson includes). See DIRECT_QUERY_SECURITY.md.";
 }

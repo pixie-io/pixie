@@ -226,12 +226,15 @@ When `--direct_query_enabled=false`:
 
 ```bash
 bazel build //src/vizier/services/agent/pem:pem_image \
-    --define=PX_PEM_DIRECT_QUERY=disabled
+    --//src/vizier/services/agent/pem:direct_query=false
 ```
 
-When `PX_PEM_DIRECT_QUERY_DISABLED` is defined at compile time
-(propagated by the `:direct_query_disabled` `config_setting` in
-`src/vizier/services/agent/pem/BUILD.bazel`):
+The `:direct_query` `bool_flag` defaults to `True`, so ordinary builds
+compile the feature in and rely on the runtime flag above. Setting it to
+`false` matches the `:direct_query_disabled` `config_setting` in
+`src/vizier/services/agent/pem/BUILD.bazel`, which puts
+`PX_PEM_DIRECT_QUERY_DISABLED` on this package's compilations (and on the
+endpoint's test target). When that macro is defined:
 
 - The **entire feature-bearing body** of `direct_query_server.cc` is
   excluded via `#ifndef`: no openssl HMAC, no rapidjson, no JWT
