@@ -22,8 +22,6 @@
 #include <string>
 #include <utility>
 
-#include <jwt/jwt.hpp>
-
 #include "src/common/base/base.h"
 #include "src/common/event/task.h"
 #include "src/common/perf/perf.h"

@@ -28,11 +28,11 @@
 #include <utility>
 
 #include <prometheus/text_serializer.h>
-#include <jwt/jwt.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/metrics/metrics.h"
 #include "src/common/perf/perf.h"
+#include "src/shared/services/jwt/service_token.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
 #include "src/vizier/services/agent/shared/manager/chan_cache.h"
@@ -421,18 +421,18 @@ Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info
     : agent_info_(agent_info), nats_conn_(nats_conn), dispatcher_(dispatcher) {}
 
 std::string GenerateServiceToken() {
-  jwt::jwt_object obj{jwt::params::algorithm("HS256")};
-  obj.add_claim("iss", "PL");
-  obj.add_claim("aud", "vizier");
-  obj.add_claim("jti", sole::uuid4().str());
-  obj.add_claim("iat", std::chrono::system_clock::now());
-  obj.add_claim("nbf", std::chrono::system_clock::now() - std::chrono::seconds{60});
-  obj.add_claim("exp", std::chrono::system_clock::now() + std::chrono::seconds{60});
-  obj.add_claim("sub", "service");
-  obj.add_claim("Scopes", "service");
-  obj.add_claim("ServiceID", "kelvin");
-  obj.secret(FLAGS_jwt_signing_key);
-  return obj.signature();
+  // "kelvin" for every agent, PEMs included. Pre-existing behavior, and no
+  // verifier keys off ServiceID; changing the identity an agent presents
+  // belongs in its own change.
+  static constexpr std::string_view kAgentServiceID = "kelvin";
+  auto token_or = ::px::services::GenerateServiceToken(FLAGS_jwt_signing_key, kAgentServiceID);
+  if (!token_or.ok()) {
+    // Reachable when PL_JWT_SIGNING_KEY is unset. An empty token is rejected by
+    // the peer as unauthenticated, which beats aborting the process.
+    LOG(ERROR) << "Failed to mint service token: " << token_or.msg();
+    return "";
+  }
+  return token_or.ConsumeValueOrDie();
 }
 
 void AddServiceTokenToClientContext(grpc::ClientContext* grpc_context) {
