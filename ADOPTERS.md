@@ -6,6 +6,7 @@ your company here, please open a PR.
 | Company                                           |  Notes                                                                                                               |
 | ------------------------------------------------  | :-----------------------------------------------------------------------------------------------------------------:  |
 | [New Relic](https://newrelic.com/)                | [Website](https://newrelic.com/platform/kubernetes-pixie)                                                            |
+| [SBA Research](https://www.sba-research.org/)     | [Research](https://projekte.ffg.at/projekt/a1f9473e-f36b-1410-864f-00d3c07d99bb)                                     |
 | [Seekret](https://seekret.io)                     | [Website](https://www.seekret.io/product)                                                                            |
 | [Speedscale](https://speedscale.com/)             | [Website](https://speedscale.com/kubernetes/)
 | [Verizon 5G Edge](https://www.verizon.com/5gedge/) | [Website](https://github.com/newrelic-experimental/vz-newrelic-5g-edge) |
