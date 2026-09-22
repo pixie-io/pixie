@@ -195,6 +195,26 @@ column_names: "usage"
 streaming: false
 )";
 
+constexpr char kClickHouseSourceOperator[] = R"(
+host: "localhost"
+port: 9000
+username: "default"
+password: "test_password"
+database: "default"
+query: "SELECT id, name, value FROM test_table"
+batch_size: 2
+streaming: false
+column_names: "id"
+column_names: "name"
+column_names: "value"
+column_types: INT64
+column_types: STRING
+column_types: FLOAT64
+timestamp_column: "timestamp"
+start_time: 1000000000000000000
+end_time: 9223372036854775807
+)";
+
 constexpr char kBlockingAggOperator1[] = R"(
 windowed: false
 values {
@@ -1024,6 +1044,64 @@ constexpr char kPlanWithTwoSourcesWithLimits[] = R"proto(
   }
 )proto";
 
+constexpr char kPlanWithOTelExport[] = R"proto(
+  id: 1,
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "numbers"
+        column_idxs: 0
+        column_types: INT64
+        column_names: "a"
+        column_idxs: 1
+        column_types: BOOLEAN
+        column_names: "b"
+        column_idxs: 2
+        column_types: FLOAT64
+        column_names: "c"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: OTEL_EXPORT_SINK_OPERATOR
+      otel_sink_op {
+        endpoint_config {
+          url: "0.0.0.0:55690"
+          headers {
+            key: "apikey"
+            value: "12345"
+          }
+          timeout: 5
+        }
+        resource {
+          attributes {
+            name: "service.name"
+            column {
+              column_type: STRING
+              column_index: 1
+              can_be_json_encoded_array: true
+            }
+          }
+        }
+      }
+    }
+  }
+)proto";
+
 constexpr char kOneLimit3Sources[] = R"proto(
   id: 1,
   dag {
@@ -1328,6 +1406,14 @@ planpb::Operator CreateTestSource1PB(const std::string& table_name = "cpu") {
   return op;
 }
 
+planpb::Operator CreateClickHouseSourceOperatorPB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "CLICKHOUSE_SOURCE_OPERATOR",
+                                   "clickhouse_source_op", kClickHouseSourceOperator);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
 planpb::Operator CreateTestStreamingSource1PB(const std::string& table_name = "cpu") {
   planpb::Operator op;
   auto mem_proto = absl::Substitute(kStreamingMemSourceOperator1, table_name);
@@ -1374,6 +1460,32 @@ planpb::Operator CreateTestSink1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
                                    kMemSinkOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+// Create a test ClickHouse source operator with hardcoded values
+planpb::Operator CreateTestClickHouseSourcePB() {
+  constexpr char kClickHouseSourceOperator[] = R"(
+    host: "localhost"
+    port: 9000
+    username: "default"
+    password: "test_password"
+    database: "default"
+    query: "SELECT id, name, value FROM test_table ORDER BY id"
+    batch_size: 1024
+    streaming: false
+    column_names: "id"
+    column_names: "name"
+    column_names: "value"
+    column_types: UINT64
+    column_types: STRING
+    column_types: FLOAT64
+  )";
+
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "CLICKHOUSE_SOURCE_OPERATOR",
+                                   "clickhouse_source_op", kClickHouseSourceOperator);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
