@@ -81,6 +81,13 @@ static __inline int px_bpf_strncmp(const char* lhs, size_t n, const char* rhs) {
   return 0;
 }
 
+uint64_t pl_bpf_get_current_cgroup_id() {
+  if (!GET_CGROUP_ID_ENABLED) {
+    return UINT64_MAX;
+  }
+  return bpf_get_current_cgroup_id();
+}
+
 // There is a macro min() defined by a kernel header.
 // We prefer being more self-contained, so define this with a different name.
 #define DEFINE_MIN_FN_FOR_TYPE(type) \

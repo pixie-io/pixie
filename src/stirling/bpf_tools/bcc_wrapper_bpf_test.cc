@@ -22,8 +22,10 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/kernel_version.h"
 #include "src/common/system/system.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/metadata/cgroup_path_resolver.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
@@ -36,6 +38,7 @@ NO_OPT_ATTR void BCCWrapperTestProbeTrigger() { return; }
 }
 
 OBJ_STRVIEW(get_tgid_start_time_bcc_script, get_tgid_start_time);
+OBJ_STRVIEW(get_current_cgroup_id_bcc_script, get_current_cgroup_id);
 
 namespace px {
 namespace stirling {
@@ -167,6 +170,51 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   ASSERT_OK_AND_ASSIGN(const uint64_t proc_pid_start_time, tgid_start_times->GetValue(0));
 
   EXPECT_EQ(proc_pid_start_time, expected_proc_pid_start_time);
+}
+
+TEST(BCCWrapperTest, GetCurrentCgroupId) {
+  std::vector<std::string> cflags = {};
+  bool requires_linux_headers = true;
+  bool always_infer_task_struct_offsets = true;
+
+  BCCWrapperImpl bcc_wrapper;
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_current_cgroup_id_bcc_script, cflags,
+                                       requires_linux_headers, always_infer_task_struct_offsets));
+
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string()));
+  const int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto converter,
+                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), self_pid));
+
+  // Use address instead of symbol to specify this probe,
+  // so that even if debug symbols are stripped, the uprobe can still attach.
+  uint64_t symbol_addr =
+      converter->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger));
+
+  UProbeSpec uprobe{.binary_path = self_path,
+                    .symbol = {},  // Keep GCC happy.
+                    .address = symbol_addr,
+                    .attach_type = BPFProbeAttachType::kEntry,
+                    .probe_fn = "probe_bpf_get_current_cgroup_id"};
+  ASSERT_OK(bcc_wrapper.AttachUProbe(uprobe));
+
+  uint64_t expected_cgroup_id = UINT64_MAX;
+  system::KernelVersionOrder cgroup_order = system::CompareKernelVersions(
+      system::KernelVersion{4, 18, 0}, system::GetKernelVersion().ValueOrDie());
+  bool cgroup_id_enabled = (system::KernelVersionOrder::kOlder == cgroup_order) ? false : true;
+  if (cgroup_id_enabled) {
+    expected_cgroup_id = px::md::FindCgroupIDFromPID(getpid()).ValueOrDie();
+  }
+
+  // Trigger our uprobe.
+  BCCWrapperTestProbeTrigger();
+
+  auto cgroup_id_output = WrappedBCCArrayTable<uint64_t>::Create(&bcc_wrapper, "cgroup_id_output");
+  ASSERT_OK_AND_ASSIGN(const uint64_t cgroup_id, cgroup_id_output->GetValue(0));
+
+  EXPECT_EQ(cgroup_id, expected_cgroup_id);
 }
 
 TEST(BCCWrapperTest, TestMapClearingAPIs) {

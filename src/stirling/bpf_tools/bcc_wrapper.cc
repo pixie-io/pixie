@@ -153,11 +153,16 @@ Status BCCWrapperImpl::InitBPFProgram(std::string_view bpf_program, std::vector<
       }
     }
 
+    system::KernelVersionOrder cgroup_order = system::CompareKernelVersions(
+        system::KernelVersion{4, 18, 0}, system::GetKernelVersion().ValueOrDie());
+    bool cgroup_id_enabled = (system::KernelVersionOrder::kOlder == cgroup_order) ? false : true;
+
     cflags.push_back(absl::Substitute("-DSTART_BOOTTIME_VARNAME=$0", boottime_varname));
     cflags.push_back(
         absl::Substitute("-DGROUP_LEADER_OFFSET_OVERRIDE=$0", offsets.group_leader_offset));
     cflags.push_back(
         absl::Substitute("-DSTART_BOOTTIME_OFFSET_OVERRIDE=$0", offsets.real_start_time_offset));
+    if (cgroup_id_enabled) cflags.push_back("-DGET_CGROUP_ID_ENABLED");
   }
 
   PX_RETURN_IF_ERROR(MountDebugFS());
