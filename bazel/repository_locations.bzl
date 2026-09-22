@@ -62,9 +62,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/AriaFallah/csv-parser/archive/e3c1207f4de50603a4946dc5daa0633ce31a9257.tar.gz"],
     ),
     com_github_arun11299_cpp_jwt = dict(
-        sha256 = "6dbf93969ec48d97ecb6c157014985846df8c01995a0011c21f4e2c146594922",
-        strip_prefix = "cpp-jwt-1.1.1",
-        urls = ["https://github.com/arun11299/cpp-jwt/archive/refs/tags/v1.1.1.tar.gz"],
+        sha256 = "7e5ec6891254c8f00128952ed6b9a73d827539136c3b804563521a0042abe72c",
+        strip_prefix = "cpp-jwt-1.5.1",
+        urls = ["https://github.com/arun11299/cpp-jwt/archive/refs/tags/v1.5.1.tar.gz"],
     ),
     com_github_bazelbuild_buildtools = dict(
         sha256 = "39c59cb5352892292cbe3174055aac187edcb5324c9b4e2d96cb6e40bd753877",
@@ -181,8 +181,8 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/Neargye/magic_enum/archive/refs/tags/v0.9.7.tar.gz"],
     ),
     com_github_nlohmann_json = dict(
-        sha256 = "87b5884741427220d3a33df1363ae0e8b898099fbc59f1c451113f6732891014",
-        urls = ["https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip"],
+        sha256 = "6bea5877b1541d353bd77bdfbdb2696333ae5ed8f9e8cc22df657192218cad91",
+        urls = ["https://github.com/nlohmann/json/releases/download/v3.9.1/include.zip"],
     ),
     com_github_opentelemetry_proto = dict(
         urls = ["https://github.com/open-telemetry/opentelemetry-proto/archive/refs/tags/v1.3.2.tar.gz"],
