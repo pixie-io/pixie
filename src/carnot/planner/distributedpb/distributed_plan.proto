@@ -158,7 +158,6 @@ message ClickHouseConfig {
   string database = 6;
 }
 
-
 message PluginConfig {
   // The start_time of the script in nanoseconds.
   int64 start_time_ns = 1;

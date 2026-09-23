@@ -372,18 +372,18 @@ message ClickHouseSourceOperator {
   string username = 3;
   string password = 4;
   string database = 5;
-  
+
   // Query to execute
   string query = 6;
-  
+
   // The names for the columns (can be auto-detected from query)
   repeated string column_names = 7;
   // The types of the columns (can be auto-detected from query)
   repeated px.types.DataType column_types = 8;
-  
+
   // Batch size for fetching results
   int32 batch_size = 9;
-  
+
   // Whether to stream results (future enhancement)
   bool streaming = 10;
 
