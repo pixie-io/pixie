@@ -19,6 +19,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test
 package(default_visibility = [
     "//src/carnot:__subpackages__",
     "//src/vizier/funcs:__subpackages__",
+    "//src/vizier/services/agent:__subpackages__",
 ])
 
 pl_cc_library(
