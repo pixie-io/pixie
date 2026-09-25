@@ -139,6 +139,15 @@ struct TracepointSpec {
 };
 
 /**
+ * Describes a probe on a kernel function.
+ */
+struct KFuncSpec {
+  std::string kfunc;
+
+  std::string ToString() const { return absl::Substitute("[kfunc=$0]", kfunc); }
+};
+
+/**
  * Describes a sampling probe that triggers according to a time period.
  * This is in contrast to KProbes and UProbes, which trigger based on
  * a code event.
