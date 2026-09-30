@@ -124,6 +124,31 @@ INSTANTIATE_TEST_SUITE_P(
         PacketDecoderTestCase<int64_t>{std::string("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x01", 10),
                                        LONG_MIN}));
 
+TEST(KafkaPacketDecoderTest, ExtractUUID) {
+  {
+    // 16 raw bytes are read regardless of flexible version and formatted as a canonical UUID.
+    const std::string_view msg = CreateStringView<char>(
+        "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f");
+    PacketDecoder decoder(msg);
+    EXPECT_OK_AND_EQ(decoder.ExtractUUID(), "00010203-0405-0607-0809-0a0b0c0d0e0f");
+  }
+
+  // The all-zero UUID (used to represent a null/unset topic id).
+  {
+    const std::string_view msg = CreateStringView<char>(
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00");
+    PacketDecoder decoder(msg);
+    EXPECT_OK_AND_EQ(decoder.ExtractUUID(), "00000000-0000-0000-0000-000000000000");
+  }
+
+  // Not enough bytes for a full UUID.
+  {
+    const std::string_view msg = CreateStringView<char>("\x00\x01\x02\x03");
+    PacketDecoder decoder(msg);
+    EXPECT_FALSE(decoder.ExtractUUID().ok());
+  }
+}
+
 TEST(KafkaPacketDecoderTest, ExtractCompactString) {
   {
     const std::string_view msg = CreateStringView<char>(

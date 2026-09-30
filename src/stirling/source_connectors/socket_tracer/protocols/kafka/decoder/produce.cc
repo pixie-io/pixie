@@ -34,7 +34,12 @@ StatusOr<ProduceReqPartition> PacketDecoder::ExtractProduceReqPartition() {
 
 StatusOr<ProduceReqTopic> PacketDecoder::ExtractProduceReqTopic() {
   ProduceReqTopic r;
-  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  // In api_version >= 13, the topic is identified by a UUID instead of a name (KIP-516).
+  if (api_version_ >= 13) {
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractUUID());
+  } else {
+    PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  }
   PX_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceReqPartition));
   PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
@@ -73,15 +78,14 @@ StatusOr<ProduceRespPartition> PacketDecoder::ExtractProduceRespPartition() {
 StatusOr<ProduceRespTopic> PacketDecoder::ExtractProduceRespTopic() {
   ProduceRespTopic r;
 
-  if (is_flexible_) {
-    PX_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
-    PX_ASSIGN_OR_RETURN(r.partitions,
-                        ExtractCompactArray(&PacketDecoder::ExtractProduceRespPartition));
-    PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  // In api_version >= 13, the topic is identified by a UUID instead of a name (KIP-516).
+  if (api_version_ >= 13) {
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractUUID());
   } else {
     PX_ASSIGN_OR_RETURN(r.name, ExtractString());
-    PX_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceRespPartition));
   }
+  PX_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceRespPartition));
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 

@@ -51,9 +51,14 @@ struct FetchReqPartition {
 
 struct FetchReqTopic {
   std::string name;
+  // Topic id (UUID) replaces the topic name in api_version >= 13 (KIP-516).
+  std::string topic_id;
   std::vector<FetchReqPartition> partitions;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
+    if (!topic_id.empty()) {
+      builder->WriteKV("topic_id", topic_id);
+    }
     builder->WriteKV("name", name);
     builder->WriteKVArrayRecursive<FetchReqPartition>("partitions", partitions);
   }
@@ -61,9 +66,14 @@ struct FetchReqTopic {
 
 struct FetchForgottenTopicsData {
   std::string name;
+  // Topic id (UUID) replaces the topic name in api_version >= 13 (KIP-516).
+  std::string topic_id;
   std::vector<int32_t> partition_indices;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
+    if (!topic_id.empty()) {
+      builder->WriteKV("topic_id", topic_id);
+    }
     builder->WriteKV("name", name);
     builder->WriteKV("partitions_indices", partition_indices);
   }
@@ -123,9 +133,14 @@ struct FetchRespPartition {
 
 struct FetchRespTopic {
   std::string name;
+  // Topic id (UUID) replaces the topic name in api_version >= 13 (KIP-516).
+  std::string topic_id;
   std::vector<FetchRespPartition> partitions;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
+    if (!topic_id.empty()) {
+      builder->WriteKV("topic_id", topic_id);
+    }
     builder->WriteKV("name", name);
     builder->WriteKVArrayRecursive<FetchRespPartition>("partitions", partitions);
   }

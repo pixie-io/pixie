@@ -26,7 +26,12 @@ namespace kafka {
 
 StatusOr<FetchReqTopic> PacketDecoder::ExtractFetchReqTopic() {
   FetchReqTopic r;
-  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  // In api_version >= 13, the topic is identified by a UUID instead of a name (KIP-516).
+  if (api_version_ >= 13) {
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractUUID());
+  } else {
+    PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  }
   PX_ASSIGN_OR_RETURN(r.partitions,
                       ExtractArray<FetchReqPartition>(&PacketDecoder::ExtractFetchReqPartition));
   PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
@@ -53,7 +58,12 @@ StatusOr<FetchReqPartition> PacketDecoder::ExtractFetchReqPartition() {
 
 StatusOr<FetchForgottenTopicsData> PacketDecoder::ExtractFetchForgottenTopicsData() {
   FetchForgottenTopicsData r;
-  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  // In api_version >= 13, the topic is identified by a UUID instead of a name (KIP-516).
+  if (api_version_ >= 13) {
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractUUID());
+  } else {
+    PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  }
   PX_ASSIGN_OR_RETURN(r.partition_indices, ExtractArray<int32_t>(&PacketDecoder::ExtractInt32));
   PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
@@ -61,7 +71,11 @@ StatusOr<FetchForgottenTopicsData> PacketDecoder::ExtractFetchForgottenTopicsDat
 
 StatusOr<FetchReq> PacketDecoder::ExtractFetchReq() {
   FetchReq r;
-  PX_ASSIGN_OR_RETURN(r.replica_id, ExtractInt32());
+  // In api_version >= 15, the top-level ReplicaId field was replaced by a tagged ReplicaState
+  // field (KIP-903), so it is no longer read here; it is skipped as part of the tag section.
+  if (api_version_ <= 14) {
+    PX_ASSIGN_OR_RETURN(r.replica_id, ExtractInt32());
+  }
   PX_RETURN_IF_ERROR(/*max_wait_ms*/ ExtractInt32());
   PX_RETURN_IF_ERROR(/*min_bytes*/ ExtractInt32());
 
@@ -127,7 +141,12 @@ StatusOr<FetchRespPartition> PacketDecoder::ExtractFetchRespPartition() {
 
 StatusOr<FetchRespTopic> PacketDecoder::ExtractFetchRespTopic() {
   FetchRespTopic r;
-  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  // In api_version >= 13, the topic is identified by a UUID instead of a name (KIP-516).
+  if (api_version_ >= 13) {
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractUUID());
+  } else {
+    PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  }
   PX_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractFetchRespPartition));
   PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;

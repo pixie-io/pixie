@@ -391,8 +391,8 @@ static __inline enum message_type_t infer_mysql_message(const char* buf, size_t 
 //     correlation_id => INT32
 static __inline enum message_type_t infer_kafka_request(const char* buf) {
   // API is Kafka's terminology for opcode.
-  static const int kNumAPIs = 62;
-  static const int kMaxAPIVersion = 12;
+  static const int kNumAPIs = 93;
+  static const int kMaxAPIVersion = 18;
 
   const int16_t request_API_key = read_big_endian_int16(buf);
   if (request_API_key < 0 || request_API_key > kNumAPIs) {

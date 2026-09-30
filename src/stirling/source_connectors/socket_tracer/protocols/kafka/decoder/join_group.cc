@@ -59,6 +59,12 @@ StatusOr<JoinGroupReq> PacketDecoder::ExtractJoinGroupReq() {
   PX_ASSIGN_OR_RETURN(r.protocol_type, ExtractString());
   PX_ASSIGN_OR_RETURN(r.protocols, ExtractArray(&PacketDecoder::ExtractJoinGroupProtocol));
 
+  // Reason was added in api_version >= 8 (nullable string). Consume it so any trailing
+  // tag section stays aligned; it is currently not surfaced in the trace.
+  if (api_version_ >= 8) {
+    PX_RETURN_IF_ERROR(/* reason */ ExtractNullableString());
+  }
+
   return r;
 }
 
@@ -75,6 +81,11 @@ StatusOr<JoinGroupResp> PacketDecoder::ExtractJoinGroupResp() {
   } else {
     PX_ASSIGN_OR_RETURN(r.protocol_type, ExtractString());
     PX_ASSIGN_OR_RETURN(r.protocol_name, ExtractString());
+  }
+  // SkipAssignment was added in api_version >= 9 (bool). Consume it so the trailing fields
+  // stay aligned; it is currently not surfaced in the trace.
+  if (api_version_ >= 9) {
+    PX_RETURN_IF_ERROR(/* skip_assignment */ ExtractBool());
   }
   PX_ASSIGN_OR_RETURN(r.leader, ExtractString());
   PX_ASSIGN_OR_RETURN(r.member_id, ExtractString());

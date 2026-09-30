@@ -27,18 +27,42 @@ namespace px {
 namespace stirling {
 namespace testing {
 
+// Kafka broker packaged by Confluent (confluentinc/cp-kafka). Runs in KRaft mode
+// (no ZooKeeper). The CLI tools (kafka-topics, kafka-console-producer, ...) are on the PATH.
 class KafkaContainer : public ContainerRunner {
  public:
   KafkaContainer()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
+  // Directory containing the CLI tools. Empty means they are on the PATH.
+  static constexpr std::string_view kBinPath = "";
+  // Suffix on the CLI tool names (e.g. kafka-topics vs kafka-topics.sh).
+  static constexpr std::string_view kToolSuffix = "";
+
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/kafka_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "kafka_server";
-  static constexpr std::string_view kReadyMessage =
-      "Recorded new controller, from now on will use broker";
+  static constexpr std::string_view kReadyMessage = "Kafka Server started";
+};
+
+// Kafka broker packaged by the Apache Kafka project (apache/kafka). Runs in KRaft mode.
+// The CLI tools live under /opt/kafka/bin and carry a .sh suffix.
+class ApacheKafkaContainer : public ContainerRunner {
+ public:
+  ApacheKafkaContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+  static constexpr std::string_view kBinPath = "/opt/kafka/bin/";
+  static constexpr std::string_view kToolSuffix = ".sh";
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/apache_kafka_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "apache_kafka_server";
+  static constexpr std::string_view kReadyMessage = "Kafka Server started";
 };
 
 }  // namespace testing
