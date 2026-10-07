@@ -31,6 +31,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/statuspb/status.pb.h"
 #include "src/common/uuid/uuid.h"
+#include "src/vizier/services/agent/shared/vizier_results/result_conversion.h"
 
 namespace px {
 namespace vizier {
@@ -64,38 +65,25 @@ class StandaloneResultSinkServer final : public carnotpb::ResultSinkService::Ser
         consumer = consumer_pair->second;
       }
 
-      ::px::api::vizierpb::ExecuteScriptResponse resp;
-      resp.set_query_id(query_id.str());
+      const auto resp = ExecuteScriptResponseFromChunk(*rb, query_id.str());
+      if (resp.has_value()) {
+        consumer->Write(*resp);
+      }
 
       if (rb->has_execution_and_timing_info()) {
-        HandleExecutionAndTimingInfo(&resp, rb.get());
-        consumer->Write(resp);
+        absl::base_internal::SpinLockHolder lock(&id_to_query_consumer_map_lock_);
+        consumer_map_.erase(query_id);
+      }
+
+      if (rb->has_execution_error() && rb->execution_error().err_code() == 0) {
+        // err_code 0 is Carnot reporting success; ExecuteScriptResponseFromChunk
+        // emits nothing for it and the stream ends here.
+        response->set_success(true);
         {
-          // Query is complete.
           absl::base_internal::SpinLockHolder lock(&id_to_query_consumer_map_lock_);
           consumer_map_.erase(query_id);
         }
-      }
-
-      if (rb->has_query_result()) {
-        HandleQueryResult(&resp, rb.get());
-
-        consumer->Write(resp);
-      }
-
-      if (rb->has_execution_error()) {
-        auto exec_error = rb->execution_error();
-        if (exec_error.err_code() == 0) {
-          response->set_success(true);
-          {
-            absl::base_internal::SpinLockHolder lock(&id_to_query_consumer_map_lock_);
-            consumer_map_.erase(query_id);
-          }
-          return ::grpc::Status::OK;
-        }
-        auto status = resp.mutable_status();
-        status->set_message(exec_error.msg());
-        consumer->Write(resp);
+        return ::grpc::Status::OK;
       }
 
       rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
@@ -113,72 +101,6 @@ class StandaloneResultSinkServer final : public carnotpb::ResultSinkService::Ser
   }
 
  private:
-  void HandleQueryResult(::px::api::vizierpb::ExecuteScriptResponse* resp,
-                         carnotpb::TransferResultChunkRequest* rb) {
-    auto query_result = rb->query_result();
-    auto row_data = query_result.row_batch();
-
-    auto batch = resp->mutable_data()->mutable_batch();
-
-    batch->set_table_id(query_result.table_name());
-    batch->set_num_rows(row_data.num_rows());
-    batch->set_eow(row_data.eow());
-    batch->set_eos(row_data.eos());
-
-    for (auto col : row_data.cols()) {
-      ::px::api::vizierpb::Column c;
-      if (col.has_boolean_data()) {
-        auto batch_cols = batch->add_cols()->mutable_boolean_data();
-        for (auto dt : col.boolean_data().data()) {
-          batch_cols->add_data(dt);
-        }
-      }
-      if (col.has_int64_data()) {
-        auto batch_cols = batch->add_cols()->mutable_int64_data();
-        for (auto dt : col.int64_data().data()) {
-          batch_cols->add_data(dt);
-        }
-      }
-      if (col.has_time64ns_data()) {
-        auto batch_cols = batch->add_cols()->mutable_time64ns_data();
-        for (auto dt : col.time64ns_data().data()) {
-          batch_cols->add_data(dt);
-        }
-      }
-      if (col.has_float64_data()) {
-        auto batch_cols = batch->add_cols()->mutable_float64_data();
-        for (auto dt : col.float64_data().data()) {
-          batch_cols->add_data(dt);
-        }
-      }
-      if (col.has_string_data()) {
-        auto batch_cols = batch->add_cols()->mutable_string_data();
-        for (auto dt : col.string_data().data()) {
-          batch_cols->add_data(dt);
-        }
-      }
-      if (col.has_uint128_data()) {
-        auto batch_cols = batch->add_cols()->mutable_uint128_data();
-        for (auto dt : col.uint128_data().data()) {
-          auto n = batch_cols->add_data();
-          n->set_low(dt.low());
-          n->set_high(dt.high());
-        }
-      }
-    }
-  }
-
-  void HandleExecutionAndTimingInfo(::px::api::vizierpb::ExecuteScriptResponse* resp,
-                                    carnotpb::TransferResultChunkRequest* rb) {
-    auto timing_info = rb->execution_and_timing_info();
-    auto stats = resp->mutable_data()->mutable_execution_stats();
-    stats->set_bytes_processed(timing_info.execution_stats().bytes_processed());
-    stats->set_records_processed(timing_info.execution_stats().records_processed());
-    auto timing = stats->mutable_timing();
-    timing->set_execution_time_ns(timing_info.execution_stats().timing().execution_time_ns());
-    timing->set_compilation_time_ns(timing_info.execution_stats().timing().compilation_time_ns());
-  }
-
   absl::flat_hash_map<sole::uuid, ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>*>
       consumer_map_ ABSL_GUARDED_BY(id_to_query_consumer_map_lock_);
   mutable absl::base_internal::SpinLock id_to_query_consumer_map_lock_;
