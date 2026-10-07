@@ -23,21 +23,19 @@
 
 #include "src/vizier/services/agent/pem/direct_query_server.h"
 
-// Note: stdlib + boringssl + rapidjson + absl includes stay at the top
+// Note: stdlib + absl includes stay at the top
 // (not inside the `#ifndef` below) because cpplint's
 // build/include_what_you_use scan doesn't follow preprocessor branches
 // and would otherwise flag every type used in the feature body as
 // "missing include". The disabled build pays a few KB of unused header
 // parse cost; the .cc emits nothing for them.
-#include <openssl/hmac.h>
-#include <openssl/mem.h>
-#include <openssl/sha.h>
-#include <rapidjson/document.h>
 
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -64,6 +62,7 @@
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
+#include "src/shared/services/jwt/service_token.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/vizier/services/agent/shared/vizier_results/result_conversion.h"
 
@@ -73,189 +72,7 @@ namespace agent {
 
 namespace {
 
-constexpr char kBearerPrefixLower[] = "bearer ";
-constexpr size_t kBearerPrefixLen = sizeof(kBearerPrefixLower) - 1;
-constexpr char kExpectedAudience[] = "vizier";
-constexpr char kExpectedIssuer[] = "PL";
-// Service tokens carry "service" in the Scopes claim (NOT the subject — sub is
-// the serviceID, e.g. "dx"). See GenerateJWTForService (claims.go) + jwt.go:56.
-constexpr char kServiceScope[] = "service";
-
-// cpp_jwt mints our outgoing service tokens (shared/manager/manager.cc), but we
-// cannot use it to VERIFY here: HMACSign<>::verify (impl/algorithm.ipp) base64s
-// through BIO_f_base64(). BoringSSL declares that in the public bio.h but
-// implements it in decrepit/bio/base64_bio.c, which @boringssl//:crypto does not
-// build — linking a jwt::decode(..., verify(true)) call fails with
-// `undefined symbol: BIO_f_base64`. (Signing links because HMACSign<>::sign uses
-// HMAC() plus cpp_jwt's header-only base64, no BIO.) Using the library for
-// verification would mean patching the BoringSSL external to add a decrepit
-// target; instead we parse the envelope here and HMAC with BoringSSL natively.
-// Its base64url decoder needs no BIO, so we do reuse that below.
-
-// stripBearerPrefix returns the token slice after a case-insensitive "Bearer "
-// prefix, or an empty string if the prefix is missing. gRPC normalises metadata
-// keys to lowercase but does NOT touch values; manager.cc:440 mints with a
-// lowercase "bearer " prefix, but real-world clients may use "Bearer " (RFC 6750
-// Title-case), so we accept both.
-absl::string_view stripBearerPrefix(absl::string_view value) {
-  if (value.size() < kBearerPrefixLen) {
-    return {};
-  }
-  for (size_t i = 0; i < kBearerPrefixLen; ++i) {
-    char c = value[i];
-    if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
-    if (c != kBearerPrefixLower[i]) return {};
-  }
-  return value.substr(kBearerPrefixLen);
-}
-
-// constantTimeEquals: BoringSSL's CRYPTO_memcmp, which is the library's own
-// constant-time comparison — no hand-rolled crypto here. Length is compared
-// first: the signature length is a function of the algorithm, not of the
-// secret, so leaking "wrong length" leaks nothing about the key.
-bool constantTimeEquals(absl::string_view a, absl::string_view b) {
-  if (a.size() != b.size()) return false;
-  return CRYPTO_memcmp(a.data(), b.data(), a.size()) == 0;
-}
-
-// base64UrlDecode handles RFC 7515 base64url (no padding, '-' / '_' alphabet),
-// delegating the transform to cpp_jwt's header-only decoder (the one part of
-// that library that needs no BIO, so it links against our BoringSSL).
-bool base64UrlDecode(absl::string_view in, std::string* out) {
-  *out = jwt::base64_uri_decode(in.data(), in.size());
-  return true;
-}
-
-// hmacSha256: BoringSSL HMAC over `data`, returns raw 32 bytes.
-std::string hmacSha256(absl::string_view key, absl::string_view data) {
-  uint8_t out[EVP_MAX_MD_SIZE];
-  unsigned out_len = 0;
-  const auto* res = HMAC(EVP_sha256(), key.data(), static_cast<int>(key.size()),
-                         reinterpret_cast<const uint8_t*>(data.data()), data.size(), out, &out_len);
-  if (res == nullptr) {
-    return {};
-  }
-  return std::string(reinterpret_cast<const char*>(out), out_len);
-}
-
-// verifyHs256Jwt: parse <header>.<payload>.<signature>, check the header alg is
-// HS256, verify the signature with BoringSSL HMAC, then validate the audience
-// and expiry claims. Returns OK on success.
-::grpc::Status verifyHs256Jwt(absl::string_view token, const std::string& signing_key) {
-  // Split into 3 parts.
-  std::vector<absl::string_view> parts = absl::StrSplit(token, '.');
-  if (parts.size() != 3) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: malformed JWT");
-  }
-  // Verify HS256 alg in the header (refuse "alg":"none" forgeries).
-  std::string header_json;
-  if (!base64UrlDecode(parts[0], &header_json)) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: bad header b64");
-  }
-  rapidjson::Document header;
-  if (header.Parse(header_json.c_str()).HasParseError() || !header.IsObject() ||
-      !header.HasMember("alg") || !header["alg"].IsString() ||
-      std::strcmp(header["alg"].GetString(), "HS256") != 0) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                          "direct-query: unsupported JWT alg (HS256 only)");
-  }
-  // Verify the signature.
-  std::string signing_input = std::string(parts[0].data(), parts[0].size()) + "." +
-                              std::string(parts[1].data(), parts[1].size());
-  std::string computed_mac = hmacSha256(signing_key, signing_input);
-  if (computed_mac.empty()) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: HMAC compute failed");
-  }
-  std::string signature;
-  if (!base64UrlDecode(parts[2], &signature)) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: bad signature b64");
-  }
-  if (!constantTimeEquals(signature, computed_mac)) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: signature mismatch");
-  }
-  // Validate the payload claims (audience, expiry).
-  std::string payload_json;
-  if (!base64UrlDecode(parts[1], &payload_json)) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: bad payload b64");
-  }
-  rapidjson::Document payload;
-  if (payload.Parse(payload_json.c_str()).HasParseError() || !payload.IsObject()) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                          "direct-query: payload not a JSON object");
-  }
-  // RFC 7519 §4.1.3 — `aud` may be a single string OR an array of strings. The
-  // pixie-wide mint path (src/shared/services/utils/jwt.go:46) emits the array
-  // form (`"aud":["vizier"]`), and kelvin / query-broker verifiers accept both;
-  // we do the same so dx's live tokens authenticate against this verifier.
-  if (!payload.HasMember("aud")) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: missing aud claim");
-  }
-  const auto& aud = payload["aud"];
-  bool aud_ok = false;
-  if (aud.IsString() && std::strcmp(aud.GetString(), kExpectedAudience) == 0) {
-    aud_ok = true;
-  } else if (aud.IsArray()) {
-    for (const auto& v : aud.GetArray()) {
-      if (v.IsString() && std::strcmp(v.GetString(), kExpectedAudience) == 0) {
-        aud_ok = true;
-        break;
-      }
-    }
-  }
-  if (!aud_ok) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                          "direct-query: wrong audience (expected vizier)");
-  }
-  if (!payload.HasMember("iss") || !payload["iss"].IsString() ||
-      std::strcmp(payload["iss"].GetString(), kExpectedIssuer) != 0) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                          "direct-query: wrong iss (expected PL)");
-  }
-  // Require the "service" scope, NOT sub=="service". Pixie service tokens set
-  // sub=<serviceID> (e.g. "dx") and put "service" in the Scopes claim — a
-  // comma-joined string (GenerateJWTForService in claims.go + jwt.go:56). The
-  // canonical verifier (jwt.go ParseToken) authenticates on signature+audience
-  // and never asserts the subject; checking the scope rejects user/cluster
-  // tokens while accepting any serviceID subject. (Previously this rejected
-  // every real in-cluster caller with "wrong sub".)
-  if (!payload.HasMember("Scopes") || !payload["Scopes"].IsString()) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                          "direct-query: missing Scopes claim");
-  }
-  bool has_service_scope = false;
-  for (absl::string_view scope : absl::StrSplit(payload["Scopes"].GetString(), ',')) {
-    if (scope == kServiceScope) {
-      has_service_scope = true;
-      break;
-    }
-  }
-  if (!has_service_scope) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                          "direct-query: token lacks the service scope");
-  }
-  if (!payload.HasMember("exp")) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: missing exp claim");
-  }
-  // Accept numeric exp (seconds since epoch) — matches RFC 7519 and what
-  // manager.cc::GenerateServiceToken emits via jwt::jwt_object::add_claim.
-  int64_t exp_secs = 0;
-  if (payload["exp"].IsInt64()) {
-    exp_secs = payload["exp"].GetInt64();
-  } else if (payload["exp"].IsUint64()) {
-    exp_secs = static_cast<int64_t>(payload["exp"].GetUint64());
-  } else if (payload["exp"].IsDouble()) {
-    exp_secs = static_cast<int64_t>(payload["exp"].GetDouble());
-  } else {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: exp not numeric");
-  }
-  const auto now_secs = std::chrono::duration_cast<std::chrono::seconds>(
-                            std::chrono::system_clock::now().time_since_epoch())
-                            .count();
-  if (now_secs >= exp_secs) {
-    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED, "direct-query: token expired");
-  }
-  return ::grpc::Status::OK;
-}
+constexpr char kAuthorizationMetadataKey[] = "authorization";
 
 }  // namespace
 
@@ -265,24 +82,29 @@ std::string hmacSha256(absl::string_view key, absl::string_view data) {
                           "direct-query: signing key not configured");
   }
   const auto& md = ctx->client_metadata();
-  auto it = md.find("authorization");
-  if (it == md.end()) {
+  const auto range = md.equal_range(kAuthorizationMetadataKey);
+  if (range.first == range.second) {
     return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
                           "direct-query: missing authorization metadata");
   }
-  absl::string_view raw(it->second.data(), it->second.size());
-  absl::string_view token = stripBearerPrefix(raw);
+  // client_metadata() is a multimap. Two authorization headers is not a request
+  // to guess about -- picking one arbitrarily would let a caller present a valid
+  // token alongside whatever else it wanted.
+  if (std::next(range.first) != range.second) {
+    return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
+                          "direct-query: duplicate authorization metadata");
+  }
+  const std::string_view raw(range.first->second.data(), range.first->second.size());
+  const std::string_view token = ::px::services::StripBearerPrefix(raw);
   if (token.empty()) {
     return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
                           "direct-query: authorization is not a Bearer token");
   }
-  auto status = verifyHs256Jwt(token, jwt_signing_key);
-  if (!status.ok()) {
-    VLOG(1) << "direct-query: " << status.error_message();
-    // Collapse the specific error to a generic "invalid bearer token" on the
-    // wire — peers don't need to know whether the signature or the claim
-    // failed, only that they're unauthenticated. The VLOG above keeps the
-    // diagnostic for the operator.
+  const auto s = ::px::services::VerifyServiceJWT(token, jwt_signing_key);
+  if (!s.ok()) {
+    VLOG(1) << "direct-query: rejecting bearer token: " << s.msg();
+    // Collapse to a generic message on the wire -- peers don't need to know
+    // which check failed, only that they're unauthenticated.
     return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
                           "direct-query: invalid bearer token");
   }
@@ -400,7 +222,7 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
 
 // Compile-out stubs. Linker-satisfying definitions of the two public
 // surfaces with zero feature behaviour. Includes deliberately minimal —
-// no openssl, no rapidjson, no carnot — so a "feature disabled" build
+// no carnot — so a "feature disabled" build
 // carries no direct-query attack surface in the binary.
 
 namespace px {

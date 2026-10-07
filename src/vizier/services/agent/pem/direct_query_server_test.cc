@@ -216,12 +216,6 @@ TEST_F(DirectQueryServerTest, WrongKey_Unauthenticated) {
   EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
 }
 
-// 3c. Expired token → UNAUTHENTICATED.
-TEST_F(DirectQueryServerTest, ExpiredToken_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kExpired);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
 // 5. Mutations are out of scope → UNIMPLEMENTED (and proves a valid token authenticates).
 TEST_F(DirectQueryServerTest, ValidToken_Mutation_Unimplemented) {
   auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
@@ -229,6 +223,12 @@ TEST_F(DirectQueryServerTest, ValidToken_Mutation_Unimplemented) {
             CallExecuteScript(tok, /*mutation*/ true).error_code());
 }
 
+// ===========================================================================
+// NOTE: the JWT semantics themselves -- alg:none, algorithm confusion, tampered
+// header/payload/signature, truncation, claim shape, expiry -- are covered in
+// //src/shared/services/jwt:service_token_test, against the verifier directly.
+// What remains here is the gRPC metadata plumbing: that a token reaches the
+// verifier at all, and that the endpoint fails closed when it doesn't.
 // ===========================================================================
 // JWT robustness — claim shape / format / algorithm. The verifier
 // (direct_query_server.cc::verifyHs256Jwt) inspects: HS256 alg, signature,
@@ -241,76 +241,6 @@ TEST_F(DirectQueryServerTest, GarbageBearer_Unauthenticated) {
   // structure → verifier rejects at the absl::StrSplit('.') step.
   EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED,
             CallExecuteScript("not.a.real.jwt.token").error_code());
-}
-
-// alg:none header is RFC 8725's canonical forgery — the verifier must refuse
-// anything but HS256 even when the rest of the token is well-formed.
-TEST_F(DirectQueryServerTest, AlgNoneToken_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kAlgNone);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// aud as a single string instead of an array — pixie's Go mint uses the array
-// form, but kelvin/query-broker (and we) accept either per RFC 7519 §4.1.3.
-TEST_F(DirectQueryServerTest, ValidToken_AudAsString_Authenticated) {
-  // We hit the auth+scope guard, not Carnot exec, so this fixture's
-  // null-carnot OK signal is UNIMPLEMENTED for a non-mutation query (the
-  // CarnotTest fixture below proves the exec path for the array form).
-  // Auth must pass for the string-aud form to reach the scope-guard.
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kAudAsString);
-  auto status = CallExecuteScript(tok).error_code();
-  EXPECT_NE(::grpc::StatusCode::UNAUTHENTICATED, status)
-      << "aud-as-string must still authenticate (backwards-compat with non-array aud).";
-}
-
-// Wrong aud → UNAUTHENTICATED. Guards against a regression where the verifier
-// silently accepted any aud value.
-TEST_F(DirectQueryServerTest, WrongAud_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kWrongAud);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// No aud claim → UNAUTHENTICATED. The verifier requires the claim (RFC 7519
-// §4.1.3 doesn't mandate it, but our security model does).
-TEST_F(DirectQueryServerTest, MissingAud_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kMissingAud);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// Wrong iss → UNAUTHENTICATED. The mint side (manager.cc::GenerateServiceToken)
-// always emits iss="PL"; rejecting other issuers stops cross-aud-class tokens
-// signed with the same key (e.g., a token an external system minted with
-// aud=vizier but iss=something-else) from authenticating here.
-TEST_F(DirectQueryServerTest, WrongIss_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kWrongIss);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// No iss claim → UNAUTHENTICATED.
-TEST_F(DirectQueryServerTest, MissingIss_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kMissingIss);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// Wrong scope → UNAUTHENTICATED. Real service tokens carry "service" in the
-// Scopes claim; user-scoped tokens (Scopes="user") must not authenticate against
-// this service-only endpoint. (sub is the serviceID and is not asserted.)
-TEST_F(DirectQueryServerTest, WrongScope_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kWrongScope);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// No Scopes claim → UNAUTHENTICATED.
-TEST_F(DirectQueryServerTest, MissingScope_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kMissingScope);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
-}
-
-// No exp claim → UNAUTHENTICATED. Prevents non-expiring tokens, which would
-// turn any leaked token into a permanent bearer credential.
-TEST_F(DirectQueryServerTest, MissingExp_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kMissingExp);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tok).error_code());
 }
 
 // ===========================================================================
@@ -347,6 +277,23 @@ TEST_F(DirectQueryServerTest, WrongAuthScheme_Unauthenticated) {
           .error_code());
 }
 
+// client_metadata() is a multimap, so a caller can send `authorization` twice.
+// Rejecting outright beats picking one arbitrarily, which would let a caller
+// smuggle a second value past whichever one the server happened to read.
+TEST_F(DirectQueryServerTest, DuplicateAuthorizationHeader_Unauthenticated) {
+  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
+  ::grpc::ClientContext ctx;
+  ctx.AddMetadata("authorization", "Bearer " + tok);
+  ctx.AddMetadata("authorization", "Bearer " + tok);
+  ::px::api::vizierpb::ExecuteScriptRequest req;
+  req.set_query_str("import px\npx.display(px.DataFrame('http_events'))");
+  auto reader = stub_->ExecuteScript(&ctx, req);
+  ::px::api::vizierpb::ExecuteScriptResponse resp;
+  while (reader->Read(&resp)) { /* drain */
+  }
+  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, reader->Finish().error_code());
+}
+
 // ===========================================================================
 // Tampering tests — bit-level token manipulation. Each scenario flips a
 // specific portion of an otherwise-valid token and asserts UNAUTHENTICATED.
@@ -356,25 +303,6 @@ TEST_F(DirectQueryServerTest, WrongAuthScheme_Unauthenticated) {
 // ===========================================================================
 
 namespace {
-
-// FlipNthChar returns a copy of `s` with character at index `idx` rotated:
-// alphanumerics shift by 1, others become 'X'. Cheap deterministic mutation
-// that preserves length so b64-segment boundaries don't realign by accident.
-std::string FlipNthChar(const std::string& s, size_t idx) {
-  auto out = s;
-  if (idx >= out.size()) return out;
-  char c = out[idx];
-  if (c >= 'A' && c < 'Z') {
-    out[idx] = c + 1;
-  } else if (c >= 'a' && c < 'z') {
-    out[idx] = c + 1;
-  } else if (c >= '0' && c < '9') {
-    out[idx] = c + 1;
-  } else {
-    out[idx] = 'X';
-  }
-  return out;
-}
 
 // SegmentIndex returns the (start, end) range of the Nth dot-separated
 // segment in s. Used to target the header / payload / signature surgically.
@@ -391,55 +319,6 @@ std::pair<size_t, size_t> SegmentIndex(const std::string& s, int n) {
 }
 
 }  // namespace
-
-// Flip a single byte in the signature segment → HMAC mismatch.
-TEST_F(DirectQueryServerTest, TamperedSignatureByte_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  auto [start, end] = SegmentIndex(tok, 2);
-  ASSERT_NE(std::string::npos, start);
-  // Use the middle of the signature so we don't accidentally hit the padding
-  // boundary (cpp_jwt's emit doesn't pad b64url, but defensive anyway).
-  auto tampered = FlipNthChar(tok, start + (end - start) / 2);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tampered).error_code());
-}
-
-// Flip a single byte in the payload segment → signing-input differs from
-// what the supplied signature was over → HMAC mismatch.
-TEST_F(DirectQueryServerTest, TamperedPayloadByte_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  auto [start, end] = SegmentIndex(tok, 1);
-  ASSERT_NE(std::string::npos, start);
-  auto tampered = FlipNthChar(tok, start + 5);  // first b64 char that maps to non-padding
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tampered).error_code());
-}
-
-// Flip a byte in the header segment → either alg-check fails or signature
-// mismatches. Either way, UNAUTHENTICATED.
-TEST_F(DirectQueryServerTest, TamperedHeaderByte_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  auto [start, end] = SegmentIndex(tok, 0);
-  ASSERT_NE(std::string::npos, start);
-  auto tampered = FlipNthChar(tok, start + 5);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(tampered).error_code());
-}
-
-// Truncate the last 10 chars → signature too short to base64-decode cleanly
-// OR decodes to a byte string that doesn't match the HMAC.
-TEST_F(DirectQueryServerTest, TruncatedToken_Unauthenticated) {
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  ASSERT_GT(tok.size(), 20u);
-  auto truncated = tok.substr(0, tok.size() - 10);
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(truncated).error_code());
-}
-
-// Concatenate two valid tokens with a dot — produces a 5-segment string. The
-// 3-part split check fails immediately ("malformed JWT").
-TEST_F(DirectQueryServerTest, ConcatenatedTokens_Unauthenticated) {
-  auto tok1 = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  auto tok2 = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  auto concatenated = tok1 + "." + tok2;
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(concatenated).error_code());
-}
 
 // Algorithm confusion: header advertises HS384, signature is HS256. The
 // verifier requires alg == "HS256" exactly, so HS384 alone fails — but this
@@ -461,22 +340,6 @@ TEST_F(DirectQueryServerTest, NonBase64UrlCharInPayload_Unauthenticated) {
   auto corrupted = tok;
   corrupted[p_start + 1] = '!';  // '!' is not in the base64url alphabet.
   EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(corrupted).error_code());
-}
-
-TEST_F(DirectQueryServerTest, AlgConfusion_HS384_Unauthenticated) {
-  // Header: {"alg":"HS384","typ":"JWT"} → base64url, no padding.
-  constexpr char kHS384Header[] = "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9";
-  // Use a valid HS256 token's payload + signature so the only difference
-  // from a normal token is the header's alg value.
-  auto tok = MakeBearerToken(kTestSigningKey, TokenKind::kValid);
-  auto [p_start, p_end] = SegmentIndex(tok, 1);
-  auto [s_start, s_end] = SegmentIndex(tok, 2);
-  ASSERT_NE(std::string::npos, p_start);
-  ASSERT_NE(std::string::npos, s_start);
-  auto payload = tok.substr(p_start, p_end - p_start);
-  auto signature = tok.substr(s_start, s_end - s_start);
-  auto confused = std::string(kHS384Header) + "." + payload + "." + signature;
-  EXPECT_EQ(::grpc::StatusCode::UNAUTHENTICATED, CallExecuteScript(confused).error_code());
 }
 
 // 2. Valid token + trivial query → OK stream. The fixture below builds a
