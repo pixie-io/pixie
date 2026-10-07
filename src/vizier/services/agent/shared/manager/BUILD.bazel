@@ -39,6 +39,7 @@ pl_cc_library(
         "//src/common/uuid:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/shared/schema:cc_library",
+        "//src/shared/services/jwt:cc_library",
         "//src/vizier/funcs:cc_library",
         "//src/vizier/messages/messagespb:messages_pl_cc_proto",
         "//src/vizier/services/agent/shared/base:cc_library",

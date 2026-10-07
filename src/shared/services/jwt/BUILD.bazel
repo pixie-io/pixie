@@ -16,27 +16,23 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
-package(default_visibility = [
-    "//src/experimental/standalone_pem:__pkg__",
-    "//src/vizier/services/agent/pem:__pkg__",
-])
+package(default_visibility = ["//src:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",
-    srcs = ["result_conversion.cc"],
-    hdrs = ["result_conversion.h"],
+    srcs = ["service_token.cc"],
+    hdrs = ["service_token.h"],
     deps = [
-        "//src/api/proto/vizierpb:vizier_pl_cc_proto",
-        "//src/carnot/carnotpb:carnot_pl_cc_proto",
-        "//src/carnot/planpb:plan_pl_cc_proto",
-        "//src/shared/types/typespb/wrapper:cc_library",
-        "//src/table_store/schemapb:schema_pl_cc_proto",
-        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
+        "@com_github_rlyeh_sole//:sole",
     ],
 )
 
 pl_cc_test(
-    name = "result_conversion_test",
-    srcs = ["result_conversion_test.cc"],
-    deps = [":cc_library"],
+    name = "service_token_test",
+    srcs = ["service_token_test.cc"],
+    deps = [
+        ":cc_library",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
+    ],
 )

@@ -44,6 +44,11 @@ pl_cc_library(
             "carnot_executable.cc",
         ],
     ),
+    visibility = [
+        "//src/carnot:__subpackages__",
+        "//src/experimental:__subpackages__",
+        "//src/vizier/services/agent:__subpackages__",
+    ],
     deps = [
         "//src/carnot/exec:cc_library",
         "//src/carnot/exec/ml:cc_library",
