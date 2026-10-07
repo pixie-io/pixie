@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <absl/strings/str_split.h>
@@ -289,6 +290,12 @@ std::string hmacSha256(absl::string_view key, absl::string_view data) {
 
 namespace {
 
+// kMaxOutputRowsPerTable caps how much a single direct query can materialize.
+// Results are buffered in the sink before they are streamed out, and the PEM is
+// a memory-capped daemonset sharing a node with the workload it observes, so an
+// unbounded px.display(px.DataFrame(...)) over a wide window could OOM it.
+constexpr int64_t kMaxOutputRowsPerTable = 10000;
+
 // pixiePbTypeForCarnot translates a carnot/types DataType into the vizierpb
 // column type that ExecuteScriptResponse.meta_data.relation expects. Mirrors
 // standalone_pem/vizier_server.h:147-167.
@@ -339,10 +346,9 @@ void emitSchemaResponses(const ::px::carnot::planpb::Plan& plan, const std::stri
   }
 }
 
-// drainSinkAndStream converts each accumulated TransferResultChunkRequest into
-// an ExecuteScriptResponse and writes it to the gRPC stream. Mirrors
-// standalone_pem/sink_server.h:60-105 but operates on already-collected
-// chunks rather than a streaming consumer.
+// collectResponses converts each accumulated TransferResultChunkRequest into an
+// ExecuteScriptResponse. It returns them rather than writing them so the caller
+// can release exec_mu_ before touching the network.
 //
 // Per-row column data + exec stats are copied by wire-format round-trip:
 // carnotpb's and vizierpb's Column messages are bytewise identical (same oneof
@@ -359,9 +365,9 @@ void emitSchemaResponses(const ::px::carnot::planpb::Plan& plan, const std::stri
 // set. Carnot's sink emits chunks that are neither query_result nor
 // execution_error (e.g. initiate_conn). Skip those instead of writing
 // query_id-only frames.
-void drainSinkAndStream(::px::carnot::exec::LocalGRPCResultSinkServer* result_server,
-                        const std::string& query_id,
-                        ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>* writer) {
+std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
+    ::px::carnot::exec::LocalGRPCResultSinkServer* result_server, const std::string& query_id) {
+  std::vector<::px::api::vizierpb::ExecuteScriptResponse> out;
   for (const auto& chunk : result_server->raw_query_results()) {
     ::px::api::vizierpb::ExecuteScriptResponse resp;
     resp.set_query_id(query_id);
@@ -406,8 +412,9 @@ void drainSinkAndStream(::px::carnot::exec::LocalGRPCResultSinkServer* result_se
       // Skipping preserves stream OK.
       continue;
     }
-    writer->Write(resp);
+    out.push_back(std::move(resp));
   }
+  return out;
 }
 
 }  // namespace
@@ -431,9 +438,17 @@ void drainSinkAndStream(::px::carnot::exec::LocalGRPCResultSinkServer* result_se
   const auto query_id = sole::uuid4();
   const std::string query_id_str = query_id.str();
 
-  // Compile to inspect the plan + emit schema headers, mirroring
-  // standalone_pem/vizier_server.h:121-173.
-  auto compiler_state = engine_state_->CreateLocalExecutionCompilerState(0);
+  // One timestamp for both the schema compile below and the execute further
+  // down. Carnot::ExecuteQuery compiles the script again internally, and a
+  // script using relative times ("-5m") resolves against whatever it is given:
+  // compiling the schema at a different instant than the data can advertise a
+  // relation that doesn't describe what is emitted.
+  const auto time_now = ::px::CurrentTimeNS();
+
+  // Compile once up front to read the plan's sinks and emit schema headers
+  // before any data.
+  auto compiler_state =
+      engine_state_->CreateLocalExecutionCompilerState(time_now, kMaxOutputRowsPerTable);
   auto plan_or = ::px::carnot::planner::compiler::Compiler().Compile(request->query_str(),
                                                                      compiler_state.get());
   if (!plan_or.ok()) {
@@ -444,28 +459,40 @@ void drainSinkAndStream(::px::carnot::exec::LocalGRPCResultSinkServer* result_se
   const auto plan = plan_or.ConsumeValueOrDie();
   emitSchemaResponses(plan, query_id_str, writer);
 
-  // Reset the sink so we only see chunks for THIS query, then execute.
-  // Synchronous: Carnot::ExecuteQuery blocks until the plan finishes (same as
-  // standalone_pem + carnot_test).
-  //
-  // exec_mu_ guards the reset-execute-drain critical section. The sink's
-  // accumulator is shared mutable state across ExecuteScript calls — without
-  // the lock, a concurrent caller's ResetQueryResults could wipe another
-  // caller's chunks mid-drain, or two callers' chunks could interleave in
-  // a single sink. Holding from before reset to after drain serializes
-  // queries at the sink boundary, matching standalone_pem's single-threaded
-  // assumption. dx_daemon doesn't fan out per-PEM today, so contention is
-  // expected to be low; ConcurrentQueries_AllSucceed in the test verifies
-  // the contract under N parallel callers. CodeRabbit r3364645000.
-  absl::MutexLock lk(&exec_mu_);
-  result_server_->ResetQueryResults();
-  auto exec_s = carnot_->ExecuteQuery(request->query_str(), query_id, ::px::CurrentTimeNS());
-  if (!exec_s.ok()) {
-    auto msg = absl::Substitute("direct-query: PxL execute failed ($0)", exec_s.msg());
-    VLOG(1) << msg;
-    return ::grpc::Status(::grpc::StatusCode::INTERNAL, msg);
+  std::vector<::px::api::vizierpb::ExecuteScriptResponse> responses;
+  {
+    // exec_mu_ guards reset-execute-collect. The sink's accumulator is shared
+    // mutable state across ExecuteScript calls: without the lock a concurrent
+    // caller's ResetQueryResults could wipe another caller's chunks, or two
+    // callers' chunks could interleave in one sink.
+    //
+    // The lock deliberately does NOT cover the writes below. Holding it across
+    // writer->Write() would let one slow or stalled client block every other
+    // direct query on the node for as long as it took to read.
+    absl::MutexLock lk(&exec_mu_);
+    result_server_->ResetQueryResults();
+    // Synchronous: ExecuteQuery blocks until the plan finishes.
+    auto exec_s = carnot_->ExecuteQuery(request->query_str(), query_id, time_now);
+    if (!exec_s.ok()) {
+      auto msg = absl::Substitute("direct-query: PxL execute failed ($0)", exec_s.msg());
+      VLOG(1) << msg;
+      return ::grpc::Status(::grpc::StatusCode::INTERNAL, msg);
+    }
+    responses = collectResponses(result_server_, query_id_str);
   }
-  drainSinkAndStream(result_server_, query_id_str, writer);
+
+  for (const auto& resp : responses) {
+    if (context->IsCancelled()) {
+      return ::grpc::Status(::grpc::StatusCode::CANCELLED, "direct-query: client cancelled");
+    }
+    // Write returns false once the stream is broken; continuing would spin
+    // through the remaining batches for a client that is gone.
+    if (!writer->Write(resp)) {
+      VLOG(1) << "direct-query: client stream closed mid-response, abandoning query "
+              << query_id_str;
+      break;
+    }
+  }
   return ::grpc::Status::OK;
 }
 
