@@ -370,8 +370,9 @@ def stirling_test_images():
 
     # ClickHouse server image for testing.
     # clickhouse/clickhouse-server:25.7-alpine, mirrored to the Pixie ghcr registry.
+    # Arch: linux/amd64 (manifest from the multi-arch index pinned in scripts/regclient/deps.lua)
     _container_image(
         name = "clickhouse_server_base_image",
         repository = "clickhouse_server_image_25_7",
-        digest = "sha256:258d438215084cad2b4504749bd7046a869a82789983831df6348a737c1a85f6",
+        digest = "sha256:fdc16ebabed9f93868a8c91f289d1abbb2d261b0ae676daa8cf30fbe81fec2b3",
     )
