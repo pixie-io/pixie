@@ -373,5 +373,5 @@ def stirling_test_images():
     _container_image(
         name = "clickhouse_server_base_image",
         repository = "clickhouse_server_image_25_7",
-        digest = "sha256:60c53a520a1caad6555eb6772a8a9c91bb09774c1c7ec87e3371ea3da254eeab",
+        digest = "sha256:258d438215084cad2b4504749bd7046a869a82789983831df6348a737c1a85f6",
     )
