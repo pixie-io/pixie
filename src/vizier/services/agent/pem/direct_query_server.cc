@@ -65,6 +65,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/vizier/services/agent/shared/vizier_results/result_conversion.h"
 
 namespace px {
 namespace vizier {
@@ -296,123 +297,18 @@ namespace {
 // unbounded px.display(px.DataFrame(...)) over a wide window could OOM it.
 constexpr int64_t kMaxOutputRowsPerTable = 10000;
 
-// pixiePbTypeForCarnot translates a carnot/types DataType into the vizierpb
-// column type that ExecuteScriptResponse.meta_data.relation expects. Mirrors
-// standalone_pem/vizier_server.h:147-167.
-::px::api::vizierpb::DataType pixiePbTypeForCarnot(::px::types::DataType t) {
-  switch (t) {
-    case ::px::types::BOOLEAN:
-      return ::px::api::vizierpb::BOOLEAN;
-    case ::px::types::INT64:
-      return ::px::api::vizierpb::INT64;
-    case ::px::types::UINT128:
-      return ::px::api::vizierpb::UINT128;
-    case ::px::types::FLOAT64:
-      return ::px::api::vizierpb::FLOAT64;
-    case ::px::types::STRING:
-      return ::px::api::vizierpb::STRING;
-    case ::px::types::TIME64NS:
-      return ::px::api::vizierpb::TIME64NS;
-    default:
-      return ::px::api::vizierpb::DATA_TYPE_UNKNOWN;
-  }
-}
-
-// emitSchemaResponses walks the compiled plan once and writes a meta_data-only
-// ExecuteScriptResponse per GRPC_SINK_OPERATOR sink. The client uses these to
-// learn output table names and column types before the data chunks arrive.
-// Mirrors standalone_pem/vizier_server.h:132-173.
-void emitSchemaResponses(const ::px::carnot::planpb::Plan& plan, const std::string& query_id,
-                         ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>* writer) {
-  for (const auto& f : plan.nodes()) {
-    for (const auto& n : f.nodes()) {
-      if (n.op().op_type() != ::px::carnot::planpb::OperatorType::GRPC_SINK_OPERATOR) continue;
-      const auto& sink = n.op().grpc_sink_op();
-      if (!sink.has_output_table()) continue;
-      ::px::api::vizierpb::ExecuteScriptResponse schema_resp;
-      schema_resp.set_query_id(query_id);
-      auto* metadata = schema_resp.mutable_meta_data();
-      metadata->set_name(sink.output_table().table_name());
-      metadata->set_id(sink.output_table().table_name());
-      auto* rel = metadata->mutable_relation();
-      for (int i = 0; i < sink.output_table().column_names().size(); ++i) {
-        auto* col = rel->add_columns();
-        col->set_column_name(sink.output_table().column_names()[i]);
-        col->set_column_type(pixiePbTypeForCarnot(
-            static_cast<::px::types::DataType>(sink.output_table().column_types()[i])));
-      }
-      writer->Write(schema_resp);
-    }
-  }
-}
-
 // collectResponses converts each accumulated TransferResultChunkRequest into an
 // ExecuteScriptResponse. It returns them rather than writing them so the caller
 // can release exec_mu_ before touching the network.
-//
-// Per-row column data + exec stats are copied by wire-format round-trip:
-// carnotpb's and vizierpb's Column messages are bytewise identical (same oneof
-// tags + field numbers for boolean/int64/uint128/time64ns/float64/string), the
-// surrounding RowBatchData shares field numbers 1-4 (cols/num_rows/eow/eos),
-// and QueryExecutionStats shares field 1 (timing) / 2 (bytes_processed) /
-// 3 (records_processed). Wire-format roundtrip carries the data without a
-// per-type switch; vizier-only RowBatchData.table_id (field 5) is set
-// explicitly.
-//
-// **Don't write empty responses.** pxapi/results.go:142-143 returns
-// "unimplemented type : internal error" when an ExecuteScriptResponse has
-// neither meta_data, data.batch, data.encrypted_batch, nor data.execution_stats
-// set. Carnot's sink emits chunks that are neither query_result nor
-// execution_error (e.g. initiate_conn). Skip those instead of writing
-// query_id-only frames.
 std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
     ::px::carnot::exec::LocalGRPCResultSinkServer* result_server, const std::string& query_id) {
   std::vector<::px::api::vizierpb::ExecuteScriptResponse> out;
   for (const auto& chunk : result_server->raw_query_results()) {
-    ::px::api::vizierpb::ExecuteScriptResponse resp;
-    resp.set_query_id(query_id);
-    bool has_payload = false;
-
-    if (chunk.has_query_result() && chunk.query_result().has_row_batch()) {
-      const auto& src = chunk.query_result().row_batch();
-      auto* batch = resp.mutable_data()->mutable_batch();
-      std::string buf;
-      if (src.SerializeToString(&buf) && batch->ParseFromString(buf)) {
-        batch->set_table_id(chunk.query_result().table_name());
-      } else {
-        // Roundtrip failed — should never happen on a well-formed payload,
-        // fall back to the metadata-only shape so the client at least sees
-        // the batch boundary.
-        batch->set_table_id(chunk.query_result().table_name());
-        batch->set_num_rows(src.num_rows());
-        batch->set_eow(src.eow());
-        batch->set_eos(src.eos());
-      }
-      has_payload = true;
-    }
-
-    if (chunk.has_execution_and_timing_info() &&
-        chunk.execution_and_timing_info().has_execution_stats()) {
-      const auto& src_stats = chunk.execution_and_timing_info().execution_stats();
-      auto* dst_stats = resp.mutable_data()->mutable_execution_stats();
-      std::string buf;
-      (void)(src_stats.SerializeToString(&buf) && dst_stats->ParseFromString(buf));
-      has_payload = true;
-    }
-
-    if (chunk.has_execution_error() && chunk.execution_error().err_code() != 0) {
-      auto* status = resp.mutable_status();
-      status->set_message(chunk.execution_error().msg());
-      has_payload = true;
-    }
-
-    if (!has_payload) {
-      // initiate_conn or any future variant we haven't mapped — pxapi rejects
-      // payload-less ExecuteScriptResponses as ErrInternalUnImplementedType.
-      // Skipping preserves stream OK.
+    auto resp = ExecuteScriptResponseFromChunk(chunk, query_id);
+    if (!resp.has_value()) {
       continue;
     }
-    out.push_back(std::move(resp));
+    out.push_back(std::move(*resp));
   }
   return out;
 }
@@ -457,7 +353,7 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
     return ::grpc::Status(::grpc::StatusCode::INVALID_ARGUMENT, msg);
   }
   const auto plan = plan_or.ConsumeValueOrDie();
-  emitSchemaResponses(plan, query_id_str, writer);
+  EmitSchemaResponses(plan, query_id_str, writer);
 
   std::vector<::px::api::vizierpb::ExecuteScriptResponse> responses;
   {
