@@ -128,14 +128,18 @@ class EngineState : public NotCopyable {
     return std::make_unique<plan::PlanState>(func_registry_.get());
   }
 
+  // max_output_rows_per_table of 0 means unlimited. That is the right default
+  // for the single-node executable and for tests, where the caller controls the
+  // input, but a server accepting queries from a peer should pass a real cap:
+  // results are buffered in memory before they are streamed out.
   std::unique_ptr<planner::CompilerState> CreateLocalExecutionCompilerState(
-      types::Time64NSValue time_now) {
+      types::Time64NSValue time_now, int64_t max_output_rows_per_table = 0) {
     auto rel_map = table_store_->GetRelationMap();
     // Use an empty string for query result address, because the local execution mode should use
     // the Local GRPC result server to send results to.
     return std::make_unique<planner::CompilerState>(
         std::move(rel_map), planner::SensitiveColumnMap{}, registry_info_.get(), time_now,
-        /* max_output_rows_per_table */ 0,
+        max_output_rows_per_table,
         /* result address */ "",
         /* ssl target name override*/ "", planner::RedactionOptions{}, nullptr, nullptr,
         planner::DebugInfo{});
