@@ -18,6 +18,7 @@ deps.depImages = {
   "docker.io/azul/zulu-openjdk-alpine@sha256:eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878",
   "docker.io/azul/zulu-openjdk-debian@sha256:d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a",
   "docker.io/azul/zulu-openjdk@sha256:01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e",
+  "docker.io/clickhouse/clickhouse-server:25.7-alpine@sha256:258d438215084cad2b4504749bd7046a869a82789983831df6348a737c1a85f6",
   "docker.io/confluentinc/cp-kafka@sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
   "docker.io/confluentinc/cp-zookeeper@sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
   "docker.io/curlimages/curl@sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82", -- TODO(ddelnano): remove once gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0 is tested

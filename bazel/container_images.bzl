@@ -367,3 +367,12 @@ def stirling_test_images():
         repository = "golang_1_22_grpc_server_with_buildinfo",
         digest = "sha256:67adba5e8513670fa37bd042862e7844f26239e8d2997ed8c3b0aa527bc04cc3",
     )
+
+    # ClickHouse server image for testing.
+    # clickhouse/clickhouse-server:25.7-alpine, mirrored to the Pixie ghcr registry.
+    # Arch: linux/amd64 (manifest from the multi-arch index pinned in scripts/regclient/deps.lua)
+    _container_image(
+        name = "clickhouse_server_base_image",
+        repository = "clickhouse_server_image_25_7",
+        digest = "sha256:fdc16ebabed9f93868a8c91f289d1abbb2d261b0ae676daa8cf30fbe81fec2b3",
+    )
