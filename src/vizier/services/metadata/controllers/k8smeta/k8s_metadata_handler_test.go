@@ -23,6 +23,7 @@ import (
 	"sort"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
@@ -399,7 +400,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 	require.NoError(t, err)
 
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
-	mdh := k8smeta.NewHandler(updateCh, mds, lps, nil)
+	mdh := k8smeta.NewHandler(updateCh, mds, lps, nil, nil)
 	defer mdh.Stop()
 	updates, err := mdh.GetUpdatesForIP("", 0, 0)
 	require.NoError(t, err)
@@ -448,7 +449,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
 
-	mdh := k8smeta.NewHandler(updateCh, mds, lps, nc)
+	mdh := k8smeta.NewHandler(updateCh, mds, lps, nc, nil)
 	defer mdh.Stop()
 
 	expectedNSMsg := &messagespb.VizierMessage{
@@ -622,6 +623,98 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 			},
 		},
 	}, mds.ResourceStoreByTopic["unscoped"][5])
+}
+
+func TestHandler_PodAnnotationAllowlist(t *testing.T) {
+	tests := []struct {
+		name      string
+		allowlist []string
+		expected  string
+	}{
+		{
+			name:      "empty allowlist captures nothing",
+			allowlist: []string{},
+			expected:  "",
+		},
+		{
+			name:      "nil allowlist captures nothing",
+			allowlist: nil,
+			expected:  "",
+		},
+		{
+			name:      "only allowed keys are captured",
+			allowlist: []string{"team"},
+			expected:  `{"team":"pixie"}`,
+		},
+		{
+			name:      "non-matching key captures nothing",
+			allowlist: []string{"nonexistent"},
+			expected:  "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			updateCh := make(chan *k8smeta.K8sResourceMessage)
+			mds := &InMemoryStore{
+				ResourceStoreByTopic: make(map[string]ResourceStore),
+				RVStore:              map[string]int64{},
+				FullResourceStore:    make(map[int64]*storepb.K8SResource),
+			}
+			lps := &testutils.InMemoryPodLabelStore{
+				Store: make(map[string]string),
+			}
+
+			nc, natsCleanup := testingutils.MustStartTestNATS(t)
+			defer natsCleanup()
+
+			mdh := k8smeta.NewHandler(updateCh, mds, lps, nc, tc.allowlist)
+			defer mdh.Stop()
+
+			// Pod updates are always published to the Kelvin topic, so capture the
+			// emitted pod annotations from there.
+			gotCh := make(chan string, 1)
+			_, err := nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
+				m := &messagespb.VizierMessage{}
+				if err := proto.Unmarshal(msg.Data, m); err != nil {
+					return
+				}
+				pu := m.GetK8SMetadataMessage().GetK8SMetadataUpdate().GetPodUpdate()
+				if pu != nil {
+					gotCh <- pu.Annotations
+				}
+			})
+			require.NoError(t, err)
+
+			updateCh <- &k8smeta.K8sResourceMessage{
+				ObjectType: "pods",
+				Object: &storepb.K8SResource{
+					Resource: &storepb.K8SResource_Pod{
+						Pod: &metadatapb.Pod{
+							Metadata: &metadatapb.ObjectMetadata{
+								UID:       "ijkl",
+								Name:      "object_md",
+								Namespace: "ns",
+								Annotations: map[string]string{
+									"team":                         "pixie",
+									"kubectl.kubernetes.io/loaded": "big-blob",
+								},
+							},
+							Status: &metadatapb.PodStatus{HostIP: "127.0.0.1"},
+							Spec:   &metadatapb.PodSpec{},
+						},
+					},
+				},
+			}
+
+			select {
+			case got := <-gotCh:
+				assert.Equal(t, tc.expected, got)
+			case <-time.After(5 * time.Second):
+				t.Fatal("timed out waiting for pod update")
+			}
+		})
+	}
 }
 
 func TestEndpointsUpdateProcessor_SetDeleted(t *testing.T) {

@@ -84,6 +84,8 @@ spec:
           value: "7500"
         - name: PL_ETCD_OPERATOR_ENABLED
           value: "false"
+        - name: PL_POD_ANNOTATION_ALLOWLIST
+          value: ""
         envFrom:
         - configMapRef:
             name: pl-tls-config
