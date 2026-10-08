@@ -44,8 +44,10 @@ import (
 )
 
 const (
-	equalityThreshold          = 0.01
-	headersInstalledPercColumn = "headers_installed_percent" // must match the column in px/agent_status_diagnostics
+	equalityThreshold                = 0.01
+	headersInstalledPercColumn       = "headers_installed_percent" // must match the column in px/agent_status_diagnostics
+	missingKernelHeadersMsg          = "Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please see https://px.dev/kernel-headers for more details."
+	missingKernelHeadersSuspectedMsg = "Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please see https://px.dev/kernel-headers for more details. If you are using a distro kernel, this is expected and can be ignored."
 )
 
 type taskWrapper struct {
@@ -266,18 +268,6 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 	return mergedResponses, nil
 }
 
-type HealthCheckWarning struct {
-	message string
-}
-
-func (h *HealthCheckWarning) Error() string {
-	return h.message
-}
-
-func newHealthCheckWarning(message string) error {
-	return &HealthCheckWarning{message}
-}
-
 func evaluateHealthCheckResult(output string) error {
 	jsonData := make(map[string]interface{})
 
@@ -289,12 +279,11 @@ func evaluateHealthCheckResult(output string) error {
 		switch t := v.(type) {
 		case float64:
 			if math.Abs(1.0-t) > equalityThreshold {
-				msg := "Detected missing kernel headers on your cluster's nodes. This may cause issues with the Pixie agent. Please install kernel headers on all nodes."
-				return newHealthCheckWarning(msg)
+				return &components.UIWarning{Err: fmt.Errorf("%s", missingKernelHeadersMsg)}
 			}
 		}
 	} else {
-		return newHealthCheckWarning("Unable to detect if the cluster's nodes have the distro kernel headers installed (vizier too old to perform this check). Please ensure that the kernel headers are installed on all nodes.")
+		return &components.UIWarning{Err: fmt.Errorf("%s", missingKernelHeadersSuspectedMsg)}
 	}
 	return nil
 }

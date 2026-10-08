@@ -620,7 +620,7 @@ func waitForHealthCheckTaskGenerator(cloudAddr string, clusterID uuid.UUID) func
 				}
 				// The health check warning error indicates the cluster successfully deployed, but there are some warnings.
 				// Return the error to end the polling and show the warnings.
-				if _, ok := err.(*vizier.HealthCheckWarning); ok {
+				if _, ok := err.(*components.UIWarning); ok {
 					return err
 				}
 				time.Sleep(5 * time.Second)
@@ -642,15 +642,13 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 	hc := utils.NewSerialTaskRunner(healthCheckJobs)
 	err := hc.RunAndMonitor()
 	if err != nil {
-		if _, ok := err.(*vizier.HealthCheckWarning); ok {
-			utils.WithError(err).Error("Pixie healthcheck detected the following warnings:")
-		} else {
-			_ = pxanalytics.Client().Enqueue(&analytics.Track{
-				UserId: pxconfig.Cfg().UniqueClientID,
-				Event:  "Deploy Healthcheck Failed",
-				Properties: analytics.NewProperties().
-					Set("err", err.Error()),
-			})
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Deploy Healthcheck Failed",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
+		if _, ok := err.(*components.UIWarning); !ok {
 			utils.WithError(err).Fatal("Failed Pixie healthcheck")
 		}
 	}
