@@ -41,6 +41,7 @@
 #include "src/shared/tracepoint_translation/translation.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/table_store/table_store.h"
+#include "src/vizier/services/agent/shared/vizier_results/result_conversion.h"
 
 namespace px {
 namespace vizier {
@@ -132,48 +133,7 @@ class VizierServer final : public api::vizierpb::VizierService::Service {
       return ::grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, error_msg);
     }
     auto plan = s_or_plan.ConsumeValueOrDie();
-    for (auto f : plan.nodes()) {
-      for (auto n : f.nodes()) {
-        if (n.op().op_type() == carnot::planpb::OperatorType::GRPC_SINK_OPERATOR) {
-          auto output_table_info = n.op().grpc_sink_op();
-          if (!output_table_info.has_output_table()) {
-            continue;
-          }
-          ::px::api::vizierpb::ExecuteScriptResponse schema_resp;
-          auto metadata = schema_resp.mutable_meta_data();
-          metadata->set_name(output_table_info.output_table().table_name());
-          metadata->set_id(output_table_info.output_table().table_name());
-          auto rel = metadata->mutable_relation();
-          for (int i = 0; i < output_table_info.output_table().column_names().size(); i++) {
-            auto col = rel->add_columns();
-            col->set_column_name(output_table_info.output_table().column_names()[i]);
-            switch (output_table_info.output_table().column_types()[i]) {
-              case types::BOOLEAN:
-                col->set_column_type(px::api::vizierpb::BOOLEAN);
-                break;
-              case types::INT64:
-                col->set_column_type(px::api::vizierpb::INT64);
-                break;
-              case types::UINT128:
-                col->set_column_type(px::api::vizierpb::UINT128);
-                break;
-              case types::FLOAT64:
-                col->set_column_type(px::api::vizierpb::FLOAT64);
-                break;
-              case types::STRING:
-                col->set_column_type(px::api::vizierpb::STRING);
-                break;
-              case types::TIME64NS:
-                col->set_column_type(px::api::vizierpb::TIME64NS);
-                break;
-              default:
-                break;
-            }
-          }
-          response->Write(schema_resp);
-        }
-      }
-    }
+    EmitSchemaResponses(plan, query_id.str(), response);
 
     sink_server_->AddConsumer(query_id, response);
     auto s = carnot_->ExecuteQuery(reader->query_str(), query_id, px::CurrentTimeNS());
