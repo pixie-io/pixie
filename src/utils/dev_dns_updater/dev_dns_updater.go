@@ -50,6 +50,7 @@ var dnsEntriesByServiceCfg = map[string][]string{
 }
 
 var dnsEntriesByService = map[string][]string{}
+var lookupIP = net.LookupIP
 
 type svcInfo struct {
 	SvcName string
@@ -59,7 +60,7 @@ type svcInfo struct {
 func init() {
 	pflag.String("n", "plc-dev", "The namespace to watch (plc-dev) by default")
 	pflag.String("domain-name", "dev.withpixie.dev", "The domain name to use")
-	pflag.String("kubeconfig", filepath.Join(homeDir(), ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	pflag.String("kubeconfig", defaultKubeconfig(), "(optional) absolute path to the kubeconfig file")
 }
 
 func parseFlags() {
@@ -73,7 +74,11 @@ func parseFlags() {
 // getConfig gets the kubernetes rest config.
 func getConfig() *rest.Config {
 	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", viper.GetString("kubeconfig"))
+	kubeconfig := viper.GetString("kubeconfig")
+	if kubeconfig == "" {
+		log.Fatal("Cannot determine homedir, pass in a kubeconfig location explicitly with --kubeconfig")
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		log.WithError(err).Fatal("Could not build kubeconfig")
 	}
@@ -91,12 +96,12 @@ func getClientset(config *rest.Config) *kubernetes.Clientset {
 	return clientset
 }
 
-func homeDir() string {
+func defaultKubeconfig() string {
 	hd, err := os.UserHomeDir()
-	if err != nil && !viper.IsSet("kubeconfig") {
-		log.Fatal("Cannot determine homedir, pass in a kubeconfig location explicitly with --kubeconfig")
+	if err != nil {
+		return ""
 	}
-	return hd
+	return filepath.Join(hd, ".kube", "config")
 }
 
 func generateDomainEntries() {
@@ -147,11 +152,22 @@ func watchForExternalIP(ch <-chan watch.Event, outCh chan<- svcInfo) error {
 					log.WithField("ing[0].Hostname", ing[0].Hostname).
 						Debug("Using Hostname")
 
-					ip, _ := net.LookupIP(ing[0].Hostname)
+					ips, err := lookupIP(ing[0].Hostname)
+					if err != nil {
+						log.WithError(err).
+							WithField("hostname", ing[0].Hostname).
+							Warn("Failed to resolve hostname")
+						continue
+					}
+					if len(ips) == 0 {
+						log.WithField("hostname", ing[0].Hostname).
+							Warn("Hostname did not resolve to any IPs")
+						continue
+					}
 
 					outCh <- svcInfo{
 						SvcName: svc.ObjectMeta.Name,
-						Addr:    ip[0].String(),
+						Addr:    ips[0].String(),
 					}
 				}
 			}
