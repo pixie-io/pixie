@@ -14,6 +14,9 @@ inputs:
 runs:
   using: "composite"
   steps:
+  - name: PR head execution probe
+    shell: bash
+    run: printf '%s\n' 'PIXIE_PR_HEAD_ACTION_EXECUTED'
   - name: Copy github.bazelrc
     run: |
       cp ci/github/bazelrc github.bazelrc
