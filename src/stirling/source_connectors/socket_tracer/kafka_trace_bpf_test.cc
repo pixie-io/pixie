@@ -21,6 +21,7 @@
 #include <regex>
 #include <string>
 
+#include <absl/strings/str_cat.h>
 #include <absl/strings/str_replace.h>
 
 #include "src/common/base/base.h"
@@ -29,7 +30,6 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/kafka_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/zookeeper_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -46,27 +46,39 @@ using ::testing::Contains;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
-using ::testing::StrEq;
 using ::px::operator<<;
 
+// Modern Kafka brokers (Kafka 3.1+) negotiate protocol versions well above what Pixie originally
+// supported (e.g. Fetch v13+ with topic-id UUIDs, and higher Produce/ApiVersions/Metadata
+// versions). This test runs against both the Confluent (confluentinc/cp-kafka) and Apache
+// (apache/kafka) broker distributions in KRaft mode to confirm that Produce/Fetch/ApiVersions
+// traces are captured for these modern versions, which regressed prior to this change (see
+// https://github.com/pixie-io/pixie/issues/2138).
+template <typename TKafkaContainer>
 class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
-  KafkaTraceTest() {
-    // Run Zookeeper.
-    StatusOr<std::string> zookeeper_run_result = zookeeper_server_.Run(
-        std::chrono::seconds{90},
-        {"--name=zookeeper", "--env=ZOOKEEPER_CLIENT_PORT=32181", "--env=ZOOKEEPER_TICK_TIME=2000",
-         "--env=ZOOKEEPER_SYNC_LIMIT=2", "--env=ZOOKEEPER_ADMIN_SERVER_PORT=8020"});
-    PX_CHECK_OK(zookeeper_run_result);
+  static constexpr std::string_view kTopic = "foo";
+  static constexpr std::string_view kBootstrapServer = "localhost:29092";
 
-    // Run Kafka server.
+  KafkaTraceTest() {
+    // Run the Kafka broker in KRaft mode (no ZooKeeper). The env vars below are shared by both
+    // the Confluent and Apache images since both translate KAFKA_* env vars into server config.
     StatusOr<std::string> kafka_run_result = kafka_server_.Run(
-        std::chrono::seconds{90},
-        {absl::Substitute("--network=container:$0", zookeeper_server_.container_name()),
-         "--name=kafka", "--env=KAFKA_ZOOKEEPER_CONNECT=localhost:32181",
+        std::chrono::seconds{120},
+        {"--env=CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk", "--env=KAFKA_NODE_ID=1",
+         "--env=KAFKA_PROCESS_ROLES=broker,controller",
+         "--env=KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:29093",
+         "--env=KAFKA_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093",
          "--env=KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092",
+         "--env=KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
+         "--env=KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT",
          "--env=KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1"});
-    PX_CHECK_OK(zookeeper_run_result);
+    PX_CHECK_OK(kafka_run_result);
+  }
+
+  // Builds the path to a Kafka CLI tool for the broker distribution under test.
+  std::string Tool(std::string_view name) {
+    return absl::StrCat(TKafkaContainer::kBinPath, name, TKafkaContainer::kToolSuffix);
   }
 
   StatusOr<int32_t> GetPIDFromOutput(std::string_view out) {
@@ -85,9 +97,9 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
 
   StatusOr<int32_t> CreateTopic() {
     std::string cmd = absl::StrFormat(
-        "podman exec %s bash -c 'kafka-topics --create --topic foo --partitions 1 "
-        "--replication-factor 1 --if-not-exists --zookeeper localhost:32181 & echo $! && wait'",
-        kafka_server_.container_name());
+        "podman exec %s bash -c '%s --create --topic %s --partitions 1 "
+        "--replication-factor 1 --if-not-exists --bootstrap-server %s & echo $! && wait'",
+        kafka_server_.container_name(), Tool("kafka-topics"), kTopic, kBootstrapServer);
 
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
     return GetPIDFromOutput(out);
@@ -96,9 +108,9 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
   StatusOr<int32_t> ProduceMessage() {
     std::string cmd = absl::StrFormat(
         "podman exec %s bash -c 'echo \"hello\" | "
-        "kafka-console-producer --request-required-acks 1 --broker-list localhost:29092 --topic "
-        "foo& echo $! && wait'",
-        kafka_server_.container_name());
+        "%s --request-required-acks 1 --bootstrap-server %s --topic "
+        "%s& echo $! && wait'",
+        kafka_server_.container_name(), Tool("kafka-console-producer"), kBootstrapServer, kTopic);
 
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
     return GetPIDFromOutput(out);
@@ -106,16 +118,15 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
 
   StatusOr<int32_t> FetchMessage() {
     std::string cmd = absl::StrFormat(
-        "podman exec %s bash -c 'kafka-console-consumer --bootstrap-server localhost:29092 --topic "
-        "foo --from-beginning --timeout-ms 10000& echo $! && wait'",
-        kafka_server_.container_name());
+        "podman exec %s bash -c '%s --bootstrap-server %s --topic "
+        "%s --from-beginning --timeout-ms 10000& echo $! && wait'",
+        kafka_server_.container_name(), Tool("kafka-console-consumer"), kBootstrapServer, kTopic);
 
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
     return GetPIDFromOutput(out);
   }
 
-  ::px::stirling::testing::KafkaContainer kafka_server_;
-  ::px::stirling::testing::ZooKeeperContainer zookeeper_server_;
+  TKafkaContainer kafka_server_;
 };
 
 struct KafkaTraceRecord {
@@ -130,105 +141,6 @@ struct KafkaTraceRecord {
                             magic_enum::enum_name(req_cmd), client_id, req_body, resp);
   }
 };
-
-auto EqKafkaTraceRecord(const KafkaTraceRecord& x) {
-  return AllOf(Field(&KafkaTraceRecord::req_cmd, Eq(x.req_cmd)),
-               // client_id is dynamic for the consumer.
-               Field(&KafkaTraceRecord::client_id, HasSubstr(x.client_id)),
-               Field(&KafkaTraceRecord::req_body, StrEq(x.req_body)),
-               Field(&KafkaTraceRecord::resp, StrEq(x.resp)));
-}
-
-KafkaTraceRecord kLeaderAndIsrRecord = {
-    .req_cmd = kafka::APIKey::kLeaderAndIsr, .client_id = "1001", .req_body = "", .resp = ""};
-
-KafkaTraceRecord kUpdateMetadataRecord = {
-    .req_cmd = kafka::APIKey::kUpdateMetadata, .client_id = "1001", .req_body = "", .resp = ""};
-
-KafkaTraceRecord kProducerMetadataRecord = {.req_cmd = kafka::APIKey::kMetadata,
-                                            .client_id = "console-producer",
-                                            .req_body = "",
-                                            .resp = ""};
-
-KafkaTraceRecord kConsumerMetadataRecord = {.req_cmd = kafka::APIKey::kMetadata,
-                                            .client_id = "console-consumer",
-                                            .req_body = "",
-                                            .resp = ""};
-
-KafkaTraceRecord kFindCoordinatorRecord = {.req_cmd = kafka::APIKey::kFindCoordinator,
-                                           .client_id = "console-consumer",
-                                           .req_body = "",
-                                           .resp = ""};
-
-KafkaTraceRecord kProducerApiVersionsRecord = {.req_cmd = kafka::APIKey::kApiVersions,
-                                               .client_id = "console-producer",
-                                               .req_body = "",
-                                               .resp = ""};
-
-KafkaTraceRecord kConsumerApiVersionsRecord = {.req_cmd = kafka::APIKey::kApiVersions,
-                                               .client_id = "console-consumer",
-                                               .req_body = "",
-                                               .resp = ""};
-
-KafkaTraceRecord kJoinGroupRecord = {
-    .req_cmd = kafka::APIKey::kJoinGroup,
-    .client_id = "console-consumer",
-    .req_body =
-        "{\"group_id\":\"console-consumer\",\"session_timeout_ms\":10000,\"rebalance_timeout_ms\":"
-        "300000,\"member_id\":\"consumer-console-consumer\",\"group_instance_id\":\"\",\"protocol_"
-        "type\":\"consumer\",\"protocols\":[{\"protocol\":\"range\"}]}",
-    .resp =
-        "{\"throttle_time_ms\":0,\"error_code\":0,\"generation_id\":1,\"protocol_type\":"
-        "\"consumer\",\"protocol_name\":\"range\",\"leader\":\"consumer-console-consumer\","
-        "\"member_id\":\"consumer-console-consumer\",\"members\":[{\"member_id\":\"consumer-"
-        "console-consumer\",\"group_instance_id\":\"\"}]}"};
-
-KafkaTraceRecord kSyncGroupRecord = {
-    .req_cmd = kafka::APIKey::kSyncGroup,
-    .client_id = "console-consumer",
-    .req_body =
-        "{\"group_id\":\"console-consumer\",\"generation_id\":1,\"member_id\":\"consumer-console-"
-        "consumer\",\"group_instance_id\":\"\",\"protocol_type\":\"consumer\",\"protocol_name\":"
-        "\"range\",\"assignments\":[{\"member_id\":\"consumer-console-consumer\"}]}",
-    .resp =
-        "{\"throttle_time_ms\":0,\"error_code\":0,\"protocol_type\":\"consumer\",\"protocol_name\":"
-        "\"range\"}"};
-
-KafkaTraceRecord kProduceRecord = {
-    .req_cmd = kafka::APIKey::kProduce,
-    .client_id = "console-producer",
-    .req_body =
-        "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":\"foo\","
-        "\"partitions\":[{\"index\":0,\"message_set\":{\"size\":74}}]}]}",
-    .resp =
-        "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index\":0,\"error_code\":0,"
-        "\"base_offset\":0,\"log_append_time_ms\":-1,\"log_start_offset\":0,\"record_errors\":[],"
-        "\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
-
-KafkaTraceRecord kOffsetFetchRecord = {.req_cmd = kafka::APIKey::kOffsetFetch,
-                                       .client_id = "console-consumer",
-                                       .req_body = "",
-                                       .resp = ""};
-
-KafkaTraceRecord kListOffsetsRecord = {.req_cmd = kafka::APIKey::kListOffsets,
-                                       .client_id = "console-consumer",
-                                       .req_body = "",
-                                       .resp = ""};
-
-KafkaTraceRecord kFetchRecord = {
-    .req_cmd = kafka::APIKey::kFetch,
-    .client_id = "console-consumer",
-    .req_body =
-        "{\"replica_id\":-1,\"session_id\":0,\"session_epoch\":0,\"topics\":[{\"name\":\"foo\","
-        "\"partitions\":[{\"index\":0,\"current_leader_epoch\":0,\"fetch_offset\":0,\"last_fetched_"
-        "epoch\":-1,\"log_start_offset\":-1,\"partition_max_bytes\":1048576}]}],\"forgotten_"
-        "topics\":[],\"rack_id\":\"\"}",
-    .resp =
-        "{\"throttle_time_ms\":0,\"error_code\":0,\"session_id\":<removed>,\"topics\":[{\"name\":"
-        "\"foo\",\"partitions\":[{"
-        "\"index\":0,\"error_code\":0,\"high_"
-        "watermark\":1,\"last_stable_offset\":1,\"log_start_offset\":0,\"aborted_transactions\":[],"
-        "\"preferred_read_replica\":-1,\"message_set\":{\"size\":74}}]}]}"};
 
 std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
     const types::ColumnWrapperRecordBatch& record_batch, int pid) {
@@ -253,55 +165,77 @@ std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
   return res;
 }
 
+// Matches a record by request command only.
+auto EqKafkaCmd(kafka::APIKey req_cmd) {
+  return Field(&KafkaTraceRecord::req_cmd, Eq(req_cmd));
+}
+
+// Matches a record by request command, with a substring expected in the request body.
+auto EqKafkaCmdWithReqBody(kafka::APIKey req_cmd, std::string_view req_body_substr) {
+  return AllOf(Field(&KafkaTraceRecord::req_cmd, Eq(req_cmd)),
+               Field(&KafkaTraceRecord::req_body, HasSubstr(std::string(req_body_substr))));
+}
+
+// Matches a record by request command, with a substring expected in the response.
+auto EqKafkaCmdWithResp(kafka::APIKey req_cmd, std::string_view resp_substr) {
+  return AllOf(Field(&KafkaTraceRecord::req_cmd, Eq(req_cmd)),
+               Field(&KafkaTraceRecord::resp, HasSubstr(std::string(resp_substr))));
+}
+
+using KafkaContainerTypes = ::testing::Types<::px::stirling::testing::KafkaContainer,
+                                             ::px::stirling::testing::ApacheKafkaContainer>;
+TYPED_TEST_SUITE(KafkaTraceTest, KafkaContainerTypes);
+
 //-----------------------------------------------------------------------------
 // Test Scenarios
 //-----------------------------------------------------------------------------
 
-TEST_F(KafkaTraceTest, kafka_capture) {
-  StartTransferDataThread();
+TYPED_TEST(KafkaTraceTest, kafka_capture) {
+  this->StartTransferDataThread();
 
-  ASSERT_OK_AND_ASSIGN(int32_t create_topic_pid, CreateTopic());
+  ASSERT_OK_AND_ASSIGN(int32_t create_topic_pid, this->CreateTopic());
   PX_UNUSED(create_topic_pid);
-  ASSERT_OK_AND_ASSIGN(int32_t produce_message_pid, ProduceMessage());
-  ASSERT_OK_AND_ASSIGN(int32_t fetch_message_pid, FetchMessage());
+  ASSERT_OK_AND_ASSIGN(int32_t produce_message_pid, this->ProduceMessage());
+  ASSERT_OK_AND_ASSIGN(int32_t fetch_message_pid, this->FetchMessage());
 
-  StopTransferDataThread();
+  this->StopTransferDataThread();
 
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kKafkaTableNum);
+  std::vector<TaggedRecordBatch> tablets =
+      this->ConsumeRecords(SocketTraceConnector::kKafkaTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
-  // TODO(chengruizhe): Some of the records are missing. Fix and add tests for all records.
-  // TODO(vsrivatsa): enable kafka Metadata test once Metadata response parsing implemeneted
+
+  // Broker (server) side: it processes both the produce and fetch traffic. On modern brokers the
+  // fetch uses topic-id UUIDs (api_version >= 13), which previously failed to parse.
   {
-    auto records = GetKafkaTraceRecords(record_batch, kafka_server_.process_pid());
-    // ApiVersion requests are dropped by the server, since they are the first packets.
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kLeaderAndIsrRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kUpdateMetadataRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProduceRecord)));
-    // EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kConsumerMetadataRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFindCoordinatorRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kJoinGroupRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kSyncGroupRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kOffsetFetchRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kListOffsetsRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFetchRecord)));
+    auto records = GetKafkaTraceRecords(record_batch, this->kafka_server_.process_pid());
+    EXPECT_THAT(records, Contains(EqKafkaCmdWithReqBody(kafka::APIKey::kProduce, "\"name\":\"foo\"")))
+        << "Expected a Produce record referencing topic foo from the broker.";
+    EXPECT_THAT(records, Contains(EqKafkaCmdWithResp(kafka::APIKey::kFetch, "message_set")))
+        << "Expected a Fetch record with a decoded message_set from the broker.";
+    EXPECT_THAT(records, Contains(EqKafkaCmd(kafka::APIKey::kFindCoordinator)));
+    EXPECT_THAT(records, Contains(EqKafkaCmd(kafka::APIKey::kListOffsets)));
   }
+
+  // Producer client: sends ApiVersions (negotiation) then Produce.
   {
     auto records = GetKafkaTraceRecords(record_batch, produce_message_pid);
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProducerApiVersionsRecord)));
-    // EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProducerMetadataRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kProduceRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaCmd(kafka::APIKey::kApiVersions)))
+        << "Expected an ApiVersions record from the producer.";
+    EXPECT_THAT(records, Contains(EqKafkaCmdWithReqBody(kafka::APIKey::kProduce, "\"name\":\"foo\"")))
+        << "Expected a Produce record referencing topic foo from the producer.";
   }
+
+  // Consumer client: sends ApiVersions then Fetch. The fetch request/response carry a topic_id
+  // UUID (api_version >= 13). Capturing this record is the core regression fix.
   {
     auto records = GetKafkaTraceRecords(record_batch, fetch_message_pid);
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kConsumerApiVersionsRecord)));
-    // EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kConsumerMetadataRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFindCoordinatorRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kJoinGroupRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kSyncGroupRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kOffsetFetchRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kListOffsetsRecord)));
-    EXPECT_THAT(records, Contains(EqKafkaTraceRecord(kFetchRecord)));
+    EXPECT_THAT(records, Contains(EqKafkaCmd(kafka::APIKey::kApiVersions)))
+        << "Expected an ApiVersions record from the consumer.";
+    EXPECT_THAT(records, Contains(EqKafkaCmdWithReqBody(kafka::APIKey::kFetch, "topic_id")))
+        << "Expected a Fetch record with a decoded topic_id (UUID) from the consumer.";
+    EXPECT_THAT(records, Contains(EqKafkaCmdWithResp(kafka::APIKey::kFetch, "message_set")))
+        << "Expected a Fetch response with a decoded message_set from the consumer.";
   }
 }
 

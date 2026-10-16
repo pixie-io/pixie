@@ -44,6 +44,9 @@ bool operator==(const ProduceReqTopic& lhs, const ProduceReqTopic& rhs) {
   if (lhs.name != rhs.name) {
     return false;
   }
+  if (lhs.topic_id != rhs.topic_id) {
+    return false;
+  }
   if (lhs.partitions.size() != rhs.partitions.size()) {
     return false;
   }
@@ -121,6 +124,9 @@ bool operator!=(const ProduceRespPartition& lhs, const ProduceRespPartition& rhs
 
 bool operator==(const ProduceRespTopic& lhs, const ProduceRespTopic& rhs) {
   if (lhs.name != rhs.name) {
+    return false;
+  }
+  if (lhs.topic_id != rhs.topic_id) {
     return false;
   }
   if (lhs.partitions.size() != rhs.partitions.size()) {
@@ -264,6 +270,28 @@ TEST(KafkaPacketDecoderTest, ExtractProduceRespV9) {
   ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
   PacketDecoder decoder(input);
   decoder.SetAPIInfo(APIKey::kProduce, 9);
+  EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
+}
+
+// In api_version >= 13, the topic is identified by a 16-byte UUID (topic_id) instead of a name.
+// This input is ExtractProduceRespV9 with the topic name replaced by a topic_id UUID.
+TEST(KafkaPacketDecoderTest, ExtractProduceRespV13) {
+  const std::string_view input = CreateStringView<char>(
+      "\x02\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x02\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00");
+  ProduceRespPartition partition{.index = 0,
+                                 .error_code = 0,
+                                 .base_offset = 0,
+                                 .log_append_time_ms = -1,
+                                 .log_start_offset = 0,
+                                 .record_errors = {},
+                                 .error_message = ""};
+  ProduceRespTopic topic{.topic_id = "00010203-0405-0607-0809-0a0b0c0d0e0f",
+                         .partitions = {partition}};
+  ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
+  PacketDecoder decoder(input);
+  decoder.SetAPIInfo(APIKey::kProduce, 13);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
 }
 

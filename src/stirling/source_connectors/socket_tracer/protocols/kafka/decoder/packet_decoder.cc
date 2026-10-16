@@ -138,6 +138,26 @@ StatusOr<std::string> PacketDecoder::ExtractNullableString() {
   return ExtractRegularNullableString();
 }
 
+StatusOr<std::string> PacketDecoder::ExtractUUID() {
+  // A UUID is always 16 raw bytes, regardless of the flexible version encoding.
+  constexpr int kUUIDNumBytes = 16;
+  PX_ASSIGN_OR_RETURN(std::string raw, ExtractBytesCore<char>(kUUIDNumBytes));
+
+  // Format as a canonical 8-4-4-4-12 lowercase hex string.
+  constexpr char kHexDigits[] = "0123456789abcdef";
+  std::string out;
+  out.reserve(36);
+  for (int i = 0; i < kUUIDNumBytes; ++i) {
+    if (i == 4 || i == 6 || i == 8 || i == 10) {
+      out.push_back('-');
+    }
+    uint8_t byte = static_cast<uint8_t>(raw[i]);
+    out.push_back(kHexDigits[byte >> 4]);
+    out.push_back(kHexDigits[byte & 0x0f]);
+  }
+  return out;
+}
+
 StatusOr<std::string> PacketDecoder::ExtractRegularBytes() {
   PX_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
   return ExtractBytesCore<char>(len);

@@ -41,6 +41,18 @@ def _container_image(name, digest, repository):
         repository = image_repo,
     )
 
+# Pulls an image directly from its upstream Docker Hub repository, bypassing the
+# pixie-io registry mirror. Use this only for images that have not yet been mirrored
+# (see scripts/regclient/regbot_deps.yaml). Prefer _container_image once the image is mirrored.
+# TODO(ddelnano): Mirror the Kafka test images and switch these back to _container_image.
+def _upstream_container_image(name, digest, repository):
+    container_pull(
+        name = name,
+        digest = digest,
+        registry = "index.docker.io",
+        repository = repository,
+    )
+
 def base_images():
     # Based on alpine 3.15.9, using OpenResty 1.21.4.1
     # https://hub.docker.com/layers/openresty/openresty/alpine-apk-amd64/images/sha256-2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce?context=explore
@@ -221,18 +233,20 @@ def stirling_test_images():
         digest = "sha256:55521ffe36911fb4edeaeecb7f9219f9d2a09bc275530212b89e41ab78a7f16d",
     )
 
-    # Kafka broker image, for testing.
-    _container_image(
+    # Kafka broker image (Confluent packaging), for testing.
+    # Tag: confluentinc/cp-kafka:7.8.0 (Kafka 3.8), linux/amd64. Runs in KRaft mode.
+    _upstream_container_image(
         name = "kafka_base_image",
         repository = "confluentinc/cp-kafka",
-        digest = "sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
+        digest = "sha256:59787f748cee60476bc6d0509bec28e8e5e4225dc96ef9f09866fbde341202e4",
     )
 
-    # Zookeeper image for Kafka.
-    _container_image(
-        name = "zookeeper_base_image",
-        repository = "confluentinc/cp-zookeeper",
-        digest = "sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
+    # Kafka broker image (Apache upstream packaging), for testing.
+    # Tag: apache/kafka:4.0.0 (Kafka 4.0), linux/amd64. Runs in KRaft mode.
+    _upstream_container_image(
+        name = "apache_kafka_base_image",
+        repository = "apache/kafka",
+        digest = "sha256:01b9a4030e54c6068e66eb3ba4cb82c0d89238629ef1c30d79b86036bf89b1b7",
     )
 
     # Tag: node:12.3.1-stretch-slim

@@ -108,8 +108,8 @@ container_image(
 )
 
 container_image(
-    name = "zookeeper_image",
-    base = "@zookeeper_base_image//image",
+    name = "apache_kafka_image",
+    base = "@apache_kafka_base_image//image",
 )
 
 [
