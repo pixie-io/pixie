@@ -21,29 +21,29 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 
 # Generate all Go container library permutations for supported Go versions.
 go_container_libraries(
+    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
     container_type = "grpc_server",
-    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
     prebuilt_container_versions = pl_go_test_versions,
 )
 
 # Stirling test cases usually test server side tracing. Therefore
 # we only need to provide the bazel SDK versions for the client containers.
 go_container_libraries(
+    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
     container_type = "grpc_client",
-    bazel_sdk_versions = pl_all_supported_go_sdk_versions,
 )
 
 go_container_libraries(
-    container_type = "tls_server",
     bazel_sdk_versions = pl_all_supported_go_sdk_versions,
+    container_type = "tls_server",
     prebuilt_container_versions = pl_go_test_versions,
 )
 
 # Stirling test cases usually test server side tracing. Therefore
 # we only need to provide the bazel SDK versions for the client containers.
 go_container_libraries(
-    container_type = "tls_client",
     bazel_sdk_versions = pl_all_supported_go_sdk_versions,
+    container_type = "tls_client",
 )
 
 pl_cc_test_library(
