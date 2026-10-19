@@ -91,6 +91,11 @@ StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path);
 StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path);
 
 /**
+ * Finds the cgroup id corresponding to the pid
+ **/
+StatusOr<uint64_t> FindCgroupIDFromPID(pid_t pid);
+
+/**
  * Given a path to a sample cgroup.procs file for a K8s pod,
  * this function produces a templated spec from which paths for other pods can be generated.
  */
