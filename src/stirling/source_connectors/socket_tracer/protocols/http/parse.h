@@ -32,10 +32,18 @@ namespace protocols {
 
 /**
  * Parses a single HTTP message from the input string.
+ * A note on the lazy_parsing_enabled flag:
+ * It signals to the http protocol parser to parse lazily.
+ * Currently only used when we know that a contiguous section of the data stream buffer
+ * (the head passed to the parser) ends with a gap due to an incomplete event from bpf.
+ * Note that the http parser consumes bytes from the input buffer when parsing a partial frame
+ * even if it is not pushed in the event parser. To preserve the behavior of kNeedsMoreData
+ * for non-incomplete heads where we expect more data to arrive, we implement this flag in
+ * conjunction with tracking whether a head contains a gap.
  */
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, http::Message* frame,
-                      http::StateWrapper* state);
+                      http::StateWrapper* state, bool lazy_parsing_enabled);
 
 template <>
 size_t FindFrameBoundary<http::Message>(message_type_t type, std::string_view buf, size_t start_pos,

@@ -37,6 +37,10 @@ enum class ParseState {
   // Input buffer may be partially consumed and the parsed output element is not fully populated.
   kNeedsMoreData,
 
+  // Header/Metadata parsing succeeded, but the payload is partial.
+  // We have enough for stitching.
+  kMetadataComplete,
+
   // The parse succeeded, but the data is ignored.
   // Input buffer is consumed, but the parsed output element is invalid.
   kIgnored,

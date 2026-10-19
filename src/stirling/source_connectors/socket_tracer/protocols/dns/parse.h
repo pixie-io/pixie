@@ -33,8 +33,8 @@ namespace protocols {
  * Parses the input string as a DNS protocol frame.
  */
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, dns::Frame* frame,
-                      NoState* state);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, dns::Frame* frame, NoState* state,
+                      bool lazy_parsing_enabled);
 
 template <>
 size_t FindFrameBoundary<dns::Frame>(message_type_t type, std::string_view buf, size_t start_pos,
