@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
+	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -69,6 +70,7 @@ func init() {
 	pflag.String("auth_connector_name", "", "If any, the name of the auth connector to be used with Pixie")
 	pflag.String("auth_connector_callback_url", "", "If any, the callback URL for the auth connector")
 	pflag.Bool("script_modification_disabled", false, "If script modification should be disallowed to prevent arbitrary script execution")
+	pflag.Bool("disable_autocomplete", false, "Disable autocomplete functionality (no Elasticsearch required)")
 }
 
 func main() {
@@ -136,15 +138,20 @@ func main() {
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
 
-	esConfig := &esutils.Config{
-		URL:        []string{viper.GetString("elastic_service")},
-		User:       viper.GetString("elastic_username"),
-		Passwd:     viper.GetString("elastic_password"),
-		CaCertFile: viper.GetString("elastic_ca_cert"),
-	}
-	es, err := esutils.NewEsClient(esConfig)
-	if err != nil {
-		log.WithError(err).Fatal("Could not connect to elastic")
+	disableAutocomplete := viper.GetBool("disable_autocomplete")
+
+	var es *elastic.Client
+	if !disableAutocomplete {
+		esConfig := &esutils.Config{
+			URL:        []string{viper.GetString("elastic_service")},
+			User:       viper.GetString("elastic_username"),
+			Passwd:     viper.GetString("elastic_password"),
+			CaCertFile: viper.GetString("elastic_ca_cert"),
+		}
+		es, err = esutils.NewEsClient(esConfig)
+		if err != nil {
+			log.WithError(err).Fatal("Could not connect to elastic")
+		}
 	}
 
 	mux := http.NewServeMux()
@@ -228,45 +235,52 @@ func main() {
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
 	vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
 
-	mdIndexName := viper.GetString("md_index_name")
-	if mdIndexName == "" {
-		log.Fatal("Must specify a name for the elastic index.")
-	}
-	esSuggester, err := autocomplete.NewElasticSuggester(es, mdIndexName, "scripts", pc)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to start elastic suggester")
-	}
-
-	var br *script.BundleManager
-	var bundleErr error
-	updateBundle := func() {
-		// Requiring the bundle manager in the API service is temporary until we
-		// start indexing scripts.
-		br, bundleErr = script.NewBundleManagerWithOrg([]string{defaultBundleFile, ossBundleFile}, "", "")
-		if bundleErr != nil {
-			log.WithError(bundleErr).Error("Failed to init bundle manager")
-			br = nil
+	var suggester autocomplete.Suggester
+	if disableAutocomplete {
+		log.Info("Autocomplete disabled - using NoopSuggester")
+		suggester = autocomplete.NewNoopSuggester()
+	} else {
+		mdIndexName := viper.GetString("md_index_name")
+		if mdIndexName == "" {
+			log.Fatal("Must specify a name for the elastic index.")
 		}
-		esSuggester.UpdateScriptBundle(br)
-	}
+		esSuggester, err := autocomplete.NewElasticSuggester(es, mdIndexName, "scripts", pc)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to start elastic suggester")
+		}
+		suggester = esSuggester
 
-	quitCh := make(chan bool)
-	go func() {
-		updateBundle()
-		scriptTimer := time.NewTicker(30 * time.Second)
-		defer scriptTimer.Stop()
-		for {
-			select {
-			case <-quitCh:
-				return
-			case <-scriptTimer.C:
-				updateBundle()
+		var br *script.BundleManager
+		var bundleErr error
+		updateBundle := func() {
+			// Requiring the bundle manager in the API service is temporary until we
+			// start indexing scripts.
+			br, bundleErr = script.NewBundleManagerWithOrg([]string{defaultBundleFile, ossBundleFile}, "", "")
+			if bundleErr != nil {
+				log.WithError(bundleErr).Error("Failed to init bundle manager")
+				br = nil
 			}
+			esSuggester.UpdateScriptBundle(br)
 		}
-	}()
-	defer close(quitCh)
 
-	as := &controllers.AutocompleteServer{Suggester: esSuggester}
+		quitCh := make(chan bool)
+		go func() {
+			updateBundle()
+			scriptTimer := time.NewTicker(30 * time.Second)
+			defer scriptTimer.Stop()
+			for {
+				select {
+				case <-quitCh:
+					return
+				case <-scriptTimer.C:
+					updateBundle()
+				}
+			}
+		}()
+		defer close(quitCh)
+	}
+
+	as := &controllers.AutocompleteServer{Suggester: suggester}
 	cloudpb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
 
 	os := &controllers.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac, OrgServiceClient: oc}
