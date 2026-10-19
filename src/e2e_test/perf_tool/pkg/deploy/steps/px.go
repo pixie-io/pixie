@@ -75,6 +75,13 @@ func (px *pxDeployImpl) Deploy(clusterCtx *cluster.Context) ([]string, error) {
 		args = append(args, "-y")
 	}
 	if _, err := px.pxCtx.RunPXCmd(clusterCtx, args...); err != nil {
+		// Wrap existing error with `px debug pods` output to ease debugging.
+		stdout, debugErr := px.pxCtx.RunPXCmd(clusterCtx, "debug", "pods")
+		if debugErr != nil {
+			err = fmt.Errorf("%w\n%s", err, debugErr)
+		} else {
+			err = fmt.Errorf("`px debug pods` stdout: %s %w", stdout, err)
+		}
 		return nil, err
 	}
 	if px.spec.SetClusterID {
