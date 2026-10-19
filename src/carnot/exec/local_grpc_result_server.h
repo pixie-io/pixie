@@ -64,7 +64,12 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
     return ::grpc::Status::OK;
   }
 
-  void ResetQueryResults() { query_results_.clear(); }
+  void ResetQueryResults() {
+    // Takes the same lock TransferResultChunk does: a caller resetting between
+    // queries races an in-flight chunk write otherwise.
+    const std::lock_guard<std::mutex> lock(result_mutex_);
+    query_results_.clear();
+  }
 
  private:
   // List of the query results received.
@@ -75,12 +80,23 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
 
 class LocalGRPCResultSinkServer {
  public:
-  LocalGRPCResultSinkServer() {
-    grpc::ServerBuilder builder;
+  // Create reports a bind failure instead of aborting.
+  //
+  // The default constructor CHECK-fails, which is fine for tests and the
+  // single-node carnot executable but not for a long-lived server: a failure to
+  // bind an ephemeral loopback port would take the whole process down. Callers
+  // that have something to lose should use this.
+  static StatusOr<std::unique_ptr<LocalGRPCResultSinkServer>> Create() {
+    auto server =
+        std::unique_ptr<LocalGRPCResultSinkServer>(new LocalGRPCResultSinkServer(NoAbortTag{}));
+    if (server->grpc_server_ == nullptr) {
+      return error::ResourceUnavailable(
+          "failed to start the local result sink server on 127.0.0.1:0");
+    }
+    return server;
+  }
 
-    builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());
-    builder.RegisterService(&result_sink_server_);
-    grpc_server_ = builder.BuildAndStart();
+  LocalGRPCResultSinkServer() : LocalGRPCResultSinkServer(NoAbortTag{}) {
     CHECK(grpc_server_ != nullptr);
   }
 
@@ -151,6 +167,17 @@ class LocalGRPCResultSinkServer {
   }
 
  private:
+  // Tag type selecting the constructor that leaves grpc_server_ null on a bind
+  // failure instead of aborting.
+  struct NoAbortTag {};
+  explicit LocalGRPCResultSinkServer(NoAbortTag) {
+    grpc::ServerBuilder builder;
+
+    builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());
+    builder.RegisterService(&result_sink_server_);
+    grpc_server_ = builder.BuildAndStart();
+  }
+
   std::unique_ptr<grpc::Server> grpc_server_;
   LocalResultSinkServer result_sink_server_;
 };
