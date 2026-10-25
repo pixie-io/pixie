@@ -21,18 +21,6 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pl-oauth-config
-data:
-  # Currently supported options are hydra and auth0.
-  # Hydra is the easiest option to get started with.
-  PL_OAUTH_PROVIDER: hydra
-  PL_AUTH_URI: /oauth/hydra
-  PL_AUTH_CLIENT_ID: auth-code-client
-  PL_AUTH_EMAIL_PASSWORD_CONN: ""
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name: segment-config
 data:
   write-key: ""
