@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_test")
 
 go_library(
     name = "dev_dns_updater_lib",
@@ -43,4 +43,15 @@ pl_go_binary(
     name = "dev_dns_updater",
     embed = [":dev_dns_updater_lib"],
     visibility = ["//src:__subpackages__"],
+)
+
+pl_go_test(
+    name = "dev_dns_updater_test",
+    srcs = ["dev_dns_updater_test.go"],
+    embed = [":dev_dns_updater_lib"],
+    deps = [
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/watch",
+    ],
 )
