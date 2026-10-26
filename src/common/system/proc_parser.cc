@@ -83,6 +83,7 @@ constexpr int kProcNetDevTxDropField = 12;
 constexpr int kProcStatNumFields = 52;
 
 constexpr int kProcStatPIDField = 0;
+constexpr int kProcStatCommandField = 1;
 
 constexpr int kProcStatMinorFaultsField = 9;
 constexpr int kProcStatMajorFaultsField = 11;
@@ -95,6 +96,45 @@ constexpr int kProcStatStartTimeField = 21;
 
 constexpr int kProcStatVSizeField = 22;
 constexpr int kProcStatRSSField = 23;
+
+namespace {
+
+/**
+ * Splits the contents of a /proc/<pid>/stat file into its fields, so that the kProcStat*Field
+ * constants above can be used as indices into the result.
+ *
+ * The command field is the executable name surrounded by parentheses. The name can contain any
+ * character, including spaces, newlines and parentheses, so it can't be split on whitespace like
+ * the other fields. Instead, it extends from the first '(' to the last ')' in the file, since none
+ * of the subsequent fields can contain a ')'. The command field is returned without parentheses.
+ */
+StatusOr<std::vector<std::string_view>> SplitProcPIDStat(std::string_view content,
+                                                         const std::filesystem::path& fpath) {
+  const size_t open_paren_idx = content.find('(');
+  const size_t close_paren_idx = content.rfind(')');
+  if (open_paren_idx == std::string_view::npos || close_paren_idx == std::string_view::npos ||
+      close_paren_idx < open_paren_idx) {
+    return error::Internal("Invalid command name in file: $0.", fpath.string());
+  }
+
+  std::vector<std::string_view> fields;
+  fields.push_back(absl::StripAsciiWhitespace(content.substr(0, open_paren_idx)));
+  fields.push_back(content.substr(open_paren_idx + 1, close_paren_idx - open_paren_idx - 1));
+  for (std::string_view field : absl::StrSplit(content.substr(close_paren_idx + 1),
+                                               absl::ByAnyChar(" \n"), absl::SkipEmpty())) {
+    fields.push_back(field);
+  }
+
+  // We check less than in case more fields are added later.
+  if (fields.size() < kProcStatNumFields) {
+    return error::Internal("Unexpected number of fields: $0, in file: $1.", fields.size(),
+                           fpath.string());
+  }
+
+  return fields;
+}
+
+}  // namespace
 
 Status ProcParser::ParseNetworkStatAccumulateIFaceData(
     const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
@@ -208,54 +248,29 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, int64_t page_size_bytes,
    */
   DCHECK(out != nullptr);
   const auto fpath = ProcPidPath(pid, "stat");
-  std::ifstream ifs;
-  ifs.open(fpath);
-  if (!ifs) {
-    return error::Internal("Failed to open file: $0.", fpath.string());
-  }
+  PX_ASSIGN_OR_RETURN(std::string content, ReadFileToString(fpath));
+  PX_ASSIGN_OR_RETURN(std::vector<std::string_view> fields, SplitProcPIDStat(content, fpath));
 
-  std::string line;
+  out->process_name = std::string(fields[kProcStatCommandField]);
+
   bool ok = true;
-  if (std::getline(ifs, line)) {
-    std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
-    // We check less than in case more fields are added later.
-    if (split.size() < kProcStatNumFields) {
-      return error::Unknown("Incorrect number of fields in stat file: $0.", fpath.string());
-    }
+  ok &= absl::SimpleAtoi(fields[kProcStatPIDField], &out->pid);
 
-    // The name is surrounded by (). We remove it first.
-    size_t open_paren_idx = line.find_first_of('(');
-    size_t close_paren_idx = line.find_last_of(')');
-    if (open_paren_idx == std::string::npos || close_paren_idx == std::string::npos) {
-      return error::Internal("Invalid command name in file $0.", fpath.string());
-    }
-    out->process_name = line.substr(open_paren_idx + 1, close_paren_idx - open_paren_idx - 1);
+  ok &= absl::SimpleAtoi(fields[kProcStatMinorFaultsField], &out->minor_faults);
+  ok &= absl::SimpleAtoi(fields[kProcStatMajorFaultsField], &out->major_faults);
 
-    // When split_size > kProcStatNumFields, there are spaces in the command we need to handle.
-    // command_offset adjusts index for the number of spaces in the command field.
-    int command_offset = std::count(out->process_name.begin(), out->process_name.end(), ' ');
+  ok &= absl::SimpleAtoi(fields[kProcStatUTimeField], &out->utime_ns);
+  ok &= absl::SimpleAtoi(fields[kProcStatKTimeField], &out->ktime_ns);
+  // The kernel tracks utime and ktime in kernel ticks.
+  out->utime_ns *= kernel_tick_time_ns;
+  out->ktime_ns *= kernel_tick_time_ns;
 
-    ok &= absl::SimpleAtoi(split[kProcStatPIDField], &out->pid);
+  ok &= absl::SimpleAtoi(fields[kProcStatNumThreadsField], &out->num_threads);
+  ok &= absl::SimpleAtoi(fields[kProcStatVSizeField], &out->vsize_bytes);
+  ok &= absl::SimpleAtoi(std::string(fields[kProcStatRSSField]), &out->rss_bytes);
 
-    ok &= absl::SimpleAtoi(split[kProcStatMinorFaultsField + command_offset], &out->minor_faults);
-    ok &= absl::SimpleAtoi(split[kProcStatMajorFaultsField + command_offset], &out->major_faults);
-
-    ok &= absl::SimpleAtoi(split[kProcStatUTimeField + command_offset], &out->utime_ns);
-    ok &= absl::SimpleAtoi(split[kProcStatKTimeField + command_offset], &out->ktime_ns);
-    // The kernel tracks utime and ktime in kernel ticks.
-    out->utime_ns *= kernel_tick_time_ns;
-    out->ktime_ns *= kernel_tick_time_ns;
-
-    ok &= absl::SimpleAtoi(split[kProcStatNumThreadsField + command_offset], &out->num_threads);
-    ok &= absl::SimpleAtoi(split[kProcStatVSizeField + command_offset], &out->vsize_bytes);
-    ok &= absl::SimpleAtoi(std::string(split[kProcStatRSSField + command_offset]), &out->rss_bytes);
-
-    // RSS is in pages.
-    out->rss_bytes *= page_size_bytes;
-
-  } else {
-    return error::Internal("Failed to read proc stat file: $0.", fpath.string());
-  }
+  // RSS is in pages.
+  out->rss_bytes *= page_size_bytes;
 
   if (!ok) {
     // This should never happen since it requires the file to be ill-formed
@@ -714,7 +729,7 @@ Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const
 
 StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
   const std::filesystem::path proc_pid_stat_path = proc_pid_path / "stat";
-  std::string line;
+  std::string content;
 
   // It's usually a big no-no to ifdef based on compilation mode,
   // but this is a workaround for an ASAN bug that causes crashes and flakiness
@@ -732,43 +747,25 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   // A few quick runs show that /proc/<pid>/stat is <200 characters on my machine,
   // but a lot of those numbers are 0. If they were non-zero, the string could be much
   // longer. Hopefully a 4KB block keeps us safe. This is for ASAN only anyways.
+  // The whole file is read, rather than a single line, because the command name may
+  // contain newlines.
   constexpr int kMaxSupportedProcPIDStatLength = 4096;
-  line.resize(kMaxSupportedProcPIDStatLength);
-  if (std::fgets(line.data(), line.size(), fp) == nullptr) {
-    return error::Internal("Could not get line from file: $0.", proc_pid_stat_path.string());
+  content.resize(kMaxSupportedProcPIDStatLength);
+  const size_t bytes_read = std::fread(content.data(), 1, content.size(), fp);
+  std::fclose(fp);
+  if (bytes_read == 0) {
+    return error::Internal("Could not read file: $0.", proc_pid_stat_path.string());
   }
+  content.resize(bytes_read);
 #else
-  std::ifstream ifs;
-  ifs.open(proc_pid_stat_path);
-  if (!ifs) {
-    return error::Internal("Could not open file: $0.", proc_pid_stat_path.string());
-  }
-
-  if (!std::getline(ifs, line)) {
-    return error::Internal("Could not get line from file: $0.", proc_pid_stat_path.string());
-  }
+  PX_ASSIGN_OR_RETURN(content, ReadFileToString(proc_pid_stat_path));
 #endif
 
-  size_t open_paren_idx = line.find_first_of('(');
-  size_t close_paren_idx = line.find_last_of(')');
-  if (open_paren_idx == std::string::npos || close_paren_idx == std::string::npos) {
-    return error::Internal("Invalid command name in file: $0.", proc_pid_stat_path.string());
-  }
-
-  // When split_size > kProcStatNumFields, there are spaces in the command we need to handle.
-  // command_offset adjusts index for the number of spaces in the command field.
-  int command_offset =
-      std::count(line.begin() + open_paren_idx, line.begin() + close_paren_idx, ' ');
-
-  std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
-  // We check less than in case more fields are added later.
-  if (split.size() < kProcStatNumFields) {
-    return error::Internal("Unexpected number of columns: $0, in file: $1.", split.size(),
-                           proc_pid_stat_path.string());
-  }
+  PX_ASSIGN_OR_RETURN(std::vector<std::string_view> fields,
+                      SplitProcPIDStat(content, proc_pid_stat_path));
 
   int64_t start_time_ticks;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField + command_offset], &start_time_ticks)) {
+  if (!absl::SimpleAtoi(fields[kProcStatStartTimeField], &start_time_ticks)) {
     return error::Internal("Time value does not parse in file: $0.", proc_pid_stat_path.string());
   }
 
