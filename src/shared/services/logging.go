@@ -24,6 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/zenazn/goji/web/mutil"
 
 	version "px.dev/pixie/src/shared/goversion"
@@ -39,7 +40,11 @@ func init() {
 func SetupServiceLogging() {
 	// Setup logging.
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	level, err := log.ParseLevel(viper.GetString("log_level"))
+	if err != nil {
+		log.WithError(err).Fatal("Flag --log_level or ENV PL_LOG_LEVEL is invalid")
+	}
+	log.SetLevel(level)
 }
 
 // HTTPLoggingMiddleware is a middleware function used for logging HTTP requests.
