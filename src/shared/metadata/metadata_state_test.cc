@@ -385,6 +385,7 @@ TEST(K8sMetadataStateTest, HandlePodUpdate) {
   EXPECT_EQ("a_node", pod_info->node_name());
   EXPECT_EQ("a_host", pod_info->hostname());
   EXPECT_EQ("1.2.3.4", pod_info->pod_ip());
+  EXPECT_EQ("5.6.7.8", pod_info->host_ip());
   EXPECT_THAT(pod_info->containers(), UnorderedElementsAre("container0_uid"));
   EXPECT_THAT(pod_info->owner_references(),
               UnorderedElementsAre(OwnerReference{"1234", "rs0", "ReplicaSet"}));
