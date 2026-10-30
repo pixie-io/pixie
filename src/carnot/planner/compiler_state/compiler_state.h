@@ -119,7 +119,8 @@ class CompilerState : public NotCopyable {
                 int64_t max_output_rows_per_table, std::string_view result_address,
                 std::string_view result_ssl_targetname, const RedactionOptions& redaction_options,
                 std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config,
-                std::unique_ptr<PluginConfig> plugin_config, DebugInfo debug_info)
+                std::unique_ptr<PluginConfig> plugin_config, DebugInfo debug_info,
+                std::unique_ptr<planpb::ClickHouseConfig> clickhouse_config = nullptr)
       : relation_map_(std::move(relation_map)),
         table_names_to_sensitive_columns_(table_names_to_sensitive_columns),
         registry_info_(registry_info),
@@ -130,7 +131,8 @@ class CompilerState : public NotCopyable {
         redaction_options_(redaction_options),
         endpoint_config_(std::move(endpoint_config)),
         plugin_config_(std::move(plugin_config)),
-        debug_info_(std::move(debug_info)) {}
+        debug_info_(std::move(debug_info)),
+        clickhouse_config_(std::move(clickhouse_config)) {}
 
   CompilerState() = delete;
 
@@ -175,6 +177,7 @@ class CompilerState : public NotCopyable {
   planpb::OTelEndpointConfig* endpoint_config() { return endpoint_config_.get(); }
   PluginConfig* plugin_config() { return plugin_config_.get(); }
   const DebugInfo& debug_info() { return debug_info_; }
+  planpb::ClickHouseConfig* clickhouse_config() { return clickhouse_config_.get(); }
 
  private:
   std::unique_ptr<RelationMap> relation_map_;
@@ -191,6 +194,7 @@ class CompilerState : public NotCopyable {
   std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config_ = nullptr;
   std::unique_ptr<PluginConfig> plugin_config_ = nullptr;
   DebugInfo debug_info_;
+  std::unique_ptr<planpb::ClickHouseConfig> clickhouse_config_ = nullptr;
 };
 
 }  // namespace planner

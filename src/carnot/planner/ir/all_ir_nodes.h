@@ -20,6 +20,8 @@
 
 #include "src/carnot/planner/ir/blocking_agg_ir.h"
 #include "src/carnot/planner/ir/bool_ir.h"
+#include "src/carnot/planner/ir/clickhouse_source_ir.h"
+#include "src/carnot/planner/ir/clickhouse_export_sink_ir.h"
 #include "src/carnot/planner/ir/column_ir.h"
 #include "src/carnot/planner/ir/data_ir.h"
 #include "src/carnot/planner/ir/drop_ir.h"
