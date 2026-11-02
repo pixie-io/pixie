@@ -27,11 +27,12 @@
 #include "src/api/proto/vizierpb/vizierapi.grpc.pb.h"
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/local_grpc_result_server.h"
-#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/services/jwt/service_token.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/table_store/schema/row_batch.h"
 #include "src/table_store/table_store.h"
 #include "src/vizier/services/agent/pem/direct_query_server.h"
 
@@ -47,8 +48,31 @@ using ::testing::UnorderedElementsAre;
 
 constexpr char kTestSigningKey[] = "test-signing-key";
 constexpr char kSimpleQuery[] = "import px\npx.display(px.DataFrame('test_table'), 'out')";
-// Rows in CarnotTestUtils::TestTable().
+// Rows written to test_table in SetUp.
 constexpr int64_t kTestTableRows = 5;
+
+// Builds a table with columns (col1 FLOAT64, col2 INT64), writing one row batch per
+// entry of `col2_batches`. col1 is col2 / 2.
+std::shared_ptr<::px::table_store::Table> MakeTable(
+    const std::string& name, const std::vector<std::vector<int64_t>>& col2_batches) {
+  ::px::table_store::schema::Relation rel(
+      {::px::types::DataType::FLOAT64, ::px::types::DataType::INT64}, {"col1", "col2"});
+  auto table = ::px::table_store::Table::Create(name, rel);
+  for (const auto& col2 : col2_batches) {
+    std::vector<::px::types::Float64Value> col1_values;
+    std::vector<::px::types::Int64Value> col2_values;
+    for (int64_t v : col2) {
+      col1_values.emplace_back(v / 2.0);
+      col2_values.emplace_back(v);
+    }
+    ::px::table_store::schema::RowBatch rb(
+        ::px::table_store::schema::RowDescriptor(rel.col_types()), col2.size());
+    PX_CHECK_OK(rb.AddColumn(::px::types::ToArrow(col1_values, arrow::default_memory_pool())));
+    PX_CHECK_OK(rb.AddColumn(::px::types::ToArrow(col2_values, arrow::default_memory_pool())));
+    PX_CHECK_OK(table->WriteRowBatch(rb));
+  }
+  return table;
+}
 
 std::string MakeToken(const std::string& signing_key) {
   return ::px::services::GenerateServiceToken(signing_key, "direct_query_test").ConsumeValueOrDie();
@@ -90,9 +114,8 @@ class DirectQueryServerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     table_store_ = std::make_shared<::px::table_store::TableStore>();
-    table_store_->AddTable("test_table", ::px::carnot::exec::CarnotTestUtils::TestTable());
-    table_store_->AddTable("duration_table",
-                           ::px::carnot::exec::CarnotTestUtils::TestDuration64Table());
+    table_store_->AddTable("test_table", MakeTable("test_table", {{1, 2, 3}, {5, 6}}));
+    table_store_->AddTable("other_table", MakeTable("other_table", {{7, 8}}));
 
     ASSERT_OK_AND_ASSIGN(result_server_, ::px::carnot::exec::LocalGRPCResultSinkServer::Create());
 
@@ -229,14 +252,14 @@ TEST_F(DirectQueryServerTest, MultipleDisplays_StreamEachTable) {
   auto res = Execute(
       "import px\n"
       "px.display(px.DataFrame('test_table'), 't1')\n"
-      "px.display(px.DataFrame('duration_table'), 't2')\n");
+      "px.display(px.DataFrame('other_table'), 't2')\n");
   ASSERT_TRUE(res.status.ok()) << res.status.error_message();
 
   std::vector<std::string> names;
   for (const auto* md : res.Metadata()) names.push_back(md->name());
   EXPECT_THAT(names, UnorderedElementsAre("t1", "t2"));
   EXPECT_EQ(kTestTableRows, res.NumRows("t1"));
-  EXPECT_GT(res.NumRows("t2"), 0);
+  EXPECT_EQ(2, res.NumRows("t2"));
 }
 
 TEST_F(DirectQueryServerTest, MalformedPxL_InvalidArgument) {
