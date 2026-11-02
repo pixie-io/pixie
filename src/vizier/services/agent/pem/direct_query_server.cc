@@ -16,19 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Direct-query gRPC endpoint for the normal (metadata-connected) PEM.
-// HS256 JWT verification matches the C++ mint pattern at
-// src/vizier/services/agent/shared/manager/manager.cc.
-// ExecuteScript execution ports the standalone_pem path against the live Carnot.
-
 #include "src/vizier/services/agent/pem/direct_query_server.h"
-
-// Note: stdlib + absl includes stay at the top
-// (not inside the `#ifndef` below) because cpplint's
-// build/include_what_you_use scan doesn't follow preprocessor branches
-// and would otherwise flag every type used in the feature body as
-// "missing include". The disabled build pays a few KB of unused header
-// parse cost; the .cc emits nothing for them.
 
 #include <chrono>
 #include <cstdint>
@@ -45,14 +33,6 @@
 #include <jwt/base64.hpp>
 #include <sole.hpp>
 
-// Compile-time kill switch. When PX_PEM_DIRECT_QUERY_DISABLED is defined
-// (passed via the //src/vizier/services/agent/pem:direct_query=disabled
-// config_setting in BUILD.bazel), the entire feature-bearing body of this
-// file — JWT verifier, Carnot exec path — is EXCLUDED. The
-// DirectQueryServer class still resolves at link time (so callers don't
-// break) but every public function returns UNAUTHENTICATED/UNIMPLEMENTED.
-// Operators get a binary with zero direct-query feature code. See
-// DIRECT_QUERY_SECURITY.md "Disabling the feature".
 #ifndef PX_PEM_DIRECT_QUERY_DISABLED
 
 #include "src/carnot/carnot.h"
@@ -87,9 +67,6 @@ constexpr char kAuthorizationMetadataKey[] = "authorization";
     return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
                           "direct-query: missing authorization metadata");
   }
-  // client_metadata() is a multimap. Two authorization headers is not a request
-  // to guess about -- picking one arbitrarily would let a caller present a valid
-  // token alongside whatever else it wanted.
   if (std::next(range.first) != range.second) {
     return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
                           "direct-query: duplicate authorization metadata");
@@ -103,8 +80,6 @@ constexpr char kAuthorizationMetadataKey[] = "authorization";
   const auto s = ::px::services::VerifyServiceJWT(token, jwt_signing_key);
   if (!s.ok()) {
     VLOG(1) << "direct-query: rejecting bearer token: " << s.msg();
-    // Collapse to a generic message on the wire -- peers don't need to know
-    // which check failed, only that they're unauthenticated.
     return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
                           "direct-query: invalid bearer token");
   }
@@ -113,15 +88,8 @@ constexpr char kAuthorizationMetadataKey[] = "authorization";
 
 namespace {
 
-// kMaxOutputRowsPerTable caps how much a single direct query can materialize.
-// Results are buffered in the sink before they are streamed out, and the PEM is
-// a memory-capped daemonset sharing a node with the workload it observes, so an
-// unbounded px.display(px.DataFrame(...)) over a wide window could OOM it.
 constexpr int64_t kMaxOutputRowsPerTable = 10000;
 
-// collectResponses converts each accumulated TransferResultChunkRequest into an
-// ExecuteScriptResponse. It returns them rather than writing them so the caller
-// can release exec_mu_ before touching the network.
 std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
     ::px::carnot::exec::LocalGRPCResultSinkServer* result_server, const std::string& query_id) {
   std::vector<::px::api::vizierpb::ExecuteScriptResponse> out;
@@ -156,15 +124,8 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
   const auto query_id = sole::uuid4();
   const std::string query_id_str = query_id.str();
 
-  // One timestamp for both the schema compile below and the execute further
-  // down. Carnot::ExecuteQuery compiles the script again internally, and a
-  // script using relative times ("-5m") resolves against whatever it is given:
-  // compiling the schema at a different instant than the data can advertise a
-  // relation that doesn't describe what is emitted.
   const auto time_now = ::px::CurrentTimeNS();
 
-  // Compile once up front to read the plan's sinks and emit schema headers
-  // before any data.
   auto compiler_state =
       engine_state_->CreateLocalExecutionCompilerState(time_now, kMaxOutputRowsPerTable);
   auto plan_or = ::px::carnot::planner::compiler::Compiler().Compile(request->query_str(),
@@ -179,17 +140,8 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
 
   std::vector<::px::api::vizierpb::ExecuteScriptResponse> responses;
   {
-    // exec_mu_ guards reset-execute-collect. The sink's accumulator is shared
-    // mutable state across ExecuteScript calls: without the lock a concurrent
-    // caller's ResetQueryResults could wipe another caller's chunks, or two
-    // callers' chunks could interleave in one sink.
-    //
-    // The lock deliberately does NOT cover the writes below. Holding it across
-    // writer->Write() would let one slow or stalled client block every other
-    // direct query on the node for as long as it took to read.
     absl::MutexLock lk(&exec_mu_);
     result_server_->ResetQueryResults();
-    // Synchronous: ExecuteQuery blocks until the plan finishes.
     auto exec_s = carnot_->ExecuteQuery(request->query_str(), query_id, time_now);
     if (!exec_s.ok()) {
       auto msg = absl::Substitute("direct-query: PxL execute failed ($0)", exec_s.msg());
@@ -203,8 +155,6 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
     if (context->IsCancelled()) {
       return ::grpc::Status(::grpc::StatusCode::CANCELLED, "direct-query: client cancelled");
     }
-    // Write returns false once the stream is broken; continuing would spin
-    // through the remaining batches for a client that is gone.
     if (!writer->Write(resp)) {
       VLOG(1) << "direct-query: client stream closed mid-response, abandoning query "
               << query_id_str;
@@ -220,11 +170,6 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
 
 #else  // PX_PEM_DIRECT_QUERY_DISABLED
 
-// Compile-out stubs. Linker-satisfying definitions of the two public
-// surfaces with zero feature behaviour. Includes deliberately minimal —
-// no carnot — so a "feature disabled" build
-// carries no direct-query attack surface in the binary.
-
 namespace px {
 namespace vizier {
 namespace agent {
@@ -239,9 +184,7 @@ namespace agent {
     ::grpc::ServerContext*, const ::px::api::vizierpb::ExecuteScriptRequest*,
     ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>*) {
   // Reference the unused private fields so -Wunused-private-field doesn't
-  // flag the disabled build. The class signature is the same in both modes
-  // (so callers see one type); we just don't drive any work from these
-  // pointers in the disabled stub.
+  // flag the disabled build.
   (void)carnot_;
   (void)engine_state_;
   (void)result_server_;

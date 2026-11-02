@@ -30,12 +30,12 @@
 // Direct-query gRPC endpoint on the normal PEM. Defined here (not in
 // pem_main.cc) so the test binary, which links cc_library but not pem_main.cc,
 // picks up the symbol. Default-OFF: flag false → port never opened → existing
-// PEM deployments unchanged. See DIRECT_QUERY_CONTRACT.md.
+// PEM deployments unchanged.
 //
 // Compile-time disable: when PX_PEM_DIRECT_QUERY_DISABLED is defined
 // (`--//src/vizier/services/agent/pem:direct_query=disabled`), the gflags
 // registrations + the runtime feature code are excluded from the binary
-// entirely. See DIRECT_QUERY_SECURITY.md.
+// entirely.
 #ifndef PX_PEM_DIRECT_QUERY_DISABLED
 DEFINE_bool(direct_query_enabled, gflags::BoolFromEnv("PL_PEM_DIRECT_QUERY_ENABLED", false),
             "If true, expose VizierService::ExecuteScript directly from this PEM. "

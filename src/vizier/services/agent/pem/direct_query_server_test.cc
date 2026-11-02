@@ -17,7 +17,6 @@
  */
 
 // Acceptance tests for the PEM direct-query endpoint.
-// See DIRECT_QUERY_CONTRACT.md for the full behavioral specification.
 //
 // The fixture runs an in-process gRPC server hosting DirectQueryServer and a real
 // client stub, so authorization metadata flows exactly as in production.
@@ -298,8 +297,7 @@ TEST_F(DirectQueryServerTest, DuplicateAuthorizationHeader_Unauthenticated) {
 // Tampering tests — bit-level token manipulation. Each scenario flips a
 // specific portion of an otherwise-valid token and asserts UNAUTHENTICATED.
 // These lock down the verifier against the canonical JWT attack catalogue
-// (RFC 8725, OWASP JWT cheat sheet). The named scenarios are documented in
-// DIRECT_QUERY_SECURITY.md "Tampering scenarios — unit-test coverage".
+// (RFC 8725, OWASP JWT cheat sheet).
 // ===========================================================================
 
 namespace {
@@ -640,8 +638,7 @@ TEST_F(DirectQueryServerExecTest, ValidToken_SequentialQueries_AllSucceed) {
 // it requires either (i) hoisting MaybeStartDirectQueryServer earlier in
 // the lifecycle (Stirling startup depends on the
 // PostRegister ordering) or (ii) introducing a "broker-optional" mode flag
-// in the shared Manager base. Tracked in DIRECT_QUERY_SECURITY.md and
-// DIRECT_QUERY_CONTRACT.md as a follow-up hardening.
+// in the shared Manager base. Left as a follow-up hardening.
 //
 // The contract is asserted in code below: the DirectQueryServerExecTest
 // fixture itself constructs DirectQueryServer with **no broker, no NATS,
@@ -681,14 +678,13 @@ TEST_F(DirectQueryServerExecTest, FailSoft_DirectQueryDecoupledFromBroker) {
 //   (2) a "broker-optional" mode flag in the shared Manager base that
 //       lets PEMManager continue past a failed NATS Connect when
 //       direct-query is enabled (kelvin / metadata are unaffected).
-// Either approach is a follow-up PR. Documented in
-// DIRECT_QUERY_SECURITY.md "Bidirectional fail-soft" follow-up. Flip
-// this from SKIP to PASS when the refactor lands.
+// Either approach is a follow-up PR. Flip this from SKIP to PASS when the
+// refactor lands.
 TEST_F(DirectQueryServerExecTest, FailSoft_BrokerFailureToleratedByDirectQuery) {
   GTEST_SKIP() << "RED: PEMManager::PostRegisterHookImpl is gated on broker "
                   "NATS registration; hoist MaybeStartDirectQueryServer or "
                   "introduce a broker-optional Manager mode to close the "
-                  "contract. Tracked in DIRECT_QUERY_SECURITY.md.";
+                  "contract.";
 }
 
 // ===========================================================================
@@ -718,8 +714,7 @@ TEST_F(DirectQueryServerExecTest, FailSoft_BrokerFailureToleratedByDirectQuery) 
 
 // When compiled with PX_PEM_DIRECT_QUERY_DISABLED the RPC is a stub: it
 // returns UNIMPLEMENTED without consulting credentials at all, which is both
-// what direct_query_server.cc's #else branch does and what
-// DIRECT_QUERY_SECURITY.md documents as the user-visible error. A valid token
+// what direct_query_server.cc's #else branch does. A valid token
 // changes nothing — the compile-time toggle is harder than the runtime one,
 // since no bearer can re-enable a feature that is not in the binary.
 TEST_F(DirectQueryServerTest, CompiledOut_ValidToken_StillUnimplemented) {
@@ -756,7 +751,7 @@ TEST_F(DirectQueryServerTest, ToggleContract_DocumentBothLevels) {
                "Compile-time --//src/vizier/services/agent/pem:direct_query=false "
                "additionally drops all "
                "feature bytes from the binary (no JWT verifier, no Carnot driver, "
-               "no openssl/rapidjson includes). See DIRECT_QUERY_SECURITY.md.";
+               "no openssl/rapidjson includes).";
 }
 
 #endif  // PX_PEM_DIRECT_QUERY_DISABLED
