@@ -14,22 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
-
-bool_flag(
-    name = "direct_query",
-    build_setting_default = True,
-)
-
-config_setting(
-    name = "direct_query_disabled",
-    flag_values = {":direct_query": "False"},
-)
 
 pl_cc_library(
     name = "cc_library",
@@ -41,10 +30,6 @@ pl_cc_library(
         ],
     ),
     hdrs = glob(["*.h"]),
-    local_defines = select({
-        ":direct_query_disabled": ["PX_PEM_DIRECT_QUERY_DISABLED"],
-        "//conditions:default": [],
-    }),
     deps = [
         "//src/api/proto/vizierpb:vizier_pl_cc_proto",
         "//src/carnot",
@@ -82,20 +67,17 @@ pl_cc_test(
 pl_cc_test(
     name = "direct_query_server_test",
     srcs = ["direct_query_server_test.cc"],
-    defines = select({
-        ":direct_query_disabled": ["PX_PEM_DIRECT_QUERY_DISABLED"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":cc_library",
         "//src/api/proto/vizierpb:vizier_pl_cc_proto",
         "//src/carnot",
         "//src/carnot:cc_library",
         "//src/carnot/exec:cc_library",
+        "//src/carnot/exec:test_utils",
         "//src/carnot/funcs:cc_library",
         "//src/carnot/udf:cc_library",
+        "//src/shared/services/jwt:cc_library",
         "//src/table_store:cc_library",
-        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_rlyeh_sole//:sole",
     ],

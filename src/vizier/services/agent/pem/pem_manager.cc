@@ -27,7 +27,6 @@
 #include "src/vizier/services/agent/shared/manager/manager.h"
 #include "src/vizier/services/agent/shared/manager/ssl.h"
 
-#ifndef PX_PEM_DIRECT_QUERY_DISABLED
 DEFINE_bool(direct_query_enabled, gflags::BoolFromEnv("PL_PEM_DIRECT_QUERY_ENABLED", false),
             "If true, expose VizierService::ExecuteScript directly from this PEM. "
             "Default false; existing PEM deploys see no behavior change.");
@@ -39,7 +38,6 @@ DEFINE_string(direct_query_bind_address,
               "Address the direct-query service listens on. Defaults to loopback; "
               "setting 0.0.0.0 exposes the port on the node's network under hostNetwork.");
 DECLARE_string(jwt_signing_key);
-#endif  // PX_PEM_DIRECT_QUERY_DISABLED
 
 DEFINE_int32(
     table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
@@ -102,10 +100,6 @@ Status PEMManager::PostRegisterHookImpl() {
 }
 
 Status PEMManager::MaybeStartDirectQueryServer() {
-#ifdef PX_PEM_DIRECT_QUERY_DISABLED
-  LOG(INFO) << "direct-query: compiled out (PX_PEM_DIRECT_QUERY_DISABLED)";
-  return Status::OK();
-#else
   if (!FLAGS_direct_query_enabled) {
     LOG(INFO) << "direct-query: disabled (--direct_query_enabled=false)";
     return Status::OK();
@@ -169,7 +163,6 @@ Status PEMManager::MaybeStartDirectQueryServer() {
   LOG(INFO) << "direct-query: serving on " << addr
             << (SSL::Enabled() ? " (TLS)" : " (PLAINTEXT - PL_DISABLE_SSL is set)");
   return Status::OK();
-#endif  // PX_PEM_DIRECT_QUERY_DISABLED
 }
 
 void PEMManager::StopDirectQueryServer() {

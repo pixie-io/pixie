@@ -33,8 +33,6 @@
 #include <jwt/base64.hpp>
 #include <sole.hpp>
 
-#ifndef PX_PEM_DIRECT_QUERY_DISABLED
-
 #include "src/carnot/carnot.h"
 #include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/engine_state.h"
@@ -115,8 +113,6 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
     return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED,
                           "direct-query: mutations are out of scope (read-only endpoint)");
   }
-  // Defensive: any of carnot_/engine_state_/result_server_ being null at this
-  // point means the operator deploy is misconfigured. Refuse rather than crash.
   if (carnot_ == nullptr || engine_state_ == nullptr || result_server_ == nullptr) {
     return ::grpc::Status(::grpc::StatusCode::FAILED_PRECONDITION,
                           "direct-query: server not wired with a live Carnot");
@@ -167,35 +163,3 @@ std::vector<::px::api::vizierpb::ExecuteScriptResponse> collectResponses(
 }  // namespace agent
 }  // namespace vizier
 }  // namespace px
-
-#else  // PX_PEM_DIRECT_QUERY_DISABLED
-
-namespace px {
-namespace vizier {
-namespace agent {
-
-::grpc::Status AuthenticateRequest(::grpc::ServerContext*, const std::string&) {
-  return ::grpc::Status(::grpc::StatusCode::UNAUTHENTICATED,
-                        "direct-query: compiled out of this build "
-                        "(PX_PEM_DIRECT_QUERY_DISABLED)");
-}
-
-::grpc::Status DirectQueryServer::ExecuteScript(
-    ::grpc::ServerContext*, const ::px::api::vizierpb::ExecuteScriptRequest*,
-    ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>*) {
-  // Reference the unused private fields so -Wunused-private-field doesn't
-  // flag the disabled build.
-  (void)carnot_;
-  (void)engine_state_;
-  (void)result_server_;
-  (void)jwt_signing_key_;
-  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED,
-                        "direct-query: compiled out of this build "
-                        "(PX_PEM_DIRECT_QUERY_DISABLED)");
-}
-
-}  // namespace agent
-}  // namespace vizier
-}  // namespace px
-
-#endif  // PX_PEM_DIRECT_QUERY_DISABLED
