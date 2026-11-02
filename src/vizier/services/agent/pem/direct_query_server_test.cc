@@ -348,7 +348,7 @@ class DirectQueryServerExecTest : public ::testing::Test {
  protected:
   void SetUp() override {
     table_store_ = std::make_shared<::px::table_store::TableStore>();
-    result_server_ = std::make_unique<::px::carnot::exec::LocalGRPCResultSinkServer>();
+    ASSERT_OK_AND_ASSIGN(result_server_, ::px::carnot::exec::LocalGRPCResultSinkServer::Create());
 
     auto func_registry = std::make_unique<::px::carnot::udf::Registry>("direct_query_test");
     ::px::carnot::funcs::RegisterFuncsOrDie(func_registry.get());

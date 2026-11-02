@@ -80,24 +80,14 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
 
 class LocalGRPCResultSinkServer {
  public:
-  // Create reports a bind failure instead of aborting.
-  //
-  // The default constructor CHECK-fails, which is fine for tests and the
-  // single-node carnot executable but not for a long-lived server: a failure to
-  // bind an ephemeral loopback port would take the whole process down. Callers
-  // that have something to lose should use this.
+  // Starts the in-process result sink server. Returns an error if it fails to bind.
   static StatusOr<std::unique_ptr<LocalGRPCResultSinkServer>> Create() {
-    auto server =
-        std::unique_ptr<LocalGRPCResultSinkServer>(new LocalGRPCResultSinkServer(NoAbortTag{}));
+    auto server = std::unique_ptr<LocalGRPCResultSinkServer>(new LocalGRPCResultSinkServer());
     if (server->grpc_server_ == nullptr) {
       return error::ResourceUnavailable(
           "failed to start the local result sink server on 127.0.0.1:0");
     }
     return server;
-  }
-
-  LocalGRPCResultSinkServer() : LocalGRPCResultSinkServer(NoAbortTag{}) {
-    CHECK(grpc_server_ != nullptr);
   }
 
   ~LocalGRPCResultSinkServer() {
@@ -167,10 +157,7 @@ class LocalGRPCResultSinkServer {
   }
 
  private:
-  // Tag type selecting the constructor that leaves grpc_server_ null on a bind
-  // failure instead of aborting.
-  struct NoAbortTag {};
-  explicit LocalGRPCResultSinkServer(NoAbortTag) {
+  LocalGRPCResultSinkServer() {
     grpc::ServerBuilder builder;
 
     builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());

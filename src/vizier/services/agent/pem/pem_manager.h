@@ -107,10 +107,7 @@ class PEMManager : public Manager {
   }
 
   // Direct-query gRPC endpoint on the live PEM. All four are nullptr when
-  // FLAGS_direct_query_enabled is false (the default), so the PEM stays
-  // byte-identical to prior behavior. When enabled, PostRegisterHookImpl
-  // stands them up sharing the base manager's table_store + agent metadata
-  // callback; StopImpl tears them down.
+  // FLAGS_direct_query_enabled is false (the default),
   Status MaybeStartDirectQueryServer();
   void StopDirectQueryServer();
   std::unique_ptr<carnot::exec::LocalGRPCResultSinkServer> direct_query_sink_;

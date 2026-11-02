@@ -16,21 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Direct-query gRPC endpoint for the normal (metadata-connected) PEM.
-//
-// Serves api.vizierpb.VizierService.ExecuteScript directly on the PEM,
-// authenticated via HS256 JWT, against the live node-local Carnot.
-//
-// Reference impl ported from: src/experimental/standalone_pem/vizier_server.h
-// (px::vizier::agent::VizierServer). Differences for the real PEM: reuse the live
-// Carnot + metadata (no second engine), and REQUIRE a valid cluster service JWT.
-
 #pragma once
 
 #include <grpcpp/grpcpp.h>
 #include <memory>
 #include <string>
-#include <utility>  // std::move (used in DirectQueryServer ctor)
+#include <utility>
 
 #include <absl/synchronization/mutex.h>
 
@@ -52,7 +43,10 @@ namespace agent {
 // Verifies the `authorization: Bearer <jwt>` metadata against jwt_signing_key.
 ::grpc::Status AuthenticateRequest(::grpc::ServerContext* ctx, const std::string& jwt_signing_key);
 
-// Serves ExecuteScript against the PEM's live Carnot.
+// Direct-query gRPC endpoint for the normal (metadata-connected) PEM.
+//
+// Serves api.vizierpb.VizierService.ExecuteScript directly on the PEM,
+// authenticated via HS256 JWT, against the live node-local Carnot.
 class DirectQueryServer final : public api::vizierpb::VizierService::Service {
  public:
   DirectQueryServer() = delete;
@@ -64,7 +58,6 @@ class DirectQueryServer final : public api::vizierpb::VizierService::Service {
         result_server_(result_server),
         jwt_signing_key_(std::move(jwt_signing_key)) {}
 
-  // Authenticates the caller, runs the PxL script and streams the results.
   ::grpc::Status ExecuteScript(
       ::grpc::ServerContext* context, const ::px::api::vizierpb::ExecuteScriptRequest* request,
       ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>* writer) override;
