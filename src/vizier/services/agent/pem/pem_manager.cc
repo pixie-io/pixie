@@ -18,9 +18,26 @@
 
 #include "src/vizier/services/agent/pem/pem_manager.h"
 
+#include <absl/strings/substitute.h>
+
+#include "src/carnot/funcs/funcs.h"
+#include "src/carnot/udf/registry.h"
 #include "src/common/system/config.h"
 #include "src/vizier/services/agent/shared/manager/exec.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/ssl.h"
+
+DEFINE_bool(direct_query_enabled, gflags::BoolFromEnv("PL_PEM_DIRECT_QUERY_ENABLED", false),
+            "If true, expose VizierService::ExecuteScript directly from this PEM. "
+            "Default false; existing PEM deploys see no behavior change.");
+DEFINE_int32(direct_query_port, gflags::Int32FromEnv("PL_PEM_DIRECT_QUERY_PORT", 50305),
+             "gRPC listen port for the direct-query service when "
+             "--direct_query_enabled=true.");
+DEFINE_string(direct_query_bind_address,
+              gflags::StringFromEnv("PL_PEM_DIRECT_QUERY_BIND_ADDRESS", "127.0.0.1"),
+              "Address the direct-query service listens on. Defaults to loopback; "
+              "setting 0.0.0.0 exposes the port on the node's network under hostNetwork.");
+DECLARE_string(jwt_signing_key);
 
 DEFINE_int32(
     table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
@@ -78,10 +95,88 @@ Status PEMManager::PostRegisterHookImpl() {
                                           stirling_.get(), table_store(), relation_info_manager());
   PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
                                             tracepoint_manager_));
+  PX_RETURN_IF_ERROR(MaybeStartDirectQueryServer());
   return Status::OK();
 }
 
+Status PEMManager::MaybeStartDirectQueryServer() {
+  if (!FLAGS_direct_query_enabled) {
+    LOG(INFO) << "direct-query: disabled (--direct_query_enabled=false)";
+    return Status::OK();
+  }
+  LOG(INFO) << "direct-query: start (port=" << FLAGS_direct_query_port << ")";
+  auto sink_or = carnot::exec::LocalGRPCResultSinkServer::Create();
+  if (!sink_or.ok()) {
+    LOG(ERROR) << "direct-query: result sink server failed to start: " << sink_or.status().msg()
+               << " - staying up, direct-query disabled";
+    return Status::OK();
+  }
+  direct_query_sink_ = sink_or.ConsumeValueOrDie();
+
+  auto func_registry = std::make_unique<carnot::udf::Registry>("direct_query_registry");
+  carnot::funcs::RegisterFuncsOrDie(func_registry.get());
+
+  VLOG(1) << "direct-query: registering udfs and building carnot configs";
+  auto clients_config =
+      std::make_unique<carnot::Carnot::ClientsConfig>(carnot::Carnot::ClientsConfig{
+          [this](const std::string& address, const std::string&) {
+            return direct_query_sink_->StubGenerator(address);
+          },
+          [](::grpc::ClientContext*) {},
+      });
+  auto server_config = std::make_unique<carnot::Carnot::ServerConfig>();
+  server_config->grpc_server_creds = SSL::DefaultGRPCServerCreds();
+  server_config->grpc_server_port = 0;
+
+  VLOG(1) << "direct-query: creating carnot";
+  std::shared_ptr<table_store::TableStore> ts(table_store(), [](table_store::TableStore*) {});
+  auto carnot_or = carnot::Carnot::Create(info()->agent_id, std::move(func_registry), ts,
+                                          std::move(clients_config), std::move(server_config));
+  if (!carnot_or.ok()) {
+    LOG(ERROR) << "direct-query: Carnot::Create failed: " << carnot_or.status().msg()
+               << " — staying up, direct-query disabled";
+    direct_query_sink_.reset();
+    return Status::OK();
+  }
+  direct_query_carnot_ = carnot_or.ConsumeValueOrDie();
+  direct_query_carnot_->RegisterAgentMetadataCallback(
+      std::bind(&::px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager()));
+
+  VLOG(1) << "direct-query: building service";
+  direct_query_service_ = std::make_unique<DirectQueryServer>(
+      direct_query_carnot_.get(), direct_query_carnot_->GetEngineState(), direct_query_sink_.get(),
+      FLAGS_jwt_signing_key);
+
+  VLOG(1) << "direct-query: binding listener";
+  ::grpc::ServerBuilder builder;
+  const std::string addr =
+      absl::Substitute("$0:$1", FLAGS_direct_query_bind_address, FLAGS_direct_query_port);
+  builder.AddListeningPort(addr, SSL::DefaultGRPCServerCreds());
+  builder.RegisterService(direct_query_service_.get());
+  direct_query_grpc_server_ = builder.BuildAndStart();
+  if (!direct_query_grpc_server_) {
+    LOG(ERROR) << "direct-query: BuildAndStart returned null on " << addr
+               << " — staying up, direct-query disabled";
+    StopDirectQueryServer();
+    return Status::OK();
+  }
+  LOG(INFO) << "direct-query: serving on " << addr
+            << (SSL::Enabled() ? " (TLS)" : " (PLAINTEXT - PL_DISABLE_SSL is set)");
+  return Status::OK();
+}
+
+void PEMManager::StopDirectQueryServer() {
+  if (direct_query_grpc_server_) {
+    direct_query_grpc_server_->Shutdown();
+    direct_query_grpc_server_.reset();
+  }
+  direct_query_service_.reset();
+  direct_query_carnot_.reset();
+  direct_query_sink_.reset();
+}
+
 Status PEMManager::StopImpl(std::chrono::milliseconds) {
+  StopDirectQueryServer();
   stirling_->Stop();
   stirling_.reset();
   return Status::OK();

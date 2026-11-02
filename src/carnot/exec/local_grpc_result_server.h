@@ -64,7 +64,12 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
     return ::grpc::Status::OK;
   }
 
-  void ResetQueryResults() { query_results_.clear(); }
+  void ResetQueryResults() {
+    // Takes the same lock TransferResultChunk does: a caller resetting between
+    // queries races an in-flight chunk write otherwise.
+    const std::lock_guard<std::mutex> lock(result_mutex_);
+    query_results_.clear();
+  }
 
  private:
   // List of the query results received.
@@ -75,13 +80,14 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
 
 class LocalGRPCResultSinkServer {
  public:
-  LocalGRPCResultSinkServer() {
-    grpc::ServerBuilder builder;
-
-    builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());
-    builder.RegisterService(&result_sink_server_);
-    grpc_server_ = builder.BuildAndStart();
-    CHECK(grpc_server_ != nullptr);
+  // Starts the in-process result sink server. Returns an error if it fails to bind.
+  static StatusOr<std::unique_ptr<LocalGRPCResultSinkServer>> Create() {
+    auto server = std::unique_ptr<LocalGRPCResultSinkServer>(new LocalGRPCResultSinkServer());
+    if (server->grpc_server_ == nullptr) {
+      return error::ResourceUnavailable(
+          "failed to start the local result sink server on 127.0.0.1:0");
+    }
+    return server;
   }
 
   ~LocalGRPCResultSinkServer() {
@@ -151,6 +157,14 @@ class LocalGRPCResultSinkServer {
   }
 
  private:
+  LocalGRPCResultSinkServer() {
+    grpc::ServerBuilder builder;
+
+    builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());
+    builder.RegisterService(&result_sink_server_);
+    grpc_server_ = builder.BuildAndStart();
+  }
+
   std::unique_ptr<grpc::Server> grpc_server_;
   LocalResultSinkServer result_sink_server_;
 };
