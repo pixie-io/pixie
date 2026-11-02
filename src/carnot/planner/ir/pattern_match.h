@@ -160,6 +160,10 @@ inline ClassMatch<IRNodeType::kOTelExportSink> OTelExportSink() {
   return ClassMatch<IRNodeType::kOTelExportSink>();
 }
 
+inline ClassMatch<IRNodeType::kClickHouseExportSink> ClickHouseExportSink() {
+  return ClassMatch<IRNodeType::kClickHouseExportSink>();
+}
+
 inline ClassMatch<IRNodeType::kEmptySource> EmptySource() {
   return ClassMatch<IRNodeType::kEmptySource>();
 }
@@ -266,7 +270,7 @@ struct ResultSink : public ParentMatch {
 
   bool Match(const IRNode* node) const override {
     return ExternalGRPCSink().Match(node) || MemorySink().Match(node) ||
-           OTelExportSink().Match(node);
+           OTelExportSink().Match(node) || ClickHouseExportSink().Match(node);
   }
 };
 
