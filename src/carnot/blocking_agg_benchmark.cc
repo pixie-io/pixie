@@ -89,9 +89,9 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
               int64_t num_batches, const datagen::DistributionParams* dist_vars,
               const datagen::DistributionParams* len_vars) {
   auto table_store = std::make_shared<table_store::TableStore>();
-  auto server = LocalGRPCResultSinkServer();
+  auto server = LocalGRPCResultSinkServer::Create().ConsumeValueOrDie();
 
-  auto carnot = SetUpCarnot(table_store, &server);
+  auto carnot = SetUpCarnot(table_store, server.get());
   auto table = table_store::CreateTable(types, distribution_types, state.range(0), num_batches,
                                         dist_vars, len_vars)
                    .ConsumeValueOrDie();
@@ -105,8 +105,8 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
     if (!res.ok()) {
       LOG(FATAL) << "Aggregate benchmark query did not execute successfully.";
     }
-    bytes_processed += server.exec_stats().ConsumeValueOrDie().execution_stats().bytes_processed();
-    server.ResetQueryResults();
+    bytes_processed += server->exec_stats().ConsumeValueOrDie().execution_stats().bytes_processed();
+    server->ResetQueryResults();
     ++i;
   }
 
