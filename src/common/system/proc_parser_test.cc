@@ -26,6 +26,8 @@
 #include <memory>
 #include <sstream>
 
+#include <absl/strings/str_cat.h>
+
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
@@ -276,6 +278,57 @@ TEST_F(ProcParserTest, read_pid_start_time) {
   PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ASSERT_OK_AND_EQ(parser_->GetPIDStartTimeTicks(123), 14329);
 }
+
+// The command name in /proc/<pid>/stat may contain any character, including runs of spaces,
+// newlines and parentheses. None of these should affect the parsing of the subsequent fields.
+class ProcParserCommandNameTest : public ProcParserTest,
+                                  public ::testing::WithParamInterface<std::string> {
+ protected:
+  void SetUp() override {
+    ProcParserTest::SetUp();
+    const std::filesystem::path pid_path = temp_dir_.path() / "4602";
+    ASSERT_TRUE(std::filesystem::create_directory(pid_path));
+    ASSERT_OK(WriteFileFromString(
+        pid_path / "stat",
+        absl::StrCat("4602 (", GetParam(),
+                     ") S 3260 4602 3260 34818 4602 1077936128 1799 174589 55 68 8 23 106 72 20 0 "
+                     "13 0 14329 114384896 2577 18446744073709551615 4194304 7917379 "
+                     "140730842479232 0 0 0 1006254592 0 2143420159 0 0 0 17 3 0 0 3 0 0 "
+                     "12193792 12432192 34951168 140730842488151 140730842488200 "
+                     "140730842488200 140730842492896 0\n")));
+  }
+
+  testing::TempDir temp_dir_;
+};
+
+TEST_P(ProcParserCommandNameTest, ParsePidStat) {
+  PX_SET_FOR_SCOPE(FLAGS_proc_path, temp_dir_.path().string());
+  ProcParser::ProcessStats stats;
+  ASSERT_OK(parser_->ParseProcPIDStat(4602, bytes_per_page_, kernel_tick_time_ns_, &stats));
+
+  EXPECT_EQ(GetParam(), stats.process_name);
+  EXPECT_EQ(4602, stats.pid);
+
+  EXPECT_EQ(800, stats.utime_ns);
+  EXPECT_EQ(2300, stats.ktime_ns);
+  EXPECT_EQ(13, stats.num_threads);
+
+  EXPECT_EQ(55, stats.major_faults);
+  EXPECT_EQ(1799, stats.minor_faults);
+
+  EXPECT_EQ(114384896, stats.vsize_bytes);
+  EXPECT_EQ(2577 * bytes_per_page_, stats.rss_bytes);
+}
+
+TEST_P(ProcParserCommandNameTest, ReadPIDStartTime) {
+  PX_SET_FOR_SCOPE(FLAGS_proc_path, temp_dir_.path().string());
+  ASSERT_OK_AND_EQ(parser_->GetPIDStartTimeTicks(4602), 14329);
+}
+
+INSTANTIATE_TEST_SUITE_P(CommandNames, ProcParserCommandNameTest,
+                         ::testing::Values("npm", "", "npm start", "npm  start", " npm ",
+                                           "npm\nstart", "npm\n", "npm (start)", "npm) (start",
+                                           ") 1 2 3 ("));
 
 TEST_F(ProcParserTest, read_pid_cmdline) {
   PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
