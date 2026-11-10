@@ -34,6 +34,7 @@ constexpr char kPod0UpdatePbTxt[] = R"(
   name: "pod0"
   namespace: "ns0"
   labels: "{\"k1\":\"v1\", \"k2\":\"v2\"}"
+  annotations: "{\"a1\":\"v1\"}"
   start_timestamp_ns: 101
   stop_timestamp_ns: 103
   container_ids: "container0_uid"
@@ -373,6 +374,7 @@ TEST(K8sMetadataStateTest, HandlePodUpdate) {
   EXPECT_EQ("pod0", pod_info->name());
   EXPECT_EQ("ns0", pod_info->ns());
   EXPECT_EQ("{\"k1\":\"v1\", \"k2\":\"v2\"}", pod_info->labels());
+  EXPECT_EQ("{\"a1\":\"v1\"}", pod_info->annotations());
   EXPECT_EQ(PodQOSClass::kGuaranteed, pod_info->qos_class());
   EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
   EXPECT_EQ(1, pod_info->conditions().size());

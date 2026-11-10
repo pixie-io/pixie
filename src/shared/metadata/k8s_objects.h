@@ -323,11 +323,13 @@ class PodInfo : public K8sMetadataObject {
   void set_hostname(std::string_view hostname) { hostname_ = hostname; }
   void set_pod_ip(std::string_view pod_ip) { pod_ip_ = pod_ip; }
   void set_pod_labels(std::string labels) { labels_ = labels; }
+  void set_pod_annotations(std::string annotations) { annotations_ = annotations; }
 
   const std::string& node_name() const { return node_name_; }
   const std::string& hostname() const { return hostname_; }
   const std::string& pod_ip() const { return pod_ip_; }
   const std::string& labels() const { return labels_; }
+  const std::string& annotations() const { return annotations_; }
 
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }
   const absl::flat_hash_set<std::string>& services() const { return services_; }
@@ -368,6 +370,7 @@ class PodInfo : public K8sMetadataObject {
   std::string hostname_;
   std::string pod_ip_;
   std::string labels_;
+  std::string annotations_;
 };
 
 struct UPIDStartTSCompare {

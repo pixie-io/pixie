@@ -414,6 +414,8 @@ message PodUpdate {
   // A json object containing pod label keys and values
   string labels = 17;
   repeated OwnerReference owner_references = 18;
+  // A json object containing pod annotation keys and values
+  string annotations = 19;
 }
 
 enum ContainerType {

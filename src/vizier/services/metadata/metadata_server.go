@@ -76,6 +76,7 @@ func init() {
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.Bool("use_etcd_operator", false, "Whether the etcd operator should be used instead of the persistent version.")
 	pflag.StringSlice("metadata_namespaces", []string{v1.NamespaceAll}, "The list of namespaces to watch for metadata.")
+	pflag.StringSlice("pod_annotation_allowlist", []string{}, "The list of pod annotation keys to capture. Empty captures none.")
 
 	// Metadata flags are set using the env vars in pl-cluster-config.
 	// We historically set PL_ETCD_OPERATOR_ENABLED but not PL_USE_ETCD_OPERATOR in the configmap.
@@ -236,7 +237,8 @@ func main() {
 	k8sMds := k8smeta.NewDatastore(dataStore)
 	// Listen for K8s metadata updates.
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
-	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc)
+	podAnnotationAllowlist := viper.GetStringSlice("pod_annotation_allowlist")
+	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc, podAnnotationAllowlist)
 
 	namespaces := viper.GetStringSlice("metadata_namespaces")
 	if len(namespaces) == 0 {

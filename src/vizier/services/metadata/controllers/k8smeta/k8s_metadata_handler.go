@@ -173,17 +173,24 @@ type Handler struct {
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(updateCh <-chan *K8sResourceMessage, mds Store, pls PodLabelStore, conn *nats.Conn) *Handler {
+func NewHandler(updateCh <-chan *K8sResourceMessage, mds Store, pls PodLabelStore, conn *nats.Conn, podAnnotationAllowlist []string) *Handler {
 	done := make(chan struct{})
 	leaderMsgs := make(map[string]*metadatapb.Endpoints)
 	handlerMap := make(map[string]UpdateProcessor)
 	state := ProcessorState{LeaderMsgs: leaderMsgs, PodCIDRs: make([]string, 0), NodeToIP: make(map[string]string), PodToIP: make(map[string]string)}
 	mh := &Handler{updateCh: updateCh, mds: mds, pls: pls, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
 
+	annotationAllowlist := make(map[string]bool, len(podAnnotationAllowlist))
+	for _, k := range podAnnotationAllowlist {
+		if k != "" {
+			annotationAllowlist[k] = true
+		}
+	}
+
 	// Register update processors.
 	mh.processHandlerMap["endpoints"] = &EndpointsUpdateProcessor{}
 	mh.processHandlerMap["services"] = &ServiceUpdateProcessor{}
-	mh.processHandlerMap["pods"] = &PodUpdateProcessor{}
+	mh.processHandlerMap["pods"] = &PodUpdateProcessor{annotationAllowlist: annotationAllowlist}
 	mh.processHandlerMap["nodes"] = &NodeUpdateProcessor{}
 	mh.processHandlerMap["namespaces"] = &NamespaceUpdateProcessor{}
 	mh.processHandlerMap["replicasets"] = &ReplicaSetUpdateProcessor{}
@@ -627,7 +634,10 @@ func (p *ServiceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate,
 }
 
 // PodUpdateProcessor is a processor for pods.
-type PodUpdateProcessor struct{}
+type PodUpdateProcessor struct {
+	// The set of pod annotation keys to capture. Annotations not in this set are dropped.
+	annotationAllowlist map[string]bool
+}
 
 // IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
 func (p *PodUpdateProcessor) IsNodeScoped() bool {
@@ -737,7 +747,7 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 		podUpdate := u.Update.GetPod()
 		if podUpdate != nil {
 			updates = append(updates, &OutgoingUpdate{
-				Update: getResourceUpdateFromPod(podUpdate, u.UpdateVersion),
+				Update: getResourceUpdateFromPod(podUpdate, u.UpdateVersion, p.annotationAllowlist),
 				Topics: topics,
 			})
 		}
@@ -1087,7 +1097,7 @@ func getServiceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, uv int64, po
 	return update
 }
 
-func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.ResourceUpdate {
+func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64, annotationAllowlist map[string]bool) *metadatapb.ResourceUpdate {
 	var containerIDs []string
 	var containerNames []string
 	if pod.Status.ContainerStatuses != nil {
@@ -1109,6 +1119,19 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 		podLabels, _ = json.Marshal(pod.Metadata.Labels)
 	}
 
+	var podAnnotations []byte
+	if len(annotationAllowlist) > 0 && pod.Metadata.Annotations != nil {
+		filtered := make(map[string]string)
+		for k, v := range pod.Metadata.Annotations {
+			if annotationAllowlist[k] {
+				filtered[k] = v
+			}
+		}
+		if len(filtered) > 0 {
+			podAnnotations, _ = json.Marshal(filtered)
+		}
+	}
+
 	update := &metadatapb.ResourceUpdate{
 		UpdateVersion: uv,
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -1117,6 +1140,7 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 				Name:             pod.Metadata.Name,
 				Namespace:        pod.Metadata.Namespace,
 				Labels:           string(podLabels),
+				Annotations:      string(podAnnotations),
 				StartTimestampNS: pod.Metadata.CreationTimestampNS,
 				StopTimestampNS:  pod.Metadata.DeletionTimestampNS,
 				QOSClass:         pod.Status.QOSClass,
