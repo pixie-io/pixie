@@ -15,8 +15,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@amqp_gen_reqs//:requirements.bzl", "requirement")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("//bazel:pl_build_system.bzl", "pl_py_test")
+
+package(default_visibility = ["//src:__subpackages__"])
 
 py_library(
     name = "amqp_code_gen",
@@ -60,5 +63,45 @@ py_binary(
         requirement("fire"),
         requirement("pyshark"),
         requirement("dill"),
+    ],
+)
+
+genrule(
+    name = "amqp_gen_files",
+    srcs = [".clang-format"],
+    outs = [
+        "decode.h",
+        "decode.cc",
+        "types_gen.h",
+        "amqp.h",
+    ],
+    cmd = """
+        export TMP=$$(mktemp -d)
+        PATH="$$PATH:/opt/px_dev/bin" $(location //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp_code_gen_main) run --generation_dir=$${TMP} --clang-format-file=$<
+        cp $${TMP}/* $(RULEDIR)
+        rm -rf $${TMP}
+    """,
+    # clang-format is installed within /opt/px_dev/bin and is used by the amqp code generator
+    local = True,
+    tools = ["//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp_code_gen_main"],
+)
+
+write_file(
+    name = "gen_update",
+    out = "update.sh",
+    content = [
+        "#!/bin/bash",
+        "cd $BUILD_WORKSPACE_DIRECTORY",
+        "export AMQP_FILE_BASE=src/stirling/source_connectors/socket_tracer/protocols/amqp",
+        "cp -fv bazel-bin/${AMQP_FILE_BASE}/amqp_code_generator/{decode.h,decode.cc,types_gen.h} ${AMQP_FILE_BASE}/",
+        "cp -fv bazel-bin/${AMQP_FILE_BASE}/amqp_code_generator/amqp.h src/carnot/funcs/protocols/",
+    ],
+)
+
+sh_binary(
+    name = "update_files",
+    srcs = [":gen_update"],
+    data = [
+        ":amqp_gen_files",
     ],
 )

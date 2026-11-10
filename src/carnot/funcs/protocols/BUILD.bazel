@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src:__subpackages__"])
@@ -38,4 +39,11 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/udf:udf_testutils",
     ],
+)
+
+diff_test(
+    name = "check_amqp.h",
+    failure_message = "Please run `bazel run //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:update_files`",
+    file1 = "amqp.h",
+    file2 = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp.h",
 )

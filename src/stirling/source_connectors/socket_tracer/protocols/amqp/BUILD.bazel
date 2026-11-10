@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -62,3 +63,22 @@ pl_cc_test(
         ":cc_library",
     ],
 )
+
+GENERATED = {
+    "decode.cc": "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:decode.cc",
+    "decode.h": "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:decode.h",
+    "types_gen.h": "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:types_gen.h",
+}
+
+[
+    diff_test(
+        name = "check_" + src,
+        failure_message = "Please run `bazel run //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:update_files`",
+        file1 = src,
+        file2 = gen_source,
+    )
+    for [
+        src,
+        gen_source,
+    ] in GENERATED.items()
+]

@@ -19,10 +19,10 @@
 #pragma once
 
 #include <string>
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
