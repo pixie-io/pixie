@@ -81,7 +81,7 @@ type K8sJobHandler interface {
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
 	ns                            string
-	clientset                     *kubernetes.Clientset
+	clientset                     kubernetes.Interface
 	vzClient                      *versioned.Clientset
 	clusterVersion                string
 	clusterName                   string
@@ -373,6 +373,20 @@ func (v *K8sVizierInfo) getControlPlanePodStatuses() (map[string]*cvmsgspb.PodSt
 	return v.getPodStatuses(cpPodsList.Items)
 }
 
+// isDataPlanePodHealthy returns whether the given data plane pod is running and all of its containers are ready.
+// A pod whose container is crash looping still reports the Running phase, so the phase alone is not enough.
+func isDataPlanePodHealthy(pod *corev1.Pod) bool {
+	if pod.Status.Phase != corev1.PodRunning {
+		return false
+	}
+	for _, c := range pod.Status.ContainerStatuses {
+		if !c.Ready {
+			return false
+		}
+	}
+	return true
+}
+
 // Capture K8s state related to the data plane (num nodes, num instrumented nodes, unhealthy data plane pods)
 func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.PodStatus, error) {
 	nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
@@ -391,7 +405,7 @@ func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.
 		return 0, 0, nil, err
 	}
 	for _, kelvinPod := range kelvinPodsList.Items {
-		if kelvinPod.Status.Phase != corev1.PodRunning {
+		if !isDataPlanePodHealthy(&kelvinPod) {
 			unhealthyDataPlanePods = append(unhealthyDataPlanePods, kelvinPod)
 		}
 	}
@@ -408,7 +422,7 @@ func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.
 	// Get the count of healthy PEMs.
 	healthyPemCount := 0
 	for _, pemPod := range pemPodsList.Items {
-		if pemPod.Status.Phase == corev1.PodRunning {
+		if isDataPlanePodHealthy(&pemPod) {
 			healthyPemCount++
 		} else {
 			unhealthyPEMPods = append(unhealthyPEMPods, pemPod)
@@ -421,7 +435,7 @@ func (v *K8sVizierInfo) getDataPlaneState() (int32, int32, map[string]*cvmsgspb.
 		return unhealthyPEMPods[i].ObjectMeta.Name < unhealthyPEMPods[j].ObjectMeta.Name
 	})
 	for i := 0; i < len(unhealthyPEMPods); i++ {
-		if len(unhealthyDataPlanePods) <= maxUnhealthyDataPlanePods {
+		if len(unhealthyDataPlanePods) >= maxUnhealthyDataPlanePods {
 			break
 		}
 		unhealthyDataPlanePods = append(unhealthyDataPlanePods, unhealthyPEMPods[i])

@@ -74,9 +74,12 @@ go_library(
 
 pl_go_test(
     name = "bridge_test",
-    srcs = ["server_test.go"],
+    srcs = [
+        "server_test.go",
+        "vzinfo_test.go",
+    ],
+    embed = [":bridge"],
     deps = [
-        ":bridge",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",
@@ -91,6 +94,10 @@ pl_go_test(
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@io_k8s_api//batch/v1:batch",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_client_go//kubernetes/fake",
         "@org_golang_google_grpc//:grpc",
         "@org_golang_google_grpc//credentials/insecure",
         "@org_golang_google_grpc//test/bufconn",
