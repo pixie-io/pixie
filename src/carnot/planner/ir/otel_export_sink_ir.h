@@ -127,11 +127,23 @@ struct OTelSpan {
   int64_t span_kind;
 };
 
+struct OTelLog {
+  std::vector<OTelAttribute> attributes;
+
+  ColumnIR* time_column;
+  ColumnIR* observed_time_column = nullptr;
+  ColumnIR* body_column;
+
+  int64_t severity_number;
+  std::string severity_text;
+};
+
 struct OTelData {
   planpb::OTelEndpointConfig endpoint_config;
   std::vector<OTelAttribute> resource_attributes;
   std::vector<OTelMetric> metrics;
   std::vector<OTelSpan> spans;
+  std::vector<OTelLog> logs;
 };
 
 /**
