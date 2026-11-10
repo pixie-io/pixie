@@ -311,6 +311,14 @@ TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
   udf_tester.ForInput("123_uid").Expect("");
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_host_ip_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToHostIPUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("2.2.2.2");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+}
+
 TEST_F(MetadataOpsTest, pod_id_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetNameUDF>(std::move(function_ctx));
@@ -648,6 +656,14 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_ip) {
   udf_tester.ForInput("pl/running_pod").Expect("1.1.1.1");
   udf_tester.ForInput("pl/terminating_pod").Expect("");
   // udf_tester.ForInput("bad_format").Expect("");
+  udf_tester.ForInput("pl/nonexistent").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_host_ip) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToHostIPUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("2.2.2.2");
+  udf_tester.ForInput("pl/terminating_pod").Expect("");
   udf_tester.ForInput("pl/nonexistent").Expect("");
 }
 

@@ -56,6 +56,7 @@ qos_class: QOS_CLASS_GUARANTEED
 node_name: "test_node"
 hostname: "test_host"
 pod_ip: "1.1.1.1"
+host_ip: "2.2.2.2"
 phase: RUNNING
 message: "Running message"
 reason: "Running reason"

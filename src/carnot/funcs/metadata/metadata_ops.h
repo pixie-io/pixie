@@ -188,6 +188,29 @@ class PodNameToPodIPUDF : public ScalarUDF {
   }
 };
 
+class PodNameToHostIPUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const px::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return pod_info->host_ip();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the IP address of the node a pod is running on.")
+        .Details(
+            "Gets the IP address of the host (node) that the pod (specified by name) is "
+            "assigned to.")
+        .Example("df.host_ip = px.pod_name_to_host_ip(df.pod_name)")
+        .Arg("pod_name", "The name of the pod to get the host IP for.")
+        .Returns("The host IP for the pod name passed in.");
+  }
+};
+
 class PodIDToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
@@ -1942,6 +1965,29 @@ class PodIDToNodeNameUDF : public ScalarUDF {
         .Example("df.node_name = px.pod_id_to_node_name(df.pod_id)")
         .Arg("pod_id", "The Pod ID of the Pod to get the node name for.")
         .Returns("The k8s node name for the Pod ID passed in.");
+  }
+};
+
+class PodIDToHostIPUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return pod_info->host_ip();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the IP address of the node a pod ID is running on.")
+        .Details(
+            "Gets the IP address of the host (node) that the Pod (specified by Pod ID) is "
+            "assigned to.")
+        .Example("df.host_ip = px.pod_id_to_host_ip(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the host IP for.")
+        .Returns("The host IP for the Pod ID passed in.");
   }
 };
 
