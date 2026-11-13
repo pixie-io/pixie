@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
@@ -344,31 +345,29 @@ func TestController(t *testing.T) {
 			name: "simple endpoint",
 			updates: []resourceUpdate{
 				&endpoints{
-					e: &v1.Endpoints{
+					e: &discoveryv1.EndpointSlice{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "myendpoint",
+							Name:   "myendpoint-abcde",
+							Labels: map[string]string{discoveryv1.LabelServiceName: "myendpoint"},
 						},
-						Subsets: []v1.EndpointSubset{
+						AddressType: discoveryv1.AddressTypeIPv4,
+						Endpoints: []discoveryv1.Endpoint{
 							{
-								Addresses: []v1.EndpointAddress{
-									{
-										IP:       "127.0.0.1",
-										Hostname: "hostname",
-									},
-								},
-								NotReadyAddresses: []v1.EndpointAddress{
-									{
-										IP:       "127.0.0.2",
-										Hostname: "notready",
-									},
-								},
-								Ports: []v1.EndpointPort{
-									{
-										Name:     "endpointport",
-										Protocol: v1.ProtocolTCP,
-										Port:     8081,
-									},
-								},
+								Addresses:  []string{"127.0.0.1"},
+								Hostname:   strptr("hostname"),
+								Conditions: discoveryv1.EndpointConditions{Ready: boolptr(true)},
+							},
+							{
+								Addresses:  []string{"127.0.0.2"},
+								Hostname:   strptr("notready"),
+								Conditions: discoveryv1.EndpointConditions{Ready: boolptr(false)},
+							},
+						},
+						Ports: []discoveryv1.EndpointPort{
+							{
+								Name:     strptr("endpointport"),
+								Protocol: protocolptr(v1.ProtocolTCP),
+								Port:     int32ptr(8081),
 							},
 						},
 					},
@@ -844,13 +843,13 @@ func TestController(t *testing.T) {
 
 			watchersStarted := map[string]bool{
 				// This list needs to be kept up-to-date with the list of watchers started in k8s_metadata_controller.go
-				"nodes":       false,
-				"namespaces":  false,
-				"pods":        false,
-				"endpoints":   false,
-				"services":    false,
-				"replicasets": false,
-				"deployments": false,
+				"nodes":          false,
+				"namespaces":     false,
+				"pods":           false,
+				"endpointslices": false,
+				"services":       false,
+				"replicasets":    false,
+				"deployments":    false,
 			}
 			allStarted := func() bool {
 				for _, started := range watchersStarted {
@@ -962,31 +961,29 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 			name: "simple endpoint",
 			updates: []resourceUpdate{
 				&endpoints{
-					e: &v1.Endpoints{
+					e: &discoveryv1.EndpointSlice{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "mynotwatchedendpoint",
+							Name:   "mynotwatchedendpoint-abcde",
+							Labels: map[string]string{discoveryv1.LabelServiceName: "mynotwatchedendpoint"},
 						},
-						Subsets: []v1.EndpointSubset{
+						AddressType: discoveryv1.AddressTypeIPv4,
+						Endpoints: []discoveryv1.Endpoint{
 							{
-								Addresses: []v1.EndpointAddress{
-									{
-										IP:       "127.0.0.1",
-										Hostname: "hostname",
-									},
-								},
-								NotReadyAddresses: []v1.EndpointAddress{
-									{
-										IP:       "127.0.0.2",
-										Hostname: "notready",
-									},
-								},
-								Ports: []v1.EndpointPort{
-									{
-										Name:     "endpointport",
-										Protocol: v1.ProtocolTCP,
-										Port:     8081,
-									},
-								},
+								Addresses:  []string{"127.0.0.1"},
+								Hostname:   strptr("hostname"),
+								Conditions: discoveryv1.EndpointConditions{Ready: boolptr(true)},
+							},
+							{
+								Addresses:  []string{"127.0.0.2"},
+								Hostname:   strptr("notready"),
+								Conditions: discoveryv1.EndpointConditions{Ready: boolptr(false)},
+							},
+						},
+						Ports: []discoveryv1.EndpointPort{
+							{
+								Name:     strptr("endpointport"),
+								Protocol: protocolptr(v1.ProtocolTCP),
+								Port:     int32ptr(8081),
 							},
 						},
 					},
@@ -994,31 +991,29 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 					t:  create,
 				},
 				&endpoints{
-					e: &v1.Endpoints{
+					e: &discoveryv1.EndpointSlice{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "myendpoint",
+							Name:   "myendpoint-abcde",
+							Labels: map[string]string{discoveryv1.LabelServiceName: "myendpoint"},
 						},
-						Subsets: []v1.EndpointSubset{
+						AddressType: discoveryv1.AddressTypeIPv4,
+						Endpoints: []discoveryv1.Endpoint{
 							{
-								Addresses: []v1.EndpointAddress{
-									{
-										IP:       "127.0.0.1",
-										Hostname: "hostname",
-									},
-								},
-								NotReadyAddresses: []v1.EndpointAddress{
-									{
-										IP:       "127.0.0.2",
-										Hostname: "notready",
-									},
-								},
-								Ports: []v1.EndpointPort{
-									{
-										Name:     "endpointport",
-										Protocol: v1.ProtocolTCP,
-										Port:     8081,
-									},
-								},
+								Addresses:  []string{"127.0.0.1"},
+								Hostname:   strptr("hostname"),
+								Conditions: discoveryv1.EndpointConditions{Ready: boolptr(true)},
+							},
+							{
+								Addresses:  []string{"127.0.0.2"},
+								Hostname:   strptr("notready"),
+								Conditions: discoveryv1.EndpointConditions{Ready: boolptr(false)},
+							},
+						},
+						Ports: []discoveryv1.EndpointPort{
+							{
+								Name:     strptr("endpointport"),
+								Protocol: protocolptr(v1.ProtocolTCP),
+								Port:     int32ptr(8081),
 							},
 						},
 					},
@@ -1384,13 +1379,13 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 
 			watchersStarted := map[string]bool{
 				// This list needs to be kept up-to-date with the list of watchers started in k8s_metadata_controller.go
-				"nodes":       false,
-				"namespaces":  false,
-				"pods":        false,
-				"endpoints":   false,
-				"services":    false,
-				"replicasets": false,
-				"deployments": false,
+				"nodes":          false,
+				"namespaces":     false,
+				"pods":           false,
+				"endpointslices": false,
+				"services":       false,
+				"replicasets":    false,
+				"deployments":    false,
 			}
 			allStarted := func() bool {
 				for _, started := range watchersStarted {
@@ -1580,13 +1575,13 @@ func (n *namespace) Apply(ctx context.Context, c kubernetes.Interface) error {
 }
 
 type endpoints struct {
-	e  *v1.Endpoints
+	e  *discoveryv1.EndpointSlice
 	ns string
 	t  resourceUpdateType
 }
 
 func (e *endpoints) Apply(ctx context.Context, c kubernetes.Interface) error {
-	ei := c.CoreV1().Endpoints(e.ns)
+	ei := c.DiscoveryV1().EndpointSlices(e.ns)
 	switch e.t {
 	case create:
 		_, err := ei.Create(ctx, e.e, metav1.CreateOptions{})
@@ -1600,6 +1595,12 @@ func (e *endpoints) Apply(ctx context.Context, c kubernetes.Interface) error {
 		return errors.New("invalid resourceUpdateType")
 	}
 }
+
+func strptr(s string) *string { return &s }
+
+func boolptr(b bool) *bool { return &b }
+
+func protocolptr(p v1.Protocol) *v1.Protocol { return &p }
 
 type service struct {
 	s  *v1.Service
