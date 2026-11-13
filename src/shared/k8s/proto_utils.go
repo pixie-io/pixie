@@ -23,6 +23,7 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -463,6 +464,94 @@ func EndpointSubsetFromProto(pb *metadatapb.EndpointSubset) *v1.EndpointSubset {
 		Addresses:         addresses,
 		NotReadyAddresses: notReadyAddrs,
 		Ports:             ports,
+	}
+}
+
+// EndpointSlicesToProto builds the Endpoints proto of a Service from its EndpointSlices.
+// Each slice becomes one subset. Ready endpoints go to Addresses, terminating ones are
+// left out like the v1 Endpoints API does, and the rest go to NotReadyAddresses. With
+// dual-stack services a pod shows up in one slice per IP family, so it's only added once.
+func EndpointSlicesToProto(serviceName string, slices []*discoveryv1.EndpointSlice) *metadatapb.Endpoints {
+	meta := metav1.ObjectMeta{Name: serviceName}
+	seen := make(map[string]bool)
+	var subsets []*metadatapb.EndpointSubset
+
+	for _, slice := range slices {
+		meta.Namespace = slice.Namespace
+		if meta.CreationTimestamp.IsZero() || slice.CreationTimestamp.Before(&meta.CreationTimestamp) {
+			meta.CreationTimestamp = slice.CreationTimestamp
+		}
+		for _, ref := range slice.OwnerReferences {
+			if ref.Kind == "Service" && ref.Name == serviceName {
+				meta.UID = ref.UID
+			}
+		}
+		if slice.AddressType == discoveryv1.AddressTypeFQDN {
+			continue
+		}
+
+		subset := &metadatapb.EndpointSubset{
+			Addresses:         []*metadatapb.EndpointAddress{},
+			NotReadyAddresses: []*metadatapb.EndpointAddress{},
+			Ports:             []*metadatapb.EndpointPort{},
+		}
+		for _, ep := range slice.Endpoints {
+			if ep.Conditions.Terminating != nil && *ep.Conditions.Terminating {
+				continue
+			}
+			if len(ep.Addresses) == 0 {
+				continue
+			}
+			key := ep.Addresses[0]
+			if ep.TargetRef != nil && ep.TargetRef.UID != "" {
+				key = string(ep.TargetRef.UID)
+			}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+
+			addr := &metadatapb.EndpointAddress{IP: ep.Addresses[0]}
+			if ep.Hostname != nil {
+				addr.Hostname = *ep.Hostname
+			}
+			if ep.NodeName != nil {
+				addr.NodeName = *ep.NodeName
+			}
+			if ep.TargetRef != nil {
+				addr.TargetRef = ObjectReferenceToProto(ep.TargetRef)
+			}
+			if ep.Conditions.Ready == nil || *ep.Conditions.Ready {
+				subset.Addresses = append(subset.Addresses, addr)
+			} else {
+				subset.NotReadyAddresses = append(subset.NotReadyAddresses, addr)
+			}
+		}
+		if len(subset.Addresses) == 0 && len(subset.NotReadyAddresses) == 0 {
+			continue
+		}
+		for _, p := range slice.Ports {
+			port := &metadatapb.EndpointPort{}
+			if p.Name != nil {
+				port.Name = *p.Name
+			}
+			if p.Port != nil {
+				port.Port = *p.Port
+			}
+			if p.Protocol != nil {
+				port.Protocol = ipProtocolObjToPbMap[*p.Protocol]
+			}
+			subset.Ports = append(subset.Ports, port)
+		}
+		subsets = append(subsets, subset)
+	}
+
+	if subsets == nil {
+		subsets = []*metadatapb.EndpointSubset{}
+	}
+	return &metadatapb.Endpoints{
+		Metadata: ObjectMetadataToProto(&meta),
+		Subsets:  subsets,
 	}
 }
 

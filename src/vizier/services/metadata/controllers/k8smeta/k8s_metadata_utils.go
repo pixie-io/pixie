@@ -19,12 +19,16 @@
 package k8smeta
 
 import (
+	"sort"
+
 	log "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/informers"
+	discoverylisters "k8s.io/client-go/listers/discovery/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"px.dev/pixie/src/shared/k8s"
@@ -127,9 +131,40 @@ func startServiceWatcher(ch chan *K8sResourceMessage, quitCh <-chan struct{}, fa
 
 func startEndpointsWatcher(ch chan *K8sResourceMessage, quitCh <-chan struct{}, factories []informers.SharedInformerFactory) {
 	for _, factory := range factories {
-		inf := factory.Core().V1().Endpoints().Informer()
-		_, _ = inf.AddEventHandler(createHandlers(endpointsConverter, ch))
+		slices := factory.Discovery().V1().EndpointSlices()
+		inf := slices.Informer()
+		_, _ = inf.AddEventHandler(createEndpointSliceHandlers(slices.Lister(), ch))
 		go inf.Run(quitCh)
+	}
+}
+
+// createEndpointSliceHandlers sends an endpoints update for the whole Service whenever one of
+// its EndpointSlices changes, so the rest of the metadata service keeps seeing one Endpoints
+// object per Service like it did with the v1 Endpoints API.
+func createEndpointSliceHandlers(lister discoverylisters.EndpointSliceLister, ch chan *K8sResourceMessage) cache.ResourceEventHandler {
+	send := func(obj interface{}, eventType watch.EventType) {
+		if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+			obj = tombstone.Obj
+		}
+		slice, ok := obj.(*discoveryv1.EndpointSlice)
+		if !ok {
+			return
+		}
+		msg, lastSlice := endpointSlicesConverter(lister, slice, eventType == watch.Deleted)
+		if msg == nil {
+			return
+		}
+		msg.EventType = eventType
+		if eventType == watch.Deleted && !lastSlice {
+			// The Service still has other slices, so this is an update, not a delete.
+			msg.EventType = watch.Modified
+		}
+		ch <- msg
+	}
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc:    func(obj interface{}) { send(obj, watch.Added) },
+		UpdateFunc: func(_, newObj interface{}) { send(newObj, watch.Modified) },
+		DeleteFunc: func(obj interface{}) { send(obj, watch.Deleted) },
 	}
 }
 
@@ -182,15 +217,41 @@ func namespaceConverter(obj interface{}) *K8sResourceMessage {
 	}
 }
 
-func endpointsConverter(obj interface{}) *K8sResourceMessage {
+// endpointSlicesConverter builds the endpoints message for the Service that owns the given slice
+// from all of that Service's slices in the informer cache. When the deleted slice was the last
+// one, the message is built from it so the delete still carries the last known addresses.
+func endpointSlicesConverter(lister discoverylisters.EndpointSliceLister, slice *discoveryv1.EndpointSlice, deleted bool) (*K8sResourceMessage, bool) {
+	serviceName := slice.Labels[discoveryv1.LabelServiceName]
+	if serviceName == "" {
+		return nil, false
+	}
+	selector := labels.SelectorFromSet(labels.Set{discoveryv1.LabelServiceName: serviceName})
+	slices, err := lister.EndpointSlices(slice.Namespace).List(selector)
+	if err != nil {
+		log.WithError(err).Error("Failed to list EndpointSlices")
+		return nil, false
+	}
+	deletedLast := false
+	if deleted && len(slices) == 0 {
+		slices = []*discoveryv1.EndpointSlice{slice}
+		deletedLast = true
+	}
+	sort.Slice(slices, func(i, j int) bool {
+		// Prefer IPv4 addresses for dual-stack services, then keep the order stable.
+		if slices[i].AddressType != slices[j].AddressType {
+			return slices[i].AddressType == discoveryv1.AddressTypeIPv4
+		}
+		return slices[i].Name < slices[j].Name
+	})
+
 	return &K8sResourceMessage{
 		ObjectType: "endpoints",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Endpoints{
-				Endpoints: k8s.EndpointsToProto(obj.(*v1.Endpoints)),
+				Endpoints: k8s.EndpointSlicesToProto(serviceName, slices),
 			},
 		},
-	}
+	}, deletedLast
 }
 
 func nodeConverter(obj interface{}) *K8sResourceMessage {

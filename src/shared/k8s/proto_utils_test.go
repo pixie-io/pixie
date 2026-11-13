@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -1305,6 +1306,59 @@ func TestEndpointsToProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestEndpointSlicesToProto(t *testing.T) {
+	yes, no := true, false
+	tcp := v1.ProtocolTCP
+	port := int32(80)
+	portName := "http"
+	node := "node1"
+	created := metav1.Unix(0, 10)
+	owner := []metav1.OwnerReference{{Kind: "Service", Name: "svc", UID: "svc-uid"}}
+	podA := &v1.ObjectReference{Kind: "Pod", Namespace: "ns", Name: "a", UID: "a-uid"}
+	podB := &v1.ObjectReference{Kind: "Pod", Namespace: "ns", Name: "b", UID: "b-uid"}
+	podC := &v1.ObjectReference{Kind: "Pod", Namespace: "ns", Name: "c", UID: "c-uid"}
+	ports := []discoveryv1.EndpointPort{{Name: &portName, Port: &port, Protocol: &tcp}}
+
+	slices := []*discoveryv1.EndpointSlice{
+		{
+			ObjectMeta:  metav1.ObjectMeta{Name: "svc-v4", Namespace: "ns", CreationTimestamp: created, OwnerReferences: owner},
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{
+				{Addresses: []string{"10.0.0.1"}, NodeName: &node, TargetRef: podA, Conditions: discoveryv1.EndpointConditions{Ready: &yes}},
+				{Addresses: []string{"10.0.0.2"}, NodeName: &node, TargetRef: podB, Conditions: discoveryv1.EndpointConditions{Ready: &no}},
+				{Addresses: []string{"10.0.0.3"}, NodeName: &node, TargetRef: podC, Conditions: discoveryv1.EndpointConditions{Ready: &no, Terminating: &yes}},
+			},
+			Ports: ports,
+		},
+		{
+			ObjectMeta:  metav1.ObjectMeta{Name: "svc-v6", Namespace: "ns", CreationTimestamp: metav1.Unix(0, 20), OwnerReferences: owner},
+			AddressType: discoveryv1.AddressTypeIPv6,
+			Endpoints: []discoveryv1.Endpoint{
+				{Addresses: []string{"fd00::1"}, NodeName: &node, TargetRef: podA, Conditions: discoveryv1.EndpointConditions{Ready: &yes}},
+			},
+			Ports: ports,
+		},
+	}
+
+	pb := k8s.EndpointSlicesToProto("svc", slices)
+
+	assert.Equal(t, "svc", pb.Metadata.Name)
+	assert.Equal(t, "ns", pb.Metadata.Namespace)
+	assert.Equal(t, "svc-uid", pb.Metadata.UID)
+	assert.Equal(t, int64(10), pb.Metadata.CreationTimestampNS)
+	// The IPv6 slice only has pod a again, so it adds no subset.
+	assert.Equal(t, 1, len(pb.Subsets))
+	subset := pb.Subsets[0]
+	assert.Equal(t, 1, len(subset.Addresses))
+	assert.Equal(t, "10.0.0.1", subset.Addresses[0].IP)
+	assert.Equal(t, "node1", subset.Addresses[0].NodeName)
+	assert.Equal(t, "a", subset.Addresses[0].TargetRef.Name)
+	// Terminating pod c is left out.
+	assert.Equal(t, 1, len(subset.NotReadyAddresses))
+	assert.Equal(t, "10.0.0.2", subset.NotReadyAddresses[0].IP)
+	assert.Equal(t, []*metadatapb.EndpointPort{{Name: "http", Port: 80, Protocol: metadatapb.TCP}}, subset.Ports)
 }
 
 func TestEndpointsFromProto(t *testing.T) {
