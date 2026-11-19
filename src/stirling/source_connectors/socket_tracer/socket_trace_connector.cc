@@ -122,6 +122,11 @@ DEFINE_int32(
     gflags::Int32FromEnv("PX_STIRLING_ENABLE_TLS_TRACING", px::stirling::TraceMode::Off),
     "If true, stirling will trace and process TLS protocol (not the TLS payload) messages. Note: "
     "this disables tracing the plaintext within encrypted connections until gh#2095 is addressed.");
+DEFINE_int32(stirling_enable_websocket_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_WEBSOCKET_TRACING",
+                                  px::stirling::TraceMode::Off),
+             "If true, stirling will trace and process WebSocket messages on upgraded HTTP "
+             "connections.");
 DEFINE_bool(stirling_disable_golang_tls_tracing,
             gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
             "If true, stirling will not trace TLS traffic for Go applications. This implies "
@@ -303,10 +308,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                   kTLSTableNum,
                                   {kRoleClient, kRoleServer},
                                   TRANSFER_STREAM_PROTOCOL(tls)}},
-      {kProtocolWebSocket, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
-                                        /* table_num */ static_cast<uint32_t>(-1),
-                                        /* trace_roles */ {},
-                                        /* transfer_fn */ nullptr}},
+      {kProtocolWebSocket, TransferSpec{FLAGS_stirling_enable_websocket_tracing,
+                                        kWebSocketTableNum,
+                                        {kRoleClient, kRoleServer},
+                                        TRANSFER_STREAM_PROTOCOL(websocket)}},
       {kProtocolUnknown, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                       /* table_num */ static_cast<uint32_t>(-1),
                                       /* trace_roles */ {},
@@ -1779,6 +1784,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif
 }
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext*, const ConnTracker&,
+                                         protocols::websocket::Record, DataTable*) {}
 
 void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
   DCHECK(!path.empty());

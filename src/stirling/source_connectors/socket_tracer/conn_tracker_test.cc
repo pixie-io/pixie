@@ -357,14 +357,16 @@ TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
 
 TEST_F(ConnTrackerTest, TrackerHTTP101UpgradesToWebSocket) {
   constexpr std::string_view kServerText = "\x81\x02hi"sv;
-  constexpr std::string_view kClientMaskedText = "\x81\x85\x37\xfa\x21\x3d\x7f\x9f\x4d\x51\x58"sv;
+  constexpr std::string_view kClientMaskedText =
+      "\x81\x85\x37\xfa\x21\x3d\x7f\x9f\x4d\x51\x58"sv;
   constexpr std::string_view kClientPing = "\x89\x00"sv;
 
   struct socket_control_event_t conn = event_gen_.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq);
   std::unique_ptr<SocketDataEvent> resp0 =
       event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kHTTPUpgradeResp, kServerText));
-  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolHTTP>(kClientMaskedText);
+  std::unique_ptr<SocketDataEvent> req1 =
+      event_gen_.InitSendEvent<kProtocolHTTP>(kClientMaskedText);
   std::unique_ptr<SocketDataEvent> req2 = event_gen_.InitSendEvent<kProtocolHTTP>(kClientPing);
 
   ConnTracker tracker;

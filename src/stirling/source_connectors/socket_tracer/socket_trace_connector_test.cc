@@ -19,8 +19,10 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 
 #include <memory>
+#include <string_view>
 
 #include <absl/functional/bind_front.h>
+#include <absl/strings/str_cat.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -221,6 +223,53 @@ TEST_F(SocketTraceConnectorTest, Basic) {
   ASSERT_THAT(records, RecordBatchSizeIs(1));
   EXPECT_THAT(ToStringVector(records[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
   EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("foo"));
+}
+
+class SocketTraceConnectorWebSocketTest : public SocketTraceConnectorTest {
+ protected:
+  void SetUp() override {
+    FLAGS_stirling_enable_websocket_tracing = TraceMode::On;
+    SocketTraceConnectorTest::SetUp();
+  }
+
+  void TearDown() override { FLAGS_stirling_enable_websocket_tracing = TraceMode::Off; }
+
+  DataTable* websocket_table_ = data_tables_[SocketTraceConnector::kWebSocketTableNum];
+};
+
+TEST_F(SocketTraceConnectorWebSocketTest, UpgradedConnectionProducesWebSocketEvents) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kServerText = "\x81\x02hi"sv;
+  constexpr std::string_view kClientMaskedText =
+      "\x81\x85\x37\xfa\x21\x3d\x7f\x9f\x4d\x51\x58"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req =
+      event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(
+      absl::StrCat(testing::kHTTPUpgradeResp, kServerText));
+  std::unique_ptr<SocketDataEvent> client_msg =
+      event_gen_.InitSendEvent<kProtocolHTTP>(kClientMaskedText);
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(req));
+  source_->AcceptDataEvent(std::move(resp));
+  source_->AcceptDataEvent(std::move(client_msg));
+  connector_->TransferData(ctx_.get());
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> http_tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & http_records, http_tablets);
+  ASSERT_THAT(http_records, RecordBatchSizeIs(1));
+
+  std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]), ElementsAre("Hello", "hi"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketDirectionIdx]), ElementsAre(1, 2));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketOpcodeIdx]), ElementsAre(1, 1));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]),
+              ElementsAre(5, 2));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
