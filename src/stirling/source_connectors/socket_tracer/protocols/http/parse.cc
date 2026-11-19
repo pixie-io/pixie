@@ -196,6 +196,10 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result, State* stat
       }
       if (IsWebSocketUpgrade(result->headers)) {
         state->websocket_upgrade_accepted = true;
+        const auto subprotocol_iter = result->headers.find(kSecWebSocketProtocol);
+        if (subprotocol_iter != result->headers.end()) {
+          state->websocket_subprotocol = subprotocol_iter->second;
+        }
         return ParseState::kEOS;
       }
 
@@ -289,6 +293,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* resul
       ParseState parse_state = ParseRequest(buf, result);
       if (parse_state == ParseState::kSuccess && IsWebSocketUpgrade(result->headers)) {
         state->websocket_upgrade_requested = true;
+        state->websocket_path = result->req_path;
       }
       return parse_state;
     }
