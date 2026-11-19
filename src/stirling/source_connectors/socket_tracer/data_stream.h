@@ -229,6 +229,13 @@ class DataStream : NotCopyMoveable {
 
   void set_protocol(traffic_protocol_t protocol) { protocol_ = protocol; }
 
+  void SwitchProtocol(traffic_protocol_t protocol) {
+    protocol_ = protocol;
+    frames_ = std::monostate();
+    last_parse_state_ = ParseState::kInvalid;
+    has_new_events_ = true;
+  }
+
   /**
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
    */

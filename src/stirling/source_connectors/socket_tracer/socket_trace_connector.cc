@@ -869,6 +869,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
     if (transfer_spec.transfer_fn != nullptr) {
       current_conn_tracker_buffer_size +=
           transfer_spec.transfer_fn(*this, ctx, conn_tracker, data_table);
+      if (protocol_transfer_specs_[kProtocolWebSocket].enabled) {
+        conn_tracker->MaybeUpgradeToWebSocket();
+      }
     } else {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be

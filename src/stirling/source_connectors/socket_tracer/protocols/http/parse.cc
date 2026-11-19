@@ -21,6 +21,8 @@
 
 #include <picohttpparser.h>
 
+#include <absl/strings/match.h>
+
 #include <algorithm>
 #include <string>
 #include <utility>
@@ -33,6 +35,16 @@ namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
+
+namespace {
+
+bool IsWebSocketUpgrade(const HeadersMap& headers) {
+  const auto upgrade_iter = headers.find(kUpgrade);
+  return upgrade_iter != headers.end() &&
+         absl::EqualsIgnoreCase(upgrade_iter->second, kWebSocketUpgrade);
+}
+
+}  // namespace
 
 namespace pico_wrapper {
 
@@ -183,6 +195,10 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result, State* stat
       if (upgrade_iter == result->headers.end()) {
         LOG(WARNING) << "Expected an Upgrade header with HTTP status 101";
       }
+      if (IsWebSocketUpgrade(result->headers)) {
+        state->websocket_upgrade_accepted = true;
+        return ParseState::kEOS;
+      }
 
       LOG(WARNING) << "HTTP upgrades are not yet supported";
       return ParseState::kEOS;
@@ -267,10 +283,23 @@ ParseState ParseResponse(std::string_view* buf, Message* result, State* state) {
  */
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* result, State* state) {
   switch (type) {
-    case message_type_t::kRequest:
-      return ParseRequest(buf, result);
-    case message_type_t::kResponse:
-      return ParseResponse(buf, result, state);
+    case message_type_t::kRequest: {
+      if (state->websocket_upgrade_requested) {
+        return ParseState::kNeedsMoreData;
+      }
+      ParseState parse_state = ParseRequest(buf, result);
+      if (parse_state == ParseState::kSuccess && IsWebSocketUpgrade(result->headers)) {
+        state->websocket_upgrade_requested = true;
+      }
+      return parse_state;
+    }
+    case message_type_t::kResponse: {
+      ParseState parse_state = ParseResponse(buf, result, state);
+      if (parse_state == ParseState::kSuccess && result->resp_status >= 200) {
+        state->websocket_upgrade_requested = false;
+      }
+      return parse_state;
+    }
     default:
       return ParseState::kInvalid;
   }

@@ -158,7 +158,7 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
     return;
   }
 
-  if (event->attr.protocol != protocol_) {
+  if (event->attr.protocol != protocol_ && event->attr.protocol != upgraded_from_) {
     return;
   }
 
@@ -813,7 +813,23 @@ void ConnTracker::IterationPreTick(
   UpdateState(cluster_cidrs);
 }
 
-bool ConnTracker::MaybeUpgradeToWebSocket() { return false; }
+bool ConnTracker::MaybeUpgradeToWebSocket() {
+  if (protocol_ != kProtocolHTTP) {
+    return false;
+  }
+  auto* state = protocol_state<protocols::http::StateWrapper>();
+  if (state == nullptr || !state->global.websocket_upgrade_accepted) {
+    return false;
+  }
+
+  CONN_TRACE(1) << "Protocol upgraded: HTTP->WebSocket";
+  upgraded_from_ = protocol_;
+  protocol_ = kProtocolWebSocket;
+  protocol_state_.reset();
+  send_data_.SwitchProtocol(protocol_);
+  recv_data_.SwitchProtocol(protocol_);
+  return true;
+}
 
 void ConnTracker::IterationPostTick() {
   if (death_countdown_ > 0) {
