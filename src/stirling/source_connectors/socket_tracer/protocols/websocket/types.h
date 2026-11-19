@@ -39,6 +39,8 @@ enum class Opcode : uint8_t {
   kPong = 0xa,
 };
 
+inline bool IsControl(Opcode opcode) { return static_cast<uint8_t>(opcode) & 0x8; }
+
 struct Frame : public FrameBase {
   bool fin = false;
   uint8_t rsv = 0;

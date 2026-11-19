@@ -34,7 +34,6 @@ constexpr uint8_t kFinBit = 0x80;
 constexpr uint8_t kRsvBits = 0x70;
 constexpr uint8_t kRsvShift = 4;
 constexpr uint8_t kOpcodeBits = 0x0f;
-constexpr uint8_t kControlOpcodeBit = 0x08;
 constexpr uint8_t kMaskBit = 0x80;
 constexpr uint8_t kPayloadLengthBits = 0x7f;
 constexpr uint8_t kPayloadLength16 = 126;
@@ -42,8 +41,6 @@ constexpr uint8_t kPayloadLength64 = 127;
 constexpr uint64_t kPayloadLength64MSB = 1ULL << 63;
 constexpr uint64_t kMaxControlPayloadLength = 125;
 constexpr size_t kMaskingKeySize = 4;
-
-bool IsControl(Opcode opcode) { return static_cast<uint8_t>(opcode) & kControlOpcodeBit; }
 
 }  // namespace
 }  // namespace websocket
