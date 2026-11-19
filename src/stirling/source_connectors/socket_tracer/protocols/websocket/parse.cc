@@ -103,6 +103,11 @@ ParseState ParseFrame(message_type_t, std::string_view* buf, websocket::Frame* f
   return ParseState::kSuccess;
 }
 
+template <>
+size_t FindFrameBoundary<websocket::Frame>(message_type_t, std::string_view, size_t, NoState*) {
+  return std::string_view::npos;
+}
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

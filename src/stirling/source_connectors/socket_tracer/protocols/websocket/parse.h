@@ -31,6 +31,10 @@ template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, websocket::Frame* frame,
                       NoState* state);
 
+template <>
+size_t FindFrameBoundary<websocket::Frame>(message_type_t type, std::string_view buf,
+                                           size_t start_pos, NoState* state);
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

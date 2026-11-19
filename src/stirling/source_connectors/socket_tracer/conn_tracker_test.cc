@@ -29,9 +29,9 @@
 #include <absl/strings/str_cat.h>
 #include <magic_enum/magic_enum.hpp>
 
-#include "protocols/http/types.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/testing/common.h"
@@ -385,8 +385,7 @@ TEST_F(ConnTrackerTest, TrackerHTTP101UpgradesToWebSocket) {
   EXPECT_EQ(tracker.protocol(), kProtocolWebSocket);
   EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
 
-  std::vector<websocket::Record> ws_records =
-      tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  std::vector<websocket::Record> ws_records = tracker.ProcessToRecords<websocket::ProtocolTraits>();
   tracker.IterationPostTick();
   ASSERT_THAT(ws_records, SizeIs(2));
   EXPECT_EQ(ws_records[0].msg.type, message_type_t::kRequest);
