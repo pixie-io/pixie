@@ -20,6 +20,7 @@
 
 #include <deque>
 #include <string>
+#include <utility>
 
 #include "src/common/testing/testing.h"
 
@@ -42,7 +43,9 @@ Frame MakeFrame(Opcode opcode, bool fin, std::string payload, uint64_t timestamp
 
 class WebSocketStitcherTest : public ::testing::Test {
  protected:
-  RecordsWithErrorCount<Record> Stitch() { return StitchFrames(&req_frames_, &resp_frames_, &state_); }
+  RecordsWithErrorCount<Record> Stitch() {
+    return StitchFrames<Record>(&req_frames_, &resp_frames_, &state_);
+  }
 
   std::deque<Frame> req_frames_;
   std::deque<Frame> resp_frames_;

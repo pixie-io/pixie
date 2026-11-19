@@ -66,9 +66,10 @@ struct Message {
   std::string payload;
 
   std::string ToString() const {
-    return absl::Substitute("Message: {type: $0, opcode: $1, compressed: $2, fragments: $3, len: $4}",
-                            magic_enum::enum_name(type), magic_enum::enum_name(opcode), compressed,
-                            fragments, payload.size());
+    return absl::Substitute(
+        "Message: {type: $0, opcode: $1, compressed: $2, fragments: $3, len: $4}",
+        magic_enum::enum_name(type), magic_enum::enum_name(opcode), compressed, fragments,
+        payload.size());
   }
 };
 
