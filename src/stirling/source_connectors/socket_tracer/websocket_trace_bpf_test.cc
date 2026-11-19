@@ -77,8 +77,9 @@ TEST_F(WebSocketTraceTest, PlainAndTLSEchoSessions) {
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& http_batch, http_tablets);
   std::vector<std::string> upgrades;
   for (size_t i : FindRecordIdxMatchesPID(http_batch, kHTTPUPIDIdx, server_.process_pid())) {
-    upgrades.push_back(absl::Substitute("$0 $1", http_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i),
-                                        http_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val));
+    upgrades.push_back(
+        absl::Substitute("$0 $1", http_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i),
+                         http_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val));
   }
   ASSERT_THAT(upgrades, ElementsAre("/echo 101", "/echo 101"));
 
