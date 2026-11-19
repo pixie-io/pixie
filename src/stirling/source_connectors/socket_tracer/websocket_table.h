@@ -36,6 +36,14 @@ static constexpr DataElement kWebSocketElements[] = {
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
         canonical_data_elements::kEncrypted,
+        {"subprotocol", "WebSocket subprotocol selected by the server",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL_ENUM},
+        {"kind", "frame for a raw message; exec, input or exit for a decoded Kubernetes exec session",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL_ENUM},
         {"direction", "1 if the client sent the message, 2 if the server sent it",
          types::DataType::INT64,
          types::SemanticType::ST_NONE,
@@ -60,6 +68,14 @@ static constexpr DataElement kWebSocketElements[] = {
          types::DataType::INT64,
          types::SemanticType::ST_BYTES,
          types::PatternType::METRIC_GAUGE},
+        {"output", "Output that followed an exec input or exit, truncated",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL},
+        {"output_size", "Output size (before any truncation)",
+         types::DataType::INT64,
+         types::SemanticType::ST_BYTES,
+         types::PatternType::METRIC_GAUGE},
 #ifndef NDEBUG
         canonical_data_elements::kPXInfo,
 #endif
@@ -70,10 +86,14 @@ static constexpr auto kWebSocketTable =
     DataTableSchema("websocket_events", "WebSocket messages", kWebSocketElements);
 DEFINE_PRINT_TABLE(WebSocket)
 
+constexpr int kWebSocketSubprotocolIdx = kWebSocketTable.ColIndex("subprotocol");
+constexpr int kWebSocketKindIdx = kWebSocketTable.ColIndex("kind");
 constexpr int kWebSocketDirectionIdx = kWebSocketTable.ColIndex("direction");
 constexpr int kWebSocketOpcodeIdx = kWebSocketTable.ColIndex("opcode");
 constexpr int kWebSocketPayloadIdx = kWebSocketTable.ColIndex("payload");
 constexpr int kWebSocketPayloadSizeIdx = kWebSocketTable.ColIndex("payload_size");
+constexpr int kWebSocketOutputIdx = kWebSocketTable.ColIndex("output");
+constexpr int kWebSocketOutputSizeIdx = kWebSocketTable.ColIndex("output_size");
 
 }  // namespace stirling
 }  // namespace px

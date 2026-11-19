@@ -220,8 +220,10 @@ template void DataStream::ProcessBytesToFrames<protocols::tls::stream_id_t, prot
                                                protocols::NoState>(message_type_t type,
                                                                    protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<protocols::websocket::stream_id_t,
-                                               protocols::websocket::Frame, protocols::NoState>(
-    message_type_t type, protocols::NoState* state);
+                                               protocols::websocket::Frame,
+                                               protocols::websocket::StateWrapper>(
+    message_type_t type, protocols::websocket::StateWrapper* state);
+
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;

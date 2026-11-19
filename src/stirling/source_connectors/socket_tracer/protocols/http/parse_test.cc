@@ -358,6 +358,32 @@ TEST_F(HTTPParserTest, Status101) {
   EXPECT_THAT(parsed_messages[0], ElementsAre(HasBody("")));
 }
 
+TEST_F(HTTPParserTest, WebSocketUpgradeKeepsPathAndSubprotocol) {
+  StateWrapper state{};
+  std::string req =
+      "GET /api/v1/namespaces/ns/pods/pod/exec?command=sh&stdin=true&tty=true HTTP/1.1\r\n"
+      "Host: 127.0.0.1:6443\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io,v4.channel.k8s.io\r\n"
+      "\r\n";
+  std::string resp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
+  ParseFramesLoop(message_type_t::kRequest, req, &parsed_messages, &state);
+  ParseFramesLoop(message_type_t::kResponse, resp, &parsed_messages, &state);
+
+  EXPECT_TRUE(state.global.websocket_upgrade_accepted);
+  EXPECT_EQ(state.global.websocket_path,
+            "/api/v1/namespaces/ns/pods/pod/exec?command=sh&stdin=true&tty=true");
+  EXPECT_EQ(state.global.websocket_subprotocol, "v5.channel.k8s.io");
+}
+
 TEST_F(HTTPParserTest, Status204) {
   StateWrapper state{};
   std::string msg =

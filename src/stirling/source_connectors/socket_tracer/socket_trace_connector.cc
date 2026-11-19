@@ -47,6 +47,7 @@
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/k8s_exec.h"
 #include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
@@ -1804,17 +1805,25 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("encrypted")>(conn_tracker.ssl());
+  r.Append<r.ColIndex("subprotocol")>(std::move(record.subprotocol));
+  r.Append<r.ColIndex("kind")>(std::string(protocols::websocket::RecordKindName(record.kind)));
   r.Append<r.ColIndex("direction")>(static_cast<uint64_t>(msg.type));
   r.Append<r.ColIndex("opcode")>(static_cast<uint64_t>(msg.opcode));
   r.Append<r.ColIndex("compressed")>(msg.compressed);
   r.Append<r.ColIndex("fragments")>(msg.fragments);
-  if (msg.opcode == protocols::websocket::Opcode::kText) {
+  if (record.kind != protocols::websocket::RecordKind::kFrame) {
+    r.Append<r.ColIndex("payload")>(protocols::websocket::Printable(msg.payload),
+                                    FLAGS_max_body_bytes);
+  } else if (msg.opcode == protocols::websocket::Opcode::kText) {
     r.Append<r.ColIndex("payload")>(std::move(msg.payload), FLAGS_max_body_bytes);
   } else {
     r.Append<r.ColIndex("payload")>(BytesToString<bytes_format::HexAsciiMix>(msg.payload),
                                     FLAGS_max_body_bytes);
   }
   r.Append<r.ColIndex("payload_size")>(payload_size);
+  r.Append<r.ColIndex("output")>(protocols::websocket::Printable(record.output),
+                                 FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("output_size")>(record.output_size);
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif

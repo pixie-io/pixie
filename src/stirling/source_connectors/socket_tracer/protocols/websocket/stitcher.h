@@ -30,7 +30,7 @@ namespace protocols {
 template <>
 RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Frame>* req_frames,
                                                       std::deque<websocket::Frame>* resp_frames,
-                                                      NoState* state);
+                                                      websocket::StateWrapper* state);
 
 }  // namespace protocols
 }  // namespace stirling

@@ -401,6 +401,46 @@ TEST_F(ConnTrackerTest, TrackerHTTP101UpgradesToWebSocket) {
   EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
 }
 
+TEST_F(ConnTrackerTest, TrackerWebSocketUpgradeKeepsSubprotocol) {
+  constexpr std::string_view kExecReq =
+      "GET /exec/ns/pod/ctr?command=hostname&output=1 HTTP/1.1\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kExecResp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kStdout = "\x82\x05\x01pod\n"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kExecReq);
+  std::unique_ptr<SocketDataEvent> resp0 =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kStdout));
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_TRUE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+
+  auto* state = tracker.protocol_state<websocket::StateWrapper>();
+  ASSERT_NE(state, nullptr);
+  EXPECT_EQ(state->global.subprotocol, "v5.channel.k8s.io");
+  EXPECT_EQ(state->global.path, "/exec/ns/pod/ctr?command=hostname&output=1");
+
+  std::vector<websocket::Record> ws_records = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  ASSERT_THAT(ws_records, SizeIs(1));
+  EXPECT_EQ(ws_records[0].kind, websocket::RecordKind::kExec);
+  EXPECT_EQ(ws_records[0].msg.payload, "hostname");
+}
+
 TEST_F(ConnTrackerTest, TrackerHTTPUpgradeRejectedStaysHTTP) {
   constexpr std::string_view kRejectResp =
       "HTTP/1.1 403 Forbidden\r\n"

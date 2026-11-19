@@ -64,7 +64,7 @@ class WebSocketParseTest : public ::testing::Test {
   }
 
   Frame frame_;
-  NoState state_;
+  StateWrapper state_;
 };
 
 TEST_F(WebSocketParseTest, UnmaskedTextFrame) {

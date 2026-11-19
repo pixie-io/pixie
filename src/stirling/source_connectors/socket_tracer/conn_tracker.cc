@@ -822,10 +822,14 @@ bool ConnTracker::MaybeUpgradeToWebSocket() {
     return false;
   }
 
+  protocols::websocket::StateWrapper ws_state;
+  ws_state.global.path = std::move(state->global.websocket_path);
+  ws_state.global.subprotocol = std::move(state->global.websocket_subprotocol);
+
   CONN_TRACE(1) << "Protocol upgraded: HTTP->WebSocket";
   upgraded_from_ = protocol_;
   protocol_ = kProtocolWebSocket;
-  protocol_state_.reset();
+  protocol_state_ = std::move(ws_state);
   send_data_.SwitchProtocol(protocol_);
   recv_data_.SwitchProtocol(protocol_);
   return true;

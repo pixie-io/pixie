@@ -49,7 +49,7 @@ class WebSocketStitcherTest : public ::testing::Test {
 
   std::deque<Frame> req_frames_;
   std::deque<Frame> resp_frames_;
-  NoState state_;
+  StateWrapper state_;
 };
 
 TEST_F(WebSocketStitcherTest, OneRecordPerMessageInEachDirection) {
@@ -144,6 +144,36 @@ TEST_F(WebSocketStitcherTest, NewMessageBeforeLastFragmentIsAnError) {
   EXPECT_EQ(result.records[0].msg.payload, "next");
   EXPECT_EQ(result.error_count, 1);
   EXPECT_TRUE(req_frames_.empty());
+}
+
+TEST_F(WebSocketStitcherTest, RawFramesCarrySubprotocol) {
+  state_.global.subprotocol = "graphql-transport-ws";
+  req_frames_.push_back(MakeFrame(Opcode::kText, true, R"({"type":"ping"})", 1));
+
+  RecordsWithErrorCount<Record> result = Stitch();
+
+  ASSERT_EQ(result.records.size(), 1U);
+  EXPECT_EQ(result.records[0].kind, RecordKind::kFrame);
+  EXPECT_EQ(result.records[0].subprotocol, "graphql-transport-ws");
+}
+
+TEST_F(WebSocketStitcherTest, K8sExecSessionIsDecoded) {
+  state_.global.subprotocol = "v5.channel.k8s.io";
+  state_.global.path = "/api/v1/namespaces/ns/pods/pod/exec?command=hostname&stdout=true";
+  resp_frames_.push_back(MakeFrame(Opcode::kBinary, true, "\x01pod\n", 1));
+  resp_frames_.push_back(
+      MakeFrame(Opcode::kBinary, true, "\x03{\"metadata\":{},\"status\":\"Success\"}", 2));
+  resp_frames_.push_back(MakeFrame(Opcode::kClose, true, "\x03\xe8", 3));
+
+  RecordsWithErrorCount<Record> result = Stitch();
+
+  ASSERT_EQ(result.records.size(), 2U);
+  EXPECT_EQ(result.records[0].kind, RecordKind::kExec);
+  EXPECT_EQ(result.records[0].msg.payload, "hostname");
+  EXPECT_EQ(result.records[1].kind, RecordKind::kExit);
+  EXPECT_EQ(result.records[1].output, "pod\n");
+  EXPECT_EQ(result.records[1].subprotocol, "v5.channel.k8s.io");
+  EXPECT_TRUE(resp_frames_.empty());
 }
 
 }  // namespace websocket

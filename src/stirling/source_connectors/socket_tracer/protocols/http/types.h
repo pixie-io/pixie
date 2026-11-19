@@ -47,6 +47,7 @@ inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 inline constexpr char kUpgrade[] = "Upgrade";
 inline constexpr char kWebSocketUpgrade[] = "websocket";
+inline constexpr char kSecWebSocketProtocol[] = "Sec-WebSocket-Protocol";
 
 struct Message : public FrameBase {
   message_type_t type = message_type_t::kUnknown;
@@ -106,6 +107,8 @@ struct State {
   bool conn_closed = false;
   bool websocket_upgrade_requested = false;
   bool websocket_upgrade_accepted = false;
+  std::string websocket_path;
+  std::string websocket_subprotocol;
 };
 
 struct StateWrapper {

@@ -295,6 +295,50 @@ TEST_F(SocketTraceConnectorWebSocketTest, NonTextPayloadsAreEscaped) {
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(4, 2));
 }
 
+TEST_F(SocketTraceConnectorWebSocketTest, K8sExecSessionProducesCommandRows) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kExecReq =
+      "GET /exec/ns/pod/ctr?command=sh&input=1&output=1&tty=1 HTTP/1.1\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kExecResp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kPrompt = "\x82\x05\x01/ # "sv;
+  constexpr std::string_view kStdinId = "\x82\x03\x00id"sv;
+  constexpr std::string_view kStdinEnter = "\x82\x02\x00\r"sv;
+  constexpr std::string_view kStdout = "\x82\x0e\x01\r\nuid=0\r\n/ # "sv;
+  constexpr std::string_view kStatus =
+      "\x82\x23\x03" R"({"metadata":{},"status":"Success"})"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kExecReq));
+  source_->AcceptDataEvent(
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kPrompt)));
+  connector_->TransferData(ctx_.get());
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kStdinId));
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kStdinEnter));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kStdout));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kStatus));
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(3));
+  EXPECT_THAT(ToStringVector(records[kWebSocketKindIdx]), ElementsAre("exec", "input", "exit"));
+  EXPECT_THAT(ToStringVector(records[kWebSocketSubprotocolIdx]),
+              ElementsAre("v5.channel.k8s.io", "v5.channel.k8s.io", "v5.channel.k8s.io"));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
+              ElementsAre("sh", "id", R"({"metadata":{},"status":"Success"})"));
+  EXPECT_THAT(ToStringVector(records[kWebSocketOutputIdx]), ElementsAre("", "uid=0\n", ""));
+}
+
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   std::unique_ptr<SocketDataEvent> event0_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq4);

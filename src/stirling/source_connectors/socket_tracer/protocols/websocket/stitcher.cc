@@ -18,8 +18,11 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/websocket/stitcher.h"
 
+#include <algorithm>
 #include <utility>
 #include <vector>
+
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/k8s_exec.h"
 
 namespace px {
 namespace stirling {
@@ -41,13 +44,14 @@ Message StartMessage(message_type_t type, Frame* frame) {
   return msg;
 }
 
-int StitchDirection(message_type_t type, std::deque<Frame>* frames, std::vector<Record>* records) {
+int StitchDirection(message_type_t type, std::deque<Frame>* frames,
+                    std::vector<Message>* messages) {
   int error_count = 0;
   std::deque<Frame> pending;
 
   for (Frame& frame : *frames) {
     if (IsControl(frame.opcode)) {
-      records->push_back({StartMessage(type, &frame)});
+      messages->push_back(StartMessage(type, &frame));
       continue;
     }
     if (frame.opcode == Opcode::kContinuation) {
@@ -71,7 +75,7 @@ int StitchDirection(message_type_t type, std::deque<Frame>* frames, std::vector<
       msg.payload.append(pending[i].payload);
       ++msg.fragments;
     }
-    records->push_back({std::move(msg)});
+    messages->push_back(std::move(msg));
     pending.clear();
   }
 
@@ -85,12 +89,30 @@ int StitchDirection(message_type_t type, std::deque<Frame>* frames, std::vector<
 template <>
 RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Frame>* req_frames,
                                                       std::deque<websocket::Frame>* resp_frames,
-                                                      NoState*) {
+                                                      websocket::StateWrapper* state) {
   RecordsWithErrorCount<websocket::Record> result;
+  std::vector<websocket::Message> messages;
   result.error_count +=
-      websocket::StitchDirection(message_type_t::kRequest, req_frames, &result.records);
+      websocket::StitchDirection(message_type_t::kRequest, req_frames, &messages);
   result.error_count +=
-      websocket::StitchDirection(message_type_t::kResponse, resp_frames, &result.records);
+      websocket::StitchDirection(message_type_t::kResponse, resp_frames, &messages);
+
+  websocket::State empty_state;
+  websocket::State* global = state == nullptr ? &empty_state : &state->global;
+  if (websocket::IsK8sChannelProtocol(global->subprotocol)) {
+    std::stable_sort(messages.begin(), messages.end(),
+                     [](const websocket::Message& a, const websocket::Message& b) {
+                       return a.timestamp_ns < b.timestamp_ns;
+                     });
+    websocket::DecodeK8sExec(global->path, std::move(messages), &global->exec, &result.records);
+  } else {
+    for (websocket::Message& msg : messages) {
+      result.records.push_back({std::move(msg)});
+    }
+  }
+  for (websocket::Record& record : result.records) {
+    record.subprotocol = global->subprotocol;
+  }
   return result;
 }
 

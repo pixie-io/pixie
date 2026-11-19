@@ -18,7 +18,10 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
+#include <string_view>
+#include <variant>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
@@ -73,16 +76,72 @@ struct Message {
   }
 };
 
+enum class RecordKind : uint8_t {
+  kFrame,
+  kExec,
+  kInput,
+  kExit,
+};
+
+inline std::string_view RecordKindName(RecordKind kind) {
+  switch (kind) {
+    case RecordKind::kFrame:
+      return "frame";
+    case RecordKind::kExec:
+      return "exec";
+    case RecordKind::kInput:
+      return "input";
+    case RecordKind::kExit:
+      return "exit";
+  }
+  return "unknown";
+}
+
 struct Record {
   Message msg;
+  RecordKind kind = RecordKind::kFrame;
+  std::string subprotocol;
+  std::string output;
+  size_t output_size = 0;
 
-  std::string ToString() const { return absl::Substitute("[msg=$0]", msg.ToString()); }
+  std::string ToString() const {
+    return absl::Substitute("[kind=$0 subprotocol=$1 msg=$2 output_size=$3]",
+                            RecordKindName(kind), subprotocol, msg.ToString(), output_size);
+  }
+};
+
+struct PendingInput {
+  uint64_t timestamp_ns = 0;
+  std::string line;
+};
+
+struct ExecState {
+  bool started = false;
+  bool tty = false;
+  bool last_cr = false;
+  std::string line;
+  uint64_t line_timestamp_ns = 0;
+  std::optional<PendingInput> pending;
+  std::string output;
+  size_t output_size = 0;
+};
+
+struct State {
+  std::string path;
+  std::string subprotocol;
+  ExecState exec;
+};
+
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
 };
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = StateWrapper;
   using key_type = stream_id_t;
 
   static void ConvertTimestamps(Record* record, ConvertTimestampsFuncType func) {

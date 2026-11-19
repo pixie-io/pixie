@@ -46,7 +46,8 @@ constexpr size_t kMaskingKeySize = 4;
 }  // namespace websocket
 
 template <>
-ParseState ParseFrame(message_type_t, std::string_view* buf, websocket::Frame* frame, NoState*) {
+ParseState ParseFrame(message_type_t, std::string_view* buf, websocket::Frame* frame,
+                      websocket::StateWrapper*) {
   using websocket::Opcode;
 
   BinaryDecoder decoder(*buf);
@@ -104,7 +105,8 @@ ParseState ParseFrame(message_type_t, std::string_view* buf, websocket::Frame* f
 }
 
 template <>
-size_t FindFrameBoundary<websocket::Frame>(message_type_t, std::string_view, size_t, NoState*) {
+size_t FindFrameBoundary<websocket::Frame>(message_type_t, std::string_view, size_t,
+                                           websocket::StateWrapper*) {
   return std::string_view::npos;
 }
 
