@@ -216,6 +216,40 @@ TEST_F(WebSocketStitcherTest, K8sExecSessionIsDecoded) {
   EXPECT_TRUE(resp_frames_.empty());
 }
 
+TEST_F(WebSocketStitcherTest, K8sSessionClosedWithoutStatusIsFlushedOnce) {
+  state_.global.subprotocol = "v5.channel.k8s.io";
+  state_.global.path = "/api/v1/namespaces/ns/pods/pod/exec?command=hostname&stdout=true";
+  state_.global.conn_closed = true;
+  resp_frames_.push_back(MakeFrame(Opcode::kBinary, true, "\x01pod\n", 7));
+
+  RecordsWithErrorCount<Record> first = Stitch();
+  ASSERT_EQ(first.records.size(), 1U);
+  EXPECT_EQ(first.records[0].kind, RecordKind::kExec);
+
+  RecordsWithErrorCount<Record> second = Stitch();
+  ASSERT_EQ(second.records.size(), 1U);
+  EXPECT_EQ(second.records[0].kind, RecordKind::kExit);
+  EXPECT_EQ(second.records[0].msg.payload, "");
+  EXPECT_EQ(second.records[0].msg.timestamp_ns, 7U);
+  EXPECT_EQ(second.records[0].output, "pod\n");
+  EXPECT_EQ(second.records[0].subprotocol, "v5.channel.k8s.io");
+
+  EXPECT_TRUE(Stitch().records.empty());
+}
+
+TEST_F(WebSocketStitcherTest, K8sSessionWithStatusIsNotFlushedAgain) {
+  state_.global.subprotocol = "v5.channel.k8s.io";
+  state_.global.path = "/api/v1/namespaces/ns/pods/pod/exec?command=hostname&stdout=true";
+  state_.global.conn_closed = true;
+  resp_frames_.push_back(MakeFrame(Opcode::kBinary, true, "\x01pod\n", 1));
+  resp_frames_.push_back(
+      MakeFrame(Opcode::kBinary, true, "\x03{\"metadata\":{},\"status\":\"Success\"}", 2));
+
+  ASSERT_EQ(Stitch().records.size(), 2U);
+  EXPECT_TRUE(Stitch().records.empty());
+  EXPECT_TRUE(Stitch().records.empty());
+}
+
 }  // namespace websocket
 }  // namespace protocols
 }  // namespace stirling

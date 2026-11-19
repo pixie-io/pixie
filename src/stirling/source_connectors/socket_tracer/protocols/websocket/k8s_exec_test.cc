@@ -514,6 +514,54 @@ TEST(K8sExecTest, TarManifestIsBounded) {
   EXPECT_EQ(records[1].output_size, archive.size());
 }
 
+TEST(K8sExecTest, FinishFlushesSessionWithoutStatus) {
+  constexpr std::string_view kPath =
+      "/api/v1/namespaces/ns/pods/pod/exec?command=tar&command=cf&command=-&command=%2Ftmp&"
+      "stdout=true";
+  const std::string archive = TarArchive({TarEntry("tmp/a", 0644, "a\n")});
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kPath, {Out(5, absl::StrCat("\x01", archive))}, &state, &records);
+  FinishK8sExec(&state, &records);
+  FinishK8sExec(&state, &records);
+
+  EXPECT_THAT(records,
+              ElementsAre(IsRecord(RecordKind::kExec, "tar cf - /tmp", ""),
+                          IsRecord(RecordKind::kExit, "", "tmp/a mode=0644 size=2 head=\"a\\n\"\n")));
+  EXPECT_EQ(records[1].msg.timestamp_ns, 5U);
+  EXPECT_EQ(records[1].output_size, archive.size());
+}
+
+TEST(K8sExecTest, FinishFlushesPendingTTYInput) {
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kKubeletTTYPath,
+                {Out(1, "\x01/ # "), In(2, "\x00id"sv), Out(3, "\x01id"), In(4, "\x00\r"sv),
+                 Out(5, "\x01\r\nuid=0\r\n/ # ")},
+                &state, &records);
+  FinishK8sExec(&state, &records);
+
+  EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
+                                   IsRecord(RecordKind::kInput, "id", "uid=0\n"),
+                                   IsRecord(RecordKind::kExit, "", "")));
+}
+
+TEST(K8sExecTest, FinishWithoutSessionOrAfterStatusIsNoop) {
+  ExecState idle;
+  std::vector<Record> records;
+  FinishK8sExec(&idle, &records);
+  EXPECT_THAT(records, IsEmpty());
+
+  ExecState done;
+  DecodeK8sExec(kKubeletTTYPath, {Out(1, "\x01/ # "), Out(2, absl::StrCat("\x03", kStatusSuccess))},
+                &done, &records);
+  ASSERT_EQ(records.size(), 2U);
+  FinishK8sExec(&done, &records);
+  EXPECT_EQ(records.size(), 2U);
+}
+
 }  // namespace websocket
 }  // namespace protocols
 }  // namespace stirling
