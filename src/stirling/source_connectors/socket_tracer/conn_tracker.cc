@@ -675,6 +675,7 @@ auto CreateTraceRoles() {
   res.Set(kProtocolMux, {kRoleServer});
   res.Set(kProtocolAMQP, {kRoleServer});
   res.Set(kProtocolTLS, {kRoleServer});
+  res.Set(kProtocolWebSocket, {kRoleServer});
 
   DCHECK(res.AreAllKeysSet());
   return res;
@@ -811,6 +812,8 @@ void ConnTracker::IterationPreTick(
 
   UpdateState(cluster_cidrs);
 }
+
+bool ConnTracker::MaybeUpgradeToWebSocket() { return false; }
 
 void ConnTracker::IterationPostTick() {
   if (death_countdown_ > 0) {

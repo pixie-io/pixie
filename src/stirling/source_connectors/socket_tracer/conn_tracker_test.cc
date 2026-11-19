@@ -19,12 +19,14 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 #include <chrono>
+#include <string_view>
 #include <tuple>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
+#include <absl/strings/str_cat.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "protocols/http/types.h"
@@ -42,10 +44,12 @@ using ::px::operator<<;
 
 namespace http = protocols::http;
 namespace mysql = protocols::mysql;
+namespace websocket = protocols::websocket;
 
 using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
+using std::string_view_literals::operator""sv;
 
 using testing::kHTTPReq0;
 using testing::kHTTPReq1;
@@ -349,6 +353,84 @@ TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
 
   ASSERT_EQ(0, records.size());
   ASSERT_TRUE(tracker.IsZombie());
+}
+
+TEST_F(ConnTrackerTest, TrackerHTTP101UpgradesToWebSocket) {
+  constexpr std::string_view kServerText = "\x81\x02hi"sv;
+  constexpr std::string_view kClientMaskedText = "\x81\x85\x37\xfa\x21\x3d\x7f\x9f\x4d\x51\x58"sv;
+  constexpr std::string_view kClientPing = "\x89\x00"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp0 =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kHTTPUpgradeResp, kServerText));
+  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolHTTP>(kClientMaskedText);
+  std::unique_ptr<SocketDataEvent> req2 = event_gen_.InitSendEvent<kProtocolHTTP>(kClientPing);
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(req1));
+
+  std::vector<http::Record> http_records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_THAT(http_records, SizeIs(1));
+  EXPECT_EQ(http_records[0].resp.resp_status, 101);
+
+  EXPECT_TRUE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+  EXPECT_EQ(tracker.protocol(), kProtocolWebSocket);
+  EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
+
+  std::vector<websocket::Record> ws_records =
+      tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  tracker.IterationPostTick();
+  ASSERT_THAT(ws_records, SizeIs(2));
+  EXPECT_EQ(ws_records[0].msg.type, message_type_t::kRequest);
+  EXPECT_EQ(ws_records[0].msg.payload, "Hello");
+  EXPECT_EQ(ws_records[1].msg.type, message_type_t::kResponse);
+  EXPECT_EQ(ws_records[1].msg.payload, "hi");
+
+  tracker.AddDataEvent(std::move(req2));
+  ws_records = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  tracker.IterationPostTick();
+  ASSERT_THAT(ws_records, SizeIs(1));
+  EXPECT_EQ(ws_records[0].msg.opcode, websocket::Opcode::kPing);
+  EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
+}
+
+TEST_F(ConnTrackerTest, TrackerHTTPUpgradeRejectedStaysHTTP) {
+  constexpr std::string_view kRejectResp =
+      "HTTP/1.1 403 Forbidden\r\n"
+      "Content-Length: 0\r\n"
+      "\r\n";
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kRejectResp);
+  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  EXPECT_FALSE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_EQ(records[0].resp.resp_status, 403);
+
+  tracker.AddDataEvent(std::move(req1));
+  tracker.AddDataEvent(std::move(resp1));
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.IterationPostTick();
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_EQ(tracker.protocol(), kProtocolHTTP);
+  EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
 }
 
 TEST_F(ConnTrackerTest, DataEventsChangesCounter) {

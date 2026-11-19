@@ -35,6 +35,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/tls/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/types.h"
 
 namespace px {
 namespace stirling {
@@ -55,7 +56,8 @@ using FrameDequeVariant = std::variant<std::monostate,
                                        absl::flat_hash_map<nats::stream_id_t, std::deque<nats::Message>>,
                                        absl::flat_hash_map<amqp::channel_id, std::deque<amqp::Frame>>,
                                        absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>,
-                                       absl::flat_hash_map<tls::stream_id_t, std::deque<tls::Frame>>>;
+                                       absl::flat_hash_map<tls::stream_id_t, std::deque<tls::Frame>>,
+                                       absl::flat_hash_map<websocket::stream_id_t, std::deque<websocket::Frame>>>;
 // clang-format off
 
 }  // namespace protocols

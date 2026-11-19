@@ -32,3 +32,4 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/tls/stitcher.h"  // IWYU pragma: export
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/stitcher.h"  // IWYU pragma: export

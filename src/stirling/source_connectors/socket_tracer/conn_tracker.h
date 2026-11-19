@@ -481,6 +481,8 @@ class ConnTracker : NotCopyMoveable {
    */
   void IterationPostTick();
 
+  bool MaybeUpgradeToWebSocket();
+
   /**
    * Sets the duration after which a connection is deemed to be inactive.
    * After becoming inactive, the connection may either (1) have its buffers purged,
