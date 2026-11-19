@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <absl/strings/substitute.h>
@@ -35,6 +36,7 @@ namespace stirling {
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::testing::Each;
+using ::testing::ElementsAre;
 using ::testing::IsSupersetOf;
 
 class WebSocketTraceTest
@@ -60,14 +62,25 @@ std::string Row(const types::ColumnWrapperRecordBatch& records, size_t i) {
 }
 
 TEST_F(WebSocketTraceTest, PlainAndTLSEchoSessions) {
+  PX_SET_FOR_SCOPE(FLAGS_stirling_conn_trace_pid, server_.process_pid());
   StartTransferDataThread();
 
   PX_CHECK_OK(client_.Run(std::chrono::seconds{10},
                           {absl::Substitute("--network=container:$0", server_.container_name())},
                           {"--iters=2"}));
   client_.Wait();
+  std::this_thread::sleep_for(5 * kTransferDataPeriod);
 
   StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> http_tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& http_batch, http_tablets);
+  std::vector<std::string> upgrades;
+  for (size_t i : FindRecordIdxMatchesPID(http_batch, kHTTPUPIDIdx, server_.process_pid())) {
+    upgrades.push_back(absl::Substitute("$0 $1", http_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i),
+                                        http_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val));
+  }
+  ASSERT_THAT(upgrades, ElementsAre("/echo 101", "/echo 101"));
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kWebSocketTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
