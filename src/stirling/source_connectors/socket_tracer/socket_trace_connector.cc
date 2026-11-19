@@ -1795,7 +1795,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  const size_t payload_size = msg.payload.size();
+  const size_t payload_size = record.kind == protocols::websocket::RecordKind::kFrame
+                                  ? msg.payload.size()
+                                  : record.payload_size;
   DataTable::RecordBuilder<&kWebSocketTable> r(data_table, msg.timestamp_ns);
   r.Append<r.ColIndex("time_")>(msg.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());

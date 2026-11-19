@@ -22,6 +22,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
@@ -111,6 +112,25 @@ struct Record {
   }
 };
 
+struct TarEntryInfo {
+  std::string name;
+  uint64_t mode = 0;
+  uint64_t size = 0;
+  std::string head;
+};
+
+struct TarStream {
+  bool checked = false;
+  bool is_tar = false;
+  bool done = false;
+  bool long_name = false;
+  std::string held;
+  uint64_t skip = 0;
+  uint64_t capture_left = 0;
+  std::string next_name;
+  std::vector<TarEntryInfo> entries;
+};
+
 struct PendingInput {
   uint64_t timestamp_ns = 0;
   std::string line;
@@ -125,6 +145,11 @@ struct ExecState {
   std::optional<PendingInput> pending;
   std::string output;
   size_t output_size = 0;
+  TarStream stdout_tar;
+  uint64_t stdin_timestamp_ns = 0;
+  std::string stdin_data;
+  size_t stdin_size = 0;
+  TarStream stdin_tar;
 };
 
 struct State {

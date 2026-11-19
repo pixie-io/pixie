@@ -21,10 +21,13 @@
 #include <algorithm>
 #include <utility>
 
+#include <absl/strings/escaping.h>
 #include <absl/strings/match.h>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_format.h>
 #include <absl/strings/str_join.h>
 #include <absl/strings/str_split.h>
+#include <absl/strings/substitute.h>
 
 #include "src/common/base/base.h"
 
@@ -49,6 +52,23 @@ constexpr char kDelete = '\x7f';
 constexpr char kCtrlC = '\x03';
 constexpr char kCtrlD = '\x04';
 constexpr char kCtrlU = '\x15';
+constexpr size_t kTarBlockSize = 512;
+constexpr size_t kTarMaxEntries = 1024;
+constexpr size_t kTarHeadSize = 64;
+constexpr size_t kTarMaxLongName = 4096;
+constexpr std::string_view kTarMagic = "ustar";
+constexpr size_t kTarMagicOffset = 257;
+constexpr size_t kTarModeOffset = 100;
+constexpr size_t kTarModeSize = 8;
+constexpr size_t kTarSizeOffset = 124;
+constexpr size_t kTarSizeSize = 12;
+constexpr size_t kTarTypeOffset = 156;
+constexpr size_t kTarNameSize = 100;
+constexpr size_t kTarPrefixOffset = 345;
+constexpr size_t kTarPrefixSize = 155;
+constexpr char kTarLongNameType = 'L';
+constexpr char kTarPaxType = 'x';
+constexpr char kTarPaxGlobalType = 'g';
 
 int HexValue(char c) {
   if (c >= '0' && c <= '9') {
@@ -138,6 +158,124 @@ std::string StripEscapeSequences(std::string_view text) {
   return out;
 }
 
+std::string_view CString(std::string_view field) {
+  return field.substr(0, field.find('\0'));
+}
+
+uint64_t ParseOctal(std::string_view field) {
+  uint64_t value = 0;
+  for (char c : field) {
+    if (c >= '0' && c <= '7') {
+      value = value * 8 + (c - '0');
+    } else if (value != 0 || (c != ' ' && c != '\0')) {
+      break;
+    }
+  }
+  return value;
+}
+
+uint64_t RoundUpToBlock(uint64_t size) {
+  return (size + kTarBlockSize - 1) / kTarBlockSize * kTarBlockSize;
+}
+
+void ParseTarHeader(std::string_view header, TarStream* tar) {
+  if (std::all_of(header.begin(), header.end(), [](char c) { return c == '\0'; }) ||
+      header.substr(kTarMagicOffset, kTarMagic.size()) != kTarMagic) {
+    tar->done = true;
+    return;
+  }
+  const uint64_t size = ParseOctal(header.substr(kTarSizeOffset, kTarSizeSize));
+  tar->skip = RoundUpToBlock(size);
+  tar->capture_left = 0;
+  const char type = header[kTarTypeOffset];
+  if (type == kTarLongNameType) {
+    tar->long_name = true;
+    tar->next_name.clear();
+    tar->capture_left = std::min<uint64_t>(size, kTarMaxLongName);
+    return;
+  }
+  if (type == kTarPaxType || type == kTarPaxGlobalType) {
+    return;
+  }
+  std::string name = std::string(CString(header.substr(0, kTarNameSize)));
+  std::string_view prefix = CString(header.substr(kTarPrefixOffset, kTarPrefixSize));
+  if (!tar->next_name.empty()) {
+    name = std::string(CString(tar->next_name));
+    tar->next_name.clear();
+  } else if (!prefix.empty()) {
+    name = absl::StrCat(prefix, "/", name);
+  }
+  if (tar->entries.size() >= kTarMaxEntries) {
+    return;
+  }
+  tar->entries.push_back(
+      {std::move(name), ParseOctal(header.substr(kTarModeOffset, kTarModeSize)), size, ""});
+  tar->capture_left = std::min<uint64_t>(size, kTarHeadSize);
+}
+
+std::string FeedTar(TarStream* tar, std::string_view data) {
+  if (tar->checked && !tar->is_tar) {
+    return std::string(data);
+  }
+  size_t pos = 0;
+  while (pos < data.size() && !tar->done) {
+    if (tar->skip > 0) {
+      const size_t n = std::min<uint64_t>(tar->skip, data.size() - pos);
+      const size_t captured = std::min<uint64_t>(n, tar->capture_left);
+      if (captured > 0) {
+        std::string* target = tar->long_name ? &tar->next_name : &tar->entries.back().head;
+        target->append(data.substr(pos, captured));
+        tar->capture_left -= captured;
+      }
+      tar->skip -= n;
+      pos += n;
+      if (tar->skip == 0) {
+        tar->long_name = false;
+      }
+      continue;
+    }
+    const size_t n = std::min(kTarBlockSize - tar->held.size(), data.size() - pos);
+    tar->held.append(data.substr(pos, n));
+    pos += n;
+    if (tar->held.size() < kTarBlockSize) {
+      break;
+    }
+    if (!tar->checked) {
+      tar->checked = true;
+      tar->is_tar = tar->held.substr(kTarMagicOffset, kTarMagic.size()) == kTarMagic;
+      if (!tar->is_tar) {
+        std::string passthrough = absl::StrCat(tar->held, data.substr(pos));
+        tar->held.clear();
+        return passthrough;
+      }
+    }
+    ParseTarHeader(tar->held, tar);
+    tar->held.clear();
+  }
+  return "";
+}
+
+std::string TarManifest(const TarStream& tar) {
+  std::string manifest;
+  for (const TarEntryInfo& entry : tar.entries) {
+    absl::StrAppend(&manifest, absl::Substitute("$0 mode=$1 size=$2 head=\"$3\"\n", entry.name,
+                                                absl::StrFormat("%04o", entry.mode), entry.size,
+                                                absl::CEscape(entry.head)));
+  }
+  return manifest;
+}
+
+std::string DrainStream(TarStream* tar, std::string* buffer) {
+  std::string out = absl::StrCat(*buffer, tar->is_tar ? TarManifest(*tar) : tar->held);
+  tar->held.clear();
+  return out;
+}
+
+void AppendCapped(std::string* buffer, std::string_view data) {
+  const size_t room = kMaxBufferedOutput - std::min(kMaxBufferedOutput, buffer->size());
+  buffer->append(data.substr(0, room));
+}
+
 Record MakeRecord(RecordKind kind, message_type_t type, uint64_t timestamp_ns,
                   std::string payload) {
   Record record;
@@ -147,11 +285,13 @@ Record MakeRecord(RecordKind kind, message_type_t type, uint64_t timestamp_ns,
   record.msg.opcode = Opcode::kBinary;
   record.msg.fragments = 1;
   record.msg.payload = std::move(payload);
+  record.payload_size = record.msg.payload.size();
   return record;
 }
 
 void TakeOutput(ExecState* state, Record* record) {
-  record->output = CleanTerminalOutput(state->output, state->tty);
+  record->output = state->tty ? CleanTerminalOutput(state->output, state->tty)
+                              : DrainStream(&state->stdout_tar, &state->output);
   record->output_size = state->output_size;
   state->output.clear();
   state->output_size = 0;
@@ -159,8 +299,20 @@ void TakeOutput(ExecState* state, Record* record) {
 
 void AppendOutput(ExecState* state, std::string_view data) {
   state->output_size += data.size();
-  const size_t room = kMaxBufferedOutput - std::min(kMaxBufferedOutput, state->output.size());
-  state->output.append(data.substr(0, room));
+  AppendCapped(&state->output, data);
+}
+
+void EmitStdin(ExecState* state, std::vector<Record>* records) {
+  if (state->stdin_size == 0) {
+    return;
+  }
+  Record record = MakeRecord(RecordKind::kInput, message_type_t::kRequest,
+                             state->stdin_timestamp_ns,
+                             DrainStream(&state->stdin_tar, &state->stdin_data));
+  record.payload_size = state->stdin_size;
+  records->push_back(std::move(record));
+  state->stdin_data.clear();
+  state->stdin_size = 0;
 }
 
 void EmitPending(ExecState* state, std::vector<Record>* records) {
@@ -290,20 +442,39 @@ void DecodeK8sExec(std::string_view path, std::vector<Message> messages, ExecSta
     const uint8_t channel = msg.payload[0];
     std::string_view data = std::string_view(msg.payload).substr(1);
     if (msg.type == message_type_t::kRequest) {
-      if (channel == kStdinChannel) {
+      if (channel != kStdinChannel) {
+        continue;
+      }
+      if (state->tty) {
         HandleStdin(msg.timestamp_ns, data, state, records);
+      } else if (!data.empty()) {
+        if (state->stdin_size == 0) {
+          state->stdin_timestamp_ns = msg.timestamp_ns;
+        }
+        state->stdin_size += data.size();
+        AppendCapped(&state->stdin_data, FeedTar(&state->stdin_tar, data));
       }
       continue;
     }
     switch (channel) {
       case kStdoutChannel:
+        if (state->tty) {
+          if (state->line.empty()) {
+            AppendOutput(state, data);
+          }
+        } else {
+          state->output_size += data.size();
+          AppendCapped(&state->output, FeedTar(&state->stdout_tar, data));
+        }
+        break;
       case kStderrChannel:
-        if (state->line.empty()) {
+        if (!state->tty || state->line.empty()) {
           AppendOutput(state, data);
         }
         break;
       case kStatusChannel: {
         EmitPending(state, records);
+        EmitStdin(state, records);
         Record record = MakeRecord(RecordKind::kExit, message_type_t::kResponse, msg.timestamp_ns,
                                    std::string(data));
         TakeOutput(state, &record);
