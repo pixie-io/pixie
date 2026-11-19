@@ -1786,8 +1786,34 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext*, const ConnTracker&,
-                                         protocols::websocket::Record, DataTable*) {}
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::websocket::Record record,
+                                         DataTable* data_table) {
+  protocols::websocket::Message& msg = record.msg;
+
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  const size_t payload_size = msg.payload.size();
+  DataTable::RecordBuilder<&kWebSocketTable> r(data_table, msg.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(msg.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+  r.Append<r.ColIndex("encrypted")>(conn_tracker.ssl());
+  r.Append<r.ColIndex("direction")>(static_cast<uint64_t>(msg.type));
+  r.Append<r.ColIndex("opcode")>(static_cast<uint64_t>(msg.opcode));
+  r.Append<r.ColIndex("compressed")>(msg.compressed);
+  r.Append<r.ColIndex("fragments")>(msg.fragments);
+  r.Append<r.ColIndex("payload")>(std::move(msg.payload), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("payload_size")>(payload_size);
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
+#endif
+}
 
 void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
   DCHECK(!path.empty());
