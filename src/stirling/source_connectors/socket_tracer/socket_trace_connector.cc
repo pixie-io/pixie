@@ -1808,7 +1808,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("opcode")>(static_cast<uint64_t>(msg.opcode));
   r.Append<r.ColIndex("compressed")>(msg.compressed);
   r.Append<r.ColIndex("fragments")>(msg.fragments);
-  r.Append<r.ColIndex("payload")>(std::move(msg.payload), FLAGS_max_body_bytes);
+  if (msg.opcode == protocols::websocket::Opcode::kText) {
+    r.Append<r.ColIndex("payload")>(std::move(msg.payload), FLAGS_max_body_bytes);
+  } else {
+    r.Append<r.ColIndex("payload")>(BytesToString<bytes_format::HexAsciiMix>(msg.payload),
+                                    FLAGS_max_body_bytes);
+  }
   r.Append<r.ColIndex("payload_size")>(payload_size);
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
