@@ -238,8 +238,8 @@ class SocketTraceConnectorWebSocketTest : public SocketTraceConnectorTest {
   RecordBatch TransferUpgradedServerFrames(std::string_view frames) {
     source_->AcceptControlEvent(event_gen_.InitConn());
     source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq));
-    source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(
-        absl::StrCat(testing::kHTTPUpgradeResp, frames)));
+    source_->AcceptDataEvent(
+        event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(testing::kHTTPUpgradeResp, frames)));
     connector_->TransferData(ctx_.get());
     connector_->TransferData(ctx_.get());
     std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
@@ -368,8 +368,7 @@ TEST_F(SocketTraceConnectorWebSocketTest, LargeBinaryPayloadIsTruncatedBeforeEsc
   EXPECT_TRUE(absl::StartsWith(payload, "\\x01\\x01"));
   EXPECT_TRUE(absl::EndsWith(payload, DataTable::kTruncatedMsg));
   EXPECT_LE(payload.size(), FLAGS_max_body_bytes + strlen(DataTable::kTruncatedMsg));
-  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]),
-              ElementsAre(4000));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(4000));
 }
 
 TEST_F(SocketTraceConnectorWebSocketTest, CompressedPayloadIsRemoved) {

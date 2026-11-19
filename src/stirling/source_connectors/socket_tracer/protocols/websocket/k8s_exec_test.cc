@@ -169,10 +169,18 @@ TEST(K8sExecTest, TTYSessionBecomesOneRowPerCommand) {
 
 TEST(K8sExecTest, LineEditingIsApplied) {
   std::vector<Message> messages = {
-      In(1, "\x00lx"sv),     Out(2, "\x01lx"),       In(3, "\x00\x7f"sv),
-      Out(4, "\x01\b \b"),   In(5, "\x00s"sv),       Out(6, "\x01s"),
-      In(7, "\x00\r"sv),      Out(8, "\x01\r\nbin\r\n/ # "), In(9, "\x00junk"sv),
-      Out(10, "\x01junk"),    In(11, "\x00\x15"sv),  In(12, "\x00pwd\r"sv),
+      In(1, "\x00lx"sv),
+      Out(2, "\x01lx"),
+      In(3, "\x00\x7f"sv),
+      Out(4, "\x01\b \b"),
+      In(5, "\x00s"sv),
+      Out(6, "\x01s"),
+      In(7, "\x00\r"sv),
+      Out(8, "\x01\r\nbin\r\n/ # "),
+      In(9, "\x00junk"sv),
+      Out(10, "\x01junk"),
+      In(11, "\x00\x15"sv),
+      In(12, "\x00pwd\r"sv),
       Out(13, "\x01\r\n/\r\n/ # "),
   };
   ExecState state;
@@ -423,7 +431,10 @@ TEST(K8sExecTest, InputLineIsBounded) {
   std::vector<Record> records;
 
   DecodeK8sExec(kKubeletTTYPath,
-                {In(1, absl::StrCat(std::string(1, '\0'), typed)), Out(2, "\x01" "aaaa"),
+                {In(1, absl::StrCat(std::string(1, '\0'), typed)),
+                 Out(2,
+                     "\x01"
+                     "aaaa"),
                  In(3, "\x00\r"sv), Out(4, absl::StrCat("\x03", kStatusSuccess))},
                 &state, &records);
 
@@ -479,9 +490,8 @@ TEST(K8sExecTest, TarLossAcrossHeaderIsMarked) {
                 &state, &records);
 
   ASSERT_EQ(records.size(), 2U);
-  EXPECT_EQ(records[1].output,
-            absl::StrCat("big.bin mode=0644 size=5000 head=\"", std::string(64, 'b'), "\"\n",
-                         "[TRUNCATED]\n"));
+  EXPECT_EQ(records[1].output, absl::StrCat("big.bin mode=0644 size=5000 head=\"",
+                                            std::string(64, 'b'), "\"\n", "[TRUNCATED]\n"));
 }
 
 TEST(K8sExecTest, TarManifestIsBounded) {
@@ -493,9 +503,10 @@ TEST(K8sExecTest, TarManifestIsBounded) {
   ExecState state;
   std::vector<Record> records;
 
-  DecodeK8sExec(kTarStdoutPath,
-                {Out(1, absl::StrCat("\x01", archive)), Out(2, absl::StrCat("\x03", kStatusSuccess))},
-                &state, &records);
+  DecodeK8sExec(
+      kTarStdoutPath,
+      {Out(1, absl::StrCat("\x01", archive)), Out(2, absl::StrCat("\x03", kStatusSuccess))}, &state,
+      &records);
 
   ASSERT_EQ(records.size(), 2U);
   EXPECT_LE(records[1].output.size(), 4096U);

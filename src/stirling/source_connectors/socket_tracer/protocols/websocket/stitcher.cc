@@ -19,8 +19,8 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/websocket/stitcher.h"
 
 #include <algorithm>
-#include <utility>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/websocket/k8s_exec.h"
@@ -99,10 +99,10 @@ RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Fram
   RecordsWithErrorCount<websocket::Record> result;
   std::vector<websocket::Message> messages;
   const size_t payload_limit = websocket::PayloadLimitBytes(state);
-  result.error_count += websocket::StitchDirection(message_type_t::kRequest, payload_limit,
-                                                   req_frames, &messages);
-  result.error_count += websocket::StitchDirection(message_type_t::kResponse, payload_limit,
-                                                   resp_frames, &messages);
+  result.error_count +=
+      websocket::StitchDirection(message_type_t::kRequest, payload_limit, req_frames, &messages);
+  result.error_count +=
+      websocket::StitchDirection(message_type_t::kResponse, payload_limit, resp_frames, &messages);
 
   websocket::State empty_state;
   websocket::State* global = state == nullptr ? &empty_state : &state->global;

@@ -187,10 +187,9 @@ void FlushTarEntry(TarStream* tar) {
     return;
   }
   const TarEntryInfo& entry = tar->entry.value();
-  AppendCapped(&tar->manifest,
-               absl::Substitute("$0 mode=$1 size=$2 head=\"$3\"\n", entry.name,
-                                absl::StrFormat("%04o", entry.mode), entry.size,
-                                absl::CEscape(entry.head)));
+  AppendCapped(&tar->manifest, absl::Substitute("$0 mode=$1 size=$2 head=\"$3\"\n", entry.name,
+                                                absl::StrFormat("%04o", entry.mode), entry.size,
+                                                absl::CEscape(entry.head)));
   tar->entry.reset();
 }
 
@@ -224,9 +223,8 @@ void ParseTarHeader(std::string_view header, TarStream* tar) {
   if (tar->manifest.size() >= kMaxBufferedOutput) {
     return;
   }
-  tar->entry =
-      TarEntryInfo{std::move(name), ParseOctal(header.substr(kTarModeOffset, kTarModeSize)), size,
-                   ""};
+  tar->entry = TarEntryInfo{std::move(name),
+                            ParseOctal(header.substr(kTarModeOffset, kTarModeSize)), size, ""};
   tar->capture_left = std::min<uint64_t>(size, kTarHeadSize);
   if (tar->capture_left == 0) {
     FlushTarEntry(tar);
