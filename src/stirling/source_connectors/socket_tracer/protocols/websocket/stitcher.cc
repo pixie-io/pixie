@@ -107,7 +107,9 @@ RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Fram
     websocket::DecodeK8sExec(global->path, std::move(messages), &global->exec, &result.records);
   } else {
     for (websocket::Message& msg : messages) {
-      result.records.push_back({std::move(msg)});
+      websocket::Record record;
+      record.msg = std::move(msg);
+      result.records.push_back(std::move(record));
     }
   }
   for (websocket::Record& record : result.records) {
