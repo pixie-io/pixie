@@ -39,7 +39,8 @@ using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
 
-constexpr std::string_view kKubeletTTYPath = "/exec/ws-demo/ws-demo/ws-demo?command=sh&input=1&output=1&tty=1";
+constexpr std::string_view kKubeletTTYPath =
+    "/exec/ws-demo/ws-demo/ws-demo?command=sh&input=1&output=1&tty=1";
 constexpr std::string_view kStatusSuccess = R"({"metadata":{},"status":"Success"})";
 
 Message Msg(uint64_t timestamp_ns, message_type_t type, std::string_view payload,
@@ -123,15 +124,23 @@ TEST(K8sExecTest, TTYSessionBecomesOneRowPerCommand) {
       Out(9, "\x01/ # "),
       Msg(10, message_type_t::kRequest, "", Opcode::kPing),
       Msg(11, message_type_t::kResponse, "", Opcode::kPong),
-      In(12, "\x00""cat"sv),
-      Out(13, "\x01""cat"),
+      In(12,
+         "\x00"
+         "cat"sv),
+      Out(13,
+          "\x01"
+          "cat"),
       In(14, "\x00 /etc/hostname"sv),
       Out(15, "\x01 /etc/hostname"),
       In(16, "\x00\r"sv),
       Out(17, "\x01\r\n"),
       Out(18, "\x01ws-demo\r\n/ # "),
-      In(19, "\x00""exi"sv),
-      Out(20, "\x01""exi"),
+      In(19,
+         "\x00"
+         "exi"sv),
+      Out(20,
+          "\x01"
+          "exi"),
       In(21, "\x00t"sv),
       Out(22, "\x01t"),
       In(23, "\x00\r"sv),
@@ -158,9 +167,8 @@ TEST(K8sExecTest, TTYSessionBecomesOneRowPerCommand) {
 
 TEST(K8sExecTest, LineEditingIsApplied) {
   std::vector<Message> messages = {
-      In(1, "\x00lx"sv),     In(2, "\x00\x7f"sv), In(3, "\x00s\r"sv), Out(4, "\x01\r\nbin\r\n/ # "),
-      In(5, "\x00junk"sv),   In(6, "\x00\x15"sv), In(7, "\x00pwd\r"sv),
-      Out(8, "\x01\r\n/\r\n/ # "),
+      In(1, "\x00lx"sv),   In(2, "\x00\x7f"sv), In(3, "\x00s\r"sv),   Out(4, "\x01\r\nbin\r\n/ # "),
+      In(5, "\x00junk"sv), In(6, "\x00\x15"sv), In(7, "\x00pwd\r"sv), Out(8, "\x01\r\n/\r\n/ # "),
   };
   ExecState state;
   std::vector<Record> records;
@@ -174,7 +182,9 @@ TEST(K8sExecTest, LineEditingIsApplied) {
 
 TEST(K8sExecTest, AbandonedLineIsKept) {
   std::vector<Message> messages = {
-      In(1, "\x00""cat /etc/shadow"sv),
+      In(1,
+         "\x00"
+         "cat /etc/shadow"sv),
       In(2, "\x00\x03"sv),
       Out(3, "\x01^C\r\n/ # "),
       In(4, "\x00\x04"sv),
@@ -220,8 +230,12 @@ TEST(K8sExecTest, SessionContinuesAcrossCalls) {
   std::vector<Record> records;
 
   DecodeK8sExec(kKubeletTTYPath, {Out(1, "\x01/ # "), In(2, "\x00i"sv)}, &state, &records);
-  DecodeK8sExec(kKubeletTTYPath, {In(3, "\x00""d\r"sv), Out(4, "\x01\r\nuid=0\r\n/ # ")}, &state,
-                &records);
+  DecodeK8sExec(kKubeletTTYPath,
+                {In(3,
+                    "\x00"
+                    "d\r"sv),
+                 Out(4, "\x01\r\nuid=0\r\n/ # ")},
+                &state, &records);
   DecodeK8sExec(kKubeletTTYPath, {Out(5, absl::StrCat("\x03", kStatusSuccess))}, &state, &records);
 
   EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
@@ -307,9 +321,9 @@ TEST(K8sExecTest, TarLongNameIsResolved) {
   ExecState state;
   std::vector<Record> records;
 
-  DecodeK8sExec(kPath,
-                {Out(1, absl::StrCat("\x01", archive)), Out(2, absl::StrCat("\x03", kStatusSuccess))},
-                &state, &records);
+  DecodeK8sExec(
+      kPath, {Out(1, absl::StrCat("\x01", archive)), Out(2, absl::StrCat("\x03", kStatusSuccess))},
+      &state, &records);
 
   ASSERT_EQ(records.size(), 2U);
   EXPECT_EQ(records[1].output, absl::StrCat(long_name, " mode=0600 size=1 head=\"v\"\n"));
@@ -341,16 +355,16 @@ TEST(K8sExecTest, TarOnStdinBecomesManifest) {
   std::vector<Record> records;
 
   DecodeK8sExec(kPath,
-                {In(1, absl::StrCat(std::string(1, '\0'), archive)),
-                 In(2, "\xff\x00"sv), Out(3, absl::StrCat("\x03", kStatusSuccess))},
+                {In(1, absl::StrCat(std::string(1, '\0'), archive)), In(2, "\xff\x00"sv),
+                 Out(3, absl::StrCat("\x03", kStatusSuccess))},
                 &state, &records);
 
-  EXPECT_THAT(records,
-              ElementsAre(IsRecord(RecordKind::kExec, "tar xmf - -C /tmp", ""),
-                          IsRecord(RecordKind::kInput,
-                                   "payload.sh mode=0755 size=18 head=\"#!/bin/sh\\necho hi\\n\"\n",
-                                   ""),
-                          IsRecord(RecordKind::kExit, kStatusSuccess, "")));
+  EXPECT_THAT(
+      records,
+      ElementsAre(IsRecord(RecordKind::kExec, "tar xmf - -C /tmp", ""),
+                  IsRecord(RecordKind::kInput,
+                           "payload.sh mode=0755 size=18 head=\"#!/bin/sh\\necho hi\\n\"\n", ""),
+                  IsRecord(RecordKind::kExit, kStatusSuccess, "")));
   EXPECT_EQ(records[1].payload_size, archive.size());
 }
 

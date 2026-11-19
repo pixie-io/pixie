@@ -314,7 +314,8 @@ TEST_F(SocketTraceConnectorWebSocketTest, K8sExecSessionProducesCommandRows) {
   constexpr std::string_view kStdinEnter = "\x82\x02\x00\r"sv;
   constexpr std::string_view kStdout = "\x82\x0e\x01\r\nuid=0\r\n/ # "sv;
   constexpr std::string_view kStatus =
-      "\x82\x23\x03" R"({"metadata":{},"status":"Success"})"sv;
+      "\x82\x23\x03"
+      R"({"metadata":{},"status":"Success"})"sv;
 
   struct socket_control_event_t conn = event_gen_.InitConn();
   source_->AcceptControlEvent(conn);

@@ -92,8 +92,7 @@ RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Fram
                                                       websocket::StateWrapper* state) {
   RecordsWithErrorCount<websocket::Record> result;
   std::vector<websocket::Message> messages;
-  result.error_count +=
-      websocket::StitchDirection(message_type_t::kRequest, req_frames, &messages);
+  result.error_count += websocket::StitchDirection(message_type_t::kRequest, req_frames, &messages);
   result.error_count +=
       websocket::StitchDirection(message_type_t::kResponse, resp_frames, &messages);
 

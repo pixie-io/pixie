@@ -158,9 +158,7 @@ std::string StripEscapeSequences(std::string_view text) {
   return out;
 }
 
-std::string_view CString(std::string_view field) {
-  return field.substr(0, field.find('\0'));
-}
+std::string_view CString(std::string_view field) { return field.substr(0, field.find('\0')); }
 
 uint64_t ParseOctal(std::string_view field) {
   uint64_t value = 0;
@@ -306,9 +304,9 @@ void EmitStdin(ExecState* state, std::vector<Record>* records) {
   if (state->stdin_size == 0) {
     return;
   }
-  Record record = MakeRecord(RecordKind::kInput, message_type_t::kRequest,
-                             state->stdin_timestamp_ns,
-                             DrainStream(&state->stdin_tar, &state->stdin_data));
+  Record record =
+      MakeRecord(RecordKind::kInput, message_type_t::kRequest, state->stdin_timestamp_ns,
+                 DrainStream(&state->stdin_tar, &state->stdin_data));
   record.payload_size = state->stdin_size;
   records->push_back(std::move(record));
   state->stdin_data.clear();

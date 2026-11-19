@@ -107,8 +107,8 @@ struct Record {
   size_t output_size = 0;
 
   std::string ToString() const {
-    return absl::Substitute("[kind=$0 subprotocol=$1 msg=$2 output_size=$3]",
-                            RecordKindName(kind), subprotocol, msg.ToString(), output_size);
+    return absl::Substitute("[kind=$0 subprotocol=$1 msg=$2 output_size=$3]", RecordKindName(kind),
+                            subprotocol, msg.ToString(), output_size);
   }
 };
 
