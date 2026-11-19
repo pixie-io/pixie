@@ -34,6 +34,7 @@ namespace websocket {
 namespace {
 
 constexpr uint8_t kRsv1 = 0x4;
+constexpr uint32_t kStitchesBeforeCloseFlush = 2;
 constexpr std::string_view kCompressedPlaceholder = "<removed: compressed>";
 
 Message StartMessage(message_type_t type, Frame* frame) {
@@ -112,6 +113,10 @@ RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Fram
                        return a.timestamp_ns < b.timestamp_ns;
                      });
     websocket::DecodeK8sExec(global->path, std::move(messages), &global->exec, &result.records);
+    if (global->conn_closed &&
+        ++global->stitches_since_close >= websocket::kStitchesBeforeCloseFlush) {
+      websocket::FinishK8sExec(&global->exec, &result.records);
+    }
   } else {
     for (websocket::Message& msg : messages) {
       if (msg.compressed) {

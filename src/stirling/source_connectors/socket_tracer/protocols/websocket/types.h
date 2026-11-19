@@ -139,6 +139,8 @@ struct PendingInput {
 
 struct ExecState {
   bool started = false;
+  bool exited = false;
+  uint64_t last_timestamp_ns = 0;
   bool tty = false;
   bool last_cr = false;
   bool echoed = false;
@@ -157,6 +159,8 @@ struct ExecState {
 struct State {
   std::string path;
   std::string subprotocol;
+  bool conn_closed = false;
+  uint32_t stitches_since_close = 0;
   ExecState exec;
 };
 

@@ -376,6 +376,17 @@ void EmitPending(ExecState* state, std::vector<Record>* records) {
   state->pending.reset();
 }
 
+void EmitExit(ExecState* state, uint64_t timestamp_ns, std::string status,
+              std::vector<Record>* records) {
+  EmitPending(state, records);
+  EmitStdin(state, records);
+  Record record =
+      MakeRecord(RecordKind::kExit, message_type_t::kResponse, timestamp_ns, std::move(status));
+  TakeOutput(state, &record);
+  records->push_back(std::move(record));
+  state->exited = true;
+}
+
 void SubmitLine(ExecState* state, std::string_view suffix, std::vector<Record>* records) {
   EmitPending(state, records);
   state->pending = PendingInput{state->line_timestamp_ns, absl::StrCat(state->line, suffix),
@@ -488,6 +499,7 @@ void DecodeK8sExec(std::string_view path, std::vector<Message> messages, ExecSta
     if (IsControl(msg.opcode) || msg.payload.empty()) {
       continue;
     }
+    state->last_timestamp_ns = msg.timestamp_ns;
     if (!state->started) {
       state->started = true;
       state->tty = K8sExecTTY(path);
@@ -530,19 +542,20 @@ void DecodeK8sExec(std::string_view path, std::vector<Message> messages, ExecSta
           state->echoed = true;
         }
         break;
-      case kStatusChannel: {
-        EmitPending(state, records);
-        EmitStdin(state, records);
-        Record record = MakeRecord(RecordKind::kExit, message_type_t::kResponse, msg.timestamp_ns,
-                                   std::string(data));
-        TakeOutput(state, &record);
-        records->push_back(std::move(record));
+      case kStatusChannel:
+        EmitExit(state, msg.timestamp_ns, std::string(data), records);
         break;
-      }
       default:
         break;
     }
   }
+}
+
+void FinishK8sExec(ExecState* state, std::vector<Record>* records) {
+  if (!state->started || state->exited) {
+    return;
+  }
+  EmitExit(state, state->last_timestamp_ns, "", records);
 }
 
 }  // namespace websocket

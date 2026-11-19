@@ -132,6 +132,12 @@ void ConnTracker::AddConnCloseEvent(const socket_control_event_t& event) {
     }
     state_ptr->global.conn_closed = true;
   }
+  if (protocol() == traffic_protocol_t::kProtocolWebSocket) {
+    auto* state_ptr = protocol_state<protocols::websocket::StateWrapper>();
+    if (state_ptr != nullptr) {
+      state_ptr->global.conn_closed = true;
+    }
+  }
 
   send_data_.set_conn_closed();
   recv_data_.set_conn_closed();
@@ -825,6 +831,7 @@ bool ConnTracker::MaybeUpgradeToWebSocket() {
   protocols::websocket::StateWrapper ws_state;
   ws_state.global.path = std::move(state->global.websocket_path);
   ws_state.global.subprotocol = std::move(state->global.websocket_subprotocol);
+  ws_state.global.conn_closed = state->global.conn_closed;
 
   CONN_TRACE(1) << "Protocol upgraded: HTTP->WebSocket";
   upgraded_from_ = protocol_;
