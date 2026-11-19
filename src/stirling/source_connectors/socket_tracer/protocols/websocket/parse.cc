@@ -18,10 +18,16 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/websocket/parse.h"
 
+#include <algorithm>
 #include <optional>
 #include <string>
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/k8s_exec.h"
 #include "src/stirling/utils/binary_decoder.h"
+
+DEFINE_uint32(websocket_payload_limit_bytes,
+              gflags::Uint32FromEnv("PX_STIRLING_WEBSOCKET_PAYLOAD_LIMIT_BYTES", 1024),
+              "The amount of a WebSocket frame payload that will be returned on a parse");
 
 namespace px {
 namespace stirling {
@@ -32,6 +38,7 @@ namespace {
 
 constexpr uint8_t kFinBit = 0x80;
 constexpr uint8_t kRsvBits = 0x70;
+constexpr uint8_t kUnsupportedRsvBits = 0x30;
 constexpr uint8_t kRsvShift = 4;
 constexpr uint8_t kOpcodeBits = 0x0f;
 constexpr uint8_t kMaskBit = 0x80;
@@ -42,71 +49,159 @@ constexpr uint64_t kPayloadLength64MSB = 1ULL << 63;
 constexpr uint64_t kMaxControlPayloadLength = 125;
 constexpr size_t kMaskingKeySize = 4;
 
-}  // namespace
-}  // namespace websocket
+struct Header {
+  bool fin = false;
+  uint8_t rsv = 0;
+  Opcode opcode = Opcode::kContinuation;
+  bool masked = false;
+  uint64_t payload_length = 0;
+  std::string_view masking_key;
+};
 
-template <>
-ParseState ParseFrame(message_type_t, std::string_view* buf, websocket::Frame* frame,
-                      websocket::StateWrapper*) {
-  using websocket::Opcode;
+ParseState ParseHeader(BinaryDecoder* decoder, Header* header) {
+  PX_ASSIGN_OR(uint8_t b0, decoder->ExtractBEInt<uint8_t>(), return ParseState::kNeedsMoreData);
+  PX_ASSIGN_OR(uint8_t b1, decoder->ExtractBEInt<uint8_t>(), return ParseState::kNeedsMoreData);
 
-  BinaryDecoder decoder(*buf);
-  PX_ASSIGN_OR(uint8_t b0, decoder.ExtractBEInt<uint8_t>(), return ParseState::kNeedsMoreData);
-  PX_ASSIGN_OR(uint8_t b1, decoder.ExtractBEInt<uint8_t>(), return ParseState::kNeedsMoreData);
-
-  std::optional<Opcode> opcode = magic_enum::enum_cast<Opcode>(b0 & websocket::kOpcodeBits);
-  if (!opcode.has_value()) {
+  std::optional<Opcode> opcode = magic_enum::enum_cast<Opcode>(b0 & kOpcodeBits);
+  if (!opcode.has_value() || (b0 & kUnsupportedRsvBits)) {
     return ParseState::kInvalid;
   }
-  const bool fin = b0 & websocket::kFinBit;
-  const bool control = websocket::IsControl(opcode.value());
-  if (control && !fin) {
+  header->fin = b0 & kFinBit;
+  const bool control = IsControl(opcode.value());
+  if (control && !header->fin) {
     return ParseState::kInvalid;
   }
 
-  uint64_t payload_length = b1 & websocket::kPayloadLengthBits;
-  if (payload_length == websocket::kPayloadLength16) {
-    PX_ASSIGN_OR(payload_length, decoder.ExtractBEInt<uint16_t>(),
+  uint64_t payload_length = b1 & kPayloadLengthBits;
+  if (payload_length == kPayloadLength16) {
+    PX_ASSIGN_OR(payload_length, decoder->ExtractBEInt<uint16_t>(),
                  return ParseState::kNeedsMoreData);
-  } else if (payload_length == websocket::kPayloadLength64) {
-    PX_ASSIGN_OR(payload_length, decoder.ExtractBEInt<uint64_t>(),
+  } else if (payload_length == kPayloadLength64) {
+    PX_ASSIGN_OR(payload_length, decoder->ExtractBEInt<uint64_t>(),
                  return ParseState::kNeedsMoreData);
-    if (payload_length & websocket::kPayloadLength64MSB) {
+    if (payload_length & kPayloadLength64MSB) {
       return ParseState::kInvalid;
     }
   }
-  if (control && payload_length > websocket::kMaxControlPayloadLength) {
+  if (control && payload_length > kMaxControlPayloadLength) {
     return ParseState::kInvalid;
   }
 
-  const bool masked = b1 & websocket::kMaskBit;
-  std::string_view masking_key;
-  if (masked) {
-    PX_ASSIGN_OR(masking_key, decoder.ExtractString(websocket::kMaskingKeySize),
+  header->masked = b1 & kMaskBit;
+  if (header->masked) {
+    PX_ASSIGN_OR(header->masking_key, decoder->ExtractString(kMaskingKeySize),
                  return ParseState::kNeedsMoreData);
   }
-  PX_ASSIGN_OR(std::string_view payload, decoder.ExtractString(payload_length),
-               return ParseState::kNeedsMoreData);
+  header->rsv = (b0 & kRsvBits) >> kRsvShift;
+  header->opcode = opcode.value();
+  header->payload_length = payload_length;
+  return ParseState::kSuccess;
+}
 
-  frame->fin = fin;
-  frame->rsv = (b0 & websocket::kRsvBits) >> websocket::kRsvShift;
-  frame->opcode = opcode.value();
-  frame->masked = masked;
-  frame->payload_length = payload_length;
+DirectionState* Direction(message_type_t type, StateWrapper* state) {
+  if (state == nullptr) {
+    return nullptr;
+  }
+  return type == message_type_t::kRequest ? &state->send : &state->recv;
+}
+
+ParseState CheckHeaderAt(message_type_t type, std::string_view buf, uint64_t* frame_size) {
+  BinaryDecoder decoder(buf);
+  Header header;
+  ParseState s = ParseHeader(&decoder, &header);
+  if (s != ParseState::kSuccess) {
+    return s;
+  }
+  if (header.masked != (type == message_type_t::kRequest)) {
+    return ParseState::kInvalid;
+  }
+  *frame_size = buf.size() - decoder.BufSize() + header.payload_length;
+  return ParseState::kSuccess;
+}
+
+bool IsFrameBoundary(message_type_t type, std::string_view buf, size_t pos) {
+  uint64_t frame_size = 0;
+  if (CheckHeaderAt(type, buf.substr(pos), &frame_size) != ParseState::kSuccess) {
+    return false;
+  }
+  const size_t remaining = buf.size() - pos;
+  if (frame_size >= remaining) {
+    return frame_size == remaining;
+  }
+  uint64_t next_frame_size = 0;
+  return CheckHeaderAt(type, buf.substr(pos + frame_size), &next_frame_size) !=
+         ParseState::kInvalid;
+}
+
+}  // namespace
+
+size_t PayloadLimitBytes(const StateWrapper* state) {
+  if (state != nullptr && IsK8sChannelProtocol(state->global.subprotocol)) {
+    return kK8sChannelPayloadLimitBytes;
+  }
+  return FLAGS_websocket_payload_limit_bytes;
+}
+
+}  // namespace websocket
+
+template <>
+ParseState ParseFrame(message_type_t type, std::string_view* buf, websocket::Frame* frame,
+                      websocket::StateWrapper* state) {
+  websocket::DirectionState* direction = websocket::Direction(type, state);
+  if (direction != nullptr && direction->skip > 0) {
+    const size_t skipped = std::min<uint64_t>(direction->skip, buf->size());
+    buf->remove_prefix(skipped);
+    direction->skip -= skipped;
+    return ParseState::kIgnored;
+  }
+
+  BinaryDecoder decoder(*buf);
+  websocket::Header header;
+  ParseState s = websocket::ParseHeader(&decoder, &header);
+  if (s != ParseState::kSuccess) {
+    return s;
+  }
+
+  const uint64_t captured =
+      direction == nullptr
+          ? header.payload_length
+          : std::min<uint64_t>(header.payload_length, websocket::PayloadLimitBytes(state));
+  PX_ASSIGN_OR(std::string_view payload, decoder.ExtractString(captured),
+               return ParseState::kNeedsMoreData);
+  const uint64_t uncaptured = header.payload_length - captured;
+  const size_t consumed = std::min<uint64_t>(uncaptured, decoder.BufSize());
+
+  frame->fin = header.fin;
+  frame->rsv = header.rsv;
+  frame->opcode = header.opcode;
+  frame->masked = header.masked;
+  frame->payload_length = header.payload_length;
   frame->payload.assign(payload);
-  if (masked) {
+  if (header.masked) {
     for (size_t i = 0; i < frame->payload.size(); ++i) {
-      frame->payload[i] ^= masking_key[i % websocket::kMaskingKeySize];
+      frame->payload[i] ^= header.masking_key[i % websocket::kMaskingKeySize];
     }
   }
 
-  buf->remove_prefix(buf->size() - decoder.BufSize());
+  buf->remove_prefix(buf->size() - decoder.BufSize() + consumed);
+  if (direction != nullptr) {
+    direction->skip = uncaptured - consumed;
+  }
   return ParseState::kSuccess;
 }
 
 template <>
-size_t FindFrameBoundary<websocket::Frame>(message_type_t, std::string_view, size_t,
-                                           websocket::StateWrapper*) {
+size_t FindFrameBoundary<websocket::Frame>(message_type_t type, std::string_view buf,
+                                           size_t start_pos, websocket::StateWrapper* state) {
+  websocket::DirectionState* direction = websocket::Direction(type, state);
+  if (direction != nullptr) {
+    direction->skip = 0;
+  }
+  for (size_t pos = start_pos; pos < buf.size(); ++pos) {
+    if (websocket::IsFrameBoundary(type, buf, pos)) {
+      return pos;
+    }
+  }
   return std::string_view::npos;
 }
 

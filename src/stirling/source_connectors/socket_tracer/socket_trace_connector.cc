@@ -1795,9 +1795,6 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  const size_t payload_size = record.kind == protocols::websocket::RecordKind::kFrame
-                                  ? msg.payload.size()
-                                  : record.payload_size;
   DataTable::RecordBuilder<&kWebSocketTable> r(data_table, msg.timestamp_ns);
   r.Append<r.ColIndex("time_")>(msg.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
@@ -1813,18 +1810,17 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("opcode")>(static_cast<uint64_t>(msg.opcode));
   r.Append<r.ColIndex("compressed")>(msg.compressed);
   r.Append<r.ColIndex("fragments")>(msg.fragments);
-  if (record.kind != protocols::websocket::RecordKind::kFrame) {
-    r.Append<r.ColIndex("payload")>(protocols::websocket::Printable(msg.payload),
-                                    FLAGS_max_body_bytes);
-  } else if (msg.opcode == protocols::websocket::Opcode::kText) {
+  auto printable = [](std::string_view data) {
+    return protocols::websocket::Printable(data.substr(0, FLAGS_max_body_bytes));
+  };
+  if (record.kind == protocols::websocket::RecordKind::kFrame &&
+      msg.opcode == protocols::websocket::Opcode::kText) {
     r.Append<r.ColIndex("payload")>(std::move(msg.payload), FLAGS_max_body_bytes);
   } else {
-    r.Append<r.ColIndex("payload")>(BytesToString<bytes_format::HexAsciiMix>(msg.payload),
-                                    FLAGS_max_body_bytes);
+    r.Append<r.ColIndex("payload")>(printable(msg.payload), FLAGS_max_body_bytes);
   }
-  r.Append<r.ColIndex("payload_size")>(payload_size);
-  r.Append<r.ColIndex("output")>(protocols::websocket::Printable(record.output),
-                                 FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("payload_size")>(msg.payload_size);
+  r.Append<r.ColIndex("output")>(printable(record.output), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("output_size")>(record.output_size);
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));

@@ -23,9 +23,17 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/websocket/types.h"
 
+DECLARE_uint32(websocket_payload_limit_bytes);
+
 namespace px {
 namespace stirling {
 namespace protocols {
+
+namespace websocket {
+
+size_t PayloadLimitBytes(const StateWrapper* state);
+
+}  // namespace websocket
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, websocket::Frame* frame,

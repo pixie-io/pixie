@@ -21,8 +21,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <variant>
-#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
@@ -68,12 +66,13 @@ struct Message {
   bool compressed = false;
   size_t fragments = 0;
   std::string payload;
+  size_t payload_size = 0;
 
   std::string ToString() const {
     return absl::Substitute(
         "Message: {type: $0, opcode: $1, compressed: $2, fragments: $3, len: $4}",
         magic_enum::enum_name(type), magic_enum::enum_name(opcode), compressed, fragments,
-        payload.size());
+        payload_size);
   }
 };
 
@@ -102,7 +101,6 @@ struct Record {
   Message msg;
   RecordKind kind = RecordKind::kFrame;
   std::string subprotocol;
-  size_t payload_size = 0;
   std::string output;
   size_t output_size = 0;
 
@@ -123,23 +121,27 @@ struct TarStream {
   bool checked = false;
   bool is_tar = false;
   bool done = false;
+  bool truncated = false;
   bool long_name = false;
   std::string held;
   uint64_t skip = 0;
   uint64_t capture_left = 0;
   std::string next_name;
-  std::vector<TarEntryInfo> entries;
+  std::optional<TarEntryInfo> entry;
+  std::string manifest;
 };
 
 struct PendingInput {
   uint64_t timestamp_ns = 0;
   std::string line;
+  bool echoed = false;
 };
 
 struct ExecState {
   bool started = false;
   bool tty = false;
   bool last_cr = false;
+  bool echoed = false;
   std::string line;
   uint64_t line_timestamp_ns = 0;
   std::optional<PendingInput> pending;
@@ -158,10 +160,14 @@ struct State {
   ExecState exec;
 };
 
+struct DirectionState {
+  uint64_t skip = 0;
+};
+
 struct StateWrapper {
   State global;
-  std::monostate send;
-  std::monostate recv;
+  DirectionState send;
+  DirectionState recv;
 };
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
