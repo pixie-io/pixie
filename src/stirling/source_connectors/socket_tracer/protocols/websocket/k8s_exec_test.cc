@@ -23,6 +23,8 @@
 #include <vector>
 
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_format.h>
+#include <absl/strings/str_join.h>
 
 #include "src/common/testing/testing.h"
 
@@ -241,6 +243,115 @@ TEST(K8sExecTest, BufferedOutputIsBounded) {
   EXPECT_EQ(records[1].output_size, 100000U);
   EXPECT_LT(records[1].output.size(), 100000U);
   EXPECT_THAT(state.output, IsEmpty());
+}
+
+std::string TarHeader(std::string_view name, uint64_t mode, uint64_t size, char typeflag = '0') {
+  std::string header(512, '\0');
+  header.replace(0, name.size(), name);
+  const std::string mode_field = absl::StrFormat("%07o", mode);
+  header.replace(100, mode_field.size(), mode_field);
+  const std::string size_field = absl::StrFormat("%011o", size);
+  header.replace(124, size_field.size(), size_field);
+  header[156] = typeflag;
+  header.replace(257, 6, std::string("ustar\0", 6));
+  header.replace(263, 2, "00");
+  return header;
+}
+
+std::string TarEntry(std::string_view name, uint64_t mode, std::string_view content) {
+  std::string entry = TarHeader(name, mode, content.size());
+  entry.append(content);
+  entry.append((512 - content.size() % 512) % 512, '\0');
+  return entry;
+}
+
+std::string TarArchive(const std::vector<std::string>& entries) {
+  std::string archive = absl::StrJoin(entries, "");
+  archive.append(1024, '\0');
+  return archive;
+}
+
+TEST(K8sExecTest, TarFromStdoutBecomesManifest) {
+  constexpr std::string_view kPath =
+      "/api/v1/namespaces/ns/pods/pod/exec?command=tar&command=cf&command=-&command=%2Fetc&"
+      "stdout=true";
+  const std::string archive =
+      TarArchive({TarEntry("etc/passwd", 0644, "root:x:0:0:root:/root:/bin/sh\n"),
+                  TarEntry("etc/shadow", 0640, std::string(700, 'x'))});
+  std::vector<Message> messages = {Out(1, "\x01")};
+  for (size_t pos = 0; pos < archive.size(); pos += 300) {
+    messages.push_back(Out(2 + pos, absl::StrCat("\x01", archive.substr(pos, 300))));
+  }
+  messages.push_back(Out(10000, absl::StrCat("\x03", kStatusSuccess)));
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kPath, std::move(messages), &state, &records);
+
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[1].kind, RecordKind::kExit);
+  EXPECT_EQ(records[1].output,
+            absl::StrCat("etc/passwd mode=0644 size=30 head=\"root:x:0:0:root:/root:/bin/sh\\n\"\n",
+                         "etc/shadow mode=0640 size=700 head=\"", std::string(64, 'x'), "\"\n"));
+  EXPECT_EQ(records[1].output_size, archive.size());
+}
+
+TEST(K8sExecTest, TarLongNameIsResolved) {
+  constexpr std::string_view kPath = "/exec/ns/pod/ctr?command=tar&command=cf&command=-&output=1";
+  const std::string long_name = absl::StrCat("data/", std::string(120, 'n'));
+  std::string long_name_entry = TarHeader("././@LongLink", 0, long_name.size() + 1, 'L');
+  long_name_entry.append(long_name);
+  long_name_entry.push_back('\0');
+  long_name_entry.append((512 - (long_name.size() + 1) % 512) % 512, '\0');
+  const std::string archive = TarArchive({long_name_entry, TarEntry("data/nnn", 0600, "v")});
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kPath,
+                {Out(1, absl::StrCat("\x01", archive)), Out(2, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[1].output, absl::StrCat(long_name, " mode=0600 size=1 head=\"v\"\n"));
+}
+
+TEST(K8sExecTest, NonTTYStdinIsOneInputRow) {
+  constexpr std::string_view kPath = "/exec/ns/pod/ctr?command=sh&input=1&output=1";
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kPath,
+                {In(1, "\x00id\n"sv), In(2, "\x00hostname\n"sv), Out(3, "\x01uid=0\npod\n"),
+                 Out(4, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
+                                   IsRecord(RecordKind::kInput, "id\nhostname\n", ""),
+                                   IsRecord(RecordKind::kExit, kStatusSuccess, "uid=0\npod\n")));
+  EXPECT_EQ(records[1].msg.timestamp_ns, 1U);
+  EXPECT_EQ(records[1].payload_size, 12U);
+}
+
+TEST(K8sExecTest, TarOnStdinBecomesManifest) {
+  constexpr std::string_view kPath =
+      "/api/v1/namespaces/ns/pods/pod/exec?command=tar&command=xmf&command=-&command=-C&"
+      "command=%2Ftmp&stdin=true";
+  const std::string archive = TarArchive({TarEntry("payload.sh", 0755, "#!/bin/sh\necho hi\n")});
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kPath,
+                {In(1, absl::StrCat(std::string(1, '\0'), archive)),
+                 In(2, "\xff\x00"sv), Out(3, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  EXPECT_THAT(records,
+              ElementsAre(IsRecord(RecordKind::kExec, "tar xmf - -C /tmp", ""),
+                          IsRecord(RecordKind::kInput,
+                                   "payload.sh mode=0755 size=18 head=\"#!/bin/sh\\necho hi\\n\"\n",
+                                   ""),
+                          IsRecord(RecordKind::kExit, kStatusSuccess, "")));
+  EXPECT_EQ(records[1].payload_size, archive.size());
 }
 
 }  // namespace websocket
