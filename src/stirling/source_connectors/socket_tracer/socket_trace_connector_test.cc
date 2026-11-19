@@ -265,11 +265,11 @@ TEST_F(SocketTraceConnectorWebSocketTest, UpgradedConnectionProducesWebSocketEve
   std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
   ASSERT_THAT(records, RecordBatchSizeIs(2));
-  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]), ElementsAre("Hello", "hi"));
-  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketDirectionIdx]), ElementsAre(1, 2));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]), ElementsAre("hi", "Hello"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketDirectionIdx]), ElementsAre(2, 1));
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketOpcodeIdx]), ElementsAre(1, 1));
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]),
-              ElementsAre(5, 2));
+              ElementsAre(2, 5));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
