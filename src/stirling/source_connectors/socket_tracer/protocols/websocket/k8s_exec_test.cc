@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/strings/match.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
 #include <absl/strings/str_join.h>
@@ -51,6 +52,7 @@ Message Msg(uint64_t timestamp_ns, message_type_t type, std::string_view payload
   msg.opcode = opcode;
   msg.fragments = 1;
   msg.payload = std::string(payload);
+  msg.payload_size = msg.payload.size();
   return msg;
 }
 
@@ -167,8 +169,11 @@ TEST(K8sExecTest, TTYSessionBecomesOneRowPerCommand) {
 
 TEST(K8sExecTest, LineEditingIsApplied) {
   std::vector<Message> messages = {
-      In(1, "\x00lx"sv),   In(2, "\x00\x7f"sv), In(3, "\x00s\r"sv),   Out(4, "\x01\r\nbin\r\n/ # "),
-      In(5, "\x00junk"sv), In(6, "\x00\x15"sv), In(7, "\x00pwd\r"sv), Out(8, "\x01\r\n/\r\n/ # "),
+      In(1, "\x00lx"sv),     Out(2, "\x01lx"),       In(3, "\x00\x7f"sv),
+      Out(4, "\x01\b \b"),   In(5, "\x00s"sv),       Out(6, "\x01s"),
+      In(7, "\x00\r"sv),      Out(8, "\x01\r\nbin\r\n/ # "), In(9, "\x00junk"sv),
+      Out(10, "\x01junk"),    In(11, "\x00\x15"sv),  In(12, "\x00pwd\r"sv),
+      Out(13, "\x01\r\n/\r\n/ # "),
   };
   ExecState state;
   std::vector<Record> records;
@@ -184,11 +189,14 @@ TEST(K8sExecTest, AbandonedLineIsKept) {
   std::vector<Message> messages = {
       In(1,
          "\x00"
-         "cat /etc/shadow"sv),
-      In(2, "\x00\x03"sv),
-      Out(3, "\x01^C\r\n/ # "),
-      In(4, "\x00\x04"sv),
-      Out(5, absl::StrCat("\x03", kStatusSuccess)),
+         "cat /etc/hosts"sv),
+      Out(2,
+          "\x01"
+          "cat /etc/hosts"),
+      In(3, "\x00\x03"sv),
+      Out(4, "\x01^C\r\n/ # "),
+      In(5, "\x00\x04"sv),
+      Out(6, absl::StrCat("\x03", kStatusSuccess)),
   };
   ExecState state;
   std::vector<Record> records;
@@ -196,7 +204,7 @@ TEST(K8sExecTest, AbandonedLineIsKept) {
   DecodeK8sExec(kKubeletTTYPath, std::move(messages), &state, &records);
 
   EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
-                                   IsRecord(RecordKind::kInput, "cat /etc/shadow^C", "^C\n"),
+                                   IsRecord(RecordKind::kInput, "cat /etc/hosts^C", "^C\n"),
                                    IsRecord(RecordKind::kInput, "^D", ""),
                                    IsRecord(RecordKind::kExit, kStatusSuccess, "")));
 }
@@ -229,14 +237,15 @@ TEST(K8sExecTest, SessionContinuesAcrossCalls) {
   ExecState state;
   std::vector<Record> records;
 
-  DecodeK8sExec(kKubeletTTYPath, {Out(1, "\x01/ # "), In(2, "\x00i"sv)}, &state, &records);
+  DecodeK8sExec(kKubeletTTYPath, {Out(1, "\x01/ # "), In(2, "\x00i"sv), Out(3, "\x01i")}, &state,
+                &records);
   DecodeK8sExec(kKubeletTTYPath,
-                {In(3,
+                {In(4,
                     "\x00"
                     "d\r"sv),
-                 Out(4, "\x01\r\nuid=0\r\n/ # ")},
+                 Out(5, "\x01\r\nuid=0\r\n/ # ")},
                 &state, &records);
-  DecodeK8sExec(kKubeletTTYPath, {Out(5, absl::StrCat("\x03", kStatusSuccess))}, &state, &records);
+  DecodeK8sExec(kKubeletTTYPath, {Out(6, absl::StrCat("\x03", kStatusSuccess))}, &state, &records);
 
   EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
                                    IsRecord(RecordKind::kInput, "id", "uid=0\n"),
@@ -291,7 +300,7 @@ TEST(K8sExecTest, TarFromStdoutBecomesManifest) {
       "stdout=true";
   const std::string archive =
       TarArchive({TarEntry("etc/passwd", 0644, "root:x:0:0:root:/root:/bin/sh\n"),
-                  TarEntry("etc/shadow", 0640, std::string(700, 'x'))});
+                  TarEntry("etc/group", 0640, std::string(700, 'x'))});
   std::vector<Message> messages = {Out(1, "\x01")};
   for (size_t pos = 0; pos < archive.size(); pos += 300) {
     messages.push_back(Out(2 + pos, absl::StrCat("\x01", archive.substr(pos, 300))));
@@ -306,7 +315,7 @@ TEST(K8sExecTest, TarFromStdoutBecomesManifest) {
   EXPECT_EQ(records[1].kind, RecordKind::kExit);
   EXPECT_EQ(records[1].output,
             absl::StrCat("etc/passwd mode=0644 size=30 head=\"root:x:0:0:root:/root:/bin/sh\\n\"\n",
-                         "etc/shadow mode=0640 size=700 head=\"", std::string(64, 'x'), "\"\n"));
+                         "etc/group mode=0640 size=700 head=\"", std::string(64, 'x'), "\"\n"));
   EXPECT_EQ(records[1].output_size, archive.size());
 }
 
@@ -343,7 +352,7 @@ TEST(K8sExecTest, NonTTYStdinIsOneInputRow) {
                                    IsRecord(RecordKind::kInput, "id\nhostname\n", ""),
                                    IsRecord(RecordKind::kExit, kStatusSuccess, "uid=0\npod\n")));
   EXPECT_EQ(records[1].msg.timestamp_ns, 1U);
-  EXPECT_EQ(records[1].payload_size, 12U);
+  EXPECT_EQ(records[1].msg.payload_size, 12U);
 }
 
 TEST(K8sExecTest, TarOnStdinBecomesManifest) {
@@ -365,7 +374,133 @@ TEST(K8sExecTest, TarOnStdinBecomesManifest) {
                   IsRecord(RecordKind::kInput,
                            "payload.sh mode=0755 size=18 head=\"#!/bin/sh\\necho hi\\n\"\n", ""),
                   IsRecord(RecordKind::kExit, kStatusSuccess, "")));
-  EXPECT_EQ(records[1].payload_size, archive.size());
+  EXPECT_EQ(records[1].msg.payload_size, archive.size());
+}
+
+TEST(K8sExecTest, EchoOffInputIsRedacted) {
+  std::vector<Message> messages = {
+      Out(1, "\x01/ # "),
+      In(2, "\x00su"sv),
+      Out(3, "\x01su"),
+      In(4, "\x00\r"sv),
+      Out(5, "\x01\r\nPassword: "),
+      In(6, "\x00hunter2"sv),
+      In(7, "\x00\r"sv),
+      Out(8, "\x01\r\n/ # "),
+      Out(9, absl::StrCat("\x03", kStatusSuccess)),
+  };
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kKubeletTTYPath, std::move(messages), &state, &records);
+
+  EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
+                                   IsRecord(RecordKind::kInput, "su", ""),
+                                   IsRecord(RecordKind::kInput, "<redacted: no echo>", ""),
+                                   IsRecord(RecordKind::kExit, kStatusSuccess, "")));
+}
+
+TEST(K8sExecTest, PastedLineKeepsCommandAndDropsEcho) {
+  std::vector<Message> messages = {
+      Out(1, "\x01/ # "),
+      In(2, "\x00ls\r"sv),
+      Out(3, "\x01ls\r\nbin\r\n/ # "),
+      Out(4, absl::StrCat("\x03", kStatusSuccess)),
+  };
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kKubeletTTYPath, std::move(messages), &state, &records);
+
+  EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "sh", ""),
+                                   IsRecord(RecordKind::kInput, "ls", "bin\n"),
+                                   IsRecord(RecordKind::kExit, kStatusSuccess, "")));
+}
+
+TEST(K8sExecTest, InputLineIsBounded) {
+  const std::string typed(10000, 'a');
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kKubeletTTYPath,
+                {In(1, absl::StrCat(std::string(1, '\0'), typed)), Out(2, "\x01" "aaaa"),
+                 In(3, "\x00\r"sv), Out(4, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  ASSERT_EQ(records.size(), 3U);
+  EXPECT_EQ(records[1].kind, RecordKind::kInput);
+  EXPECT_EQ(records[1].msg.payload, std::string(4096, 'a'));
+}
+
+std::string TarTwoFiles() {
+  return TarArchive(
+      {TarEntry("big.bin", 0644, std::string(5000, 'b')), TarEntry("small.txt", 0600, "hi")});
+}
+
+constexpr std::string_view kTarStdoutPath =
+    "/api/v1/namespaces/ns/pods/pod/exec?command=tar&command=cf&command=-&command=%2Fdata&"
+    "stdout=true";
+
+Message TruncatedOut(uint64_t timestamp_ns, std::string_view data, size_t kept) {
+  Message msg = Out(timestamp_ns, absl::StrCat("\x01", data.substr(0, kept)));
+  msg.payload_size = 1 + data.size();
+  return msg;
+}
+
+TEST(K8sExecTest, TruncatedTarContentKeepsManifest) {
+  const std::string archive = TarTwoFiles();
+  constexpr size_t kFirstMessage = 512 + 5120;
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kTarStdoutPath,
+                {TruncatedOut(1, archive.substr(0, kFirstMessage), 612),
+                 Out(2, absl::StrCat("\x01", archive.substr(kFirstMessage))),
+                 Out(3, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[1].output,
+            absl::StrCat("big.bin mode=0644 size=5000 head=\"", std::string(64, 'b'), "\"\n",
+                         "small.txt mode=0600 size=2 head=\"hi\"\n"));
+  EXPECT_EQ(records[1].output_size, archive.size());
+}
+
+TEST(K8sExecTest, TarLossAcrossHeaderIsMarked) {
+  const std::string archive = TarTwoFiles();
+  constexpr size_t kFirstMessage = 512 + 5120 + 100;
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kTarStdoutPath,
+                {TruncatedOut(1, archive.substr(0, kFirstMessage), 612),
+                 Out(2, absl::StrCat("\x01", archive.substr(kFirstMessage))),
+                 Out(3, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[1].output,
+            absl::StrCat("big.bin mode=0644 size=5000 head=\"", std::string(64, 'b'), "\"\n",
+                         "[TRUNCATED]\n"));
+}
+
+TEST(K8sExecTest, TarManifestIsBounded) {
+  std::vector<std::string> entries;
+  for (int i = 0; i < 200; ++i) {
+    entries.push_back(TarEntry(absl::StrCat("dir/", std::string(90, 'f'), i), 0644, "x"));
+  }
+  const std::string archive = TarArchive(entries);
+  ExecState state;
+  std::vector<Record> records;
+
+  DecodeK8sExec(kTarStdoutPath,
+                {Out(1, absl::StrCat("\x01", archive)), Out(2, absl::StrCat("\x03", kStatusSuccess))},
+                &state, &records);
+
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_LE(records[1].output.size(), 4096U);
+  EXPECT_TRUE(absl::StartsWith(records[1].output, absl::StrCat("dir/", std::string(90, 'f'), "0")));
+  EXPECT_EQ(records[1].output_size, archive.size());
 }
 
 }  // namespace websocket

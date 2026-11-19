@@ -138,7 +138,7 @@ TEST_F(WebSocketParseTest, ExtendedPayloadLengths) {
   std::string_view buf64 = frame64;
   ASSERT_EQ(Parse(&buf64), ParseState::kSuccess);
   EXPECT_EQ(frame_.payload_length, 65536U);
-  EXPECT_EQ(frame_.payload.size(), 65536U);
+  EXPECT_EQ(frame_.payload.size(), FLAGS_websocket_payload_limit_bytes);
   EXPECT_TRUE(buf64.empty());
 }
 
@@ -166,6 +166,9 @@ TEST_F(WebSocketParseTest, IncompleteFramesNeedMoreData) {
   std::string frame64 = Frame64(65536);
   std::string_view header_only(frame64.data(), 6);
   EXPECT_EQ(Parse(&header_only), ParseState::kNeedsMoreData);
+
+  std::string_view below_limit(frame64.data(), 10 + FLAGS_websocket_payload_limit_bytes - 1);
+  EXPECT_EQ(Parse(&below_limit), ParseState::kNeedsMoreData);
 }
 
 TEST_F(WebSocketParseTest, InvalidFrames) {
@@ -181,6 +184,116 @@ TEST_F(WebSocketParseTest, InvalidFrames) {
   std::string msb_set = {'\x82', '\x7f', '\x80', 0, 0, 0, 0, 0, 0, 0};
   std::string_view msb_view = msb_set;
   EXPECT_EQ(Parse(&msb_view), ParseState::kInvalid);
+}
+
+TEST_F(WebSocketParseTest, ReservedRsvBitsAreInvalid) {
+  std::string rsv2 = {'\xa1', '\x00'};
+  std::string_view rsv2_view = rsv2;
+  EXPECT_EQ(Parse(&rsv2_view), ParseState::kInvalid);
+
+  std::string rsv3 = {'\x91', '\x00'};
+  std::string_view rsv3_view = rsv3;
+  EXPECT_EQ(Parse(&rsv3_view), ParseState::kInvalid);
+}
+
+TEST_F(WebSocketParseTest, PayloadIsCappedAtLimit) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 16);
+  std::string frame = Frame16(300);
+  frame[4] = 'a';
+  std::string_view buf = frame;
+
+  ASSERT_EQ(Parse(&buf), ParseState::kSuccess);
+  EXPECT_EQ(frame_.payload_length, 300U);
+  EXPECT_EQ(frame_.payload, "a" + std::string(15, 'x'));
+  EXPECT_LT(frame_.ByteSize(), sizeof(Frame) + 300);
+  EXPECT_TRUE(buf.empty());
+}
+
+TEST_F(WebSocketParseTest, MaskedPayloadPrefixIsUnmasked) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 3);
+  std::string_view buf = CreateCharArrayView<char>(kMaskedText);
+
+  ASSERT_EQ(Parse(&buf), ParseState::kSuccess);
+  EXPECT_EQ(frame_.payload_length, 5U);
+  EXPECT_EQ(frame_.payload, "Hel");
+  EXPECT_TRUE(buf.empty());
+}
+
+TEST_F(WebSocketParseTest, LargeFrameIsEmittedBeforeItIsFullyBuffered) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 16);
+  std::string data = Frame64(65536) + Bytes(kUnmaskedPing);
+  constexpr size_t kHeaderSize = 10;
+  constexpr size_t kFirstChunk = 1000;
+  std::string_view first(data.data(), kFirstChunk);
+
+  ASSERT_EQ(Parse(&first), ParseState::kSuccess);
+  EXPECT_EQ(frame_.payload_length, 65536U);
+  EXPECT_EQ(frame_.payload, std::string(16, 'x'));
+  EXPECT_TRUE(first.empty());
+
+  std::string_view middle(data.data() + kFirstChunk, 30000);
+  EXPECT_EQ(Parse(&middle), ParseState::kIgnored);
+  EXPECT_TRUE(middle.empty());
+
+  std::string_view rest(data.data() + kFirstChunk + 30000, data.size() - kFirstChunk - 30000);
+  EXPECT_EQ(Parse(&rest), ParseState::kIgnored);
+  EXPECT_EQ(rest.size(), sizeof(kUnmaskedPing));
+  ASSERT_EQ(Parse(&rest), ParseState::kSuccess);
+  EXPECT_EQ(frame_.opcode, Opcode::kPing);
+  EXPECT_TRUE(rest.empty());
+  EXPECT_EQ(data.size(), kHeaderSize + 65536 + sizeof(kUnmaskedPing));
+}
+
+TEST_F(WebSocketParseTest, DirectionsSkipIndependently) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 16);
+  std::string big = Frame16(300);
+  std::string_view req(big.data(), 100);
+  ASSERT_EQ(ParseFrame(message_type_t::kRequest, &req, &frame_, &state_), ParseState::kSuccess);
+
+  std::string_view resp = CreateCharArrayView<char>(kUnmaskedText);
+  ASSERT_EQ(ParseFrame(message_type_t::kResponse, &resp, &frame_, &state_), ParseState::kSuccess);
+  EXPECT_EQ(frame_.payload, "Hello");
+}
+
+TEST_F(WebSocketParseTest, FindFrameBoundarySkipsGarbage) {
+  std::string data = "xxxx" + Bytes(kMaskedText) + Bytes(kMaskedPong);
+  EXPECT_EQ(FindFrameBoundary<Frame>(message_type_t::kRequest, data, 1, &state_), 4U);
+}
+
+TEST_F(WebSocketParseTest, FindFrameBoundaryRequiresDirectionalMasking) {
+  std::string data = Bytes(kMaskedText) + Bytes(kUnmaskedText) + Bytes(kUnmaskedPing);
+  EXPECT_EQ(FindFrameBoundary<Frame>(message_type_t::kResponse, data, 1, &state_),
+            sizeof(kMaskedText));
+  EXPECT_EQ(FindFrameBoundary<Frame>(message_type_t::kRequest, data, 1, &state_),
+            std::string_view::npos);
+}
+
+TEST_F(WebSocketParseTest, FindFrameBoundaryWithoutFrameIsNpos) {
+  EXPECT_EQ(FindFrameBoundary<Frame>(message_type_t::kRequest, "xxxx", 0, &state_),
+            std::string_view::npos);
+}
+
+TEST_F(WebSocketParseTest, ResyncDropsPendingSkip) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 16);
+  std::string big = Frame16(300);
+  std::string_view head(big.data(), 100);
+  ASSERT_EQ(Parse(&head), ParseState::kSuccess);
+
+  std::string data = "xxxx" + Bytes(kMaskedText);
+  ASSERT_EQ(FindFrameBoundary<Frame>(message_type_t::kRequest, data, 1, &state_), 4U);
+  std::string_view next = std::string_view(data).substr(4);
+  ASSERT_EQ(Parse(&next), ParseState::kSuccess);
+  EXPECT_EQ(frame_.payload, "Hello");
+}
+
+TEST_F(WebSocketParseTest, K8sChannelProtocolKeepsLargerPayloads) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 16);
+  state_.global.subprotocol = "v5.channel.k8s.io";
+  std::string frame = Frame16(4000);
+  std::string_view buf = frame;
+
+  ASSERT_EQ(Parse(&buf), ParseState::kSuccess);
+  EXPECT_EQ(frame_.payload.size(), 4000U);
 }
 
 }  // namespace websocket

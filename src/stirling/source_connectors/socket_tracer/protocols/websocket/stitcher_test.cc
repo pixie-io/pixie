@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/parse.h"
 
 namespace px {
 namespace stirling {
@@ -73,7 +74,7 @@ TEST_F(WebSocketStitcherTest, OneRecordPerMessageInEachDirection) {
 }
 
 TEST_F(WebSocketStitcherTest, FragmentsAreReassembled) {
-  req_frames_.push_back(MakeFrame(Opcode::kText, false, "Hel", 1, 0x4));
+  req_frames_.push_back(MakeFrame(Opcode::kText, false, "Hel", 1));
   req_frames_.push_back(MakeFrame(Opcode::kContinuation, true, "lo", 3));
 
   RecordsWithErrorCount<Record> result = Stitch();
@@ -81,10 +82,49 @@ TEST_F(WebSocketStitcherTest, FragmentsAreReassembled) {
   ASSERT_EQ(result.records.size(), 1U);
   EXPECT_EQ(result.records[0].msg.opcode, Opcode::kText);
   EXPECT_EQ(result.records[0].msg.payload, "Hello");
+  EXPECT_EQ(result.records[0].msg.payload_size, 5U);
   EXPECT_EQ(result.records[0].msg.timestamp_ns, 1U);
   EXPECT_EQ(result.records[0].msg.fragments, 2U);
-  EXPECT_TRUE(result.records[0].msg.compressed);
+  EXPECT_FALSE(result.records[0].msg.compressed);
   EXPECT_TRUE(req_frames_.empty());
+}
+
+TEST_F(WebSocketStitcherTest, CompressedPayloadIsRemoved) {
+  req_frames_.push_back(MakeFrame(Opcode::kText, false, "\xf2\x48", 1, 0x4));
+  req_frames_.push_back(MakeFrame(Opcode::kContinuation, true, "\xcd", 3));
+
+  RecordsWithErrorCount<Record> result = Stitch();
+
+  ASSERT_EQ(result.records.size(), 1U);
+  EXPECT_TRUE(result.records[0].msg.compressed);
+  EXPECT_EQ(result.records[0].msg.payload, "<removed: compressed>");
+  EXPECT_EQ(result.records[0].msg.payload_size, 3U);
+}
+
+TEST_F(WebSocketStitcherTest, TruncatedFrameKeepsItsPayloadSize) {
+  Frame frame = MakeFrame(Opcode::kBinary, true, "abc", 1);
+  frame.payload_length = 1000;
+  resp_frames_.push_back(std::move(frame));
+
+  RecordsWithErrorCount<Record> result = Stitch();
+
+  ASSERT_EQ(result.records.size(), 1U);
+  EXPECT_EQ(result.records[0].msg.payload, "abc");
+  EXPECT_EQ(result.records[0].msg.payload_size, 1000U);
+}
+
+TEST_F(WebSocketStitcherTest, ReassembledPayloadIsCappedAtLimit) {
+  PX_SET_FOR_SCOPE(FLAGS_websocket_payload_limit_bytes, 4);
+  req_frames_.push_back(MakeFrame(Opcode::kText, false, "Hel", 1));
+  req_frames_.push_back(MakeFrame(Opcode::kContinuation, false, "lo", 2));
+  req_frames_.push_back(MakeFrame(Opcode::kContinuation, true, "!!", 3));
+
+  RecordsWithErrorCount<Record> result = Stitch();
+
+  ASSERT_EQ(result.records.size(), 1U);
+  EXPECT_EQ(result.records[0].msg.payload, "Hell");
+  EXPECT_EQ(result.records[0].msg.payload_size, 7U);
+  EXPECT_EQ(result.records[0].msg.fragments, 3U);
 }
 
 TEST_F(WebSocketStitcherTest, ControlFrameBetweenFragments) {

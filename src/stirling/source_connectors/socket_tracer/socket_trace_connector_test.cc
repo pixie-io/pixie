@@ -22,6 +22,7 @@
 #include <string_view>
 
 #include <absl/functional/bind_front.h>
+#include <absl/strings/match.h>
 #include <absl/strings/str_cat.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -234,6 +235,20 @@ class SocketTraceConnectorWebSocketTest : public SocketTraceConnectorTest {
 
   void TearDown() override { FLAGS_stirling_enable_websocket_tracing = TraceMode::Off; }
 
+  RecordBatch TransferUpgradedServerFrames(std::string_view frames) {
+    source_->AcceptControlEvent(event_gen_.InitConn());
+    source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq));
+    source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(
+        absl::StrCat(testing::kHTTPUpgradeResp, frames)));
+    connector_->TransferData(ctx_.get());
+    connector_->TransferData(ctx_.get());
+    std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+    if (tablets.empty()) {
+      return {};
+    }
+    return tablets[0].records;
+  }
+
   DataTable* websocket_table_ = data_tables_[SocketTraceConnector::kWebSocketTableNum];
 };
 
@@ -311,6 +326,7 @@ TEST_F(SocketTraceConnectorWebSocketTest, K8sExecSessionProducesCommandRows) {
       "\r\n";
   constexpr std::string_view kPrompt = "\x82\x05\x01/ # "sv;
   constexpr std::string_view kStdinId = "\x82\x03\x00id"sv;
+  constexpr std::string_view kEchoId = "\x82\x03\x01id"sv;
   constexpr std::string_view kStdinEnter = "\x82\x02\x00\r"sv;
   constexpr std::string_view kStdout = "\x82\x0e\x01\r\nuid=0\r\n/ # "sv;
   constexpr std::string_view kStatus =
@@ -324,6 +340,7 @@ TEST_F(SocketTraceConnectorWebSocketTest, K8sExecSessionProducesCommandRows) {
       event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kPrompt)));
   connector_->TransferData(ctx_.get());
   source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kStdinId));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kEchoId));
   source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kStdinEnter));
   source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kStdout));
   source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kStatus));
@@ -338,6 +355,32 @@ TEST_F(SocketTraceConnectorWebSocketTest, K8sExecSessionProducesCommandRows) {
   EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
               ElementsAre("sh", "id", R"({"metadata":{},"status":"Success"})"));
   EXPECT_THAT(ToStringVector(records[kWebSocketOutputIdx]), ElementsAre("", "uid=0\n", ""));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, LargeBinaryPayloadIsTruncatedBeforeEscaping) {
+  std::string frame = {'\x82', '\x7e', '\x0f', '\xa0'};
+  frame.append(4000, '\x01');
+
+  RecordBatch records = TransferUpgradedServerFrames(frame);
+
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  std::string payload = records[kWebSocketPayloadIdx]->Get<types::StringValue>(0);
+  EXPECT_TRUE(absl::StartsWith(payload, "\\x01\\x01"));
+  EXPECT_TRUE(absl::EndsWith(payload, DataTable::kTruncatedMsg));
+  EXPECT_LE(payload.size(), FLAGS_max_body_bytes + strlen(DataTable::kTruncatedMsg));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]),
+              ElementsAre(4000));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, CompressedPayloadIsRemoved) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kCompressedText = "\xc1\x07\xf2\x48\xcd\xc9\xc9\x07\x00"sv;
+
+  RecordBatch records = TransferUpgradedServerFrames(kCompressedText);
+
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]), ElementsAre("<removed: compressed>"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(7));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
