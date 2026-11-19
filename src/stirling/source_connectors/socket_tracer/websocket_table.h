@@ -86,6 +86,8 @@ static constexpr auto kWebSocketTable =
     DataTableSchema("websocket_events", "WebSocket messages", kWebSocketElements);
 DEFINE_PRINT_TABLE(WebSocket)
 
+constexpr int kWebSocketUPIDIdx = kWebSocketTable.ColIndex("upid");
+constexpr int kWebSocketEncryptedIdx = kWebSocketTable.ColIndex("encrypted");
 constexpr int kWebSocketSubprotocolIdx = kWebSocketTable.ColIndex("subprotocol");
 constexpr int kWebSocketKindIdx = kWebSocketTable.ColIndex("kind");
 constexpr int kWebSocketDirectionIdx = kWebSocketTable.ColIndex("direction");
