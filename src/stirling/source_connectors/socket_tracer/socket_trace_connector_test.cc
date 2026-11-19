@@ -270,6 +270,31 @@ TEST_F(SocketTraceConnectorWebSocketTest, UpgradedConnectionProducesWebSocketEve
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(2, 5));
 }
 
+TEST_F(SocketTraceConnectorWebSocketTest, NonTextPayloadsAreEscaped) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kServerStdout = "\x82\x04\x01hi\n"sv;
+  constexpr std::string_view kServerClose = "\x88\x02\x03\xe8"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req =
+      event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(
+      absl::StrCat(testing::kHTTPUpgradeResp, kServerStdout, kServerClose));
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(req));
+  source_->AcceptDataEvent(std::move(resp));
+  connector_->TransferData(ctx_.get());
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
+              ElementsAre("\\x01hi\\x0A", "\\x03\\xE8"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(4, 2));
+}
+
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   std::unique_ptr<SocketDataEvent> event0_req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq4);
