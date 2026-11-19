@@ -37,7 +37,8 @@ using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::testing::Each;
 using ::testing::IsSupersetOf;
 
-class WebSocketTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
+class WebSocketTraceTest
+    : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   WebSocketTraceTest() {
     FLAGS_stirling_enable_websocket_tracing = TraceMode::On;

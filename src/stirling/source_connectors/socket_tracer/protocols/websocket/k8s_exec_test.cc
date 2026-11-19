@@ -526,9 +526,9 @@ TEST(K8sExecTest, FinishFlushesSessionWithoutStatus) {
   FinishK8sExec(&state, &records);
   FinishK8sExec(&state, &records);
 
-  EXPECT_THAT(records,
-              ElementsAre(IsRecord(RecordKind::kExec, "tar cf - /tmp", ""),
-                          IsRecord(RecordKind::kExit, "", "tmp/a mode=0644 size=2 head=\"a\\n\"\n")));
+  EXPECT_THAT(records, ElementsAre(IsRecord(RecordKind::kExec, "tar cf - /tmp", ""),
+                                   IsRecord(RecordKind::kExit, "",
+                                            "tmp/a mode=0644 size=2 head=\"a\\n\"\n")));
   EXPECT_EQ(records[1].msg.timestamp_ns, 5U);
   EXPECT_EQ(records[1].output_size, archive.size());
 }

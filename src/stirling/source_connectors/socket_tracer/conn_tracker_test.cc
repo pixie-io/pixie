@@ -459,8 +459,7 @@ TEST_F(ConnTrackerTest, TrackerWebSocketSessionClosedWithoutStatusIsFlushed) {
   tracker.InitProtocolState<http::StateWrapper>();
   tracker.AddControlEvent(event_gen_.InitConn());
   tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kExecReq));
-  tracker.AddDataEvent(
-      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kStdout)));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kStdout)));
   tracker.AddControlEvent(event_gen_.InitClose());
   tracker.ProcessToRecords<http::ProtocolTraits>();
   ASSERT_TRUE(tracker.MaybeUpgradeToWebSocket());
