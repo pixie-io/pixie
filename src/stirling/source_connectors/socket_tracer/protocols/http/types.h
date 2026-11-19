@@ -19,6 +19,7 @@
 #pragma once
 
 #include <chrono>
+#include <map>
 #include <string>
 
 #include "src/common/base/utils.h"
