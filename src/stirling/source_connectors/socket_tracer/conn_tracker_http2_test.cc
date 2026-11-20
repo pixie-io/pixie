@@ -21,7 +21,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include "src/common/base/types.h"
+#include "src/common/testing/test_environment.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/http2_stream_generator.h"
 
 namespace px {
@@ -82,6 +85,42 @@ TEST_F(ConnTrackerHTTP2Test, BasicData) {
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data(), "Request");
   EXPECT_EQ(records[0].recv.data(), "Response");
+}
+
+TEST_F(ConnTrackerHTTP2Test, DataIsKeptUpToTheBodyLimit) {
+  PX_SET_FOR_SCOPE(FLAGS_max_body_bytes, 16384);
+  const std::string kOrder(2000, 'o');
+  auto frame_generator = testing::StreamEventGenerator(&mock_clock_, kConnID, 7);
+
+  tracker_.AddHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "POST"));
+  tracker_.AddHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>(kOrder, true));
+  tracker_.AddHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("ok", true));
+  tracker_.AddHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
+
+  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(records[0].send.data(), kOrder);
+  EXPECT_FALSE(records[0].send.data_truncated());
+}
+
+TEST_F(ConnTrackerHTTP2Test, DataBeyondTheBodyLimitIsTruncated) {
+  PX_SET_FOR_SCOPE(FLAGS_max_body_bytes, 100);
+  auto frame_generator = testing::StreamEventGenerator(&mock_clock_, kConnID, 7);
+
+  tracker_.AddHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "POST"));
+  tracker_.AddHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>(std::string(60, 'a')));
+  tracker_.AddHTTP2Data(
+      frame_generator.GenDataFrame<kDataFrameEventWrite>(std::string(90, 'b'), true));
+  tracker_.AddHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("ok", true));
+  tracker_.AddHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
+
+  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(records[0].send.data(), std::string(60, 'a') + std::string(40, 'b'));
+  EXPECT_TRUE(records[0].send.data_truncated());
+  EXPECT_EQ(records[0].send.original_data_size(), 150);
 }
 
 TEST_F(ConnTrackerHTTP2Test, BasicHeader) {
