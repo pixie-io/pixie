@@ -202,6 +202,11 @@ void HeartbeatMessageHandler::ProcessPIDStartedEvent(const px::md::PIDStartedEve
   }
   process_info->set_cmdline(cmdline);
   process_info->set_cid(ev.pid_info.cid());
+
+  auto parent_upid = ev.pid_info.parent_upid();
+  auto* mu_parent_upid = process_info->mutable_parent_upid();
+  mu_parent_upid->set_high(absl::Uint128High64(parent_upid.value()));
+  mu_parent_upid->set_low(absl::Uint128Low64(parent_upid.value()));
 }
 
 void HeartbeatMessageHandler::ProcessPIDTerminatedEvent(const px::md::PIDTerminatedEvent& ev,
