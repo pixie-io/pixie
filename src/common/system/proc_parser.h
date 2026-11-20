@@ -194,6 +194,8 @@ class ProcParser {
    */
   StatusOr<int64_t> GetPIDStartTimeTicks(int32_t pid) const;
 
+  StatusOr<int32_t> GetPPID(int32_t pid) const;
+
   /**
    * Gets the command line for a given pid.
    * @param pid is the pid for which we want the command line.

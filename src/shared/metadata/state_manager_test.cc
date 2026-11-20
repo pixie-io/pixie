@@ -395,9 +395,44 @@ TEST_F(AgentMetadataStateTest, pid_created) {
 
   PIDInfo pid1(UPID(kASID, 100 /*pid*/, 1000 /*ts*/), "", "cmdline100", "container_id1");
   PIDInfo pid2(UPID(kASID /*asid*/, 200 /*pid*/, 2000 /*ts*/), "", "cmdline200", "container_id1");
+  UPID parent(kASID, 3260 /*pid*/, 500 /*ts*/);
+  pid1.set_parent_upid(parent);
+  pid2.set_parent_upid(parent);
 
   EXPECT_EQ(2, pids_started.size());
   EXPECT_THAT(pids_started, UnorderedElementsAre(PIDStartedEvent{pid1}, PIDStartedEvent{pid2}));
+  EXPECT_EQ(metadata_state_.ParentUPID(pid1.upid()), parent);
+}
+
+TEST_F(AgentMetadataStateTest, short_lived_process_resolves_to_ancestor) {
+  UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
+  UPID child(kASID, 300 /*pid*/, 3000 /*ts*/);
+  UPID grandchild(kASID, 301 /*pid*/, 3001 /*ts*/);
+  metadata_state_.AddUPID(parent,
+                          std::make_unique<PIDInfo>(parent, "", "cmdline100", "container_id1"));
+  metadata_state_.AddProcessParent(child, parent);
+  metadata_state_.AddProcessParent(grandchild, child);
+
+  EXPECT_EQ(metadata_state_.ParentUPID(grandchild), child);
+  EXPECT_EQ(metadata_state_.ParentUPID(child), parent);
+  EXPECT_EQ(metadata_state_.GetPIDByUPID(grandchild), nullptr);
+  EXPECT_EQ(metadata_state_.GetPIDByUPIDOrAncestor(UPID(kASID, 999 /*pid*/, 9 /*ts*/)), nullptr);
+  ASSERT_NE(metadata_state_.GetPIDByUPIDOrAncestor(grandchild), nullptr);
+  EXPECT_EQ(metadata_state_.GetPIDByUPIDOrAncestor(grandchild)->cid(), "container_id1");
+
+  auto cloned = metadata_state_.CloneToShared();
+  ASSERT_NE(cloned->GetPIDByUPIDOrAncestor(grandchild), nullptr);
+  EXPECT_EQ(cloned->GetPIDByUPIDOrAncestor(grandchild)->upid(), parent);
+}
+
+TEST_F(AgentMetadataStateTest, process_parents_are_bounded) {
+  UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
+  for (uint32_t i = 0; i <= AgentMetadataState::kMaxProcessParents; ++i) {
+    metadata_state_.AddProcessParent(UPID(kASID, 1000 + i, 1 /*ts*/), parent);
+  }
+
+  EXPECT_EQ(metadata_state_.ParentUPID(UPID(kASID, 1000 /*pid*/, 1 /*ts*/)), UPID());
+  EXPECT_EQ(metadata_state_.ParentUPID(UPID(kASID, 1001 /*pid*/, 1 /*ts*/)), parent);
 }
 
 TEST_F(AgentMetadataStateTest, insert_into_filter) {

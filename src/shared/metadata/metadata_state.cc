@@ -582,6 +582,12 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
   return state;
 }
 
+void AgentMetadataState::AddProcessParent(UPID /*upid*/, UPID /*parent_upid*/) {}
+
+UPID AgentMetadataState::ParentUPID(UPID /*upid*/) const { return UPID(); }
+
+PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const { return GetPIDByUPID(upid); }
+
 std::string AgentMetadataState::DebugString(int indent_level) const {
   std::string str;
   std::string prefix = Indent(indent_level);

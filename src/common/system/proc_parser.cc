@@ -639,6 +639,10 @@ StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
   return ::px::system::GetPIDStartTimeTicks(ProcPidPath(pid));
 }
 
+StatusOr<int32_t> ProcParser::GetPPID(int32_t pid) const {
+  return error::Unimplemented("Parent of PID $0", pid);
+}
+
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
   const auto fpath = ProcPidPath(pid, "fd", std::to_string(fd));
   PX_ASSIGN_OR_RETURN(std::filesystem::path link, fs::ReadSymlink(fpath));

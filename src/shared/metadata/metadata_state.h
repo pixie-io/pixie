@@ -385,6 +385,15 @@ class AgentMetadataState : NotCopyable {
     return nullptr;
   }
 
+  static constexpr size_t kMaxProcessParents = 1 << 17;
+  static constexpr int kMaxAncestryDepth = 32;
+
+  void AddProcessParent(UPID upid, UPID parent_upid);
+
+  UPID ParentUPID(UPID upid) const;
+
+  PIDInfo* GetPIDByUPIDOrAncestor(UPID upid) const;
+
   void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
     DCHECK(pid_info != nullptr);
     DCHECK_EQ(pid_info->stop_time_ns(), 0);
