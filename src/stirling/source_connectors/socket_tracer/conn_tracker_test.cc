@@ -19,6 +19,7 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 #include <chrono>
+#include <string>
 #include <string_view>
 #include <tuple>
 
@@ -33,6 +34,7 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/types.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/testing/common.h"
 
@@ -492,6 +494,81 @@ TEST_F(ConnTrackerTest, TrackerWebSocketCloseAfterUpgradeIsRecorded) {
   tracker.AddControlEvent(event_gen_.InitClose());
 
   EXPECT_TRUE(tracker.protocol_state<websocket::StateWrapper>()->global.conn_closed);
+}
+
+std::string TLSRecord(uint8_t handshake_type, std::string_view body) {
+  std::string handshake = absl::StrCat(std::string(1, static_cast<char>(handshake_type)),
+                                       std::string(1, '\0'),
+                                       std::string(1, static_cast<char>(body.size() >> 8)),
+                                       std::string(1, static_cast<char>(body.size() & 0xff)), body);
+  return absl::StrCat("\x16\x03\x01"sv, std::string(1, static_cast<char>(handshake.size() >> 8)),
+                      std::string(1, static_cast<char>(handshake.size() & 0xff)), handshake);
+}
+
+std::string ClientHello() {
+  return TLSRecord(1, absl::StrCat("\x03\x03"sv, std::string(32, 'r'),
+                                   "\x00\x00\x02\x13\x01\x01\x00\x00\x00"sv));
+}
+
+std::string ServerHello() {
+  return TLSRecord(2, absl::StrCat("\x03\x03"sv, std::string(32, 'r'),
+                                   "\x00\x13\x01\x00\x00\x0c"
+                                   "\x00\x2b\x00\x02\x03\x04"
+                                   "\x00\x33\x00\x02\x11\xec"sv));
+}
+
+TEST_F(ConnTrackerTest, TLSHandshakeIsHandedOverToDecryptedHTTP) {
+  ConnTracker tracker;
+  tracker.AddControlEvent(event_gen_.InitConn());
+  tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolTLS>(ClientHello()));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolTLS>(ServerHello()));
+  std::unique_ptr<SocketDataEvent> req = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  req->attr.ssl = true;
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  resp->attr.ssl = true;
+  tracker.AddDataEvent(std::move(req));
+  tracker.AddDataEvent(std::move(resp));
+
+  std::vector<tls::Record> handshakes = tracker.ProcessToRecords<tls::ProtocolTraits>();
+  ASSERT_THAT(handshakes, SizeIs(1));
+  EXPECT_EQ(handshakes[0].resp.body,
+            R"({"version":"TLSv1.3","cipher_suite":"TLS_AES_128_GCM_SHA256",)"
+            R"("key_share_group":"X25519MLKEM768"})");
+
+  ASSERT_TRUE(tracker.MaybeHandOverFromTLS());
+  EXPECT_EQ(tracker.protocol(), kProtocolHTTP);
+  EXPECT_TRUE(tracker.ssl());
+
+  tracker.InitProtocolState<http::StateWrapper>();
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_EQ(records[0].req.req_path, "/index.html");
+}
+
+TEST_F(ConnTrackerTest, TLSWithoutDecryptedDataStaysTLS) {
+  ConnTracker tracker;
+  tracker.AddControlEvent(event_gen_.InitConn());
+  tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolTLS>(ClientHello()));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolTLS>(ServerHello()));
+
+  EXPECT_THAT(tracker.ProcessToRecords<tls::ProtocolTraits>(), SizeIs(1));
+  EXPECT_FALSE(tracker.MaybeHandOverFromTLS());
+  EXPECT_EQ(tracker.protocol(), kProtocolTLS);
+}
+
+TEST_F(ConnTrackerTest, TLSClientHandshakesAreCollected) {
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  testing::SetIPv4RemoteAddr(&conn, "1.2.3.4");
+
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+
+  ConnTracker tracker;
+  tracker.AddControlEvent(conn);
+  tracker.SetProtocol(kProtocolTLS, "testing");
+  tracker.SetRole(kRoleClient, "testing");
+  tracker.IterationPreTick(now(), {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kTransferring);
 }
 
 TEST_F(ConnTrackerTest, TrackerHTTPUpgradeRejectedStaysHTTP) {

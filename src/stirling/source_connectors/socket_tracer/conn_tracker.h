@@ -328,6 +328,8 @@ class ConnTracker : NotCopyMoveable {
   }
 
   const conn_id_t& conn_id() const { return conn_id_; }
+  bool MaybeHandOverFromTLS() { return false; }
+
   traffic_protocol_t protocol() const { return protocol_; }
   endpoint_role_t role() const { return role_; }
   bool ssl() const { return ssl_; }
