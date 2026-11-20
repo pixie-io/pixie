@@ -50,7 +50,7 @@ constexpr std::array<std::string_view, 3> kTokenHeaders = {"x-api-key", "x-auth-
 constexpr std::array<std::string_view, 3> kUrlHeaders = {":path", "referer", "location"};
 constexpr std::string_view kBearerSubprotocol = "base64url.bearer.authorization.k8s.io.";
 constexpr std::array<std::string_view, 9> kCredentialFields = {
-    "access_token", "id_token",      "refresh_token", "token",  "api_key",
+    "access_token", "id_token",      "refresh_token", "token", "api_key",
     "apikey",       "client_secret", "password",      "secret"};
 constexpr std::array<std::string_view, 11> kJwtClaims = {
     "iss", "sub", "aud", "azp", "client_id", "scope", "scp", "exp", "iat", "nbf", "kubernetes.io"};

@@ -884,8 +884,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
                                        socket_info_mgr_.get());
         const auto& handed_over_spec = protocol_transfer_specs_[conn_tracker->protocol()];
         if (handed_over_spec.transfer_fn != nullptr) {
-          current_conn_tracker_buffer_size += handed_over_spec.transfer_fn(
-              *this, ctx, conn_tracker, table_for(handed_over_spec));
+          current_conn_tracker_buffer_size +=
+              handed_over_spec.transfer_fn(*this, ctx, conn_tracker, table_for(handed_over_spec));
         }
       }
     } else {
@@ -1482,8 +1482,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Do not apply truncation at this point, as the truncation was already done on serialized
   // protobuf message. This might result into longer text format data here, but the increase is
   // minimal.
-  r.Append<r.ColIndex("req_body")>(
-      protocols::http::RedactCredentialBody(req_stream->ConsumeData()), kNoTruncation);
+  r.Append<r.ColIndex("req_body")>(protocols::http::RedactCredentialBody(req_stream->ConsumeData()),
+                                   kNoTruncation);
   r.Append<r.ColIndex("resp_body_size")>(resp_stream->original_data_size());
   r.Append<r.ColIndex("resp_body")>(
       protocols::http::RedactCredentialBody(resp_stream->ConsumeData()), kNoTruncation);

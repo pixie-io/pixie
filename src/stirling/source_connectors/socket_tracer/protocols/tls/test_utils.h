@@ -31,10 +31,10 @@ namespace testutils {
 
 inline std::string TLSRecord(uint8_t handshake_type, std::string_view body) {
   using std::string_view_literals::operator""sv;
-  std::string handshake = absl::StrCat(std::string(1, static_cast<char>(handshake_type)),
-                                       std::string(1, '\0'),
-                                       std::string(1, static_cast<char>(body.size() >> 8)),
-                                       std::string(1, static_cast<char>(body.size() & 0xff)), body);
+  std::string handshake =
+      absl::StrCat(std::string(1, static_cast<char>(handshake_type)), std::string(1, '\0'),
+                   std::string(1, static_cast<char>(body.size() >> 8)),
+                   std::string(1, static_cast<char>(body.size() & 0xff)), body);
   return absl::StrCat("\x16\x03\x01"sv, std::string(1, static_cast<char>(handshake.size() >> 8)),
                       std::string(1, static_cast<char>(handshake.size() & 0xff)), handshake);
 }

@@ -46,11 +46,11 @@ TEST(CredentialsTest, FingerprintIsSha256Prefix) {
 }
 
 TEST(CredentialsTest, BearerJwtKeepsClaimsAndDropsToken) {
-  const std::string token =
-      Jwt(R"({"alg":"RS256","kid":"k1"})",
-          R"({"iss":"https://kubernetes.default.svc","sub":"system:serviceaccount:credscope:sa-over",)"
-          R"("aud":["https://kubernetes.default.svc"],"exp":1763600000,"iat":1763599400,)"
-          R"("kubernetes.io":{"namespace":"credscope"},"canary":"cs-canary-1"})");
+  const std::string token = Jwt(
+      R"({"alg":"RS256","kid":"k1"})",
+      R"({"iss":"https://kubernetes.default.svc","sub":"system:serviceaccount:credscope:sa-over",)"
+      R"("aud":["https://kubernetes.default.svc"],"exp":1763600000,"iat":1763599400,)"
+      R"("kubernetes.io":{"namespace":"credscope"},"canary":"cs-canary-1"})");
 
   std::optional<std::string> redacted =
       RedactCredentialHeader("Authorization", absl::StrCat("Bearer ", token));
@@ -115,13 +115,12 @@ TEST(CredentialsTest, SetCookieKeepsAttributes) {
 TEST(CredentialsTest, WebSocketBearerSubprotocolIsRedacted) {
   const std::string token = Jwt(R"({"alg":"RS256"})", R"({"sub":"system:serviceaccount:a:b"})");
   const std::string encoded = absl::WebSafeBase64Escape(token);
-  EXPECT_EQ(
-      RedactCredentialHeader("Sec-WebSocket-Protocol",
-                             absl::StrCat("v5.channel.k8s.io, base64url.bearer.authorization.k8s.io.",
-                                          encoded)),
-      absl::StrCat("v5.channel.k8s.io, base64url.bearer.authorization.k8s.io.<cred:sha256=",
-                   CredentialFingerprint(encoded),
-                   R"( jwt={"alg":"RS256","sub":"system:serviceaccount:a:b"}>)"));
+  EXPECT_EQ(RedactCredentialHeader(
+                "Sec-WebSocket-Protocol",
+                absl::StrCat("v5.channel.k8s.io, base64url.bearer.authorization.k8s.io.", encoded)),
+            absl::StrCat("v5.channel.k8s.io, base64url.bearer.authorization.k8s.io.<cred:sha256=",
+                         CredentialFingerprint(encoded),
+                         R"( jwt={"alg":"RS256","sub":"system:serviceaccount:a:b"}>)"));
   EXPECT_EQ(RedactCredentialHeader("sec-websocket-protocol", "v4.channel.k8s.io"),
             "v4.channel.k8s.io");
 }
@@ -174,7 +173,8 @@ TEST(CredentialsTest, NonCredentialFieldsAreKept) {
 TEST(CredentialsTest, HeaderMapsAreRedacted) {
   HeadersMap headers = {{"Authorization", "Bearer cs-canary-14"}, {"Accept", "*/*"}};
   RedactCredentials(&headers);
-  EXPECT_EQ(headers.find("authorization")->second, absl::StrCat("Bearer ", Redacted("cs-canary-14")));
+  EXPECT_EQ(headers.find("authorization")->second,
+            absl::StrCat("Bearer ", Redacted("cs-canary-14")));
   EXPECT_EQ(headers.find("accept")->second, "*/*");
 
   std::multimap<std::string, std::string> nv = {{":path", "/svc.Orders/Get?token=cs-canary-15"},

@@ -18,8 +18,8 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/tls/parse.h"
 
 #include <map>
-#include <optional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -77,12 +77,18 @@ constexpr std::pair<uint16_t, std::string_view> kCipherSuiteNames[] = {
 };
 
 constexpr std::pair<uint16_t, std::string_view> kGroupNames[] = {
-    {0x0017, "secp256r1"},        {0x0018, "secp384r1"},
-    {0x0019, "secp521r1"},        {0x001d, "x25519"},
-    {0x001e, "x448"},             {0x0100, "ffdhe2048"},
-    {0x0101, "ffdhe3072"},        {0x0200, "MLKEM512"},
-    {0x0201, "MLKEM768"},         {0x0202, "MLKEM1024"},
-    {0x11eb, "SecP256r1MLKEM768"}, {0x11ec, "X25519MLKEM768"},
+    {0x0017, "secp256r1"},
+    {0x0018, "secp384r1"},
+    {0x0019, "secp521r1"},
+    {0x001d, "x25519"},
+    {0x001e, "x448"},
+    {0x0100, "ffdhe2048"},
+    {0x0101, "ffdhe3072"},
+    {0x0200, "MLKEM512"},
+    {0x0201, "MLKEM768"},
+    {0x0202, "MLKEM1024"},
+    {0x11eb, "SecP256r1MLKEM768"},
+    {0x11ec, "X25519MLKEM768"},
     {0x6399, "X25519Kyber768Draft00"},
 };
 
@@ -168,7 +174,8 @@ void ExtractServerHelloExtension(SharedExtensions* exts, uint16_t type, std::str
 std::string ServerHelloBody(const SharedExtensions& exts, uint16_t handshake_version,
                             uint16_t cipher_suite) {
   JSONObjectBuilder builder;
-  builder.WriteKV("version", CodeName(kVersionNames, exts.selected_version.value_or(handshake_version)));
+  builder.WriteKV("version",
+                  CodeName(kVersionNames, exts.selected_version.value_or(handshake_version)));
   builder.WriteKV("cipher_suite", CodeName(kCipherSuiteNames, cipher_suite));
   if (exts.key_share_group.has_value()) {
     builder.WriteKV("key_share_group", CodeName(kGroupNames, exts.key_share_group.value()));

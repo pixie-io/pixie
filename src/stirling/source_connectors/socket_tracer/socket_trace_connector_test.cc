@@ -358,8 +358,8 @@ TEST_F(SocketTraceConnectorWebSocketTest, UpgradedConnectionProducesWebSocketEve
 }
 
 TEST_F(SocketTraceConnectorWebSocketTest, TextPayloadCredentialsAreRedacted) {
-  RecordBatch records = TransferUpgradedServerFrames(
-      absl::StrCat("\x81\x18", R"({"token":"cs-canary-25"})"));
+  RecordBatch records =
+      TransferUpgradedServerFrames(absl::StrCat("\x81\x18", R"({"token":"cs-canary-25"})"));
   ASSERT_THAT(records, RecordBatchSizeIs(1));
   EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
               ElementsAre(AllOf(HasSubstr("<cred:sha256="), Not(HasSubstr("cs-canary")))));
