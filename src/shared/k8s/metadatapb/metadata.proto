@@ -375,6 +375,7 @@ message ProcessInfo {
   string cid = 7 [ (gogoproto.customname) = "CID" ];
   // DEPRECATED: This was PID, which can be derived from UPID.
   reserved 3;
+  px.types.UInt128 parent_upid = 8 [ (gogoproto.customname) = "ParentUPID" ];
 }
 
 // PodUpdate contains updated information about a Pod on K8s.
@@ -488,6 +489,7 @@ message ProcessCreated {
   string cmdline = 4;
   // The container ID where under for container where this process is running.
   string cid = 5 [ (gogoproto.customname) = "CID" ];
+  px.types.UInt128 parent_upid = 6 [ (gogoproto.customname) = "ParentUPID" ];
 }
 
 message ProcessTerminated {

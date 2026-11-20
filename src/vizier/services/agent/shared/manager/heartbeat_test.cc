@@ -80,6 +80,10 @@ process_created {
   start_timestamp_ns: $0
   cmdline: "./a_command"
   cid: "example_container"
+  parent_upid {
+    low: 7
+    high: 4294967297
+  }
 }
 )proto";
 
@@ -162,6 +166,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   auto start_time_nanos = time_to_nanos(time_system_->MonotonicTime());
   md::UPID upid(1, 2, start_time_nanos);
   md::PIDInfo pid_info(upid, "", "./a_command", "example_container");
+  pid_info.set_parent_upid(md::UPID(1, 1, 7));
   mds_manager_->AddPIDStatusEvent(std::make_unique<md::PIDStartedEvent>(pid_info));
 
   // Publish pid updates.
