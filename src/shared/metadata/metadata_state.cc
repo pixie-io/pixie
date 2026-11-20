@@ -597,7 +597,7 @@ void AgentMetadataState::AddProcessParent(UPID upid, UPID parent_upid) {
 
 UPID AgentMetadataState::ParentUPID(UPID upid) const {
   const PIDInfo* pid_info = GetPIDByUPID(upid);
-  if (pid_info != nullptr) {
+  if (pid_info != nullptr && pid_info->parent_upid() != UPID()) {
     return pid_info->parent_upid();
   }
   auto it = parent_upids_.find(upid);
