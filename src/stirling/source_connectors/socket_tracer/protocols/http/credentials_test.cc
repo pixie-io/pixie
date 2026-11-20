@@ -112,6 +112,20 @@ TEST(CredentialsTest, SetCookieKeepsAttributes) {
             absl::StrCat("session=", Redacted("cs-canary-7"), "; Path=/; HttpOnly"));
 }
 
+TEST(CredentialsTest, WebSocketBearerSubprotocolIsRedacted) {
+  const std::string token = Jwt(R"({"alg":"RS256"})", R"({"sub":"system:serviceaccount:a:b"})");
+  const std::string encoded = absl::WebSafeBase64Escape(token);
+  EXPECT_EQ(
+      RedactCredentialHeader("Sec-WebSocket-Protocol",
+                             absl::StrCat("v5.channel.k8s.io, base64url.bearer.authorization.k8s.io.",
+                                          encoded)),
+      absl::StrCat("v5.channel.k8s.io, base64url.bearer.authorization.k8s.io.<cred:sha256=",
+                   CredentialFingerprint(encoded),
+                   R"( jwt={"alg":"RS256","sub":"system:serviceaccount:a:b"}>)"));
+  EXPECT_EQ(RedactCredentialHeader("sec-websocket-protocol", "v4.channel.k8s.io"),
+            "v4.channel.k8s.io");
+}
+
 TEST(CredentialsTest, OtherHeadersAreKept) {
   EXPECT_EQ(RedactCredentialHeader("Content-Type", "application/json"), std::nullopt);
   EXPECT_EQ(RedactCredentialHeader("Audit-Id", "6f1c"), std::nullopt);
