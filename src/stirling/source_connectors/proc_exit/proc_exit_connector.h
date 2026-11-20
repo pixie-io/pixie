@@ -75,6 +75,7 @@ class ProcExitConnector : public BCCSourceConnector {
   prometheus::Counter& java_proc_crashed_counter_;
   prometheus::Counter& java_proc_crashed_with_profiler_counter_;
   prometheus::Counter& java_proc_crashed_without_profiler_counter_;
+  prometheus::Counter& proc_fork_events_lost_counter_;
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 };
 

@@ -66,10 +66,16 @@ void HandleProcExitEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
   // TODO(yzhao): Add stats counter.
 }
 
+void HandleProcForkEventLoss(void* cb_cookie, uint64_t lost) {
+  auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
+  connector->AcceptProcForkEventLoss(lost);
+}
+
 // Use char array to meet the user's interface, which expects std::string.
 constexpr char kJavaProcCrashedCounter[] = "java_proc_crashed";
 constexpr char kJavaProcCrashedWithProfilerCounter[] = "java_proc_crashed_with_profiler";
 constexpr char kJavaProcCrashedWithoutProfilerCounter[] = "java_proc_crashed_without_profiler";
+constexpr char kProcForkEventsLostCounter[] = "proc_fork_events_lost";
 
 ProcExitConnector::ProcExitConnector(std::string_view name)
     : BCCSourceConnector(name, kTables),
@@ -78,9 +84,11 @@ ProcExitConnector::ProcExitConnector(std::string_view name)
       java_proc_crashed_with_profiler_counter_(BuildCounter(
           kJavaProcCrashedWithProfilerCounter,
           "Count of the crashed Java processes that also had profiler agent attached")),
-      java_proc_crashed_without_profiler_counter_(BuildCounter(
-          kJavaProcCrashedWithoutProfilerCounter,
-          "Count of the crashed Java processes that hadn't attached profiler agent")) {}
+      java_proc_crashed_without_profiler_counter_(
+          BuildCounter(kJavaProcCrashedWithoutProfilerCounter,
+                       "Count of the crashed Java processes that hadn't attached profiler agent")),
+      proc_fork_events_lost_counter_(
+          BuildCounter(kProcForkEventsLostCounter, "Count of the lost process creation events")) {}
 
 void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& event) {
   events_.push_back(event);
@@ -90,7 +98,9 @@ void ProcExitConnector::AcceptProcForkEvent(const struct proc_fork_event_t& even
   fork_events_.push_back(event);
 }
 
-void ProcExitConnector::AcceptProcForkEventLoss(uint64_t /*lost*/) {}
+void ProcExitConnector::AcceptProcForkEventLoss(uint64_t lost) {
+  proc_fork_events_lost_counter_.Increment(lost);
+}
 
 Status ProcExitConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
@@ -115,7 +125,7 @@ Status ProcExitConnector::InitImpl() {
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>({
       {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, this,
        kPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
-      {"proc_fork_events", HandleProcForkEvent, HandleProcExitEventLoss, this,
+      {"proc_fork_events", HandleProcForkEvent, HandleProcForkEventLoss, this,
        kForkPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
   });
 
