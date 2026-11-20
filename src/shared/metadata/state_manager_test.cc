@@ -425,6 +425,16 @@ TEST_F(AgentMetadataStateTest, short_lived_process_resolves_to_ancestor) {
   EXPECT_EQ(cloned->GetPIDByUPIDOrAncestor(grandchild)->upid(), parent);
 }
 
+TEST_F(AgentMetadataStateTest, reported_parent_fills_missing_parent) {
+  UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
+  UPID child(kASID, 300 /*pid*/, 3000 /*ts*/);
+  metadata_state_.AddUPID(child,
+                          std::make_unique<PIDInfo>(child, "", "cmdline300", "container_id1"));
+  metadata_state_.AddProcessParent(child, parent);
+
+  EXPECT_EQ(metadata_state_.ParentUPID(child), parent);
+}
+
 TEST_F(AgentMetadataStateTest, process_parents_are_listed) {
   UPID init(kASID, 1 /*pid*/, 10 /*ts*/);
   UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
