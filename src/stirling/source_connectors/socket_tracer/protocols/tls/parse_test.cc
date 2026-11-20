@@ -316,7 +316,9 @@ TEST_F(TLSParserTest, ParseValidClientHello) {
 
   // Validate the SNI extension was parsed properly
   ASSERT_EQ(frame.body,
-            R"({"extensions":{"server_name":["argocd-cluster-repo-server"],"alpn":["h2"]}})");
+            R"({"extensions":{"server_name":["argocd-cluster-repo-server"],"alpn":["h2"],)"
+            R"("supported_groups":["x25519","secp256r1","secp384r1","secp521r1"],)"
+            R"("key_share_groups":["x25519"]}})");
   ASSERT_EQ(state, ParseState::kSuccess);
 }
 
