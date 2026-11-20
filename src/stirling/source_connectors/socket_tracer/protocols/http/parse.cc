@@ -19,7 +19,6 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/parse.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/body_decoder.h"
 
-#include <absl/strings/match.h>
 #include <picohttpparser.h>
 
 #include <algorithm>
