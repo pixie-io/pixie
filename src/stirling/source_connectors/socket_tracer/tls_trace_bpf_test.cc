@@ -46,7 +46,6 @@ using ::px::stirling::testing::ToRecordVector;
 using ::testing::HasSubstr;
 using ::testing::IsTrue;
 using ::testing::SizeIs;
-using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
 class NginxOpenSSL_3_0_8_ContainerWrapper

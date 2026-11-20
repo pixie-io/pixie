@@ -19,6 +19,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -188,6 +189,9 @@ enum class ExtensionType : uint16_t {
 // of a TLS handshake
 struct SharedExtensions {
   std::vector<std::string> server_names;
+  std::vector<std::string> alpn;
+  std::optional<uint16_t> selected_version;
+  std::optional<uint16_t> key_share_group;
 
   virtual void ToJSON(::px::utils::JSONObjectBuilder* /*builder*/) const {}
   virtual ~SharedExtensions() = default;
@@ -197,6 +201,9 @@ struct ReqExtensions : public SharedExtensions {
   void ToJSON(::px::utils::JSONObjectBuilder* builder) const override {
     SharedExtensions::ToJSON(builder);
     builder->WriteKV("server_name", server_names);
+    if (!alpn.empty()) {
+      builder->WriteKV("alpn", alpn);
+    }
   }
 };
 
