@@ -176,6 +176,32 @@ TEST_F(MetadataOpsTest, upid_to_container_id_test) {
   udf_tester.ForInput(upid3).Expect("");
 }
 
+TEST_F(MetadataOpsTest, upid_to_container_id_resolves_through_parent) {
+  metadata_state_->AddProcessParent(md::UPID(123, 900, 5000), md::UPID(123, 567, 89101));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<UPIDToContainerIDUDF>(std::move(function_ctx));
+  auto child_upid = types::UInt128Value(528280978308, 5000);
+  udf_tester.ForInput(child_upid).Expect("pod1_container_1");
+}
+
+TEST_F(MetadataOpsTest, upid_to_pod_name_resolves_through_parent) {
+  metadata_state_->AddProcessParent(md::UPID(123, 900, 5000), md::UPID(123, 567, 89101));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<UPIDToPodNameUDF>(std::move(function_ctx));
+  auto child_upid = types::UInt128Value(528280978308, 5000);
+  udf_tester.ForInput(child_upid).Expect("pl/running_pod");
+}
+
+TEST_F(MetadataOpsTest, upid_to_parent_upid_test) {
+  metadata_state_->AddProcessParent(md::UPID(123, 900, 5000), md::UPID(123, 567, 89101));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  UPIDToParentUPIDUDF udf;
+  auto child_upid = types::UInt128Value(528280978308, 5000);
+  EXPECT_EQ(udf.Exec(function_ctx.get(), child_upid).val, md::UPID(123, 567, 89101).value());
+  auto unknown_upid = types::UInt128Value(528280978308, 6000);
+  EXPECT_EQ(udf.Exec(function_ctx.get(), unknown_upid).val, md::UPID().value());
+}
+
 TEST_F(MetadataOpsTest, upid_to_container_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToContainerNameUDF>(std::move(function_ctx));
