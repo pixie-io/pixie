@@ -328,7 +328,7 @@ class ConnTracker : NotCopyMoveable {
   }
 
   const conn_id_t& conn_id() const { return conn_id_; }
-  bool MaybeHandOverFromTLS() { return false; }
+  bool MaybeHandOverFromTLS();
 
   traffic_protocol_t protocol() const { return protocol_; }
   endpoint_role_t role() const { return role_; }
@@ -709,6 +709,11 @@ class ConnTracker : NotCopyMoveable {
 
   traffic_protocol_t protocol_ = kProtocolUnknown;
   traffic_protocol_t upgraded_from_ = kProtocolUnknown;
+
+  traffic_protocol_t tls_handover_protocol_ = kProtocolUnknown;
+  std::vector<std::variant<std::unique_ptr<SocketDataEvent>, std::unique_ptr<HTTP2HeaderEvent>,
+                           std::unique_ptr<HTTP2DataEvent>>>
+      tls_handover_events_;
   endpoint_role_t role_ = kRoleUnknown;
   bool ssl_ = false;
   ssl_source_t ssl_source_ = kSSLNone;

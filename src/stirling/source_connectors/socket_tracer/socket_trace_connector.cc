@@ -880,6 +880,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
       if (protocol_transfer_specs_[kProtocolWebSocket].enabled) {
         conn_tracker->MaybeUpgradeToWebSocket();
       }
+      conn_tracker->MaybeHandOverFromTLS();
     } else {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be
