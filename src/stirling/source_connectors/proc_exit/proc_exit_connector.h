@@ -52,6 +52,7 @@ class ProcExitConnector : public BCCSourceConnector {
   ~ProcExitConnector() override = default;
 
   void AcceptProcExitEvent(const struct proc_exit_event_t& event);
+  void AcceptProcForkEvent(const struct proc_fork_event_t& event);
 
  protected:
   explicit ProcExitConnector(std::string_view name);
@@ -62,6 +63,7 @@ class ProcExitConnector : public BCCSourceConnector {
 
  private:
   std::vector<struct proc_exit_event_t> events_;
+  std::vector<struct proc_fork_event_t> fork_events_;
 
  private:
   // Update counters related to java process.

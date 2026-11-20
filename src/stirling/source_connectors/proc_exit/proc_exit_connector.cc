@@ -38,15 +38,28 @@ namespace stirling {
 namespace proc_exit_tracer {
 
 constexpr uint32_t kPerfBufferPerCPUSizeBytes = 5 * 1024 * 1024;
+constexpr uint32_t kForkPerfBufferPerCPUSizeBytes = 256 * 1024;
 
-const auto kTracepointSpecs =
-    MakeArray<bpf_tools::TracepointSpec>({{std::string("sched:sched_process_exit"),
-                                           std::string("tracepoint__sched__sched_process_exit")}});
+const auto kTracepointSpecs = MakeArray<bpf_tools::TracepointSpec>({
+    {std::string("sched:sched_process_exit"), std::string("tracepoint__sched__sched_process_exit")},
+    {std::string("task:task_newtask"), std::string("tracepoint__task__task_newtask")},
+});
+
+const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
+    {"wake_up_new_task", bpf_tools::BPFProbeAttachType::kEntry, "probe_wake_up_new_task",
+     /*is_syscall*/ false},
+});
 
 void HandleProcExitEvent(void* cb_cookie, void* data, int /*data_size*/) {
   auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
   auto* event = reinterpret_cast<struct proc_exit_event_t*>(data);
   connector->AcceptProcExitEvent(*event);
+}
+
+void HandleProcForkEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
+  auto* event = reinterpret_cast<struct proc_fork_event_t*>(data);
+  connector->AcceptProcForkEvent(*event);
 }
 
 void HandleProcExitEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
@@ -73,6 +86,10 @@ void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& even
   events_.push_back(event);
 }
 
+void ProcExitConnector::AcceptProcForkEvent(const struct proc_fork_event_t& event) {
+  fork_events_.push_back(event);
+}
+
 Status ProcExitConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
@@ -96,9 +113,12 @@ Status ProcExitConnector::InitImpl() {
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>({
       {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, this,
        kPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
+      {"proc_fork_events", HandleProcForkEvent, HandleProcExitEventLoss, this,
+       kForkPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
   });
 
   PX_RETURN_IF_ERROR(bcc_->AttachTracepoints(kTracepointSpecs));
+  PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kProbeSpecs));
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
 
   return Status::OK();
@@ -114,6 +134,12 @@ void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx) {
   DCHECK(data_tables_.size() == 1) << "Expect only one data table for proc_exit tracer";
 
   bcc_->PollPerfBuffers();
+
+  for (const auto& event : fork_events_) {
+    ctx->AddProcessParent(event.upid.ToMetadataUPID(ctx->GetASID()),
+                          event.parent_upid.ToMetadataUPID(ctx->GetASID()));
+  }
+  fork_events_.clear();
 
   DataTable* data_table = data_tables_[0];
   for (auto& event : events_) {

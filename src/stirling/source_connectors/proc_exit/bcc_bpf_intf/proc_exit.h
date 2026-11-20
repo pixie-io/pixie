@@ -39,6 +39,11 @@ struct proc_exit_event_t {
   char comm[MAX_CMD_SIZE];
 };
 
+struct proc_fork_event_t {
+  struct upid_t upid;
+  struct upid_t parent_upid;
+};
+
 // Specifies the corresponding indexes of the entries of a per-cpu array.
 enum proc_exit_trace_control_value_index_t {
   TASK_STRUCT_EXIT_CODE_OFFSET_INDEX,

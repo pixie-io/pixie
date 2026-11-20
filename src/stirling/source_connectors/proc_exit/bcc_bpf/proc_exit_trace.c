@@ -26,6 +26,9 @@
 #include "src/stirling/upid/upid.h"
 
 BPF_PERF_OUTPUT(proc_exit_events);
+BPF_PERF_OUTPUT(proc_fork_events);
+
+BPF_HASH(new_process_pids, uint64_t, uint32_t);
 
 // This array records singular values that are used by probes. We group them together to reduce the
 // number of arrays with only 1 element. Use of per-cpu array shall be the most efficient way,
@@ -65,6 +68,40 @@ TRACEPOINT_PROBE(sched, sched_process_exit) {
 
     proc_exit_events.perf_submit(args, &event, sizeof(event));
   }
+
+  return 0;
+}
+
+TRACEPOINT_PROBE(task, task_newtask) {
+  if (args->clone_flags & CLONE_THREAD) {
+    return 0;
+  }
+
+  uint64_t id = bpf_get_current_pid_tgid();
+  uint32_t pid = args->pid;
+  new_process_pids.update(&id, &pid);
+
+  return 0;
+}
+
+int probe_wake_up_new_task(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  uint32_t* pid = new_process_pids.lookup(&id);
+  if (pid == NULL) {
+    return 0;
+  }
+
+  struct task_struct* task = (struct task_struct*)PT_REGS_PARM1(ctx);
+  struct proc_fork_event_t event = {};
+
+  event.upid.tgid = *pid;
+  event.upid.start_time_ticks = read_start_boottime(task);
+  event.parent_upid.tgid = id >> 32;
+  event.parent_upid.start_time_ticks = get_tgid_start_time();
+
+  new_process_pids.delete(&id);
+  proc_fork_events.perf_submit(ctx, &event, sizeof(event));
 
   return 0;
 }
