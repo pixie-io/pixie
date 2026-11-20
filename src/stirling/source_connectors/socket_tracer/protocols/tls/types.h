@@ -190,6 +190,8 @@ enum class ExtensionType : uint16_t {
 struct SharedExtensions {
   std::vector<std::string> server_names;
   std::vector<std::string> alpn;
+  std::vector<std::string> supported_groups;
+  std::vector<std::string> key_share_groups;
   std::optional<uint16_t> selected_version;
   std::optional<uint16_t> key_share_group;
 
@@ -203,6 +205,12 @@ struct ReqExtensions : public SharedExtensions {
     builder->WriteKV("server_name", server_names);
     if (!alpn.empty()) {
       builder->WriteKV("alpn", alpn);
+    }
+    if (!supported_groups.empty()) {
+      builder->WriteKV("supported_groups", supported_groups);
+    }
+    if (!key_share_groups.empty()) {
+      builder->WriteKV("key_share_groups", key_share_groups);
     }
   }
 };

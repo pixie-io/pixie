@@ -46,6 +46,7 @@ constexpr size_t kRandomStructLength = 32;
 
 constexpr uint16_t kSNIExtension = 0x0000;
 constexpr uint16_t kALPNExtension = 0x0010;
+constexpr uint16_t kSupportedGroupsExtension = 0x000a;
 constexpr uint16_t kSupportedVersionsExtension = 0x002b;
 constexpr uint16_t kKeyShareExtension = 0x0033;
 
@@ -114,6 +115,46 @@ std::optional<uint16_t> ExtractLeadingU16(std::string_view data) {
   BinaryDecoder decoder(data);
   PX_ASSIGN_OR(auto value, decoder.ExtractBEInt<uint16_t>(), return std::nullopt);
   return value;
+}
+
+std::vector<std::string> ExtractGroups(std::string_view data) {
+  BinaryDecoder decoder(data);
+  std::vector<std::string> groups;
+  PX_ASSIGN_OR(auto list_length, decoder.ExtractBEInt<uint16_t>(), return groups);
+  if (list_length != decoder.BufSize()) {
+    return groups;
+  }
+  while (decoder.BufSize() >= sizeof(uint16_t)) {
+    PX_ASSIGN_OR(auto group, decoder.ExtractBEInt<uint16_t>(), return groups);
+    groups.push_back(CodeName(kGroupNames, group));
+  }
+  return groups;
+}
+
+std::vector<std::string> ExtractKeyShareGroups(std::string_view data) {
+  BinaryDecoder decoder(data);
+  std::vector<std::string> groups;
+  PX_ASSIGN_OR(auto list_length, decoder.ExtractBEInt<uint16_t>(), return groups);
+  if (list_length != decoder.BufSize()) {
+    return groups;
+  }
+  while (decoder.BufSize() > 0) {
+    PX_ASSIGN_OR(auto group, decoder.ExtractBEInt<uint16_t>(), return groups);
+    PX_ASSIGN_OR(auto key_length, decoder.ExtractBEInt<uint16_t>(), return groups);
+    if (!decoder.ExtractBufIgnore(key_length).ok()) {
+      return groups;
+    }
+    groups.push_back(CodeName(kGroupNames, group));
+  }
+  return groups;
+}
+
+void ExtractClientHelloExtension(SharedExtensions* exts, uint16_t type, std::string_view data) {
+  if (type == kSupportedGroupsExtension) {
+    exts->supported_groups = ExtractGroups(data);
+  } else if (type == kKeyShareExtension) {
+    exts->key_share_groups = ExtractKeyShareGroups(data);
+  }
 }
 
 void ExtractServerHelloExtension(SharedExtensions* exts, uint16_t type, std::string_view data) {
@@ -287,6 +328,8 @@ ParseState ParseFullFrame(SharedExtensions* extensions, BinaryDecoder* decoder, 
           extensions->alpn = ExtractALPN(data).value_or(std::vector<std::string>{});
         } else if (server_hello) {
           ExtractServerHelloExtension(extensions, extension_type, data);
+        } else if (frame->handshake_type == HandshakeType::kClientHello) {
+          ExtractClientHelloExtension(extensions, extension_type, data);
         }
       }
     }
