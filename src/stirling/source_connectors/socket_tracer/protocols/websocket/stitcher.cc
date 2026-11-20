@@ -129,6 +129,7 @@ RecordsWithErrorCount<websocket::Record> StitchFrames(std::deque<websocket::Fram
   }
   for (websocket::Record& record : result.records) {
     record.subprotocol = global->subprotocol;
+    record.req_path = global->path;
   }
   return result;
 }

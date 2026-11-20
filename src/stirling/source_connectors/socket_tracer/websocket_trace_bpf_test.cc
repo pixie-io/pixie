@@ -90,9 +90,11 @@ TEST_F(WebSocketTraceTest, PlainAndTLSEchoSessions) {
       FindRecordIdxMatchesPID(record_batch, kWebSocketUPIDIdx, server_.process_pid());
   std::vector<std::string> rows;
   std::vector<std::string> subprotocols;
+  std::vector<std::string> req_paths;
   for (size_t i : indices) {
     rows.push_back(Row(record_batch, i));
     subprotocols.push_back(record_batch[kWebSocketSubprotocolIdx]->Get<types::StringValue>(i));
+    req_paths.push_back(record_batch[kWebSocketReqPathIdx]->Get<types::StringValue>(i));
   }
 
   std::vector<std::string> expected;
@@ -108,6 +110,7 @@ TEST_F(WebSocketTraceTest, PlainAndTLSEchoSessions) {
   }
   EXPECT_THAT(rows, IsSupersetOf(expected));
   EXPECT_THAT(subprotocols, Each(std::string("echo.pixie")));
+  EXPECT_THAT(req_paths, Each(std::string("/echo")));
 }
 
 }  // namespace stirling

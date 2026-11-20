@@ -76,6 +76,10 @@ static constexpr DataElement kWebSocketElements[] = {
          types::DataType::INT64,
          types::SemanticType::ST_BYTES,
          types::PatternType::METRIC_GAUGE},
+        {"req_path", "Request path of the HTTP request that opened the connection",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL},
 #ifndef NDEBUG
         canonical_data_elements::kPXInfo,
 #endif
@@ -96,6 +100,7 @@ constexpr int kWebSocketPayloadIdx = kWebSocketTable.ColIndex("payload");
 constexpr int kWebSocketPayloadSizeIdx = kWebSocketTable.ColIndex("payload_size");
 constexpr int kWebSocketOutputIdx = kWebSocketTable.ColIndex("output");
 constexpr int kWebSocketOutputSizeIdx = kWebSocketTable.ColIndex("output_size");
+constexpr int kWebSocketReqPathIdx = kWebSocketTable.ColIndex("req_path");
 
 }  // namespace stirling
 }  // namespace px

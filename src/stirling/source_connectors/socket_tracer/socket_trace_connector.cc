@@ -1848,6 +1848,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("payload_size")>(msg.payload_size);
   r.Append<r.ColIndex("output")>(printable(record.output), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("output_size")>(record.output_size);
+  r.Append<r.ColIndex("req_path")>(protocols::http::RedactCredentialPath(record.req_path));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif
