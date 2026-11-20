@@ -46,6 +46,7 @@ using ::px::operator<<;
 
 namespace http = protocols::http;
 namespace mysql = protocols::mysql;
+namespace tls = protocols::tls;
 namespace websocket = protocols::websocket;
 
 using ::testing::Field;
