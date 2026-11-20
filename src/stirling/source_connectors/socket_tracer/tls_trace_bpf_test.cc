@@ -43,6 +43,7 @@ using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
+using ::testing::HasSubstr;
 using ::testing::IsTrue;
 using ::testing::SizeIs;
 using ::testing::StrEq;
@@ -114,8 +115,10 @@ class TLSVersionParameterizedTest
     auto records = this->GetTraceRecords(this->server_.PID());
     EXPECT_THAT(records, SizeIs(1));
     EXPECT_GT(records[0].req.body.size(), 0);
-    auto sni_str = R"({"extensions":{"server_name":["test-host"]}})";
-    EXPECT_THAT(records[0].req.body, StrEq(sni_str));
+    EXPECT_THAT(records[0].req.body, HasSubstr(R"("server_name":["test-host"])"));
+    EXPECT_THAT(records[0].req.body, HasSubstr(R"("alpn":[)"));
+    EXPECT_THAT(records[0].resp.body, HasSubstr(R"("version":"TLSv1.2")"));
+    EXPECT_THAT(records[0].resp.body, HasSubstr(R"("cipher_suite":"TLS_)"));
   }
 
   // Returns the trace records of the process specified by the input pid.

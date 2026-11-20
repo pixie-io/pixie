@@ -315,7 +315,8 @@ TEST_F(TLSParserTest, ParseValidClientHello) {
   ASSERT_GT(frame.session_id.size(), 0);
 
   // Validate the SNI extension was parsed properly
-  ASSERT_EQ(frame.body, R"({"extensions":{"server_name":["argocd-cluster-repo-server"]}})");
+  ASSERT_EQ(frame.body,
+            R"({"extensions":{"server_name":["argocd-cluster-repo-server"],"alpn":["h2"]}})");
   ASSERT_EQ(state, ParseState::kSuccess);
 }
 
@@ -334,6 +335,9 @@ TEST_F(TLSParserTest, ParseValidServerHello) {
   ASSERT_EQ(frame.handshake_version, tls::LegacyVersion::kTLS1_2);
   ASSERT_GT(frame.session_id.size(), 0);
   ASSERT_EQ(state, ParseState::kSuccess);
+  EXPECT_EQ(
+      frame.body,
+      R"({"version":"TLSv1.3","cipher_suite":"TLS_AES_128_GCM_SHA256","key_share_group":"x25519"})");
 }
 
 TEST_F(TLSParserTest, ServerHelloExtsWithZeroLenExtension) {
@@ -347,6 +351,9 @@ TEST_F(TLSParserTest, ServerHelloExtsWithZeroLenExtension) {
 
   ASSERT_EQ(frame.handshake_type, tls::HandshakeType::kServerHello);
   ASSERT_EQ(state, ParseState::kSuccess);
+  EXPECT_EQ(frame.body,
+            R"({"version":"TLSv1.2","cipher_suite":"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",)"
+            R"("alpn":["http/1.1"]})");
 }
 
 }  // namespace protocols
