@@ -197,6 +197,16 @@ TEST_F(WebSocketStitcherTest, RawFramesCarrySubprotocol) {
   EXPECT_EQ(result.records[0].subprotocol, "graphql-transport-ws");
 }
 
+TEST_F(WebSocketStitcherTest, RawFramesCarryRequestPath) {
+  state_.global.path = "/echo?room=1";
+  req_frames_.push_back(MakeFrame(Opcode::kText, true, "hi", 1));
+
+  RecordsWithErrorCount<Record> result = Stitch();
+
+  ASSERT_EQ(result.records.size(), 1U);
+  EXPECT_EQ(result.records[0].req_path, "/echo?room=1");
+}
+
 TEST_F(WebSocketStitcherTest, K8sExecSessionIsDecoded) {
   state_.global.subprotocol = "v5.channel.k8s.io";
   state_.global.path = "/api/v1/namespaces/ns/pods/pod/exec?command=hostname&stdout=true";
@@ -213,6 +223,8 @@ TEST_F(WebSocketStitcherTest, K8sExecSessionIsDecoded) {
   EXPECT_EQ(result.records[1].kind, RecordKind::kExit);
   EXPECT_EQ(result.records[1].output, "pod\n");
   EXPECT_EQ(result.records[1].subprotocol, "v5.channel.k8s.io");
+  EXPECT_EQ(result.records[1].req_path,
+            "/api/v1/namespaces/ns/pods/pod/exec?command=hostname&stdout=true");
   EXPECT_TRUE(resp_frames_.empty());
 }
 

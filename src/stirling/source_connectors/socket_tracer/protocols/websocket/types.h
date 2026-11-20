@@ -101,6 +101,7 @@ struct Record {
   Message msg;
   RecordKind kind = RecordKind::kFrame;
   std::string subprotocol;
+  std::string req_path;
   std::string output;
   size_t output_size = 0;
 
