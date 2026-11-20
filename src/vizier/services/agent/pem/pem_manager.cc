@@ -82,6 +82,10 @@ Status PEMManager::PostRegisterHookImpl() {
   stirling_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager()));
 
+  stirling_->RegisterProcessParentCallback(
+      std::bind(&px::md::AgentMetadataStateManager::AddProcessParent, mds_manager(),
+                std::placeholders::_1, std::placeholders::_2));
+
   PX_RETURN_IF_ERROR(InitSchemas());
   PX_RETURN_IF_ERROR(stirling_->RunAsThread());
 

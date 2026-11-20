@@ -50,6 +50,7 @@ class StandaloneAgentMetadataStateManager : public AgentMetadataStateManager {
     return px::error::Unimplemented("k8s not available in standalone context");
   };
 
+  void AddProcessParent(UPID, UPID) override{/* empty */};
   void SetServiceCIDR(CIDRBlock) override{/* empty */};
   void SetPodCIDR(std::vector<CIDRBlock>) override{/* empty */};
   std::unique_ptr<PIDStatusEvent> GetNextPIDStatusEvent() override { return nullptr; };

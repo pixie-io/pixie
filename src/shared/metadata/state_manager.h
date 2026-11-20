@@ -93,6 +93,8 @@ class AgentMetadataStateManager {
    */
   virtual Status AddK8sUpdate(std::unique_ptr<ResourceUpdate> update) = 0;
 
+  virtual void AddProcessParent(UPID upid, UPID parent_upid) = 0;
+
   /**
    * Sets the service CIDR.
    * @param the service CIDR.
@@ -140,6 +142,8 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
 
   Status AddK8sUpdate(std::unique_ptr<ResourceUpdate> update) override;
 
+  void AddProcessParent(UPID upid, UPID parent_upid) override;
+
   void SetServiceCIDR(CIDRBlock cidr) override {
     absl::base_internal::SpinLockHolder lock(&cidr_lock_);
     service_cidr_ = std::move(cidr);
@@ -175,6 +179,7 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
 
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> incoming_k8s_updates_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> pid_updates_;
+  moodycamel::BlockingConcurrentQueue<std::pair<UPID, UPID>> process_parents_;
 
   absl::base_internal::SpinLock cidr_lock_;
   std::optional<CIDRBlock> service_cidr_;

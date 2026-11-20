@@ -85,6 +85,8 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
   int32_t num_k8s_updates() const { return updates_.size(); }
   md::ResourceUpdate* k8s_update(int32_t i) const { return updates_[i].get(); }
 
+  void AddProcessParent(md::UPID, md::UPID) override {}
+
   void SetServiceCIDR(CIDRBlock cidr) override { cidr_ = cidr; }
 
   void SetPodCIDR(std::vector<CIDRBlock> cidrs) override { pod_cidr_ = cidrs; }

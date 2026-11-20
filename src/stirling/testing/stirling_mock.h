@@ -43,6 +43,7 @@ class MockStirling : public Stirling {
   MOCK_METHOD(void, GetPublishProto, (stirlingpb::Publish * publish_pb), (override));
   MOCK_METHOD(void, RegisterDataPushCallback, (DataPushCallback f), (override));
   MOCK_METHOD(void, RegisterAgentMetadataCallback, (AgentMetadataCallback f), (override));
+  MOCK_METHOD(void, RegisterProcessParentCallback, (ProcessParentCallback f), (override));
   MOCK_METHOD(void, Run, (), (override));
   MOCK_METHOD(Status, RunAsThread, (), (override));
   MOCK_METHOD(bool, IsRunning, (), (const override));

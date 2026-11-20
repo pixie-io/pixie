@@ -90,8 +90,9 @@ class AgentContext : public ConnectorContext {
    * should not be held onto for extended periods of time.
    */
   explicit AgentContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state,
-                        ProcessParentCallback /*process_parent_callback*/ = nullptr)
-      : agent_metadata_state_(std::move(agent_metadata_state)) {
+                        ProcessParentCallback process_parent_callback = nullptr)
+      : agent_metadata_state_(std::move(agent_metadata_state)),
+        process_parent_callback_(std::move(process_parent_callback)) {
     DCHECK(agent_metadata_state_ != nullptr);
   }
 
@@ -117,8 +118,15 @@ class AgentContext : public ConnectorContext {
 
   void RefreshUPIDList() override{};
 
+  void AddProcessParent(const md::UPID& upid, const md::UPID& parent_upid) override {
+    if (process_parent_callback_ != nullptr) {
+      process_parent_callback_(upid, parent_upid);
+    }
+  }
+
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
+  ProcessParentCallback process_parent_callback_;
 };
 
 /**

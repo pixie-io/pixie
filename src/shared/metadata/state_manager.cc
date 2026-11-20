@@ -57,6 +57,10 @@ Status AgentMetadataStateManagerImpl::AddK8sUpdate(std::unique_ptr<ResourceUpdat
   return Status::OK();
 }
 
+void AgentMetadataStateManagerImpl::AddProcessParent(UPID upid, UPID parent_upid) {
+  process_parents_.enqueue({upid, parent_upid});
+}
+
 Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
   // There should never be more than one update, but this just here for safety.
   std::lock_guard<std::mutex> state_update_lock(metadata_state_update_lock_);
@@ -92,6 +96,7 @@ Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
     PX_RETURN_IF_ERROR(
         ProcessPIDUpdates(ts, proc_parser_, shadow_state.get(), md_reader_.get(), &pid_updates_));
   }
+  ApplyProcessParents(shadow_state.get(), &process_parents_);
 
   // Update the pod/service CIDRs if they have been updated.
   {
@@ -304,8 +309,13 @@ Status ProcessPIDUpdates(
 }
 
 void ApplyProcessParents(
-    AgentMetadataState* /*state*/,
-    moodycamel::BlockingConcurrentQueue<std::pair<UPID, UPID>>* /*process_parents*/) {}
+    AgentMetadataState* state,
+    moodycamel::BlockingConcurrentQueue<std::pair<UPID, UPID>>* process_parents) {
+  std::pair<UPID, UPID> process_parent;
+  while (process_parents->try_dequeue(process_parent)) {
+    state->AddProcessParent(process_parent.first, process_parent.second);
+  }
+}
 
 Status DeleteMetadataForDeadObjects(AgentMetadataState* state, int64_t retention_time) {
   PX_RETURN_IF_ERROR(
