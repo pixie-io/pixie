@@ -736,7 +736,26 @@ class GetProcessParents final : public carnot::udf::UDTF<GetProcessParents> {
                              "The unique ID of the parent process"));
   }
 
-  bool NextRecord(FunctionContext*, RecordWriter*) { return false; }
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    if (!loaded_) {
+      parents_ = ctx->metadata_state()->ProcessParents();
+      loaded_ = true;
+    }
+    if (idx_ >= parents_.size()) {
+      return false;
+    }
+
+    rw->Append<IndexOf("upid")>(parents_[idx_].first.value());
+    rw->Append<IndexOf("parent_upid")>(parents_[idx_].second.value());
+    ++idx_;
+
+    return idx_ < parents_.size();
+  }
+
+ private:
+  bool loaded_ = false;
+  size_t idx_ = 0;
+  std::vector<std::pair<px::md::UPID, px::md::UPID>> parents_;
 };
 
 /**

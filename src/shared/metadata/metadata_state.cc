@@ -607,7 +607,15 @@ UPID AgentMetadataState::ParentUPID(UPID upid) const {
   return UPID();
 }
 
-std::vector<std::pair<UPID, UPID>> AgentMetadataState::ProcessParents() const { return {}; }
+std::vector<std::pair<UPID, UPID>> AgentMetadataState::ProcessParents() const {
+  std::vector<std::pair<UPID, UPID>> parents(parent_upids_.begin(), parent_upids_.end());
+  for (const auto& [upid, pid_info] : pids_by_upid_) {
+    if (pid_info->parent_upid() != UPID() && !parent_upids_.contains(upid)) {
+      parents.emplace_back(upid, pid_info->parent_upid());
+    }
+  }
+  return parents;
+}
 
 PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const {
   for (int depth = 0; depth < kMaxAncestryDepth; ++depth) {

@@ -40,6 +40,7 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
   registry->RegisterFactoryOrDie<GetLinuxHeadersStatus, UDTFWithMDFactory<GetLinuxHeadersStatus>>(
       "GetLinuxHeadersStatus", ctx);
 
+  registry->RegisterOrDie<GetProcessParents>("GetProcessParents");
   registry->RegisterOrDie<GetDebugMDState>("_DebugMDState");
   registry->RegisterFactoryOrDie<GetDebugMDWithPrefix, UDTFWithMDFactory<GetDebugMDWithPrefix>>(
       "_DebugMDGetWithPrefix", ctx);
