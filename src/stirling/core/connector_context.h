@@ -74,6 +74,8 @@ class ConnectorContext {
   virtual std::vector<CIDRBlock> GetClusterCIDRs() = 0;
 
   virtual void RefreshUPIDList() = 0;
+
+  virtual void AddProcessParent(const md::UPID& /*upid*/, const md::UPID& /*parent_upid*/) {}
 };
 
 /**
