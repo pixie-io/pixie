@@ -117,16 +117,13 @@ struct HalfStream {
     trailers_.emplace(std::move(key), std::move(val));
   }
 
-  void AddData(std::string_view val) {
-    // Only sample the head of the body, to save space.
-    constexpr size_t kMaxBodyBytes = 512;
-
+  void AddData(std::string_view val, size_t max_body_bytes) {
     original_data_size_ += val.size();
 
     size_t size_to_add = val.size();
 
-    if (size_to_add + data_.size() > kMaxBodyBytes) {
-      size_to_add = kMaxBodyBytes - data_.size();
+    if (size_to_add + data_.size() > max_body_bytes) {
+      size_to_add = max_body_bytes > data_.size() ? max_body_bytes - data_.size() : 0;
       data_truncated_ = true;
     }
 

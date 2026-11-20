@@ -400,20 +400,20 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
   expected_record0.send.AddHeader(":method", "post");
   expected_record0.send.AddHeader(":host", "pixie.ai");
   expected_record0.send.AddHeader(":path", "/magic");
-  expected_record0.send.AddData("Request");
+  expected_record0.send.AddData("Request", FLAGS_max_body_bytes);
   expected_record0.send.AddEndStream();
   expected_record0.recv.AddHeader(":status", "200");
-  expected_record0.recv.AddData("Response");
+  expected_record0.recv.AddData("Response", FLAGS_max_body_bytes);
   expected_record0.recv.AddEndStream();
 
   http2::Record expected_record1;
   expected_record1.send.AddHeader(":method", "post");
   expected_record1.send.AddHeader(":host", "pixie.ai");
   expected_record1.send.AddHeader(":path", "/wormhole");
-  expected_record1.send.AddData("Request");
+  expected_record1.send.AddData("Request", FLAGS_max_body_bytes);
   expected_record1.send.AddEndStream();
   expected_record1.recv.AddHeader(":status", "200");
-  expected_record1.recv.AddData("Long ways from home");
+  expected_record1.recv.AddData("Long ways from home", FLAGS_max_body_bytes);
   expected_record1.recv.AddEndStream();
 
   EXPECT_THAT(records, UnorderedElementsAre(EqHTTP2Record(expected_record0),
@@ -490,20 +490,20 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
   expected_record0.send.AddHeader(":method", "post");
   expected_record0.send.AddHeader(":host", "pixie.ai");
   expected_record0.send.AddHeader(":path", "/magic");
-  expected_record0.send.AddData("Request");
+  expected_record0.send.AddData("Request", FLAGS_max_body_bytes);
   expected_record0.send.AddEndStream();
   expected_record0.recv.AddHeader(":status", "200");
-  expected_record0.recv.AddData("Response");
+  expected_record0.recv.AddData("Response", FLAGS_max_body_bytes);
   expected_record0.recv.AddEndStream();
 
   http2::Record expected_record1;
   expected_record1.send.AddHeader(":method", "post");
   expected_record1.send.AddHeader(":host", "pixie.ai");
   expected_record1.send.AddHeader(":path", "/wormhole");
-  expected_record1.send.AddData("Request");
+  expected_record1.send.AddData("Request", FLAGS_max_body_bytes);
   expected_record1.send.AddEndStream();
   expected_record1.recv.AddHeader(":status", "200");
-  expected_record1.recv.AddData("Long ways from home");
+  expected_record1.recv.AddData("Long ways from home", FLAGS_max_body_bytes);
   expected_record1.recv.AddEndStream();
 
   EXPECT_THAT(records, UnorderedElementsAre(EqHTTP2Record(expected_record0),

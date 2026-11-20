@@ -1342,7 +1342,7 @@ int64_t AMQPCalculateLatency(const int64_t req_timestamp_ns, const int64_t resp_
   return latency_ns;
 }
 
-constexpr size_t kRedactedSize = std::numeric_limits<size_t>::max();
+constexpr size_t kNoTruncation = std::numeric_limits<size_t>::max();
 
 std::string RedactedBody(std::string_view body) {
   if (body.size() <= FLAGS_max_body_bytes) {
@@ -1398,12 +1398,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_method")>(std::move(req_message.req_method));
   r.Append<r.ColIndex("req_path")>(protocols::http::RedactCredentialPath(req_message.req_path));
   r.Append<r.ColIndex("req_body_size")>(req_message.body_size);
-  r.Append<r.ColIndex("req_body")>(RedactedBody(req_message.body), kRedactedSize);
+  r.Append<r.ColIndex("req_body")>(RedactedBody(req_message.body), kNoTruncation);
   r.Append<r.ColIndex("resp_headers")>(ToJSONString(resp_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("resp_status")>(resp_message.resp_status);
   r.Append<r.ColIndex("resp_message")>(std::move(resp_message.resp_message));
   r.Append<r.ColIndex("resp_body_size")>(resp_message.body_size);
-  r.Append<r.ColIndex("resp_body")>(RedactedBody(resp_message.body), kRedactedSize);
+  r.Append<r.ColIndex("resp_body")>(RedactedBody(resp_message.body), kNoTruncation);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
@@ -1475,10 +1475,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // protobuf message. This might result into longer text format data here, but the increase is
   // minimal.
   r.Append<r.ColIndex("req_body")>(
-      protocols::http::RedactCredentialBody(req_stream->ConsumeData()));
+      protocols::http::RedactCredentialBody(req_stream->ConsumeData()), kNoTruncation);
   r.Append<r.ColIndex("resp_body_size")>(resp_stream->original_data_size());
   r.Append<r.ColIndex("resp_body")>(
-      protocols::http::RedactCredentialBody(resp_stream->ConsumeData()));
+      protocols::http::RedactCredentialBody(resp_stream->ConsumeData()), kNoTruncation);
   int64_t latency_ns = CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("latency")>(latency_ns);
   // TODO(yzhao): Remove once http2::Record::bpf_timestamp_ns is removed.
@@ -1833,7 +1833,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   };
   if (record.kind == protocols::websocket::RecordKind::kFrame &&
       msg.opcode == protocols::websocket::Opcode::kText) {
-    r.Append<r.ColIndex("payload")>(RedactedBody(msg.payload), kRedactedSize);
+    r.Append<r.ColIndex("payload")>(RedactedBody(msg.payload), kNoTruncation);
   } else {
     r.Append<r.ColIndex("payload")>(printable(msg.payload), FLAGS_max_body_bytes);
   }

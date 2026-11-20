@@ -382,7 +382,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
         ::ToString(data->attr.conn_id));
   }
 
-  half_stream_ptr->AddData(data->payload);
+  half_stream_ptr->AddData(data->payload, FLAGS_max_body_bytes);
   if (data->attr.end_stream) {
     half_stream_ptr->AddEndStream();
   }
