@@ -858,13 +858,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
       }
     }
 
-    bool skip_tls_payload = false;
-    if (ENABLE_TLS_TRACING && !vecs && !ssl && conn_info->protocol == kProtocolTLS) {
-      skip_tls_payload = infer_tls_message(args->buf, bytes_count) == kUnknown;
-    }
-
-    if (!skip_tls_payload &&
-        should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
+    if (should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
       struct socket_data_event_t* event =
           fill_socket_data_event(args->source_fn, direction, conn_info);
       if (event == NULL) {
