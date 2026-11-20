@@ -241,7 +241,7 @@ class UPIDToContainerIDUDF : public ScalarUDF {
 
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);
-    auto pid = md->GetPIDByUPID(upid);
+    auto pid = md->GetPIDByUPIDOrAncestor(upid);
     if (pid == nullptr) {
       return "";
     }
@@ -266,7 +266,11 @@ class UPIDToContainerIDUDF : public ScalarUDF {
 
 class UPIDToParentUPIDUDF : public ScalarUDF {
  public:
-  UInt128Value Exec(FunctionContext*, UInt128Value) { return md::UPID().value(); }
+  UInt128Value Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    return md->ParentUPID(md::UPID(upid_uint128)).value();
+  }
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the UPID of the parent process from a UPID.")
@@ -290,7 +294,7 @@ inline const md::ContainerInfo* UPIDToContainer(const px::md::AgentMetadataState
                                                 types::UInt128Value upid_value) {
   auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
   auto upid = md::UPID(upid_uint128);
-  auto pid = md->GetPIDByUPID(upid);
+  auto pid = md->GetPIDByUPIDOrAncestor(upid);
   if (pid == nullptr) {
     return nullptr;
   }
