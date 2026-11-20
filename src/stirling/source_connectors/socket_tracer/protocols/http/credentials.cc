@@ -48,6 +48,7 @@ constexpr std::array<std::string_view, 2> kAuthorizationHeaders = {"authorizatio
                                                                    "proxy-authorization"};
 constexpr std::array<std::string_view, 3> kTokenHeaders = {"x-api-key", "x-auth-token", "api-key"};
 constexpr std::array<std::string_view, 3> kUrlHeaders = {":path", "referer", "location"};
+constexpr std::string_view kBearerSubprotocol = "base64url.bearer.authorization.k8s.io.";
 constexpr std::array<std::string_view, 9> kCredentialFields = {
     "access_token", "id_token",      "refresh_token", "token",  "api_key",
     "apikey",       "client_secret", "password",      "secret"};
@@ -124,6 +125,27 @@ std::string RedactAuthorization(std::string_view value) {
     }
   }
   return absl::StrCat(scheme, " ", Marker(credential, details));
+}
+
+std::string RedactSubprotocols(std::string_view value) {
+  std::vector<std::string> protocols;
+  for (std::string_view protocol : absl::StrSplit(value, ',')) {
+    const size_t start = protocol.find(kBearerSubprotocol);
+    if (start == std::string_view::npos) {
+      protocols.emplace_back(protocol);
+      continue;
+    }
+    std::string_view encoded = protocol.substr(start + kBearerSubprotocol.size());
+    std::string token;
+    std::optional<std::string> claims;
+    if (absl::WebSafeBase64Unescape(encoded, &token)) {
+      claims = JwtClaims(token);
+    }
+    protocols.push_back(absl::StrCat(
+        protocol.substr(0, start + kBearerSubprotocol.size()),
+        Marker(encoded, claims.has_value() ? absl::StrCat(" jwt=", claims.value()) : "")));
+  }
+  return absl::StrJoin(protocols, ",");
 }
 
 std::string RedactCookie(std::string_view cookie) {
@@ -234,6 +256,9 @@ std::optional<std::string> RedactCredentialHeader(std::string_view name, std::st
   }
   if (absl::EqualsIgnoreCase(name, "set-cookie")) {
     return RedactSetCookie(value);
+  }
+  if (absl::EqualsIgnoreCase(name, "sec-websocket-protocol")) {
+    return RedactSubprotocols(value);
   }
   if (Contains(kUrlHeaders, name)) {
     return RedactCredentialPath(value);
