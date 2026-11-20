@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/common/exec/exec.h"
@@ -118,6 +119,18 @@ class TLSVersionParameterizedTest
     EXPECT_THAT(records[0].req.body, HasSubstr(R"("alpn":[)"));
     EXPECT_THAT(records[0].resp.body, HasSubstr(R"("version":"TLSv1.2")"));
     EXPECT_THAT(records[0].resp.body, HasSubstr(R"("cipher_suite":"TLS_)"));
+
+    std::vector<TaggedRecordBatch> http_tablets =
+        this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+    ASSERT_FALSE(http_tablets.empty());
+    types::ColumnWrapperRecordBatch http_batch = http_tablets[0].records;
+    std::vector<size_t> http_indices =
+        FindRecordIdxMatchesPID(http_batch, kHTTPUPIDIdx, this->server_.PID());
+    ASSERT_FALSE(http_indices.empty());
+    for (size_t idx : http_indices) {
+      EXPECT_TRUE(http_batch[kHTTPEncryptedIdx]->Get<types::BoolValue>(idx).val);
+      EXPECT_EQ(http_batch[kHTTPReqPathIdx]->Get<types::StringValue>(idx), "/index.html");
+    }
   }
 
   // Returns the trace records of the process specified by the input pid.
