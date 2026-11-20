@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 #include <utility>
 
 #include <absl/container/flat_hash_map.h>
@@ -45,6 +46,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/credentials.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/websocket/k8s_exec.h"
@@ -1340,6 +1342,16 @@ int64_t AMQPCalculateLatency(const int64_t req_timestamp_ns, const int64_t resp_
   return latency_ns;
 }
 
+constexpr size_t kRedactedSize = std::numeric_limits<size_t>::max();
+
+std::string RedactedBody(std::string_view body) {
+  if (body.size() <= FLAGS_max_body_bytes) {
+    return protocols::http::RedactCredentialBody(body);
+  }
+  return absl::StrCat(protocols::http::RedactCredentialBody(body.substr(0, FLAGS_max_body_bytes)),
+                      DataTable::kTruncatedMsg);
+}
+
 template <typename TRecordType>
 std::string PXInfoString(const ConnTracker& conn_tracker, const TRecordType& record) {
   return absl::Substitute("conn_tracker=$0 record=$1", conn_tracker.ToString(), record.ToString());
@@ -1357,6 +1369,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   protocols::http::PreProcessRespMessage(&resp_message);
   protocols::http::PreProcessReqMessage(&req_message);
+  protocols::http::RedactCredentials(&req_message.headers);
+  protocols::http::RedactCredentials(&resp_message.headers);
 
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -1382,14 +1396,14 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
   r.Append<r.ColIndex("req_headers")>(ToJSONString(req_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("req_method")>(std::move(req_message.req_method));
-  r.Append<r.ColIndex("req_path")>(std::move(req_message.req_path));
+  r.Append<r.ColIndex("req_path")>(protocols::http::RedactCredentialPath(req_message.req_path));
   r.Append<r.ColIndex("req_body_size")>(req_message.body_size);
-  r.Append<r.ColIndex("req_body")>(std::move(req_message.body), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("req_body")>(RedactedBody(req_message.body), kRedactedSize);
   r.Append<r.ColIndex("resp_headers")>(ToJSONString(resp_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("resp_status")>(resp_message.resp_status);
   r.Append<r.ColIndex("resp_message")>(std::move(resp_message.resp_message));
   r.Append<r.ColIndex("resp_body_size")>(resp_message.body_size);
-  r.Append<r.ColIndex("resp_body")>(std::move(resp_message.body), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("resp_body")>(RedactedBody(resp_message.body), kRedactedSize);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
@@ -1424,6 +1438,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
+  protocols::http::RedactCredentials(req_stream->mutable_headers());
+  protocols::http::RedactCredentials(resp_stream->mutable_headers());
   std::string path = req_stream->headers().ValueByKey(protocols::http2::headers::kPath);
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
@@ -1458,9 +1474,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Do not apply truncation at this point, as the truncation was already done on serialized
   // protobuf message. This might result into longer text format data here, but the increase is
   // minimal.
-  r.Append<r.ColIndex("req_body")>(req_stream->ConsumeData());
+  r.Append<r.ColIndex("req_body")>(
+      protocols::http::RedactCredentialBody(req_stream->ConsumeData()));
   r.Append<r.ColIndex("resp_body_size")>(resp_stream->original_data_size());
-  r.Append<r.ColIndex("resp_body")>(resp_stream->ConsumeData());
+  r.Append<r.ColIndex("resp_body")>(
+      protocols::http::RedactCredentialBody(resp_stream->ConsumeData()));
   int64_t latency_ns = CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("latency")>(latency_ns);
   // TODO(yzhao): Remove once http2::Record::bpf_timestamp_ns is removed.
@@ -1815,7 +1833,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   };
   if (record.kind == protocols::websocket::RecordKind::kFrame &&
       msg.opcode == protocols::websocket::Opcode::kText) {
-    r.Append<r.ColIndex("payload")>(std::move(msg.payload), FLAGS_max_body_bytes);
+    r.Append<r.ColIndex("payload")>(RedactedBody(msg.payload), kRedactedSize);
   } else {
     r.Append<r.ColIndex("payload")>(printable(msg.payload), FLAGS_max_body_bytes);
   }
