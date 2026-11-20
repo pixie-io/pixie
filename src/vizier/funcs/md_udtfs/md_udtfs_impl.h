@@ -725,6 +725,20 @@ class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
   }
 };
 
+class GetProcessParents final : public carnot::udf::UDTF<GetProcessParents> {
+ public:
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_PEM; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("upid", types::DataType::UINT128, types::PatternType::GENERAL,
+                             "The unique ID of the process"),
+                     ColInfo("parent_upid", types::DataType::UINT128, types::PatternType::GENERAL,
+                             "The unique ID of the parent process"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter*) { return false; }
+};
+
 /**
  * This UDTF fetches all MDS kvs with the given prefix.
  */

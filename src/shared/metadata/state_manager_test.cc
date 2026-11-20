@@ -425,6 +425,21 @@ TEST_F(AgentMetadataStateTest, short_lived_process_resolves_to_ancestor) {
   EXPECT_EQ(cloned->GetPIDByUPIDOrAncestor(grandchild)->upid(), parent);
 }
 
+TEST_F(AgentMetadataStateTest, process_parents_are_listed) {
+  UPID init(kASID, 1 /*pid*/, 10 /*ts*/);
+  UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
+  UPID child(kASID, 300 /*pid*/, 3000 /*ts*/);
+  auto parent_info = std::make_unique<PIDInfo>(parent, "", "cmdline100", "container_id1");
+  parent_info->set_parent_upid(init);
+  metadata_state_.AddUPID(parent, std::move(parent_info));
+  metadata_state_.AddUPID(init, std::make_unique<PIDInfo>(init, "", "cmdline1", "container_id1"));
+  metadata_state_.AddProcessParent(parent, init);
+  metadata_state_.AddProcessParent(child, parent);
+
+  EXPECT_THAT(metadata_state_.ProcessParents(),
+              UnorderedElementsAre(Pair(child, parent), Pair(parent, init)));
+}
+
 TEST_F(AgentMetadataStateTest, process_parents_are_bounded) {
   UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
   for (uint32_t i = 0; i <= AgentMetadataState::kMaxProcessParents; ++i) {

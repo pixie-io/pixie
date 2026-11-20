@@ -607,6 +607,8 @@ UPID AgentMetadataState::ParentUPID(UPID upid) const {
   return UPID();
 }
 
+std::vector<std::pair<UPID, UPID>> AgentMetadataState::ProcessParents() const { return {}; }
+
 PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const {
   for (int depth = 0; depth < kMaxAncestryDepth; ++depth) {
     PIDInfo* pid_info = GetPIDByUPID(upid);

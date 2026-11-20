@@ -393,6 +393,8 @@ class AgentMetadataState : NotCopyable {
 
   UPID ParentUPID(UPID upid) const;
 
+  std::vector<std::pair<UPID, UPID>> ProcessParents() const;
+
   PIDInfo* GetPIDByUPIDOrAncestor(UPID upid) const;
 
   void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
