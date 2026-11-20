@@ -90,6 +90,8 @@ void ProcExitConnector::AcceptProcForkEvent(const struct proc_fork_event_t& even
   fork_events_.push_back(event);
 }
 
+void ProcExitConnector::AcceptProcForkEventLoss(uint64_t /*lost*/) {}
+
 Status ProcExitConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);

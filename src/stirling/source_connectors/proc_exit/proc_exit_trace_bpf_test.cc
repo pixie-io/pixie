@@ -23,6 +23,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/common/exec/subprocess.h"
+#include "src/common/metrics/metrics.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/connector_context.h"
@@ -133,6 +134,19 @@ TEST(ProcExitConnectorTest, ReportsParentOfShortLivedProcess) {
     }
   }
   EXPECT_THAT(parents, ElementsAre(md::UPID(0, getpid(), parent_start_time)));
+}
+
+TEST(ProcExitConnectorTest, CountsLostForkEvents) {
+  auto connector = ProcExitConnector::Create("test_proc_exit_connector");
+  static_cast<ProcExitConnector*>(connector.get())->AcceptProcForkEventLoss(3);
+
+  double lost = 0;
+  for (const auto& family : GetMetricsRegistry().Collect()) {
+    if (family.name == "proc_fork_events_lost") {
+      lost = family.metric[0].counter.value;
+    }
+  }
+  EXPECT_EQ(lost, 3);
 }
 
 }  // namespace proc_exit_tracer

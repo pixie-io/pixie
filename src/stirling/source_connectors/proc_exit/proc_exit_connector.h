@@ -53,6 +53,7 @@ class ProcExitConnector : public BCCSourceConnector {
 
   void AcceptProcExitEvent(const struct proc_exit_event_t& event);
   void AcceptProcForkEvent(const struct proc_fork_event_t& event);
+  void AcceptProcForkEventLoss(uint64_t lost);
 
  protected:
   explicit ProcExitConnector(std::string_view name);
