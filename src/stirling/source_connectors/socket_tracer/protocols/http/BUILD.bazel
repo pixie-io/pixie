@@ -62,6 +62,14 @@ pl_cc_binary(
 )
 
 pl_cc_test(
+    name = "credentials_test",
+    srcs = ["credentials_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "parse_test",
     srcs = ["parse_test.cc"],
     deps = [

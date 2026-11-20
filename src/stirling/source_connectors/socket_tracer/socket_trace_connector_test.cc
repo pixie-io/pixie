@@ -43,7 +43,10 @@ namespace stirling {
 
 namespace http = protocols::http;
 
+using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::HasSubstr;
+using ::testing::Not;
 
 using ::px::stirling::testing::RecordBatchSizeIs;
 
@@ -226,6 +229,41 @@ TEST_F(SocketTraceConnectorTest, Basic) {
   EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("foo"));
 }
 
+TEST_F(SocketTraceConnectorTest, HTTPCredentialsAreRedacted) {
+  const std::string_view kCredReq =
+      "POST /login?access_token=cs-canary-20 HTTP/1.1\r\n"
+      "Host: auth\r\n"
+      "Authorization: Bearer cs-canary-21\r\n"
+      "Content-Type: application/json\r\n"
+      "Content-Length: 27\r\n"
+      "\r\n"
+      "{\"password\":\"cs-canary-22\"}";
+  const std::string_view kCredResp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json\r\n"
+      "Set-Cookie: session=cs-canary-23; HttpOnly\r\n"
+      "Content-Length: 31\r\n"
+      "\r\n"
+      "{\"access_token\":\"cs-canary-24\"}";
+
+  source_->AcceptControlEvent(event_gen_.InitConn());
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kCredReq));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kCredResp));
+  source_->AcceptControlEvent(event_gen_.InitClose());
+
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  for (int idx : {kHTTPReqHeadersIdx, kHTTPReqPathIdx, kHTTPReqBodyIdx, kHTTPRespHeadersIdx,
+                  kHTTPRespBodyIdx}) {
+    EXPECT_THAT(ToStringVector(records[idx]), ElementsAre(Not(HasSubstr("cs-canary"))));
+  }
+  EXPECT_THAT(ToStringVector(records[kHTTPReqHeadersIdx]),
+              ElementsAre(HasSubstr("Bearer <cred:sha256=")));
+}
+
 class SocketTraceConnectorWebSocketTest : public SocketTraceConnectorTest {
  protected:
   void SetUp() override {
@@ -283,6 +321,14 @@ TEST_F(SocketTraceConnectorWebSocketTest, UpgradedConnectionProducesWebSocketEve
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketDirectionIdx]), ElementsAre(2, 1));
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketOpcodeIdx]), ElementsAre(1, 1));
   EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(2, 5));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, TextPayloadCredentialsAreRedacted) {
+  RecordBatch records = TransferUpgradedServerFrames(
+      absl::StrCat("\x81\x18", R"({"token":"cs-canary-25"})"));
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
+              ElementsAre(AllOf(HasSubstr("<cred:sha256="), Not(HasSubstr("cs-canary")))));
 }
 
 TEST_F(SocketTraceConnectorWebSocketTest, NonTextPayloadsAreEscaped) {
