@@ -83,6 +83,7 @@ constexpr int kProcNetDevTxDropField = 12;
 constexpr int kProcStatNumFields = 52;
 
 constexpr int kProcStatPIDField = 0;
+constexpr int kProcStatPPIDField = 3;
 
 constexpr int kProcStatMinorFaultsField = 9;
 constexpr int kProcStatMajorFaultsField = 11;
@@ -639,10 +640,6 @@ StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
   return ::px::system::GetPIDStartTimeTicks(ProcPidPath(pid));
 }
 
-StatusOr<int32_t> ProcParser::GetPPID(int32_t pid) const {
-  return error::Unimplemented("Parent of PID $0", pid);
-}
-
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
   const auto fpath = ProcPidPath(pid, "fd", std::to_string(fd));
   PX_ASSIGN_OR_RETURN(std::filesystem::path link, fs::ReadSymlink(fpath));
@@ -716,7 +713,9 @@ Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const
   return Status::OK();
 }
 
-StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
+namespace {
+
+StatusOr<int64_t> ReadProcPIDStatField(const std::filesystem::path& proc_pid_path, int field) {
   const std::filesystem::path proc_pid_stat_path = proc_pid_path / "stat";
   std::string line;
 
@@ -771,12 +770,24 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
                            proc_pid_stat_path.string());
   }
 
-  int64_t start_time_ticks;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField + command_offset], &start_time_ticks)) {
-    return error::Internal("Time value does not parse in file: $0.", proc_pid_stat_path.string());
+  int64_t value;
+  if (!absl::SimpleAtoi(split[field + command_offset], &value)) {
+    return error::Internal("Field $0 does not parse in file: $1.", field,
+                           proc_pid_stat_path.string());
   }
 
-  return start_time_ticks;
+  return value;
+}
+
+}  // namespace
+
+StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
+  return ReadProcPIDStatField(proc_pid_path, kProcStatStartTimeField);
+}
+
+StatusOr<int32_t> ProcParser::GetPPID(int32_t pid) const {
+  PX_ASSIGN_OR_RETURN(int64_t ppid, ReadProcPIDStatField(ProcPidPath(pid), kProcStatPPIDField));
+  return static_cast<int32_t>(ppid);
 }
 
 namespace {

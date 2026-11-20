@@ -176,6 +176,11 @@ StatusOr<UPID> InitUPID(const system::ProcParser& proc_parser, uint32_t asid, ui
   return UPID(asid, pid, pid_start_time);
 }
 
+StatusOr<UPID> InitParentUPID(const system::ProcParser& proc_parser, uint32_t asid, uint32_t pid) {
+  PX_ASSIGN_OR_RETURN(int32_t ppid, proc_parser.GetPPID(pid));
+  return InitUPID(proc_parser, asid, ppid);
+}
+
 }  // namespace
 
 void ProcessContainerPIDUpdates(
@@ -223,6 +228,7 @@ void ProcessContainerPIDUpdates(
     std::string cmdline = proc_parser.GetPIDCmdline(upid.pid());
     auto pid_info =
         std::make_unique<PIDInfo>(upid, std::move(exe_path), std::move(cmdline), CID(cid));
+    pid_info->set_parent_upid(InitParentUPID(proc_parser, md->asid(), upid.pid()).ValueOr(UPID()));
 
     // Push creation events to the queue.
     pid_updates->enqueue(std::make_unique<PIDStartedEvent>(*pid_info));

@@ -579,14 +579,48 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
     state->pids_by_upid_[k] = v->Clone();
   }
   state->upids_ = upids_;
+  state->parent_upids_ = parent_upids_;
+  state->parent_upid_order_ = parent_upid_order_;
   return state;
 }
 
-void AgentMetadataState::AddProcessParent(UPID /*upid*/, UPID /*parent_upid*/) {}
+void AgentMetadataState::AddProcessParent(UPID upid, UPID parent_upid) {
+  if (!parent_upids_.try_emplace(upid, parent_upid).second) {
+    return;
+  }
+  parent_upid_order_.push_back(upid);
+  if (parent_upid_order_.size() > kMaxProcessParents) {
+    parent_upids_.erase(parent_upid_order_.front());
+    parent_upid_order_.pop_front();
+  }
+}
 
-UPID AgentMetadataState::ParentUPID(UPID /*upid*/) const { return UPID(); }
+UPID AgentMetadataState::ParentUPID(UPID upid) const {
+  const PIDInfo* pid_info = GetPIDByUPID(upid);
+  if (pid_info != nullptr) {
+    return pid_info->parent_upid();
+  }
+  auto it = parent_upids_.find(upid);
+  if (it != parent_upids_.end()) {
+    return it->second;
+  }
+  return UPID();
+}
 
-PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const { return GetPIDByUPID(upid); }
+PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const {
+  for (int depth = 0; depth < kMaxAncestryDepth; ++depth) {
+    PIDInfo* pid_info = GetPIDByUPID(upid);
+    if (pid_info != nullptr) {
+      return pid_info;
+    }
+    auto it = parent_upids_.find(upid);
+    if (it == parent_upids_.end()) {
+      return nullptr;
+    }
+    upid = it->second;
+  }
+  return nullptr;
+}
 
 std::string AgentMetadataState::DebugString(int indent_level) const {
   std::string str;

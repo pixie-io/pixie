@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <set>
 #include <string>
@@ -463,6 +464,9 @@ class AgentMetadataState : NotCopyable {
    * it is tracked separately as a performance optimization.
    */
   absl::flat_hash_set<md::UPID> upids_;
+
+  absl::flat_hash_map<UPID, UPID> parent_upids_;
+  std::deque<UPID> parent_upid_order_;
 };
 
 }  // namespace md
