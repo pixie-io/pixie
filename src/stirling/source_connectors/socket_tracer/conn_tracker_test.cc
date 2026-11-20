@@ -34,6 +34,7 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/tls/types.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/testing/common.h"
@@ -497,26 +498,8 @@ TEST_F(ConnTrackerTest, TrackerWebSocketCloseAfterUpgradeIsRecorded) {
   EXPECT_TRUE(tracker.protocol_state<websocket::StateWrapper>()->global.conn_closed);
 }
 
-std::string TLSRecord(uint8_t handshake_type, std::string_view body) {
-  std::string handshake = absl::StrCat(std::string(1, static_cast<char>(handshake_type)),
-                                       std::string(1, '\0'),
-                                       std::string(1, static_cast<char>(body.size() >> 8)),
-                                       std::string(1, static_cast<char>(body.size() & 0xff)), body);
-  return absl::StrCat("\x16\x03\x01"sv, std::string(1, static_cast<char>(handshake.size() >> 8)),
-                      std::string(1, static_cast<char>(handshake.size() & 0xff)), handshake);
-}
-
-std::string ClientHello() {
-  return TLSRecord(1, absl::StrCat("\x03\x03"sv, std::string(32, 'r'),
-                                   "\x00\x00\x02\x13\x01\x01\x00\x00\x00"sv));
-}
-
-std::string ServerHello() {
-  return TLSRecord(2, absl::StrCat("\x03\x03"sv, std::string(32, 'r'),
-                                   "\x00\x13\x01\x00\x00\x0c"
-                                   "\x00\x2b\x00\x02\x03\x04"
-                                   "\x00\x33\x00\x02\x11\xec"sv));
-}
+using tls::testutils::ClientHello;
+using tls::testutils::ServerHello;
 
 TEST_F(ConnTrackerTest, TLSHandshakeIsHandedOverToDecryptedHTTP) {
   ConnTracker tracker;

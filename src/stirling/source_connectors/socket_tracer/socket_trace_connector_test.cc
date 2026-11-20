@@ -34,6 +34,7 @@
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_connector_friend.h"
 #include "src/stirling/testing/common.h"
@@ -262,6 +263,39 @@ TEST_F(SocketTraceConnectorTest, HTTPCredentialsAreRedacted) {
   }
   EXPECT_THAT(ToStringVector(records[kHTTPReqHeadersIdx]),
               ElementsAre(HasSubstr("Bearer <cred:sha256=")));
+}
+
+class SocketTraceConnectorTLSTest : public SocketTraceConnectorTest {
+ protected:
+  void SetUp() override {
+    FLAGS_stirling_enable_tls_tracing = TraceMode::On;
+    SocketTraceConnectorTest::SetUp();
+  }
+
+  void TearDown() override { FLAGS_stirling_enable_tls_tracing = TraceMode::Off; }
+};
+
+TEST_F(SocketTraceConnectorTLSTest, HandedOverConnectionClosedInOnePollProducesHTTPRecord) {
+  source_->AcceptControlEvent(event_gen_.InitConn());
+  source_->AcceptDataEvent(
+      event_gen_.InitSendEvent<kProtocolTLS>(protocols::tls::testutils::ClientHello()));
+  source_->AcceptDataEvent(
+      event_gen_.InitRecvEvent<kProtocolTLS>(protocols::tls::testutils::ServerHello()));
+  std::unique_ptr<SocketDataEvent> req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq3);
+  req->attr.ssl = true;
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  resp->attr.ssl = true;
+  source_->AcceptDataEvent(std::move(req));
+  source_->AcceptDataEvent(std::move(resp));
+  source_->AcceptControlEvent(event_gen_.InitClose());
+
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
+  EXPECT_THAT(ToIntVector<types::BoolValue>(records[kHTTPEncryptedIdx]), ElementsAre(1));
 }
 
 class SocketTraceConnectorWebSocketTest : public SocketTraceConnectorTest {
