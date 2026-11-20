@@ -28,6 +28,7 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 #include "src/shared/upid/upid.h"
+#include "src/stirling/core/types.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 namespace px {
@@ -88,7 +89,8 @@ class AgentContext : public ConnectorContext {
    * @param agent_metadata_state A read-only snapshot view of the metadata state. This state
    * should not be held onto for extended periods of time.
    */
-  explicit AgentContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state)
+  explicit AgentContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state,
+                        ProcessParentCallback /*process_parent_callback*/ = nullptr)
       : agent_metadata_state_(std::move(agent_metadata_state)) {
     DCHECK(agent_metadata_state_ != nullptr);
   }

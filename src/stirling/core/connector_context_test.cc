@@ -18,11 +18,18 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "src/stirling/core/connector_context.h"
 
+#include "src/common/event/real_time_system.h"
 #include "src/common/testing/testing.h"
 
 using ::px::testing::BazelRunfilePath;
+using ::testing::ElementsAre;
+using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 
 namespace px {
@@ -35,6 +42,21 @@ TEST(SystemWideStandaloneContextTest, ListUPIDs) {
   EXPECT_THAT(ctx.GetUPIDs(),
               UnorderedElementsAre(md::UPID{0, 123, 14329}, md::UPID{0, 1, 13},
                                    md::UPID{0, 456, 17594622}, md::UPID{0, 789, 46120203}));
+}
+
+TEST(AgentContextTest, ForwardsProcessParents) {
+  event::RealTimeSystem time_system;
+  auto state = std::make_shared<md::AgentMetadataState>("myhost", 1, 123, sole::uuid4(), "mypod",
+                                                        sole::uuid4(), "myvizier",
+                                                        "myviziernamespace", &time_system);
+  std::vector<std::pair<md::UPID, md::UPID>> parents;
+  AgentContext ctx(state, [&parents](md::UPID upid, md::UPID parent_upid) {
+    parents.emplace_back(upid, parent_upid);
+  });
+
+  ctx.AddProcessParent(md::UPID{1, 300, 3000}, md::UPID{1, 100, 1000});
+
+  EXPECT_THAT(parents, ElementsAre(Pair(md::UPID{1, 300, 3000}, md::UPID{1, 100, 1000})));
 }
 
 }  // namespace stirling

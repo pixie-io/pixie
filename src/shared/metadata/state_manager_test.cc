@@ -435,6 +435,18 @@ TEST_F(AgentMetadataStateTest, process_parents_are_bounded) {
   EXPECT_EQ(metadata_state_.ParentUPID(UPID(kASID, 1001 /*pid*/, 1 /*ts*/)), parent);
 }
 
+TEST_F(AgentMetadataStateTest, process_parents_are_applied) {
+  UPID parent(kASID, 100 /*pid*/, 1000 /*ts*/);
+  UPID child(kASID, 300 /*pid*/, 3000 /*ts*/);
+  moodycamel::BlockingConcurrentQueue<std::pair<UPID, UPID>> process_parents;
+  process_parents.enqueue({child, parent});
+
+  ApplyProcessParents(&metadata_state_, &process_parents);
+
+  EXPECT_EQ(0, process_parents.size_approx());
+  EXPECT_EQ(metadata_state_.ParentUPID(child), parent);
+}
+
 TEST_F(AgentMetadataStateTest, insert_into_filter) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   GenerateTestUpdateEvents(&updates);

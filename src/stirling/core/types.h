@@ -43,6 +43,8 @@ using AgentMetadataType = std::shared_ptr<const px::md::AgentMetadataState>;
  */
 using AgentMetadataCallback = std::function<AgentMetadataType()>;
 
+using ProcessParentCallback = std::function<void(md::UPID, md::UPID)>;
+
 class DataElement {
  public:
   constexpr DataElement() = delete;

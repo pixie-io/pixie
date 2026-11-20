@@ -202,6 +202,10 @@ Status ProcessPIDUpdates(
     int64_t ts, const system::ProcParser& proc_parser, AgentMetadataState*, CGroupMetadataReader*,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates);
 
+void ApplyProcessParents(
+    AgentMetadataState* state,
+    moodycamel::BlockingConcurrentQueue<std::pair<UPID, UPID>>* process_parents);
+
 /**
  * Deletes metadata for dead objects.
  */

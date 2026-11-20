@@ -303,6 +303,10 @@ Status ProcessPIDUpdates(
   return Status::OK();
 }
 
+void ApplyProcessParents(
+    AgentMetadataState* /*state*/,
+    moodycamel::BlockingConcurrentQueue<std::pair<UPID, UPID>>* /*process_parents*/) {}
+
 Status DeleteMetadataForDeadObjects(AgentMetadataState* state, int64_t retention_time) {
   PX_RETURN_IF_ERROR(
       state->k8s_metadata_state()->CleanupExpiredMetadata(state->current_time(), retention_time));
