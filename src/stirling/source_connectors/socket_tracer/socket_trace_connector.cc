@@ -852,13 +852,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   }
 
   size_t current_conn_tracker_buffer_size = 0;
+  auto table_for = [this](const TransferSpec& spec) -> DataTable* {
+    return spec.enabled ? data_tables_[spec.table_num] : nullptr;
+  };
   for (const auto& conn_tracker : conn_trackers_mgr_.active_trackers()) {
     const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->protocol()];
-
-    DataTable* data_table = nullptr;
-    if (transfer_spec.enabled) {
-      data_table = data_tables_[transfer_spec.table_num];
-    }
+    DataTable* data_table = table_for(transfer_spec);
 
     UpdateTrackerTraceLevel(conn_tracker);
 
@@ -880,7 +879,15 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
       if (protocol_transfer_specs_[kProtocolWebSocket].enabled) {
         conn_tracker->MaybeUpgradeToWebSocket();
       }
-      conn_tracker->MaybeHandOverFromTLS();
+      if (conn_tracker->MaybeHandOverFromTLS()) {
+        conn_tracker->IterationPreTick(iteration_time_, cluster_cidrs, proc_parser_.get(),
+                                       socket_info_mgr_.get());
+        const auto& handed_over_spec = protocol_transfer_specs_[conn_tracker->protocol()];
+        if (handed_over_spec.transfer_fn != nullptr) {
+          current_conn_tracker_buffer_size += handed_over_spec.transfer_fn(
+              *this, ctx, conn_tracker, table_for(handed_over_spec));
+        }
+      }
     } else {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be
