@@ -579,7 +579,85 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
     state->pids_by_upid_[k] = v->Clone();
   }
   state->upids_ = upids_;
+  state->parent_upids_ = parent_upids_;
+  state->parent_upid_order_ = parent_upid_order_;
+  state->cids_by_cgroup_id_ = cids_by_cgroup_id_;
+  state->process_cids_ = process_cids_;
+  state->process_cid_order_ = process_cid_order_;
   return state;
+}
+
+namespace {
+
+template <typename TValue>
+void EmplaceBounded(absl::flat_hash_map<UPID, TValue>* values, std::deque<UPID>* order, UPID upid,
+                    const TValue& value) {
+  if (!values->try_emplace(upid, value).second) {
+    return;
+  }
+  order->push_back(upid);
+  if (order->size() > AgentMetadataState::kMaxProcessParents) {
+    values->erase(order->front());
+    order->pop_front();
+  }
+}
+
+}  // namespace
+
+void AgentMetadataState::AddProcessParent(UPID upid, UPID parent_upid) {
+  EmplaceBounded(&parent_upids_, &parent_upid_order_, upid, parent_upid);
+}
+
+UPID AgentMetadataState::ParentUPID(UPID upid) const {
+  const PIDInfo* pid_info = GetPIDByUPID(upid);
+  if (pid_info != nullptr && pid_info->parent_upid() != UPID()) {
+    return pid_info->parent_upid();
+  }
+  auto it = parent_upids_.find(upid);
+  if (it != parent_upids_.end()) {
+    return it->second;
+  }
+  return UPID();
+}
+
+std::vector<std::pair<UPID, UPID>> AgentMetadataState::ProcessParents() const {
+  std::vector<std::pair<UPID, UPID>> parents(parent_upids_.begin(), parent_upids_.end());
+  for (const auto& [upid, pid_info] : pids_by_upid_) {
+    if (pid_info->parent_upid() != UPID() && !parent_upids_.contains(upid)) {
+      parents.emplace_back(upid, pid_info->parent_upid());
+    }
+  }
+  return parents;
+}
+
+void AgentMetadataState::SetContainerCgroupID(const CID& cid, uint64_t cgroup_id) {
+  cids_by_cgroup_id_[cgroup_id] = cid;
+}
+
+void AgentMetadataState::AddProcessCgroup(UPID upid, uint64_t cgroup_id) {
+  auto it = cids_by_cgroup_id_.find(cgroup_id);
+  if (it != cids_by_cgroup_id_.end()) {
+    EmplaceBounded(&process_cids_, &process_cid_order_, upid, it->second);
+  }
+}
+
+CID AgentMetadataState::ContainerIDByUPID(UPID upid) const {
+  for (int depth = 0; depth < kMaxAncestryDepth; ++depth) {
+    const PIDInfo* pid_info = GetPIDByUPID(upid);
+    if (pid_info != nullptr) {
+      return pid_info->cid();
+    }
+    auto cid_it = process_cids_.find(upid);
+    if (cid_it != process_cids_.end()) {
+      return cid_it->second;
+    }
+    auto it = parent_upids_.find(upid);
+    if (it == parent_upids_.end()) {
+      return "";
+    }
+    upid = it->second;
+  }
+  return "";
 }
 
 std::string AgentMetadataState::DebugString(int indent_level) const {

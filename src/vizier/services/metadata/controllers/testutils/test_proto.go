@@ -178,6 +178,10 @@ upid {
 start_timestamp_ns: 4
 cmdline: "./bin/bash"
 cid: "container_1"
+parent_upid {
+  low: 89000
+  high: 528280977975
+}
 `
 
 // ProcessInfo1PB is the process info for the first created process.
@@ -189,6 +193,10 @@ upid {
 start_timestamp_ns: 4
 process_args: "./bin/bash"
 cid: "container_1"
+parent_upid {
+  low: 89000
+  high: 528280977975
+}
 `
 
 // ProcessCreated2PB is the protobuf for another created process.

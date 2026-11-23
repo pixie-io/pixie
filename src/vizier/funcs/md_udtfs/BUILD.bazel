@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
 
@@ -48,5 +48,14 @@ pl_cc_library(
         "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
         "@com_github_arun11299_cpp_jwt//:cpp_jwt",
         "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+pl_cc_test(
+    name = "md_udtfs_test",
+    srcs = ["md_udtfs_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/shared/metadata:cc_library",
     ],
 )

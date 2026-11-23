@@ -52,6 +52,8 @@ class ProcExitConnector : public BCCSourceConnector {
   ~ProcExitConnector() override = default;
 
   void AcceptProcExitEvent(const struct proc_exit_event_t& event);
+  void AcceptProcForkEvent(const struct proc_fork_event_t& event);
+  void AcceptProcForkEventLoss(uint64_t lost);
 
  protected:
   explicit ProcExitConnector(std::string_view name);
@@ -62,6 +64,7 @@ class ProcExitConnector : public BCCSourceConnector {
 
  private:
   std::vector<struct proc_exit_event_t> events_;
+  std::vector<struct proc_fork_event_t> fork_events_;
 
  private:
   // Update counters related to java process.
@@ -72,6 +75,7 @@ class ProcExitConnector : public BCCSourceConnector {
   prometheus::Counter& java_proc_crashed_counter_;
   prometheus::Counter& java_proc_crashed_with_profiler_counter_;
   prometheus::Counter& java_proc_crashed_without_profiler_counter_;
+  prometheus::Counter& proc_fork_events_lost_counter_;
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 };
 

@@ -22,8 +22,8 @@ namespace px {
 namespace md {
 
 std::string PIDInfo::DebugString() const {
-  return absl::Substitute("upid: $0, exe_path=$1, cmdline=$2, cid=$3", upid().String(), exe_path(),
-                          cmdline(), cid());
+  return absl::Substitute("upid: $0, exe_path=$1, cmdline=$2, cid=$3, parent_upid=$4",
+                          upid().String(), exe_path(), cmdline(), cid(), parent_upid().String());
 }
 
 std::string PIDStartedEvent::DebugString() const {

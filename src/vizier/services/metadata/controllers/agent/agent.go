@@ -410,6 +410,7 @@ func (m *ManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCrea
 			StartTimestampNS: p.StartTimestampNS,
 			ProcessArgs:      p.Cmdline,
 			CID:              p.CID,
+			ParentUPID:       p.ParentUPID,
 		}
 		processInfos[i] = pPb
 	}

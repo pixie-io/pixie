@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <set>
 #include <string>
@@ -385,6 +386,21 @@ class AgentMetadataState : NotCopyable {
     return nullptr;
   }
 
+  static constexpr size_t kMaxProcessParents = 1 << 17;
+  static constexpr int kMaxAncestryDepth = 32;
+
+  void AddProcessParent(UPID upid, UPID parent_upid);
+
+  UPID ParentUPID(UPID upid) const;
+
+  std::vector<std::pair<UPID, UPID>> ProcessParents() const;
+
+  void SetContainerCgroupID(const CID& cid, uint64_t cgroup_id);
+
+  void AddProcessCgroup(UPID upid, uint64_t cgroup_id);
+
+  CID ContainerIDByUPID(UPID upid) const;
+
   void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
     DCHECK(pid_info != nullptr);
     DCHECK_EQ(pid_info->stop_time_ns(), 0);
@@ -454,6 +470,12 @@ class AgentMetadataState : NotCopyable {
    * it is tracked separately as a performance optimization.
    */
   absl::flat_hash_set<md::UPID> upids_;
+
+  absl::flat_hash_map<UPID, UPID> parent_upids_;
+  std::deque<UPID> parent_upid_order_;
+  absl::flat_hash_map<uint64_t, CID> cids_by_cgroup_id_;
+  absl::flat_hash_map<UPID, CID> process_cids_;
+  std::deque<UPID> process_cid_order_;
 };
 
 }  // namespace md

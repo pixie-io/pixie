@@ -38,10 +38,17 @@ namespace stirling {
 namespace proc_exit_tracer {
 
 constexpr uint32_t kPerfBufferPerCPUSizeBytes = 5 * 1024 * 1024;
+constexpr uint32_t kForkPerfBufferPerCPUSizeBytes = 256 * 1024;
 
-const auto kTracepointSpecs =
-    MakeArray<bpf_tools::TracepointSpec>({{std::string("sched:sched_process_exit"),
-                                           std::string("tracepoint__sched__sched_process_exit")}});
+const auto kTracepointSpecs = MakeArray<bpf_tools::TracepointSpec>({
+    {std::string("sched:sched_process_exit"), std::string("tracepoint__sched__sched_process_exit")},
+    {std::string("task:task_newtask"), std::string("tracepoint__task__task_newtask")},
+});
+
+const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
+    {"wake_up_new_task", bpf_tools::BPFProbeAttachType::kEntry, "probe_wake_up_new_task",
+     /*is_syscall*/ false},
+});
 
 void HandleProcExitEvent(void* cb_cookie, void* data, int /*data_size*/) {
   auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
@@ -49,14 +56,26 @@ void HandleProcExitEvent(void* cb_cookie, void* data, int /*data_size*/) {
   connector->AcceptProcExitEvent(*event);
 }
 
+void HandleProcForkEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
+  auto* event = reinterpret_cast<struct proc_fork_event_t*>(data);
+  connector->AcceptProcForkEvent(*event);
+}
+
 void HandleProcExitEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
   // TODO(yzhao): Add stats counter.
+}
+
+void HandleProcForkEventLoss(void* cb_cookie, uint64_t lost) {
+  auto* connector = reinterpret_cast<ProcExitConnector*>(cb_cookie);
+  connector->AcceptProcForkEventLoss(lost);
 }
 
 // Use char array to meet the user's interface, which expects std::string.
 constexpr char kJavaProcCrashedCounter[] = "java_proc_crashed";
 constexpr char kJavaProcCrashedWithProfilerCounter[] = "java_proc_crashed_with_profiler";
 constexpr char kJavaProcCrashedWithoutProfilerCounter[] = "java_proc_crashed_without_profiler";
+constexpr char kProcForkEventsLostCounter[] = "proc_fork_events_lost";
 
 ProcExitConnector::ProcExitConnector(std::string_view name)
     : BCCSourceConnector(name, kTables),
@@ -65,12 +84,22 @@ ProcExitConnector::ProcExitConnector(std::string_view name)
       java_proc_crashed_with_profiler_counter_(BuildCounter(
           kJavaProcCrashedWithProfilerCounter,
           "Count of the crashed Java processes that also had profiler agent attached")),
-      java_proc_crashed_without_profiler_counter_(BuildCounter(
-          kJavaProcCrashedWithoutProfilerCounter,
-          "Count of the crashed Java processes that hadn't attached profiler agent")) {}
+      java_proc_crashed_without_profiler_counter_(
+          BuildCounter(kJavaProcCrashedWithoutProfilerCounter,
+                       "Count of the crashed Java processes that hadn't attached profiler agent")),
+      proc_fork_events_lost_counter_(
+          BuildCounter(kProcForkEventsLostCounter, "Count of the lost process creation events")) {}
 
 void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& event) {
   events_.push_back(event);
+}
+
+void ProcExitConnector::AcceptProcForkEvent(const struct proc_fork_event_t& event) {
+  fork_events_.push_back(event);
+}
+
+void ProcExitConnector::AcceptProcForkEventLoss(uint64_t lost) {
+  proc_fork_events_lost_counter_.Increment(lost);
 }
 
 Status ProcExitConnector::InitImpl() {
@@ -96,9 +125,12 @@ Status ProcExitConnector::InitImpl() {
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>({
       {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, this,
        kPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
+      {"proc_fork_events", HandleProcForkEvent, HandleProcForkEventLoss, this,
+       kForkPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
   });
 
   PX_RETURN_IF_ERROR(bcc_->AttachTracepoints(kTracepointSpecs));
+  PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kProbeSpecs));
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
 
   return Status::OK();
@@ -115,12 +147,19 @@ void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx) {
 
   bcc_->PollPerfBuffers();
 
+  for (const auto& event : fork_events_) {
+    ctx->AddProcessParent(event.upid.ToMetadataUPID(ctx->GetASID()),
+                          event.parent_upid.ToMetadataUPID(ctx->GetASID()));
+  }
+  fork_events_.clear();
+
   DataTable* data_table = data_tables_[0];
   for (auto& event : events_) {
     event.timestamp_ns = ConvertToRealTime(event.timestamp_ns);
     DataTable::RecordBuilder<&kProcExitEventsTable> r(data_table, event.timestamp_ns);
     r.Append<proc_exit_tracer::kTimeIdx>(event.timestamp_ns);
     md::UPID upid(ctx->GetASID(), event.upid.pid, event.upid.start_time_ticks);
+    ctx->AddProcessCgroup(upid, event.cgroup_id);
     r.Append<proc_exit_tracer::kUPIDIdx>(upid.value());
     // Exit code and signals are encoded in the exit_code field of the task_struct of the process.
     // See the description below:

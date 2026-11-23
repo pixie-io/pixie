@@ -55,6 +55,10 @@ class CGroupMetadataReader : public NotCopyable {
                           std::string_view container_id, ContainerType container_type,
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
+  virtual StatusOr<uint64_t> CgroupID(PodQOSClass qos_class, std::string_view pod_id,
+                                      std::string_view container_id,
+                                      ContainerType container_type) const;
+
  private:
   StatusOr<std::string> PodPath(PodQOSClass qos_class, std::string_view pod_id,
                                 std::string_view container_id, ContainerType container_type) const;

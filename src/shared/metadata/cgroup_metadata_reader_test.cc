@@ -17,6 +17,8 @@
  */
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 
+#include <sys/stat.h>
+
 #include <absl/container/flat_hash_set.h>
 
 #include "src/common/testing/testing.h"
@@ -41,6 +43,18 @@ TEST_F(CGroupMetadataReaderTest, read_pid_list) {
   ASSERT_OK(md_reader_->ReadPIDs(PodQOSClass::kBestEffort, "abcd", "c123", ContainerType::kDocker,
                                  &pid_set));
   EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
+}
+
+TEST_F(CGroupMetadataReaderTest, cgroup_id_is_the_inode_of_the_container_directory) {
+  struct stat st;
+  ASSERT_EQ(0, stat("src/shared/metadata/testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/besteffort/"
+                    "podabcd/c123",
+                    &st));
+  ASSERT_OK_AND_EQ(md_reader_->CgroupID(PodQOSClass::kBestEffort, "abcd", "c123",
+                                        ContainerType::kDocker),
+                   st.st_ino);
+  EXPECT_NOT_OK(md_reader_->CgroupID(PodQOSClass::kBestEffort, "abcd", "missing",
+                                     ContainerType::kDocker));
 }
 
 }  // namespace md

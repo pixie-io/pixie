@@ -18,7 +18,17 @@
 
 #include "src/stirling/source_connectors/proc_exit/proc_exit_connector.h"
 
+#include <sys/stat.h>
+
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include <absl/container/flat_hash_map.h>
+
 #include "src/common/exec/subprocess.h"
+#include "src/common/metrics/metrics.h"
+#include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_tables.h"
@@ -31,7 +41,28 @@ namespace proc_exit_tracer {
 using ::px::SubProcess;
 using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::testing::BazelRunfilePath;
+using ::testing::ElementsAre;
 using ::testing::SizeIs;
+
+class ProcessParentContext : public StandaloneContext {
+ public:
+  using StandaloneContext::StandaloneContext;
+
+  void AddProcessParent(const md::UPID& upid, const md::UPID& parent_upid) override {
+    parents_[upid] = parent_upid;
+  }
+
+  void AddProcessCgroup(const md::UPID& upid, uint64_t cgroup_id) override {
+    cgroups_[upid] = cgroup_id;
+  }
+
+  const absl::flat_hash_map<md::UPID, md::UPID>& parents() const { return parents_; }
+  const absl::flat_hash_map<md::UPID, uint64_t>& cgroups() const { return cgroups_; }
+
+ private:
+  absl::flat_hash_map<md::UPID, md::UPID> parents_;
+  absl::flat_hash_map<md::UPID, uint64_t> cgroups_;
+};
 
 // Tests that ProcExitConnector::TransferData() does not throw any failures.
 TEST(ProcExitConnectorTest, TransferData) {
@@ -63,6 +94,102 @@ TEST(ProcExitConnectorTest, TransferData) {
   // So here 0 means it's not set, instead of that it succeeded.
   EXPECT_EQ(result[proc_exit_tracer::kExitCodeIdx]->Get<types::Int64Value>(0), 0);
   EXPECT_EQ(result[proc_exit_tracer::kCommIdx]->Get<types::StringValue>(0), "sleep");
+}
+
+TEST(ProcExitConnectorTest, ReportsParentOfNewProcess) {
+  auto connector = ProcExitConnector::Create("test_proc_exit_connector");
+  ASSERT_TRUE(connector != nullptr);
+  EXPECT_OK(connector->Init());
+  ProcessParentContext context({md::UPID{0, 1, 1}});
+
+  DataTables data_tables{ProcExitConnector::kTables};
+  connector->set_data_tables(data_tables.tables());
+
+  const std::filesystem::path sleep_path =
+      BazelRunfilePath("src/stirling/source_connectors/proc_exit/testing/sleep");
+  SubProcess proc;
+  ASSERT_OK(proc.Start({sleep_path.string()}));
+  system::ProcParser proc_parser;
+  ASSERT_OK_AND_ASSIGN(int64_t start_time, proc_parser.GetPIDStartTimeTicks(proc.child_pid()));
+  ASSERT_OK_AND_ASSIGN(int64_t parent_start_time, proc_parser.GetPIDStartTimeTicks(getpid()));
+  proc.Kill();
+  proc.Wait();
+  connector->TransferData(&context);
+
+  const md::UPID upid(0, proc.child_pid(), start_time);
+  ASSERT_TRUE(context.parents().contains(upid));
+  EXPECT_EQ(context.parents().at(upid), md::UPID(0, getpid(), parent_start_time));
+}
+
+TEST(ProcExitConnectorTest, ReportsCgroupOfExitedProcess) {
+  auto connector = ProcExitConnector::Create("test_proc_exit_connector");
+  ASSERT_TRUE(connector != nullptr);
+  EXPECT_OK(connector->Init());
+  ProcessParentContext context({md::UPID{0, 1, 1}});
+
+  DataTables data_tables{ProcExitConnector::kTables};
+  connector->set_data_tables(data_tables.tables());
+
+  std::string cgroup;
+  std::ifstream ifs("/proc/self/cgroup");
+  for (std::string line; std::getline(ifs, line);) {
+    if (absl::StartsWith(line, "0::")) {
+      cgroup = line.substr(3);
+    }
+  }
+  struct stat st;
+  ASSERT_EQ(0, stat(("/sys/fs/cgroup" + cgroup).c_str(), &st));
+
+  SubProcess proc;
+  ASSERT_OK(proc.Start([] { return 0; }, {}));
+  proc.Wait();
+  connector->TransferData(&context);
+
+  std::vector<uint64_t> cgroups;
+  for (const auto& [upid, cgroup_id] : context.cgroups()) {
+    if (upid.pid() == static_cast<uint32_t>(proc.child_pid())) {
+      cgroups.push_back(cgroup_id);
+    }
+  }
+  EXPECT_THAT(cgroups, ElementsAre(st.st_ino));
+}
+
+TEST(ProcExitConnectorTest, ReportsParentOfShortLivedProcess) {
+  auto connector = ProcExitConnector::Create("test_proc_exit_connector");
+  ASSERT_TRUE(connector != nullptr);
+  EXPECT_OK(connector->Init());
+  ProcessParentContext context({md::UPID{0, 1, 1}});
+
+  DataTables data_tables{ProcExitConnector::kTables};
+  connector->set_data_tables(data_tables.tables());
+
+  system::ProcParser proc_parser;
+  ASSERT_OK_AND_ASSIGN(int64_t parent_start_time, proc_parser.GetPIDStartTimeTicks(getpid()));
+  SubProcess proc;
+  ASSERT_OK(proc.Start([] { return 0; }, {}));
+  proc.Wait();
+  connector->TransferData(&context);
+
+  std::vector<md::UPID> parents;
+  for (const auto& [upid, parent_upid] : context.parents()) {
+    if (upid.pid() == static_cast<uint32_t>(proc.child_pid())) {
+      parents.push_back(parent_upid);
+    }
+  }
+  EXPECT_THAT(parents, ElementsAre(md::UPID(0, getpid(), parent_start_time)));
+}
+
+TEST(ProcExitConnectorTest, CountsLostForkEvents) {
+  auto connector = ProcExitConnector::Create("test_proc_exit_connector");
+  static_cast<ProcExitConnector*>(connector.get())->AcceptProcForkEventLoss(3);
+
+  double lost = 0;
+  for (const auto& family : GetMetricsRegistry().Collect()) {
+    if (family.name == "proc_fork_events_lost") {
+      lost = family.metric[0].counter.value;
+    }
+  }
+  EXPECT_EQ(lost, 3);
 }
 
 }  // namespace proc_exit_tracer

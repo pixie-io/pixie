@@ -55,6 +55,10 @@ class PIDInfo {
 
   const CID& cid() const { return cid_; }
 
+  UPID parent_upid() const { return parent_upid_; }
+
+  void set_parent_upid(UPID parent_upid) { parent_upid_ = parent_upid; }
+
   std::unique_ptr<PIDInfo> Clone() {
     auto pid_info = std::make_unique<PIDInfo>(*this);
     return pid_info;
@@ -63,7 +67,7 @@ class PIDInfo {
   bool operator==(const PIDInfo& other) const {
     return (other.upid_ == upid_) && (other.exe_path_ == exe_path_) &&
            (other.cmdline_ == cmdline_) && (other.cid_ == cid_) &&
-           (other.stop_time_ns_ == stop_time_ns_);
+           (other.stop_time_ns_ == stop_time_ns_) && (other.parent_upid_ == parent_upid_);
   }
 
   bool operator!=(const PIDInfo& other) const { return !(other == *this); }
@@ -87,6 +91,8 @@ class PIDInfo {
    * The container running this PID.
    */
   CID cid_;
+
+  UPID parent_upid_;
 
   /**
    * The time that this PID stopped running. If 0 we can assume it's still running.

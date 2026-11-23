@@ -241,11 +241,7 @@ class UPIDToContainerIDUDF : public ScalarUDF {
 
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);
-    auto pid = md->GetPIDByUPID(upid);
-    if (pid == nullptr) {
-      return "";
-    }
-    return pid->cid();
+    return md->ContainerIDByUPID(upid);
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -264,15 +260,37 @@ class UPIDToContainerIDUDF : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
+class UPIDToParentUPIDUDF : public ScalarUDF {
+ public:
+  UInt128Value Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    return md->ParentUPID(md::UPID(upid_uint128)).value();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the UPID of the parent process from a UPID.")
+        .Details(
+            "Gets the Unique Process ID (UPID) of the parent of the process with the given UPID. "
+            "If the parent is not known, this function will return a UPID of zero.")
+        .Example("df.parent_upid = px.upid_to_parent_upid(df.upid)")
+        .Arg("upid", "The UPID of the process to get the parent for.")
+        .Returns("The UPID of the parent process.");
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<UPIDToParentUPIDUDF>(types::ST_UPID, {types::ST_NONE})};
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
 inline const md::ContainerInfo* UPIDToContainer(const px::md::AgentMetadataState* md,
                                                 types::UInt128Value upid_value) {
   auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
   auto upid = md::UPID(upid_uint128);
-  auto pid = md->GetPIDByUPID(upid);
-  if (pid == nullptr) {
-    return nullptr;
-  }
-  return md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+  return md->k8s_metadata_state().ContainerInfoByID(md->ContainerIDByUPID(upid));
 }
 
 class UPIDToContainerNameUDF : public ScalarUDF {

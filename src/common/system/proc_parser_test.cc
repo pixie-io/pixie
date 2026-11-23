@@ -277,6 +277,11 @@ TEST_F(ProcParserTest, read_pid_start_time) {
   ASSERT_OK_AND_EQ(parser_->GetPIDStartTimeTicks(123), 14329);
 }
 
+TEST_F(ProcParserTest, read_ppid) {
+  PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
+  ASSERT_OK_AND_EQ(parser_->GetPPID(123), 3260);
+}
+
 TEST_F(ProcParserTest, read_pid_cmdline) {
   PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   EXPECT_THAT("/usr/lib/slack/slack --force-device-scale-factor=1.5 --high-dpi-support=1",
