@@ -42,13 +42,13 @@ namespace dns {
 class PxDnsParserListener : public DnsParserListener {
  public:
   void onDnsRec(std::string name, in_addr addr) override {
-    records_.emplace_back(DNSRecord{std::move(name), "", {InetAddrFamily::kIPv4, addr}});
+    records_.emplace_back(DNSRecord{std::move(name), "", {InetAddrFamily::kIPv4, addr}, "", ""});
   }
   void onDnsRec(std::string name, in6_addr addr) override {
-    records_.emplace_back(DNSRecord{std::move(name), "", {InetAddrFamily::kIPv6, addr}});
+    records_.emplace_back(DNSRecord{std::move(name), "", {InetAddrFamily::kIPv6, addr}, "", ""});
   }
   void onDnsRec(std::string name, std::string cname) override {
-    records_.emplace_back(DNSRecord{std::move(name), std::move(cname), {}});
+    records_.emplace_back(DNSRecord{std::move(name), std::move(cname), {}, "", ""});
   }
 
   std::vector<DNSRecord> records_;

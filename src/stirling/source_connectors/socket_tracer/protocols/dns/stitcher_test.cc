@@ -82,7 +82,7 @@ TEST(DnsStitcherTest, RecordOutput) {
   ip_addr.addr = addr_tmp;
 
   std::vector<DNSRecord> dns_records;
-  dns_records.push_back(DNSRecord{"pixie.ai", "", ip_addr});
+  dns_records.push_back(DNSRecord{"pixie.ai", "", ip_addr, "", ""});
 
   int t = 0;
   Frame req0_frame = CreateReqFrame(++t, 0);
