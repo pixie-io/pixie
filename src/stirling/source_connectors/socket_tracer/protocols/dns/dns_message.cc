@@ -18,6 +18,8 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/dns_message.h"
 
+#include <utility>
+
 namespace px {
 namespace stirling {
 namespace protocols {

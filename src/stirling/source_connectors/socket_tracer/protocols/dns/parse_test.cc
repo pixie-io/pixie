@@ -20,11 +20,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/dns/parse.h"
-
 #include <string>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/dns_message_testdata.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/dns/parse.h"
 
 namespace px {
 namespace stirling {
