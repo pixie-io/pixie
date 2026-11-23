@@ -37,6 +37,8 @@ struct proc_exit_event_t {
   // See https://unix.stackexchange.com/questions/655950/command-args-and-process-name
   // It's assigned by bpf_get_current_comm() hence the name comm.
   char comm[MAX_CMD_SIZE];
+
+  uint64_t cgroup_id;
 };
 
 struct proc_fork_event_t {

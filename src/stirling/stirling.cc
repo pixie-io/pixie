@@ -211,6 +211,9 @@ class StirlingImpl final : public Stirling {
   void RegisterProcessParentCallback(ProcessParentCallback f) override {
     process_parent_callback_ = f;
   }
+  void RegisterProcessCgroupCallback(ProcessCgroupCallback f) override {
+    process_cgroup_callback_ = f;
+  }
   std::unique_ptr<ConnectorContext> GetContext();
 
   void Run() override;
@@ -275,6 +278,7 @@ class StirlingImpl final : public Stirling {
 
   AgentMetadataCallback agent_metadata_callback_ = nullptr;
   ProcessParentCallback process_parent_callback_ = nullptr;
+  ProcessCgroupCallback process_cgroup_callback_ = nullptr;
   AgentMetadataType agent_metadata_;
 
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
@@ -426,8 +430,8 @@ Status StirlingImpl::Init() {
 
 std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   if (agent_metadata_callback_ != nullptr) {
-    return std::unique_ptr<ConnectorContext>(
-        new AgentContext(agent_metadata_callback_(), process_parent_callback_));
+    return std::unique_ptr<ConnectorContext>(new AgentContext(
+        agent_metadata_callback_(), process_parent_callback_, process_cgroup_callback_));
   }
   return std::unique_ptr<ConnectorContext>(new SystemWideStandaloneContext());
 }

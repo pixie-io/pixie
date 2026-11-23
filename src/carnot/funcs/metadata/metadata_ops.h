@@ -241,11 +241,7 @@ class UPIDToContainerIDUDF : public ScalarUDF {
 
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);
-    auto pid = md->GetPIDByUPIDOrAncestor(upid);
-    if (pid == nullptr) {
-      return "";
-    }
-    return pid->cid();
+    return md->ContainerIDByUPID(upid);
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -294,11 +290,7 @@ inline const md::ContainerInfo* UPIDToContainer(const px::md::AgentMetadataState
                                                 types::UInt128Value upid_value) {
   auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
   auto upid = md::UPID(upid_uint128);
-  auto pid = md->GetPIDByUPIDOrAncestor(upid);
-  if (pid == nullptr) {
-    return nullptr;
-  }
-  return md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+  return md->k8s_metadata_state().ContainerInfoByID(md->ContainerIDByUPID(upid));
 }
 
 class UPIDToContainerNameUDF : public ScalarUDF {

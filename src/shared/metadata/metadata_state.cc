@@ -581,6 +581,9 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
   state->upids_ = upids_;
   state->parent_upids_ = parent_upids_;
   state->parent_upid_order_ = parent_upid_order_;
+  state->cids_by_cgroup_id_ = cids_by_cgroup_id_;
+  state->process_cids_ = process_cids_;
+  state->process_cid_order_ = process_cid_order_;
   return state;
 }
 
@@ -630,6 +633,20 @@ PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const {
     upid = it->second;
   }
   return nullptr;
+}
+
+void AgentMetadataState::SetContainerCgroupID(const CID& cid, uint64_t cgroup_id) {
+  cids_by_cgroup_id_[cgroup_id] = cid;
+}
+
+void AgentMetadataState::AddProcessCgroup(UPID /*upid*/, uint64_t /*cgroup_id*/) {}
+
+CID AgentMetadataState::ContainerIDByUPID(UPID upid) const {
+  const PIDInfo* pid_info = GetPIDByUPIDOrAncestor(upid);
+  if (pid_info == nullptr) {
+    return "";
+  }
+  return pid_info->cid();
 }
 
 std::string AgentMetadataState::DebugString(int indent_level) const {

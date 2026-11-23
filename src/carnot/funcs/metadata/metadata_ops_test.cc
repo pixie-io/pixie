@@ -192,6 +192,15 @@ TEST_F(MetadataOpsTest, upid_to_pod_name_resolves_through_parent) {
   udf_tester.ForInput(child_upid).Expect("pl/running_pod");
 }
 
+TEST_F(MetadataOpsTest, upid_to_pod_name_resolves_through_cgroup) {
+  metadata_state_->SetContainerCgroupID("pod1_container_1", 77);
+  metadata_state_->AddProcessCgroup(md::UPID(123, 900, 5000), 77);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<UPIDToPodNameUDF>(std::move(function_ctx));
+  auto upid = types::UInt128Value(528280978308, 5000);
+  udf_tester.ForInput(upid).Expect("pl/running_pod");
+}
+
 TEST_F(MetadataOpsTest, upid_to_parent_upid_test) {
   metadata_state_->AddProcessParent(md::UPID(123, 900, 5000), md::UPID(123, 567, 89101));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);

@@ -157,6 +157,8 @@ class Stirling : public NotCopyable {
 
   virtual void RegisterProcessParentCallback(ProcessParentCallback f) = 0;
 
+  virtual void RegisterProcessCgroupCallback(ProcessCgroupCallback f) = 0;
+
   /**
    * Main data collection call. This version blocks, so make sure to wrap a thread around it.
    */

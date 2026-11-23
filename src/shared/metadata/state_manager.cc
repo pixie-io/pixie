@@ -61,6 +61,10 @@ void AgentMetadataStateManagerImpl::AddProcessParent(UPID upid, UPID parent_upid
   process_parents_.enqueue({upid, parent_upid});
 }
 
+void AgentMetadataStateManagerImpl::AddProcessCgroup(UPID upid, uint64_t cgroup_id) {
+  process_cgroups_.enqueue({upid, cgroup_id});
+}
+
 Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
   // There should never be more than one update, but this just here for safety.
   std::lock_guard<std::mutex> state_update_lock(metadata_state_update_lock_);
@@ -97,6 +101,7 @@ Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
         ProcessPIDUpdates(ts, proc_parser_, shadow_state.get(), md_reader_.get(), &pid_updates_));
   }
   ApplyProcessParents(shadow_state.get(), &process_parents_);
+  ApplyProcessCgroups(shadow_state.get(), &process_cgroups_);
 
   // Update the pod/service CIDRs if they have been updated.
   {
@@ -301,6 +306,11 @@ Status ProcessPIDUpdates(
       continue;
     }
 
+    auto cgroup_id = md_reader->CgroupID(pod_info->qos_class(), pod_id, cid, cinfo->type());
+    if (cgroup_id.ok()) {
+      md->SetContainerCgroupID(cid, cgroup_id.ValueOrDie());
+    }
+
     ProcessContainerPIDUpdates(cid, ts, proc_parser, md, cinfo->mutable_active_upids(),
                                &cgroups_active_pids, pid_updates);
   }
@@ -314,6 +324,15 @@ void ApplyProcessParents(
   std::pair<UPID, UPID> process_parent;
   while (process_parents->try_dequeue(process_parent)) {
     state->AddProcessParent(process_parent.first, process_parent.second);
+  }
+}
+
+void ApplyProcessCgroups(
+    AgentMetadataState* state,
+    moodycamel::BlockingConcurrentQueue<std::pair<UPID, uint64_t>>* process_cgroups) {
+  std::pair<UPID, uint64_t> process_cgroup;
+  while (process_cgroups->try_dequeue(process_cgroup)) {
+    state->AddProcessCgroup(process_cgroup.first, process_cgroup.second);
   }
 }
 

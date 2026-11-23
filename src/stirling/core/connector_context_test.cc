@@ -59,5 +59,20 @@ TEST(AgentContextTest, ForwardsProcessParents) {
   EXPECT_THAT(parents, ElementsAre(Pair(md::UPID{1, 300, 3000}, md::UPID{1, 100, 1000})));
 }
 
+TEST(AgentContextTest, ReportsProcessCgroup) {
+  event::RealTimeSystem time_system;
+  auto state = std::make_shared<md::AgentMetadataState>("myhost", 1, 123, sole::uuid4(), "mypod",
+                                                        sole::uuid4(), "myvizier",
+                                                        "myviziernamespace", &time_system);
+  std::vector<std::pair<md::UPID, uint64_t>> cgroups;
+  AgentContext ctx(state, nullptr, [&cgroups](md::UPID upid, uint64_t cgroup_id) {
+    cgroups.emplace_back(upid, cgroup_id);
+  });
+
+  ctx.AddProcessCgroup(md::UPID{1, 300, 3000}, 77);
+
+  EXPECT_THAT(cgroups, ElementsAre(Pair(md::UPID{1, 300, 3000}, 77)));
+}
+
 }  // namespace stirling
 }  // namespace px

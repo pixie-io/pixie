@@ -51,6 +51,7 @@ class StandaloneAgentMetadataStateManager : public AgentMetadataStateManager {
   };
 
   void AddProcessParent(UPID, UPID) override{/* empty */};
+  void AddProcessCgroup(UPID, uint64_t) override{/* empty */};
   void SetServiceCIDR(CIDRBlock) override{/* empty */};
   void SetPodCIDR(std::vector<CIDRBlock>) override{/* empty */};
   std::unique_ptr<PIDStatusEvent> GetNextPIDStatusEvent() override { return nullptr; };

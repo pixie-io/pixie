@@ -45,6 +45,8 @@ using AgentMetadataCallback = std::function<AgentMetadataType()>;
 
 using ProcessParentCallback = std::function<void(md::UPID, md::UPID)>;
 
+using ProcessCgroupCallback = std::function<void(md::UPID, uint64_t)>;
+
 class DataElement {
  public:
   constexpr DataElement() = delete;

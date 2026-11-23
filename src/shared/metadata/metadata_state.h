@@ -397,6 +397,12 @@ class AgentMetadataState : NotCopyable {
 
   PIDInfo* GetPIDByUPIDOrAncestor(UPID upid) const;
 
+  void SetContainerCgroupID(const CID& cid, uint64_t cgroup_id);
+
+  void AddProcessCgroup(UPID upid, uint64_t cgroup_id);
+
+  CID ContainerIDByUPID(UPID upid) const;
+
   void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
     DCHECK(pid_info != nullptr);
     DCHECK_EQ(pid_info->stop_time_ns(), 0);
@@ -469,6 +475,9 @@ class AgentMetadataState : NotCopyable {
 
   absl::flat_hash_map<UPID, UPID> parent_upids_;
   std::deque<UPID> parent_upid_order_;
+  absl::flat_hash_map<uint64_t, CID> cids_by_cgroup_id_;
+  absl::flat_hash_map<UPID, CID> process_cids_;
+  std::deque<UPID> process_cid_order_;
 };
 
 }  // namespace md

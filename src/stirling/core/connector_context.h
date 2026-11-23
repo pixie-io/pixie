@@ -77,6 +77,8 @@ class ConnectorContext {
   virtual void RefreshUPIDList() = 0;
 
   virtual void AddProcessParent(const md::UPID& /*upid*/, const md::UPID& /*parent_upid*/) {}
+
+  virtual void AddProcessCgroup(const md::UPID& /*upid*/, uint64_t /*cgroup_id*/) {}
 };
 
 /**
@@ -90,9 +92,11 @@ class AgentContext : public ConnectorContext {
    * should not be held onto for extended periods of time.
    */
   explicit AgentContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state,
-                        ProcessParentCallback process_parent_callback = nullptr)
+                        ProcessParentCallback process_parent_callback = nullptr,
+                        ProcessCgroupCallback process_cgroup_callback = nullptr)
       : agent_metadata_state_(std::move(agent_metadata_state)),
-        process_parent_callback_(std::move(process_parent_callback)) {
+        process_parent_callback_(std::move(process_parent_callback)),
+        process_cgroup_callback_(std::move(process_cgroup_callback)) {
     DCHECK(agent_metadata_state_ != nullptr);
   }
 
@@ -124,9 +128,16 @@ class AgentContext : public ConnectorContext {
     }
   }
 
+  void AddProcessCgroup(const md::UPID& upid, uint64_t cgroup_id) override {
+    if (process_cgroup_callback_ != nullptr) {
+      process_cgroup_callback_(upid, cgroup_id);
+    }
+  }
+
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
   ProcessParentCallback process_parent_callback_;
+  ProcessCgroupCallback process_cgroup_callback_;
 };
 
 /**

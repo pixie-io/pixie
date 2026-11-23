@@ -197,6 +197,14 @@ class FakePIDData : public MockCGroupMetadataReader {
 
     return error::NotFound("no found");
   }
+
+  StatusOr<uint64_t> CgroupID(PodQOSClass, std::string_view, std::string_view container_id,
+                              ContainerType) const override {
+    if (container_id == "container_id1") {
+      return 77;
+    }
+    return error::NotFound("no found");
+  }
 };
 
 // Generates some test updates for entry into the AgentMetadataState.
@@ -423,6 +431,50 @@ TEST_F(AgentMetadataStateTest, short_lived_process_resolves_to_ancestor) {
   auto cloned = metadata_state_.CloneToShared();
   ASSERT_NE(cloned->GetPIDByUPIDOrAncestor(grandchild), nullptr);
   EXPECT_EQ(cloned->GetPIDByUPIDOrAncestor(grandchild)->upid(), parent);
+}
+
+TEST_F(AgentMetadataStateTest, process_resolves_to_the_container_of_its_cgroup) {
+  UPID process(kASID, 300 /*pid*/, 3000 /*ts*/);
+  UPID child(kASID, 301 /*pid*/, 3001 /*ts*/);
+  UPID other(kASID, 302 /*pid*/, 3002 /*ts*/);
+  metadata_state_.SetContainerCgroupID("container_id1", 77);
+  metadata_state_.AddProcessCgroup(process, 77);
+  metadata_state_.AddProcessCgroup(other, 78);
+  metadata_state_.AddProcessParent(child, process);
+
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(process), "container_id1");
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(child), "container_id1");
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(other), "");
+  EXPECT_EQ(metadata_state_.CloneToShared()->ContainerIDByUPID(process), "container_id1");
+}
+
+TEST_F(AgentMetadataStateTest, process_cgroups_are_bounded) {
+  metadata_state_.SetContainerCgroupID("container_id1", 77);
+  for (uint32_t i = 0; i <= AgentMetadataState::kMaxProcessParents; ++i) {
+    metadata_state_.AddProcessCgroup(UPID(kASID, 1000 + i, 1 /*ts*/), 77);
+  }
+
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(UPID(kASID, 1000 /*pid*/, 1 /*ts*/)), "");
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(UPID(kASID, 1001 /*pid*/, 1 /*ts*/)),
+            "container_id1");
+}
+
+TEST_F(AgentMetadataStateTest, process_cgroups_are_applied_after_the_scan) {
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+  GenerateTestUpdateEvents(&updates);
+  ASSERT_OK(ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_, &updates));
+  FakePIDData md_reader;
+  system::ProcParser proc_parser;
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> pid_updates;
+  ASSERT_OK(ProcessPIDUpdates(1000, proc_parser, &metadata_state_, &md_reader, &pid_updates));
+
+  UPID process(kASID, 300 /*pid*/, 3000 /*ts*/);
+  moodycamel::BlockingConcurrentQueue<std::pair<UPID, uint64_t>> process_cgroups;
+  process_cgroups.enqueue({process, 77});
+  ApplyProcessCgroups(&metadata_state_, &process_cgroups);
+
+  EXPECT_EQ(0, process_cgroups.size_approx());
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(process), "container_id1");
 }
 
 TEST_F(AgentMetadataStateTest, reported_parent_fills_missing_parent) {

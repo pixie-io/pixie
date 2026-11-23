@@ -16,7 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <sys/stat.h>
+
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -101,6 +104,18 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
     pid_set->emplace(pid);
   }
   return Status::OK();
+}
+
+StatusOr<uint64_t> CGroupMetadataReader::CgroupID(PodQOSClass qos_class, std::string_view pod_id,
+                                                  std::string_view container_id,
+                                                  ContainerType container_type) const {
+  PX_ASSIGN_OR_RETURN(std::string fpath, PodPath(qos_class, pod_id, container_id, container_type));
+
+  struct stat st;
+  if (stat(std::filesystem::path(fpath).parent_path().c_str(), &st) != 0) {
+    return error::NotFound("Failed to stat the directory of $0", fpath);
+  }
+  return st.st_ino;
 }
 
 }  // namespace md

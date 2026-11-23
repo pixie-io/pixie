@@ -159,6 +159,7 @@ void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx) {
     DataTable::RecordBuilder<&kProcExitEventsTable> r(data_table, event.timestamp_ns);
     r.Append<proc_exit_tracer::kTimeIdx>(event.timestamp_ns);
     md::UPID upid(ctx->GetASID(), event.upid.pid, event.upid.start_time_ticks);
+    ctx->AddProcessCgroup(upid, event.cgroup_id);
     r.Append<proc_exit_tracer::kUPIDIdx>(upid.value());
     // Exit code and signals are encoded in the exit_code field of the task_struct of the process.
     // See the description below:
