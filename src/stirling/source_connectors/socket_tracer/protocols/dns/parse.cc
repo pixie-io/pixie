@@ -20,13 +20,16 @@
 
 #include <arpa/inet.h>
 #include <dnsparser/include/dnsparser.h>
+#include <cstring>
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/inet_utils.h"
 #include "src/common/base/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/dns/dns_message.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 #include "src/stirling/utils/parse_state.h"
@@ -51,8 +54,83 @@ class PxDnsParserListener : public DnsParserListener {
   std::vector<DNSRecord> records_;
 };
 
+namespace {
+
+constexpr uint16_t kOpcodeMask = ((1 << kOpcodeWidth) - 1) << kOpcodePos;
+
+void ExtractHeader(std::string_view msg, DNSHeader* header) {
+  BinaryDecoder decoder(msg);
+  header->txid = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  header->flags = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  header->num_queries = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  header->num_answers = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  header->num_auth = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  header->num_addl = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+}
+
+std::vector<DNSRecord> RecordsFromWalk(DNSMessageInfo* info) {
+  std::vector<DNSRecord> records;
+  const bool is_response = EXTRACT_DNS_FLAG(info->flags, kQRPos, kQRWidth) == 1;
+  if (!is_response) {
+    for (auto& q : info->questions) {
+      DNSRecord r;
+      r.name = std::move(q.name);
+      if (q.qtype == kDNSTypeA) {
+        r.addr = InetAddr{InetAddrFamily::kIPv4, in_addr{}};
+      } else if (q.qtype == kDNSTypeAAAA) {
+        r.addr = InetAddr{InetAddrFamily::kIPv6, in6_addr{}};
+      } else {
+        r.type = DNSTypeName(q.qtype);
+      }
+      records.push_back(std::move(r));
+    }
+    return records;
+  }
+  for (auto& a : info->answers) {
+    DNSRecord r;
+    r.name = std::move(a.name);
+    switch (a.type) {
+      case kDNSTypeA: {
+        in_addr addr;
+        memcpy(&addr, a.addr.data(), sizeof(addr));
+        r.addr = InetAddr{InetAddrFamily::kIPv4, addr};
+      } break;
+      case kDNSTypeAAAA: {
+        in6_addr addr;
+        memcpy(&addr, a.addr.data(), sizeof(addr));
+        r.addr = InetAddr{InetAddrFamily::kIPv6, addr};
+      } break;
+      case kDNSTypeCNAME:
+        r.cname = std::move(a.target);
+        break;
+      case kDNSTypePTR:
+        r.type = "PTR";
+        r.ptr = std::move(a.target);
+        break;
+      default:
+        continue;
+    }
+    records.push_back(std::move(r));
+  }
+  return records;
+}
+
+}  // namespace
+
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result) {
   PX_UNUSED(type);
+
+  DNSMessageInfo info;
+  if (WalkDNSMessage(*buf, &info)) {
+    const std::string_view msg = buf->substr(0, info.length);
+    buf->remove_prefix(info.length);
+    if ((info.flags & kOpcodeMask) != 0) {
+      return ParseState::kIgnored;
+    }
+    ExtractHeader(msg, &result->header);
+    result->AddRecords(RecordsFromWalk(&info));
+    return ParseState::kSuccess;
+  }
 
   PxDnsParserListener response_handler;
   std::unique_ptr<DnsParser> parser = DnsParserNew(&response_handler);
@@ -63,13 +141,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result)
 
   // DnsParser ensures there is a complete header.
   CTX_DCHECK_GT(buf->size(), sizeof(DNSHeader));
-  BinaryDecoder decoder(*buf);
-  result->header.txid = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
-  result->header.flags = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_queries = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_answers = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_auth = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_addl = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  ExtractHeader(*buf, &result->header);
 
   // The ValueOr(0xffff) conditions should never trigger, since there are enough bytes.
   CTX_DCHECK_NE(result->header.flags, 0xffff);
