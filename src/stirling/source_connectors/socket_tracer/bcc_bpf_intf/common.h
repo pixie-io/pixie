@@ -52,6 +52,7 @@ enum traffic_protocol_t {
   kProtocolMux = 11,
   kProtocolAMQP = 12,
   kProtocolTLS = 13,
+  kProtocolWebSocket = 14,
 // We use magic enum to iterate through protocols in C++ land,
 // and don't want the C-enum-size trick to show up there.
 #ifndef __cplusplus

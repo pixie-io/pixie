@@ -45,6 +45,7 @@
 #include "src/stirling/utils/stat_counter.h"
 
 DECLARE_bool(treat_loopback_as_in_cluster);
+DECLARE_uint64(max_body_bytes);
 constexpr int64_t kUnsetPIDFD = -1;
 DECLARE_int64(stirling_conn_trace_pid);
 DECLARE_int64(stirling_conn_trace_fd);
@@ -327,6 +328,8 @@ class ConnTracker : NotCopyMoveable {
   }
 
   const conn_id_t& conn_id() const { return conn_id_; }
+  bool MaybeHandOverFromTLS();
+
   traffic_protocol_t protocol() const { return protocol_; }
   endpoint_role_t role() const { return role_; }
   bool ssl() const { return ssl_; }
@@ -480,6 +483,8 @@ class ConnTracker : NotCopyMoveable {
    * Should be called once per sampling, after ProcessToRecords().
    */
   void IterationPostTick();
+
+  bool MaybeUpgradeToWebSocket();
 
   /**
    * Sets the duration after which a connection is deemed to be inactive.
@@ -703,6 +708,12 @@ class ConnTracker : NotCopyMoveable {
   bool is_tracked_upid_ = false;
 
   traffic_protocol_t protocol_ = kProtocolUnknown;
+  traffic_protocol_t upgraded_from_ = kProtocolUnknown;
+
+  traffic_protocol_t tls_handover_protocol_ = kProtocolUnknown;
+  std::vector<std::variant<std::unique_ptr<SocketDataEvent>, std::unique_ptr<HTTP2HeaderEvent>,
+                           std::unique_ptr<HTTP2DataEvent>>>
+      tls_handover_events_;
   endpoint_role_t role_ = kRoleUnknown;
   bool ssl_ = false;
   ssl_source_t ssl_source_ = kSSLNone;

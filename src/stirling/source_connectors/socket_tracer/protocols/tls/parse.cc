@@ -19,10 +19,12 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <absl/strings/str_format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "src/stirling/utils/binary_decoder.h"
@@ -41,6 +43,148 @@ constexpr size_t kSNIExtensionMinimumLength = 3;
 // In TLS 1.3, Random is 32 bytes.
 // In TLS 1.2 and earlier, gmt_unix_time is 4 bytes and Random is 28 bytes.
 constexpr size_t kRandomStructLength = 32;
+
+constexpr uint16_t kSNIExtension = 0x0000;
+constexpr uint16_t kALPNExtension = 0x0010;
+constexpr uint16_t kSupportedGroupsExtension = 0x000a;
+constexpr uint16_t kSupportedVersionsExtension = 0x002b;
+constexpr uint16_t kKeyShareExtension = 0x0033;
+
+constexpr std::pair<uint16_t, std::string_view> kVersionNames[] = {
+    {0x0300, "SSLv3"},   {0x0301, "TLSv1.0"}, {0x0302, "TLSv1.1"},
+    {0x0303, "TLSv1.2"}, {0x0304, "TLSv1.3"},
+};
+
+constexpr std::pair<uint16_t, std::string_view> kCipherSuiteNames[] = {
+    {0x1301, "TLS_AES_128_GCM_SHA256"},
+    {0x1302, "TLS_AES_256_GCM_SHA384"},
+    {0x1303, "TLS_CHACHA20_POLY1305_SHA256"},
+    {0xc02b, "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"},
+    {0xc02c, "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"},
+    {0xc02f, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+    {0xc030, "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"},
+    {0xcca8, "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"},
+    {0xcca9, "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"},
+    {0xc009, "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA"},
+    {0xc00a, "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA"},
+    {0xc013, "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"},
+    {0xc014, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA"},
+    {0x009c, "TLS_RSA_WITH_AES_128_GCM_SHA256"},
+    {0x009d, "TLS_RSA_WITH_AES_256_GCM_SHA384"},
+    {0x002f, "TLS_RSA_WITH_AES_128_CBC_SHA"},
+    {0x0035, "TLS_RSA_WITH_AES_256_CBC_SHA"},
+    {0x000a, "TLS_RSA_WITH_3DES_EDE_CBC_SHA"},
+};
+
+constexpr std::pair<uint16_t, std::string_view> kGroupNames[] = {
+    {0x0017, "secp256r1"},
+    {0x0018, "secp384r1"},
+    {0x0019, "secp521r1"},
+    {0x001d, "x25519"},
+    {0x001e, "x448"},
+    {0x0100, "ffdhe2048"},
+    {0x0101, "ffdhe3072"},
+    {0x0200, "MLKEM512"},
+    {0x0201, "MLKEM768"},
+    {0x0202, "MLKEM1024"},
+    {0x11eb, "SecP256r1MLKEM768"},
+    {0x11ec, "X25519MLKEM768"},
+    {0x6399, "X25519Kyber768Draft00"},
+};
+
+template <size_t N>
+std::string CodeName(const std::pair<uint16_t, std::string_view> (&names)[N], uint16_t code) {
+  for (const auto& [value, name] : names) {
+    if (value == code) {
+      return std::string(name);
+    }
+  }
+  return absl::StrFormat("0x%04x", code);
+}
+
+std::optional<std::vector<std::string>> ExtractALPN(std::string_view data) {
+  BinaryDecoder decoder(data);
+  PX_ASSIGN_OR(auto list_length, decoder.ExtractBEInt<uint16_t>(), return std::nullopt);
+  if (list_length != decoder.BufSize()) {
+    return std::nullopt;
+  }
+  std::vector<std::string> protocols;
+  while (decoder.BufSize() > 0) {
+    PX_ASSIGN_OR(auto length, decoder.ExtractBEInt<uint8_t>(), return std::nullopt);
+    PX_ASSIGN_OR(auto protocol, decoder.ExtractString(length), return std::nullopt);
+    protocols.emplace_back(protocol);
+  }
+  return protocols;
+}
+
+std::optional<uint16_t> ExtractLeadingU16(std::string_view data) {
+  BinaryDecoder decoder(data);
+  PX_ASSIGN_OR(auto value, decoder.ExtractBEInt<uint16_t>(), return std::nullopt);
+  return value;
+}
+
+std::vector<std::string> ExtractGroups(std::string_view data) {
+  BinaryDecoder decoder(data);
+  std::vector<std::string> groups;
+  PX_ASSIGN_OR(auto list_length, decoder.ExtractBEInt<uint16_t>(), return groups);
+  if (list_length != decoder.BufSize()) {
+    return groups;
+  }
+  while (decoder.BufSize() >= sizeof(uint16_t)) {
+    PX_ASSIGN_OR(auto group, decoder.ExtractBEInt<uint16_t>(), return groups);
+    groups.push_back(CodeName(kGroupNames, group));
+  }
+  return groups;
+}
+
+std::vector<std::string> ExtractKeyShareGroups(std::string_view data) {
+  BinaryDecoder decoder(data);
+  std::vector<std::string> groups;
+  PX_ASSIGN_OR(auto list_length, decoder.ExtractBEInt<uint16_t>(), return groups);
+  if (list_length != decoder.BufSize()) {
+    return groups;
+  }
+  while (decoder.BufSize() > 0) {
+    PX_ASSIGN_OR(auto group, decoder.ExtractBEInt<uint16_t>(), return groups);
+    PX_ASSIGN_OR(auto key_length, decoder.ExtractBEInt<uint16_t>(), return groups);
+    if (!decoder.ExtractBufIgnore(key_length).ok()) {
+      return groups;
+    }
+    groups.push_back(CodeName(kGroupNames, group));
+  }
+  return groups;
+}
+
+void ExtractClientHelloExtension(SharedExtensions* exts, uint16_t type, std::string_view data) {
+  if (type == kSupportedGroupsExtension) {
+    exts->supported_groups = ExtractGroups(data);
+  } else if (type == kKeyShareExtension) {
+    exts->key_share_groups = ExtractKeyShareGroups(data);
+  }
+}
+
+void ExtractServerHelloExtension(SharedExtensions* exts, uint16_t type, std::string_view data) {
+  if (type == kSupportedVersionsExtension) {
+    exts->selected_version = ExtractLeadingU16(data);
+  } else if (type == kKeyShareExtension) {
+    exts->key_share_group = ExtractLeadingU16(data);
+  }
+}
+
+std::string ServerHelloBody(const SharedExtensions& exts, uint16_t handshake_version,
+                            uint16_t cipher_suite) {
+  JSONObjectBuilder builder;
+  builder.WriteKV("version",
+                  CodeName(kVersionNames, exts.selected_version.value_or(handshake_version)));
+  builder.WriteKV("cipher_suite", CodeName(kCipherSuiteNames, cipher_suite));
+  if (exts.key_share_group.has_value()) {
+    builder.WriteKV("key_share_group", CodeName(kGroupNames, exts.key_share_group.value()));
+  }
+  if (!exts.alpn.empty()) {
+    builder.WriteKV("alpn", exts.alpn);
+  }
+  return builder.GetString();
+}
 
 StatusOr<ParseState> ExtractSNIExtension(SharedExtensions* exts, BinaryDecoder* decoder) {
   PX_ASSIGN_OR(auto server_name_list_length, decoder->ExtractBEInt<uint16_t>(),
@@ -146,6 +290,17 @@ ParseState ParseFullFrame(SharedExtensions* extensions, BinaryDecoder* decoder, 
       return ParseState::kInvalid;
     }
   }
+  const bool server_hello = frame->handshake_type == HandshakeType::kServerHello;
+  auto finish = [&]() {
+    if (server_hello) {
+      frame->body = ServerHelloBody(*extensions, raw_handshake_version, cipher_suite_length);
+    } else {
+      JSONObjectBuilder body_builder;
+      body_builder.WriteKVRecursive("extensions", *extensions);
+      frame->body = body_builder.GetString();
+    }
+    return ParseState::kSuccess;
+  };
 
   PX_ASSIGN_OR(auto compression_methods_length, decoder->ExtractBEInt<uint8_t>(),
                return ParseState::kInvalid);
@@ -159,7 +314,7 @@ ParseState ParseFullFrame(SharedExtensions* extensions, BinaryDecoder* decoder, 
   PX_ASSIGN_OR(auto extensions_length, decoder->ExtractBEInt<uint16_t>(),
                return ParseState::kInvalid);
   if (extensions_length == 0) {
-    return ParseState::kSuccess;
+    return finish();
   }
 
   while (extensions_length > 0) {
@@ -169,24 +324,26 @@ ParseState ParseFullFrame(SharedExtensions* extensions, BinaryDecoder* decoder, 
                  return ParseState::kInvalid);
 
     if (extension_length > 0) {
-      if (extension_type == 0x00) {
+      if (extension_type == kSNIExtension) {
         if (!ExtractSNIExtension(extensions, decoder).ok()) {
           return ParseState::kInvalid;
         }
       } else {
-        if (!decoder->ExtractBufIgnore(extension_length).ok()) {
-          return ParseState::kInvalid;
+        PX_ASSIGN_OR(auto data, decoder->ExtractString(extension_length),
+                     return ParseState::kInvalid);
+        if (extension_type == kALPNExtension) {
+          extensions->alpn = ExtractALPN(data).value_or(std::vector<std::string>{});
+        } else if (server_hello) {
+          ExtractServerHelloExtension(extensions, extension_type, data);
+        } else if (frame->handshake_type == HandshakeType::kClientHello) {
+          ExtractClientHelloExtension(extensions, extension_type, data);
         }
       }
     }
 
     extensions_length -= kExtensionMinimumLength + extension_length;
   }
-  JSONObjectBuilder body_builder;
-  body_builder.WriteKVRecursive("extensions", *extensions);
-  frame->body = body_builder.GetString();
-
-  return ParseState::kSuccess;
+  return finish();
 }
 
 }  // namespace tls

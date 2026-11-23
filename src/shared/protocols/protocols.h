@@ -40,6 +40,7 @@ enum class Protocol {
   kMux = 11,
   kAMQP = 12,
   kTLS = 13,
+  kWebSocket = 14,
 };
 
 }  // namespace protocols

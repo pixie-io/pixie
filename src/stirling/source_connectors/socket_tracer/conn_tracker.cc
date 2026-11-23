@@ -132,6 +132,12 @@ void ConnTracker::AddConnCloseEvent(const socket_control_event_t& event) {
     }
     state_ptr->global.conn_closed = true;
   }
+  if (protocol() == traffic_protocol_t::kProtocolWebSocket) {
+    auto* state_ptr = protocol_state<protocols::websocket::StateWrapper>();
+    if (state_ptr != nullptr) {
+      state_ptr->global.conn_closed = true;
+    }
+  }
 
   send_data_.set_conn_closed();
   recv_data_.set_conn_closed();
@@ -146,6 +152,13 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetProtocol(event->attr.protocol, "inferred from data_event");
   SetSSL(event->attr.ssl, event->attr.ssl_source, "inferred from data_event");
 
+  if (protocol_ == kProtocolTLS && event->attr.ssl && event->attr.protocol != kProtocolTLS &&
+      event->attr.protocol != kProtocolUnknown) {
+    tls_handover_protocol_ = event->attr.protocol;
+    tls_handover_events_.push_back(std::move(event));
+    return;
+  }
+
   CheckTracker();
   UpdateTimestamps(event->attr.timestamp_ns);
   UpdateDataStats(*event);
@@ -158,7 +171,7 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
     return;
   }
 
-  if (event->attr.protocol != protocol_) {
+  if (event->attr.protocol != protocol_ && event->attr.protocol != upgraded_from_) {
     return;
   }
 
@@ -245,6 +258,11 @@ endpoint_role_t InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2Head
 }
 
 void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
+  if (protocol_ == kProtocolTLS) {
+    tls_handover_protocol_ = kProtocolHTTP2;
+    tls_handover_events_.push_back(std::move(hdr));
+    return;
+  }
   SetProtocol(kProtocolHTTP2, "inferred from http2 headers");
 
   if (protocol_ != kProtocolHTTP2) {
@@ -322,6 +340,11 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 }
 
 void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
+  if (protocol_ == kProtocolTLS) {
+    tls_handover_protocol_ = kProtocolHTTP2;
+    tls_handover_events_.push_back(std::move(data));
+    return;
+  }
   SetProtocol(kProtocolHTTP2, "inferred from http2 data");
 
   if (protocol_ != kProtocolHTTP2) {
@@ -376,7 +399,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
         ::ToString(data->attr.conn_id));
   }
 
-  half_stream_ptr->AddData(data->payload);
+  half_stream_ptr->AddData(data->payload, FLAGS_max_body_bytes);
   if (data->attr.end_stream) {
     half_stream_ptr->AddEndStream();
   }
@@ -674,7 +697,8 @@ auto CreateTraceRoles() {
   res.Set(kProtocolKafka, {kRoleServer});
   res.Set(kProtocolMux, {kRoleServer});
   res.Set(kProtocolAMQP, {kRoleServer});
-  res.Set(kProtocolTLS, {kRoleServer});
+  res.Set(kProtocolTLS, {kRoleClient, kRoleServer});
+  res.Set(kProtocolWebSocket, {kRoleServer});
 
   DCHECK(res.AreAllKeysSet());
   return res;
@@ -810,6 +834,55 @@ void ConnTracker::IterationPreTick(
   }
 
   UpdateState(cluster_cidrs);
+}
+
+bool ConnTracker::MaybeUpgradeToWebSocket() {
+  if (protocol_ != kProtocolHTTP) {
+    return false;
+  }
+  auto* state = protocol_state<protocols::http::StateWrapper>();
+  if (state == nullptr || !state->global.websocket_upgrade_accepted) {
+    return false;
+  }
+
+  protocols::websocket::StateWrapper ws_state;
+  ws_state.global.path = std::move(state->global.websocket_path);
+  ws_state.global.subprotocol = std::move(state->global.websocket_subprotocol);
+  ws_state.global.conn_closed = state->global.conn_closed;
+
+  CONN_TRACE(1) << "Protocol upgraded: HTTP->WebSocket";
+  upgraded_from_ = protocol_;
+  protocol_ = kProtocolWebSocket;
+  protocol_state_ = std::move(ws_state);
+  send_data_.SwitchProtocol(protocol_);
+  recv_data_.SwitchProtocol(protocol_);
+  return true;
+}
+
+bool ConnTracker::MaybeHandOverFromTLS() {
+  if (protocol_ != kProtocolTLS || tls_handover_protocol_ == kProtocolUnknown) {
+    return false;
+  }
+
+  CONN_TRACE(1) << absl::Substitute("Protocol handed over: TLS->$0",
+                                    magic_enum::enum_name(tls_handover_protocol_));
+  protocol_ = tls_handover_protocol_;
+  tls_handover_protocol_ = kProtocolUnknown;
+  send_data_.SwitchProtocol(protocol_);
+  recv_data_.SwitchProtocol(protocol_);
+
+  auto events = std::move(tls_handover_events_);
+  tls_handover_events_.clear();
+  for (auto& event : events) {
+    if (auto* data = std::get_if<std::unique_ptr<SocketDataEvent>>(&event)) {
+      AddDataEvent(std::move(*data));
+    } else if (auto* hdr = std::get_if<std::unique_ptr<HTTP2HeaderEvent>>(&event)) {
+      AddHTTP2Header(std::move(*hdr));
+    } else {
+      AddHTTP2Data(std::move(std::get<std::unique_ptr<HTTP2DataEvent>>(event)));
+    }
+  }
+  return true;
 }
 
 void ConnTracker::IterationPostTick() {

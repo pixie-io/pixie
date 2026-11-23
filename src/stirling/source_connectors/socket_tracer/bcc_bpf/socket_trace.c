@@ -832,6 +832,10 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
 
   // Only process plaintext data.
   if (conn_info->ssl == ssl) {
+    if (ENABLE_TLS_TRACING && ssl && conn_info->protocol == kProtocolTLS) {
+      conn_info->protocol = kProtocolUnknown;
+    }
+
     // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
     // are handled separately without mixed interface. The plan is to factor out helper functions
     // for lower-level functionalities, and call them separately for each case.

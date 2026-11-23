@@ -19,18 +19,23 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 #include <chrono>
+#include <string>
+#include <string_view>
 #include <tuple>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
+#include <absl/strings/str_cat.h>
 #include <magic_enum/magic_enum.hpp>
 
-#include "protocols/http/types.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/types.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/testing/common.h"
 
@@ -42,10 +47,13 @@ using ::px::operator<<;
 
 namespace http = protocols::http;
 namespace mysql = protocols::mysql;
+namespace tls = protocols::tls;
+namespace websocket = protocols::websocket;
 
 using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
+using std::string_view_literals::operator""sv;
 
 using testing::kHTTPReq0;
 using testing::kHTTPReq1;
@@ -349,6 +357,235 @@ TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
 
   ASSERT_EQ(0, records.size());
   ASSERT_TRUE(tracker.IsZombie());
+}
+
+TEST_F(ConnTrackerTest, TrackerHTTP101UpgradesToWebSocket) {
+  constexpr std::string_view kServerText = "\x81\x02hi"sv;
+  constexpr std::string_view kClientMaskedText = "\x81\x85\x37\xfa\x21\x3d\x7f\x9f\x4d\x51\x58"sv;
+  constexpr std::string_view kClientPing = "\x89\x00"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp0 =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kHTTPUpgradeResp, kServerText));
+  std::unique_ptr<SocketDataEvent> req1 =
+      event_gen_.InitSendEvent<kProtocolHTTP>(kClientMaskedText);
+  std::unique_ptr<SocketDataEvent> req2 = event_gen_.InitSendEvent<kProtocolHTTP>(kClientPing);
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(req1));
+
+  std::vector<http::Record> http_records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_THAT(http_records, SizeIs(1));
+  EXPECT_EQ(http_records[0].resp.resp_status, 101);
+
+  EXPECT_TRUE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+  EXPECT_EQ(tracker.protocol(), kProtocolWebSocket);
+  EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
+
+  std::vector<websocket::Record> ws_records = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  tracker.IterationPostTick();
+  ASSERT_THAT(ws_records, SizeIs(2));
+  EXPECT_EQ(ws_records[0].msg.type, message_type_t::kRequest);
+  EXPECT_EQ(ws_records[0].msg.payload, "Hello");
+  EXPECT_EQ(ws_records[1].msg.type, message_type_t::kResponse);
+  EXPECT_EQ(ws_records[1].msg.payload, "hi");
+
+  tracker.AddDataEvent(std::move(req2));
+  ws_records = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  tracker.IterationPostTick();
+  ASSERT_THAT(ws_records, SizeIs(1));
+  EXPECT_EQ(ws_records[0].msg.opcode, websocket::Opcode::kPing);
+  EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
+}
+
+TEST_F(ConnTrackerTest, TrackerWebSocketUpgradeKeepsSubprotocol) {
+  constexpr std::string_view kExecReq =
+      "GET /exec/ns/pod/ctr?command=hostname&output=1 HTTP/1.1\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kExecResp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kStdout = "\x82\x05\x01pod\n"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kExecReq);
+  std::unique_ptr<SocketDataEvent> resp0 =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kStdout));
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_TRUE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+
+  auto* state = tracker.protocol_state<websocket::StateWrapper>();
+  ASSERT_NE(state, nullptr);
+  EXPECT_EQ(state->global.subprotocol, "v5.channel.k8s.io");
+  EXPECT_EQ(state->global.path, "/exec/ns/pod/ctr?command=hostname&output=1");
+
+  std::vector<websocket::Record> ws_records = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  ASSERT_THAT(ws_records, SizeIs(1));
+  EXPECT_EQ(ws_records[0].kind, websocket::RecordKind::kExec);
+  EXPECT_EQ(ws_records[0].msg.payload, "hostname");
+}
+
+TEST_F(ConnTrackerTest, TrackerWebSocketSessionClosedWithoutStatusIsFlushed) {
+  constexpr std::string_view kExecReq =
+      "GET /exec/ns/pod/ctr?command=hostname&output=1 HTTP/1.1\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kExecResp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kStdout = "\x82\x05\x01pod\n"sv;
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(event_gen_.InitConn());
+  tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kExecReq));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kStdout)));
+  tracker.AddControlEvent(event_gen_.InitClose());
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_TRUE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+
+  std::vector<websocket::Record> first = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  ASSERT_THAT(first, SizeIs(1));
+  EXPECT_EQ(first[0].kind, websocket::RecordKind::kExec);
+
+  std::vector<websocket::Record> second = tracker.ProcessToRecords<websocket::ProtocolTraits>();
+  ASSERT_THAT(second, SizeIs(1));
+  EXPECT_EQ(second[0].kind, websocket::RecordKind::kExit);
+  EXPECT_EQ(second[0].msg.payload, "");
+  EXPECT_EQ(second[0].output, "pod\n");
+
+  EXPECT_THAT(tracker.ProcessToRecords<websocket::ProtocolTraits>(), IsEmpty());
+}
+
+TEST_F(ConnTrackerTest, TrackerWebSocketCloseAfterUpgradeIsRecorded) {
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPUpgradeResp));
+  tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_TRUE(tracker.MaybeUpgradeToWebSocket());
+  EXPECT_FALSE(tracker.protocol_state<websocket::StateWrapper>()->global.conn_closed);
+
+  tracker.AddControlEvent(event_gen_.InitClose());
+
+  EXPECT_TRUE(tracker.protocol_state<websocket::StateWrapper>()->global.conn_closed);
+}
+
+using tls::testutils::ClientHello;
+using tls::testutils::ServerHello;
+
+TEST_F(ConnTrackerTest, TLSHandshakeIsHandedOverToDecryptedHTTP) {
+  ConnTracker tracker;
+  tracker.AddControlEvent(event_gen_.InitConn());
+  tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolTLS>(ClientHello()));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolTLS>(ServerHello()));
+  std::unique_ptr<SocketDataEvent> req = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  req->attr.ssl = true;
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  resp->attr.ssl = true;
+  tracker.AddDataEvent(std::move(req));
+  tracker.AddDataEvent(std::move(resp));
+
+  std::vector<tls::Record> handshakes = tracker.ProcessToRecords<tls::ProtocolTraits>();
+  ASSERT_THAT(handshakes, SizeIs(1));
+  EXPECT_EQ(handshakes[0].resp.body,
+            R"({"version":"TLSv1.3","cipher_suite":"TLS_AES_128_GCM_SHA256",)"
+            R"("key_share_group":"X25519MLKEM768"})");
+
+  ASSERT_TRUE(tracker.MaybeHandOverFromTLS());
+  EXPECT_EQ(tracker.protocol(), kProtocolHTTP);
+  EXPECT_TRUE(tracker.ssl());
+
+  tracker.InitProtocolState<http::StateWrapper>();
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_EQ(records[0].req.req_path, "/index.html");
+}
+
+TEST_F(ConnTrackerTest, TLSWithoutDecryptedDataStaysTLS) {
+  ConnTracker tracker;
+  tracker.AddControlEvent(event_gen_.InitConn());
+  tracker.AddDataEvent(event_gen_.InitSendEvent<kProtocolTLS>(ClientHello()));
+  tracker.AddDataEvent(event_gen_.InitRecvEvent<kProtocolTLS>(ServerHello()));
+
+  EXPECT_THAT(tracker.ProcessToRecords<tls::ProtocolTraits>(), SizeIs(1));
+  EXPECT_FALSE(tracker.MaybeHandOverFromTLS());
+  EXPECT_EQ(tracker.protocol(), kProtocolTLS);
+}
+
+TEST_F(ConnTrackerTest, TLSClientHandshakesAreCollected) {
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  testing::SetIPv4RemoteAddr(&conn, "1.2.3.4");
+
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+
+  ConnTracker tracker;
+  tracker.AddControlEvent(conn);
+  tracker.SetProtocol(kProtocolTLS, "testing");
+  tracker.SetRole(kRoleClient, "testing");
+  tracker.IterationPreTick(now(), {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kTransferring);
+}
+
+TEST_F(ConnTrackerTest, TrackerHTTPUpgradeRejectedStaysHTTP) {
+  constexpr std::string_view kRejectResp =
+      "HTTP/1.1 403 Forbidden\r\n"
+      "Content-Length: 0\r\n"
+      "\r\n";
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kRejectResp);
+  std::unique_ptr<SocketDataEvent> req1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+
+  ConnTracker tracker;
+  tracker.InitProtocolState<http::StateWrapper>();
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  EXPECT_FALSE(tracker.MaybeUpgradeToWebSocket());
+  tracker.IterationPostTick();
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_EQ(records[0].resp.resp_status, 403);
+
+  tracker.AddDataEvent(std::move(req1));
+  tracker.AddDataEvent(std::move(resp1));
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.IterationPostTick();
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_EQ(tracker.protocol(), kProtocolHTTP);
+  EXPECT_NE(tracker.state(), ConnTracker::State::kDisabled);
 }
 
 TEST_F(ConnTrackerTest, DataEventsChangesCounter) {

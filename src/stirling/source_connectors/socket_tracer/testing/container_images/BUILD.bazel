@@ -380,3 +380,19 @@ container_image(
     layers = [":clickhouse_config_layer"],
     visibility = ["//visibility:public"],
 )
+
+pl_cc_test_library(
+    name = "go_websocket_server_container",
+    srcs = [],
+    hdrs = ["go_websocket_server_container.h"],
+    data = ["//src/stirling/testing/demo_apps/go_websocket/server:websocket_server_image.tar"],
+    deps = ["//src/common/testing/test_utils:cc_library"],
+)
+
+pl_cc_test_library(
+    name = "go_websocket_client_container",
+    srcs = [],
+    hdrs = ["go_websocket_client_container.h"],
+    data = ["//src/stirling/testing/demo_apps/go_websocket/client:websocket_client_image.tar"],
+    deps = ["//src/common/testing/test_utils:cc_library"],
+)

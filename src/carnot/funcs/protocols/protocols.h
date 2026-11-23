@@ -53,6 +53,8 @@ inline std::string ProtocolName(int protocol) {
       return "Kafka";
     case px::protocols::Protocol::kAMQP:
       return "AMQP";
+    case px::protocols::Protocol::kWebSocket:
+      return "WebSocket";
     default:
       return absl::StrCat("Invalid (", protocol, ")");
   }

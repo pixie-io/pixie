@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 #include <utility>
 
 #include <absl/container/flat_hash_map.h>
@@ -45,8 +46,10 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/credentials.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/websocket/k8s_exec.h"
 #include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
@@ -122,6 +125,11 @@ DEFINE_int32(
     gflags::Int32FromEnv("PX_STIRLING_ENABLE_TLS_TRACING", px::stirling::TraceMode::Off),
     "If true, stirling will trace and process TLS protocol (not the TLS payload) messages. Note: "
     "this disables tracing the plaintext within encrypted connections until gh#2095 is addressed.");
+DEFINE_int32(stirling_enable_websocket_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_WEBSOCKET_TRACING",
+                                  px::stirling::TraceMode::Off),
+             "If true, stirling will trace and process WebSocket messages on upgraded HTTP "
+             "connections.");
 DEFINE_bool(stirling_disable_golang_tls_tracing,
             gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
             "If true, stirling will not trace TLS traffic for Go applications. This implies "
@@ -303,6 +311,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                   kTLSTableNum,
                                   {kRoleClient, kRoleServer},
                                   TRANSFER_STREAM_PROTOCOL(tls)}},
+      {kProtocolWebSocket, TransferSpec{FLAGS_stirling_enable_websocket_tracing,
+                                        kWebSocketTableNum,
+                                        {kRoleClient, kRoleServer},
+                                        TRANSFER_STREAM_PROTOCOL(websocket)}},
       {kProtocolUnknown, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                       /* table_num */ static_cast<uint32_t>(-1),
                                       /* trace_roles */ {},
@@ -840,13 +852,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   }
 
   size_t current_conn_tracker_buffer_size = 0;
+  auto table_for = [this](const TransferSpec& spec) -> DataTable* {
+    return spec.enabled ? data_tables_[spec.table_num] : nullptr;
+  };
   for (const auto& conn_tracker : conn_trackers_mgr_.active_trackers()) {
     const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->protocol()];
-
-    DataTable* data_table = nullptr;
-    if (transfer_spec.enabled) {
-      data_table = data_tables_[transfer_spec.table_num];
-    }
+    DataTable* data_table = table_for(transfer_spec);
 
     UpdateTrackerTraceLevel(conn_tracker);
 
@@ -865,6 +876,18 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
     if (transfer_spec.transfer_fn != nullptr) {
       current_conn_tracker_buffer_size +=
           transfer_spec.transfer_fn(*this, ctx, conn_tracker, data_table);
+      if (protocol_transfer_specs_[kProtocolWebSocket].enabled) {
+        conn_tracker->MaybeUpgradeToWebSocket();
+      }
+      if (conn_tracker->MaybeHandOverFromTLS()) {
+        conn_tracker->IterationPreTick(iteration_time_, cluster_cidrs, proc_parser_.get(),
+                                       socket_info_mgr_.get());
+        const auto& handed_over_spec = protocol_transfer_specs_[conn_tracker->protocol()];
+        if (handed_over_spec.transfer_fn != nullptr) {
+          current_conn_tracker_buffer_size +=
+              handed_over_spec.transfer_fn(*this, ctx, conn_tracker, table_for(handed_over_spec));
+        }
+      }
     } else {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be
@@ -1327,6 +1350,16 @@ int64_t AMQPCalculateLatency(const int64_t req_timestamp_ns, const int64_t resp_
   return latency_ns;
 }
 
+constexpr size_t kNoTruncation = std::numeric_limits<size_t>::max();
+
+std::string RedactedBody(std::string_view body) {
+  if (body.size() <= FLAGS_max_body_bytes) {
+    return protocols::http::RedactCredentialBody(body);
+  }
+  return absl::StrCat(protocols::http::RedactCredentialBody(body.substr(0, FLAGS_max_body_bytes)),
+                      DataTable::kTruncatedMsg);
+}
+
 template <typename TRecordType>
 std::string PXInfoString(const ConnTracker& conn_tracker, const TRecordType& record) {
   return absl::Substitute("conn_tracker=$0 record=$1", conn_tracker.ToString(), record.ToString());
@@ -1344,6 +1377,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   protocols::http::PreProcessRespMessage(&resp_message);
   protocols::http::PreProcessReqMessage(&req_message);
+  protocols::http::RedactCredentials(&req_message.headers);
+  protocols::http::RedactCredentials(&resp_message.headers);
 
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -1369,14 +1404,14 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
   r.Append<r.ColIndex("req_headers")>(ToJSONString(req_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("req_method")>(std::move(req_message.req_method));
-  r.Append<r.ColIndex("req_path")>(std::move(req_message.req_path));
+  r.Append<r.ColIndex("req_path")>(protocols::http::RedactCredentialPath(req_message.req_path));
   r.Append<r.ColIndex("req_body_size")>(req_message.body_size);
-  r.Append<r.ColIndex("req_body")>(std::move(req_message.body), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("req_body")>(RedactedBody(req_message.body), kNoTruncation);
   r.Append<r.ColIndex("resp_headers")>(ToJSONString(resp_message.headers), kMaxHTTPHeadersBytes);
   r.Append<r.ColIndex("resp_status")>(resp_message.resp_status);
   r.Append<r.ColIndex("resp_message")>(std::move(resp_message.resp_message));
   r.Append<r.ColIndex("resp_body_size")>(resp_message.body_size);
-  r.Append<r.ColIndex("resp_body")>(std::move(resp_message.body), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("resp_body")>(RedactedBody(resp_message.body), kNoTruncation);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
@@ -1411,6 +1446,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
+  protocols::http::RedactCredentials(req_stream->mutable_headers());
+  protocols::http::RedactCredentials(resp_stream->mutable_headers());
   std::string path = req_stream->headers().ValueByKey(protocols::http2::headers::kPath);
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
@@ -1445,9 +1482,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Do not apply truncation at this point, as the truncation was already done on serialized
   // protobuf message. This might result into longer text format data here, but the increase is
   // minimal.
-  r.Append<r.ColIndex("req_body")>(req_stream->ConsumeData());
+  r.Append<r.ColIndex("req_body")>(protocols::http::RedactCredentialBody(req_stream->ConsumeData()),
+                                   kNoTruncation);
   r.Append<r.ColIndex("resp_body_size")>(resp_stream->original_data_size());
-  r.Append<r.ColIndex("resp_body")>(resp_stream->ConsumeData());
+  r.Append<r.ColIndex("resp_body")>(
+      protocols::http::RedactCredentialBody(resp_stream->ConsumeData()), kNoTruncation);
   int64_t latency_ns = CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("latency")>(latency_ns);
   // TODO(yzhao): Remove once http2::Record::bpf_timestamp_ns is removed.
@@ -1768,6 +1807,48 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("resp_body")>(resp_message.body, kMaxTLSBodyBytes);
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::websocket::Record record,
+                                         DataTable* data_table) {
+  protocols::websocket::Message& msg = record.msg;
+
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kWebSocketTable> r(data_table, msg.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(msg.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
+  r.Append<r.ColIndex("local_port")>(conn_tracker.local_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+  r.Append<r.ColIndex("encrypted")>(conn_tracker.ssl());
+  r.Append<r.ColIndex("subprotocol")>(std::move(record.subprotocol));
+  r.Append<r.ColIndex("kind")>(std::string(protocols::websocket::RecordKindName(record.kind)));
+  r.Append<r.ColIndex("direction")>(static_cast<uint64_t>(msg.type));
+  r.Append<r.ColIndex("opcode")>(static_cast<uint64_t>(msg.opcode));
+  r.Append<r.ColIndex("compressed")>(msg.compressed);
+  r.Append<r.ColIndex("fragments")>(msg.fragments);
+  auto printable = [](std::string_view data) {
+    return protocols::websocket::Printable(data.substr(0, FLAGS_max_body_bytes));
+  };
+  if (record.kind == protocols::websocket::RecordKind::kFrame &&
+      msg.opcode == protocols::websocket::Opcode::kText) {
+    r.Append<r.ColIndex("payload")>(RedactedBody(msg.payload), kNoTruncation);
+  } else {
+    r.Append<r.ColIndex("payload")>(printable(msg.payload), FLAGS_max_body_bytes);
+  }
+  r.Append<r.ColIndex("payload_size")>(msg.payload_size);
+  r.Append<r.ColIndex("output")>(printable(record.output), FLAGS_max_body_bytes);
+  r.Append<r.ColIndex("output_size")>(record.output_size);
+  r.Append<r.ColIndex("req_path")>(protocols::http::RedactCredentialPath(record.req_path));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
 #endif

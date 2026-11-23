@@ -19,8 +19,11 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 
 #include <memory>
+#include <string_view>
 
 #include <absl/functional/bind_front.h>
+#include <absl/strings/match.h>
+#include <absl/strings/str_cat.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -31,6 +34,7 @@
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/tls/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_connector_friend.h"
 #include "src/stirling/testing/common.h"
@@ -40,7 +44,10 @@ namespace stirling {
 
 namespace http = protocols::http;
 
+using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::HasSubstr;
+using ::testing::Not;
 
 using ::px::stirling::testing::RecordBatchSizeIs;
 
@@ -221,6 +228,238 @@ TEST_F(SocketTraceConnectorTest, Basic) {
   ASSERT_THAT(records, RecordBatchSizeIs(1));
   EXPECT_THAT(ToStringVector(records[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
   EXPECT_THAT(ToStringVector(records[kHTTPRespBodyIdx]), ElementsAre("foo"));
+}
+
+TEST_F(SocketTraceConnectorTest, HTTPCredentialsAreRedacted) {
+  const std::string_view kCredReq =
+      "POST /login?access_token=cs-canary-20 HTTP/1.1\r\n"
+      "Host: auth\r\n"
+      "Authorization: Bearer cs-canary-21\r\n"
+      "Content-Type: application/json\r\n"
+      "Content-Length: 27\r\n"
+      "\r\n"
+      "{\"password\":\"cs-canary-22\"}";
+  const std::string_view kCredResp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json\r\n"
+      "Set-Cookie: session=cs-canary-23; HttpOnly\r\n"
+      "Content-Length: 31\r\n"
+      "\r\n"
+      "{\"access_token\":\"cs-canary-24\"}";
+
+  source_->AcceptControlEvent(event_gen_.InitConn());
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kCredReq));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kCredResp));
+  source_->AcceptControlEvent(event_gen_.InitClose());
+
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  for (int idx : {kHTTPReqHeadersIdx, kHTTPReqPathIdx, kHTTPReqBodyIdx, kHTTPRespHeadersIdx,
+                  kHTTPRespBodyIdx}) {
+    EXPECT_THAT(ToStringVector(records[idx]), ElementsAre(Not(HasSubstr("cs-canary"))));
+  }
+  EXPECT_THAT(ToStringVector(records[kHTTPReqHeadersIdx]),
+              ElementsAre(HasSubstr("Bearer <cred:sha256=")));
+}
+
+class SocketTraceConnectorTLSTest : public SocketTraceConnectorTest {
+ protected:
+  void SetUp() override {
+    FLAGS_stirling_enable_tls_tracing = TraceMode::On;
+    SocketTraceConnectorTest::SetUp();
+  }
+
+  void TearDown() override { FLAGS_stirling_enable_tls_tracing = TraceMode::Off; }
+};
+
+TEST_F(SocketTraceConnectorTLSTest, HandedOverConnectionClosedInOnePollProducesHTTPRecord) {
+  source_->AcceptControlEvent(event_gen_.InitConn());
+  source_->AcceptDataEvent(
+      event_gen_.InitSendEvent<kProtocolTLS>(protocols::tls::testutils::ClientHello()));
+  source_->AcceptDataEvent(
+      event_gen_.InitRecvEvent<kProtocolTLS>(protocols::tls::testutils::ServerHello()));
+  std::unique_ptr<SocketDataEvent> req = event_gen_.InitSendEvent<kProtocolHTTP>(kReq3);
+  req->attr.ssl = true;
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  resp->attr.ssl = true;
+  source_->AcceptDataEvent(std::move(req));
+  source_->AcceptDataEvent(std::move(resp));
+  source_->AcceptControlEvent(event_gen_.InitClose());
+
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
+  EXPECT_THAT(ToIntVector<types::BoolValue>(records[kHTTPEncryptedIdx]), ElementsAre(1));
+}
+
+class SocketTraceConnectorWebSocketTest : public SocketTraceConnectorTest {
+ protected:
+  void SetUp() override {
+    FLAGS_stirling_enable_websocket_tracing = TraceMode::On;
+    SocketTraceConnectorTest::SetUp();
+  }
+
+  void TearDown() override { FLAGS_stirling_enable_websocket_tracing = TraceMode::Off; }
+
+  RecordBatch TransferUpgradedServerFrames(std::string_view frames) {
+    source_->AcceptControlEvent(event_gen_.InitConn());
+    source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq));
+    source_->AcceptDataEvent(
+        event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(testing::kHTTPUpgradeResp, frames)));
+    connector_->TransferData(ctx_.get());
+    connector_->TransferData(ctx_.get());
+    std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+    if (tablets.empty()) {
+      return {};
+    }
+    return tablets[0].records;
+  }
+
+  DataTable* websocket_table_ = data_tables_[SocketTraceConnector::kWebSocketTableNum];
+};
+
+TEST_F(SocketTraceConnectorWebSocketTest, UpgradedConnectionProducesWebSocketEvents) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kServerText = "\x81\x02hi"sv;
+  constexpr std::string_view kClientMaskedText = "\x81\x85\x37\xfa\x21\x3d\x7f\x9f\x4d\x51\x58"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req =
+      event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(testing::kHTTPUpgradeResp, kServerText));
+  std::unique_ptr<SocketDataEvent> client_msg =
+      event_gen_.InitSendEvent<kProtocolHTTP>(kClientMaskedText);
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(req));
+  source_->AcceptDataEvent(std::move(resp));
+  source_->AcceptDataEvent(std::move(client_msg));
+  connector_->TransferData(ctx_.get());
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> http_tablets = http_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & http_records, http_tablets);
+  ASSERT_THAT(http_records, RecordBatchSizeIs(1));
+
+  std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]), ElementsAre("hi", "Hello"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketDirectionIdx]), ElementsAre(2, 1));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketOpcodeIdx]), ElementsAre(1, 1));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(2, 5));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, TextPayloadCredentialsAreRedacted) {
+  RecordBatch records =
+      TransferUpgradedServerFrames(absl::StrCat("\x81\x18", R"({"token":"cs-canary-25"})"));
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
+              ElementsAre(AllOf(HasSubstr("<cred:sha256="), Not(HasSubstr("cs-canary")))));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, NonTextPayloadsAreEscaped) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kServerStdout = "\x82\x04\x01hi\n"sv;
+  constexpr std::string_view kServerClose = "\x88\x02\x03\xe8"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  std::unique_ptr<SocketDataEvent> req =
+      event_gen_.InitSendEvent<kProtocolHTTP>(testing::kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp = event_gen_.InitRecvEvent<kProtocolHTTP>(
+      absl::StrCat(testing::kHTTPUpgradeResp, kServerStdout, kServerClose));
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(req));
+  source_->AcceptDataEvent(std::move(resp));
+  connector_->TransferData(ctx_.get());
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(2));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
+              ElementsAre("\\x01hi\\x0A", "\\x03\\xE8"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(4, 2));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, K8sExecSessionProducesCommandRows) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kExecReq =
+      "GET /exec/ns/pod/ctr?command=sh&input=1&output=1&tty=1 HTTP/1.1\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kExecResp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "Sec-WebSocket-Protocol: v5.channel.k8s.io\r\n"
+      "\r\n";
+  constexpr std::string_view kPrompt = "\x82\x05\x01/ # "sv;
+  constexpr std::string_view kStdinId = "\x82\x03\x00id"sv;
+  constexpr std::string_view kEchoId = "\x82\x03\x01id"sv;
+  constexpr std::string_view kStdinEnter = "\x82\x02\x00\r"sv;
+  constexpr std::string_view kStdout = "\x82\x0e\x01\r\nuid=0\r\n/ # "sv;
+  constexpr std::string_view kStatus =
+      "\x82\x23\x03"
+      R"({"metadata":{},"status":"Success"})"sv;
+
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kExecReq));
+  source_->AcceptDataEvent(
+      event_gen_.InitRecvEvent<kProtocolHTTP>(absl::StrCat(kExecResp, kPrompt)));
+  connector_->TransferData(ctx_.get());
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kStdinId));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kEchoId));
+  source_->AcceptDataEvent(event_gen_.InitSendEvent<kProtocolHTTP>(kStdinEnter));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kStdout));
+  source_->AcceptDataEvent(event_gen_.InitRecvEvent<kProtocolHTTP>(kStatus));
+  connector_->TransferData(ctx_.get());
+
+  std::vector<TaggedRecordBatch> tablets = websocket_table_->ConsumeRecords();
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(RecordBatch & records, tablets);
+  ASSERT_THAT(records, RecordBatchSizeIs(3));
+  EXPECT_THAT(ToStringVector(records[kWebSocketKindIdx]), ElementsAre("exec", "input", "exit"));
+  EXPECT_THAT(ToStringVector(records[kWebSocketSubprotocolIdx]),
+              ElementsAre("v5.channel.k8s.io", "v5.channel.k8s.io", "v5.channel.k8s.io"));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]),
+              ElementsAre("sh", "id", R"({"metadata":{},"status":"Success"})"));
+  EXPECT_THAT(ToStringVector(records[kWebSocketOutputIdx]), ElementsAre("", "uid=0\n", ""));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, LargeBinaryPayloadIsTruncatedBeforeEscaping) {
+  std::string frame = {'\x82', '\x7e', '\x0f', '\xa0'};
+  frame.append(4000, '\x01');
+
+  RecordBatch records = TransferUpgradedServerFrames(frame);
+
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  std::string payload = records[kWebSocketPayloadIdx]->Get<types::StringValue>(0);
+  EXPECT_TRUE(absl::StartsWith(payload, "\\x01\\x01"));
+  EXPECT_TRUE(absl::EndsWith(payload, DataTable::kTruncatedMsg));
+  EXPECT_LE(payload.size(), FLAGS_max_body_bytes + strlen(DataTable::kTruncatedMsg));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(4000));
+}
+
+TEST_F(SocketTraceConnectorWebSocketTest, CompressedPayloadIsRemoved) {
+  using std::string_view_literals::operator""sv;
+  constexpr std::string_view kCompressedText = "\xc1\x07\xf2\x48\xcd\xc9\xc9\x07\x00"sv;
+
+  RecordBatch records = TransferUpgradedServerFrames(kCompressedText);
+
+  ASSERT_THAT(records, RecordBatchSizeIs(1));
+  EXPECT_THAT(ToStringVector(records[kWebSocketPayloadIdx]), ElementsAre("<removed: compressed>"));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(records[kWebSocketPayloadSizeIdx]), ElementsAre(7));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPDelayedRespBody) {

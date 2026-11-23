@@ -561,6 +561,21 @@ pl_cc_bpf_test(
 )
 
 pl_cc_bpf_test(
+    name = "websocket_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["websocket_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_websocket_client_container",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:go_websocket_server_container",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_bpf_test(
     name = "amqp_trace_bpf_test",
     timeout = "moderate",
     srcs = ["amqp_trace_bpf_test.cc"],
