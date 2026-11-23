@@ -40,6 +40,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "dns_message_test",
+    srcs = ["dns_message_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "parse_test",
     srcs = ["parse_test.cc"],
     deps = [":cc_library"],

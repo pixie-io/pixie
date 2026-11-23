@@ -110,7 +110,8 @@ void ProcessReq(const Frame& req_frame, Request* req) {
   rapidjson::Value queries(rapidjson::kArrayType);
   for (const auto& r : req_frame.records()) {
     const std::string& name = r.name;
-    std::string_view type_name = DNSRecordTypeName(r.addr.family);
+    std::string_view type_name =
+        r.type.empty() ? DNSRecordTypeName(r.addr.family) : std::string_view(r.type);
 
     rapidjson::Value query(rapidjson::kObjectType);
     query.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
@@ -141,7 +142,12 @@ void ProcessResp(const Frame& resp_frame, Response* resp) {
     rapidjson::Value answer(rapidjson::kObjectType);
     answer.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
 
-    if (!r.cname.empty()) {
+    if (!r.ptr.empty()) {
+      std::string_view type_name = "PTR";
+      answer.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
+                       d.GetAllocator());
+      answer.AddMember("ptr", rapidjson::StringRef(r.ptr.data(), r.ptr.size()), d.GetAllocator());
+    } else if (!r.cname.empty()) {
       std::string_view type_name = "CNAME";
       answer.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
                        d.GetAllocator());

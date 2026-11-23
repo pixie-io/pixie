@@ -20,6 +20,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <string>
+
+#include "src/stirling/source_connectors/socket_tracer/protocols/dns/dns_message_testdata.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/parse.h"
 
 namespace px {
@@ -459,6 +462,137 @@ TEST_F(DNSParserTest, PartialRecords) {
 
     ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   }
+}
+
+TEST_F(DNSParserTest, BackToBackRequests) {
+  const std::string buf = testdata::Bytes(testdata::kPTRQueryHex) +
+                          testdata::Bytes(testdata::kAQueryHex) +
+                          testdata::Bytes(testdata::kPTRQueryHex);
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, std::string_view(buf), &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  stream_id_t only_key = frames.begin()->first;
+  ASSERT_EQ(frames[only_key].size(), 3);
+
+  EXPECT_EQ(frames[only_key][0].header.txid, 0x1234);
+  ASSERT_EQ(frames[only_key][0].records().size(), 1);
+  EXPECT_EQ(frames[only_key][0].records()[0].name, "12.0.42.10.in-addr.arpa");
+  EXPECT_EQ(frames[only_key][0].records()[0].type, "PTR");
+
+  EXPECT_EQ(frames[only_key][1].header.txid, 0x2345);
+  ASSERT_EQ(frames[only_key][1].records().size(), 1);
+  EXPECT_EQ(frames[only_key][1].records()[0].name, "kube-dns.kube-system.svc.cluster.local");
+  EXPECT_EQ(frames[only_key][1].records()[0].type, "");
+  EXPECT_EQ(frames[only_key][1].records()[0].addr.family, InetAddrFamily::kIPv4);
+
+  EXPECT_EQ(frames[only_key][2].header.txid, 0x1234);
+}
+
+TEST_F(DNSParserTest, BackToBackResponsesWithPTR) {
+  const std::string buf =
+      testdata::Bytes(testdata::kARespHex) + testdata::Bytes(testdata::kPTRRespHex);
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, std::string_view(buf), &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  stream_id_t only_key = frames.begin()->first;
+  ASSERT_EQ(frames[only_key].size(), 2);
+
+  EXPECT_EQ(frames[only_key][0].header.txid, 0x2345);
+  ASSERT_EQ(frames[only_key][0].records().size(), 1);
+  EXPECT_EQ(frames[only_key][0].records()[0].addr.AddrStr(), "10.43.0.10");
+
+  EXPECT_EQ(frames[only_key][1].header.txid, 0x1234);
+  ASSERT_EQ(frames[only_key][1].records().size(), 1);
+  EXPECT_EQ(frames[only_key][1].records()[0].name, "12.0.42.10.in-addr.arpa");
+  EXPECT_EQ(frames[only_key][1].records()[0].type, "PTR");
+  EXPECT_EQ(frames[only_key][1].records()[0].ptr,
+            "10-42-0-12.kube-dns.kube-system.svc.cluster.local");
+}
+
+TEST_F(DNSParserTest, ManyBackToBackRequests) {
+  std::string buf;
+  for (int i = 0; i < 255; ++i) {
+    buf += testdata::Bytes(testdata::kPTRQueryHex);
+  }
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, std::string_view(buf), &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  EXPECT_EQ(frames.begin()->second.size(), 255);
+}
+
+TEST_F(DNSParserTest, ResponseWithManyAnswers) {
+  using testdata::Header;
+  using testdata::Name;
+  using testdata::RR;
+  std::string msg = Header(0x3456, 0x8180, 1, 30) + Name("web.shop.svc.cluster.local") +
+                    testdata::U16(1) + testdata::U16(1);
+  for (int i = 0; i < 30; ++i) {
+    const std::string ip{10, 0, 0, static_cast<char>(i + 1)};
+    msg += RR(std::string("\xc0\x0c", 2), 1, ip);
+  }
+  const std::string buf = msg + testdata::Bytes(testdata::kARespHex);
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, std::string_view(buf), &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  auto& f = frames.begin()->second;
+  ASSERT_EQ(f.size(), 2);
+  ASSERT_EQ(f[0].records().size(), 30);
+  EXPECT_EQ(f[0].records()[0].name, "web.shop.svc.cluster.local");
+  EXPECT_EQ(f[0].records()[0].addr.AddrStr(), "10.0.0.1");
+  EXPECT_EQ(f[0].records()[29].addr.AddrStr(), "10.0.0.30");
+  EXPECT_EQ(f[1].header.txid, 0x2345);
+}
+
+TEST_F(DNSParserTest, UncompressedCNAME) {
+  using testdata::Header;
+  using testdata::Name;
+  using testdata::RR;
+  const std::string msg = Header(0x4567, 0x8180, 1, 2) + Name("www.example.com") +
+                          testdata::U16(1) + testdata::U16(1) +
+                          RR(Name("www.example.com"), 5, Name("web.example.net")) +
+                          RR(Name("web.example.net"), 1, std::string{93, (char)184, (char)216, 34});
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, std::string_view(msg), &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  auto& f = frames.begin()->second;
+  ASSERT_EQ(f.size(), 1);
+  ASSERT_EQ(f[0].records().size(), 2);
+  EXPECT_EQ(f[0].records()[0].name, "www.example.com");
+  EXPECT_EQ(f[0].records()[0].cname, "web.example.net");
+  EXPECT_EQ(f[0].records()[1].name, "web.example.net");
+  EXPECT_EQ(f[0].records()[1].addr.AddrStr(), "93.184.216.34");
+}
+
+TEST_F(DNSParserTest, NonQueryOpcodeSkippedAlone) {
+  using testdata::Header;
+  using testdata::Name;
+  const std::string notify =
+      Header(0x5678, 0x2000, 1, 0) + Name("example.com") + testdata::U16(6) + testdata::U16(1);
+  const std::string buf = notify + testdata::Bytes(testdata::kAQueryHex);
+
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, std::string_view(buf), &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  auto& f = frames.begin()->second;
+  ASSERT_EQ(f.size(), 1);
+  EXPECT_EQ(f[0].header.txid, 0x2345);
 }
 
 }  // namespace dns

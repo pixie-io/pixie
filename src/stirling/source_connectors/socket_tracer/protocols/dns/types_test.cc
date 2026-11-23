@@ -29,8 +29,8 @@ namespace dns {
 TEST(DNSTypesTest, ByteSize) {
   Frame f = {};
 
-  DNSRecord r1{"px.dev", "px_cname", {}};
-  DNSRecord r2{"aloooooooooooooooooooooooongname", "", {}};
+  DNSRecord r1{"px.dev", "px_cname", {}, "", ""};
+  DNSRecord r2{"aloooooooooooooooooooooooongname", "", {}, "", ""};
   f.AddRecords({r1, r2});
 
   auto s = std::string_view("px.dev").size() + std::string_view("px_cname").size() +

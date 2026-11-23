@@ -91,6 +91,10 @@ struct DNSRecord {
   // TODO(oazizi): Consider using std::variant.
   std::string cname;
   InetAddr addr;
+
+  std::string type;
+
+  std::string ptr;
 };
 
 struct Frame : public FrameBase {
@@ -100,7 +104,8 @@ struct Frame : public FrameBase {
 
   void AddRecords(std::vector<DNSRecord>&& records) {
     for (const auto& r : records) {
-      records_size_ += r.name.size() + r.cname.size() + sizeof(r.addr);
+      records_size_ +=
+          r.name.size() + r.cname.size() + sizeof(r.addr) + r.type.size() + r.ptr.size();
     }
     records_ = std::move(records);
   }
