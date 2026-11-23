@@ -395,8 +395,6 @@ class AgentMetadataState : NotCopyable {
 
   std::vector<std::pair<UPID, UPID>> ProcessParents() const;
 
-  PIDInfo* GetPIDByUPIDOrAncestor(UPID upid) const;
-
   void SetContainerCgroupID(const CID& cid, uint64_t cgroup_id);
 
   void AddProcessCgroup(UPID upid, uint64_t cgroup_id);

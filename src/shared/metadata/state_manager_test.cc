@@ -424,13 +424,9 @@ TEST_F(AgentMetadataStateTest, short_lived_process_resolves_to_ancestor) {
   EXPECT_EQ(metadata_state_.ParentUPID(grandchild), child);
   EXPECT_EQ(metadata_state_.ParentUPID(child), parent);
   EXPECT_EQ(metadata_state_.GetPIDByUPID(grandchild), nullptr);
-  EXPECT_EQ(metadata_state_.GetPIDByUPIDOrAncestor(UPID(kASID, 999 /*pid*/, 9 /*ts*/)), nullptr);
-  ASSERT_NE(metadata_state_.GetPIDByUPIDOrAncestor(grandchild), nullptr);
-  EXPECT_EQ(metadata_state_.GetPIDByUPIDOrAncestor(grandchild)->cid(), "container_id1");
-
-  auto cloned = metadata_state_.CloneToShared();
-  ASSERT_NE(cloned->GetPIDByUPIDOrAncestor(grandchild), nullptr);
-  EXPECT_EQ(cloned->GetPIDByUPIDOrAncestor(grandchild)->upid(), parent);
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(UPID(kASID, 999 /*pid*/, 9 /*ts*/)), "");
+  EXPECT_EQ(metadata_state_.ContainerIDByUPID(grandchild), "container_id1");
+  EXPECT_EQ(metadata_state_.CloneToShared()->ContainerIDByUPID(grandchild), "container_id1");
 }
 
 TEST_F(AgentMetadataStateTest, process_resolves_to_the_container_of_its_cgroup) {

@@ -587,15 +587,25 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
   return state;
 }
 
-void AgentMetadataState::AddProcessParent(UPID upid, UPID parent_upid) {
-  if (!parent_upids_.try_emplace(upid, parent_upid).second) {
+namespace {
+
+template <typename TValue>
+void EmplaceBounded(absl::flat_hash_map<UPID, TValue>* values, std::deque<UPID>* order, UPID upid,
+                    const TValue& value) {
+  if (!values->try_emplace(upid, value).second) {
     return;
   }
-  parent_upid_order_.push_back(upid);
-  if (parent_upid_order_.size() > kMaxProcessParents) {
-    parent_upids_.erase(parent_upid_order_.front());
-    parent_upid_order_.pop_front();
+  order->push_back(upid);
+  if (order->size() > AgentMetadataState::kMaxProcessParents) {
+    values->erase(order->front());
+    order->pop_front();
   }
+}
+
+}  // namespace
+
+void AgentMetadataState::AddProcessParent(UPID upid, UPID parent_upid) {
+  EmplaceBounded(&parent_upids_, &parent_upid_order_, upid, parent_upid);
 }
 
 UPID AgentMetadataState::ParentUPID(UPID upid) const {
@@ -620,33 +630,34 @@ std::vector<std::pair<UPID, UPID>> AgentMetadataState::ProcessParents() const {
   return parents;
 }
 
-PIDInfo* AgentMetadataState::GetPIDByUPIDOrAncestor(UPID upid) const {
-  for (int depth = 0; depth < kMaxAncestryDepth; ++depth) {
-    PIDInfo* pid_info = GetPIDByUPID(upid);
-    if (pid_info != nullptr) {
-      return pid_info;
-    }
-    auto it = parent_upids_.find(upid);
-    if (it == parent_upids_.end()) {
-      return nullptr;
-    }
-    upid = it->second;
-  }
-  return nullptr;
-}
-
 void AgentMetadataState::SetContainerCgroupID(const CID& cid, uint64_t cgroup_id) {
   cids_by_cgroup_id_[cgroup_id] = cid;
 }
 
-void AgentMetadataState::AddProcessCgroup(UPID /*upid*/, uint64_t /*cgroup_id*/) {}
+void AgentMetadataState::AddProcessCgroup(UPID upid, uint64_t cgroup_id) {
+  auto it = cids_by_cgroup_id_.find(cgroup_id);
+  if (it != cids_by_cgroup_id_.end()) {
+    EmplaceBounded(&process_cids_, &process_cid_order_, upid, it->second);
+  }
+}
 
 CID AgentMetadataState::ContainerIDByUPID(UPID upid) const {
-  const PIDInfo* pid_info = GetPIDByUPIDOrAncestor(upid);
-  if (pid_info == nullptr) {
-    return "";
+  for (int depth = 0; depth < kMaxAncestryDepth; ++depth) {
+    const PIDInfo* pid_info = GetPIDByUPID(upid);
+    if (pid_info != nullptr) {
+      return pid_info->cid();
+    }
+    auto cid_it = process_cids_.find(upid);
+    if (cid_it != process_cids_.end()) {
+      return cid_it->second;
+    }
+    auto it = parent_upids_.find(upid);
+    if (it == parent_upids_.end()) {
+      return "";
+    }
+    upid = it->second;
   }
-  return pid_info->cid();
+  return "";
 }
 
 std::string AgentMetadataState::DebugString(int indent_level) const {

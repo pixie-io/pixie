@@ -64,6 +64,7 @@ TRACEPOINT_PROBE(sched, sched_process_exit) {
     event.upid.tgid = tgid;
     event.upid.start_time_ticks = read_start_boottime(task);
     event.exit_code = read_exit_code(task);
+    event.cgroup_id = bpf_get_current_cgroup_id();
     bpf_get_current_comm(&event.comm, sizeof(event.comm));
 
     proc_exit_events.perf_submit(args, &event, sizeof(event));
