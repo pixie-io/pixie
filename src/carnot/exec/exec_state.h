@@ -207,6 +207,8 @@ class ExecState {
     }
   }
 
+  std::shared_ptr<const md::AgentMetadataState> metadata_state() const { return metadata_state_; }
+
   void set_metadata_state(std::shared_ptr<const md::AgentMetadataState> metadata_state) {
     metadata_state_ = metadata_state;
   }
