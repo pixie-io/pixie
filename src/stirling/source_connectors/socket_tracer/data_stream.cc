@@ -47,11 +47,14 @@ namespace px {
 namespace stirling {
 
 void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
+  // Note that msg.size() includes filler \0 bytes under certain circumstances. See socket_trace.hpp
+  // for details.
   LOG_IF(WARNING, event->attr.msg_size > event->msg.size() && !event->msg.empty())
       << absl::Substitute("Message truncated, original size: $0, transferred size: $1",
                           event->attr.msg_size, event->msg.size());
 
-  data_buffer_.Add(event->attr.pos, event->msg, event->attr.timestamp_ns);
+  data_buffer_.Add(event->attr.pos, event->msg, event->attr.timestamp_ns,
+                   event->attr.incomplete_chunk, event->attr.bytes_missed);
 
   has_new_events_ = true;
 }
