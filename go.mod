@@ -62,7 +62,7 @@ require (
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/segmentio/analytics-go/v3 v3.2.1
 	github.com/sercand/kuberesolver/v3 v3.0.0
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.1
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.6.1
