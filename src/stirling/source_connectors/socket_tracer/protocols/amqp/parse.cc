@@ -127,7 +127,7 @@ size_t FindFrameBoundary<amqp::Frame>(message_type_t /*type*/, std::string_view 
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, amqp::Frame* msg,
-                      NoState* /*state*/) {
+                      NoState* /*state*/, bool /*lazy_parsing_enabled*/) {
   return amqp::ParseFrame(type, buf, msg);
 }
 

@@ -87,7 +87,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame, 
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame* frame,
-                      mongodb::StateWrapper* state) {
+                      mongodb::StateWrapper* state, bool /*lazy_parsing_enabled*/) {
   return mongodb::ParseFrame(type, buf, frame, &state->global);
 }
 

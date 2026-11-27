@@ -87,7 +87,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result)
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, dns::Frame* result,
-                      NoState* /*state*/) {
+                      NoState* /*state*/, bool /*lazy_parsing_enabled*/) {
   return dns::ParseFrame(type, buf, result);
 }
 

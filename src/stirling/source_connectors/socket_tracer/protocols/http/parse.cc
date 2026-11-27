@@ -87,7 +87,7 @@ HeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) {
 
 }  // namespace pico_wrapper
 
-ParseState ParseRequestBody(std::string_view* buf, Message* result) {
+ParseState ParseRequestBody(std::string_view* buf, Message* result, bool lazy_parsing_enabled) {
   // From https://tools.ietf.org/html/rfc7230:
   //  A sender MUST NOT send a Content-Length header field in any message
   //  that contains a Transfer-Encoding header field.
@@ -106,7 +106,7 @@ ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   if (content_length_iter != result->headers.end()) {
     std::string_view content_len_str = content_length_iter->second;
     auto r = ParseContent(content_len_str, buf, FLAGS_http_body_limit_bytes, &result->body,
-                          &result->body_size);
+                          &result->body_size, lazy_parsing_enabled);
     CTX_DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
     return r;
   }
@@ -115,7 +115,8 @@ ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    auto s = ParseChunked(buf, FLAGS_http_body_limit_bytes, &result->body, &result->body_size);
+    auto s = ParseChunked(buf, FLAGS_http_body_limit_bytes, &result->body, &result->body_size,
+                          lazy_parsing_enabled);
     CTX_DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
     return s;
   }
@@ -131,7 +132,8 @@ ParseState ParseRequestBody(std::string_view* buf, Message* result) {
   return ParseState::kSuccess;
 }
 
-ParseState ParseResponseBody(std::string_view* buf, Message* result, State* state) {
+ParseState ParseResponseBody(std::string_view* buf, Message* result, State* state,
+                             bool lazy_parsing_enabled) {
   // Case 0: Check for a HEAD response with no body.
   // Responses to HEAD requests are special, because they may include Content-Length
   // or Transfer-Encoding, but the body will still be empty.
@@ -156,7 +158,7 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result, State* stat
   if (content_length_iter != result->headers.end()) {
     std::string_view content_len_str = content_length_iter->second;
     auto s = ParseContent(content_len_str, buf, FLAGS_http_body_limit_bytes, &result->body,
-                          &result->body_size);
+                          &result->body_size, lazy_parsing_enabled);
     CTX_DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
     return s;
   }
@@ -165,7 +167,8 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result, State* stat
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    auto s = ParseChunked(buf, FLAGS_http_body_limit_bytes, &result->body, &result->body_size);
+    auto s = ParseChunked(buf, FLAGS_http_body_limit_bytes, &result->body, &result->body_size,
+                          lazy_parsing_enabled);
     CTX_DCHECK_LE(result->body.size(), FLAGS_http_body_limit_bytes);
     return s;
   }
@@ -211,7 +214,7 @@ ParseState ParseResponseBody(std::string_view* buf, Message* result, State* stat
   return ParseState::kNeedsMoreData;
 }
 
-ParseState ParseRequest(std::string_view* buf, Message* result) {
+ParseState ParseRequest(std::string_view* buf, Message* result, bool lazy_parsing_enabled) {
   pico_wrapper::HTTPRequest req;
   int retval = pico_wrapper::ParseRequest(*buf, &req);
 
@@ -225,7 +228,7 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
     result->req_path = std::string(req.path, req.path_len);
     result->headers_byte_size = retval;
 
-    return ParseRequestBody(buf, result);
+    return ParseRequestBody(buf, result, lazy_parsing_enabled);
   }
   if (retval == -2) {
     return ParseState::kNeedsMoreData;
@@ -233,7 +236,8 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
   return ParseState::kInvalid;
 }
 
-ParseState ParseResponse(std::string_view* buf, Message* result, State* state) {
+ParseState ParseResponse(std::string_view* buf, Message* result, State* state,
+                         bool lazy_parsing_enabled) {
   pico_wrapper::HTTPResponse resp;
   int retval = pico_wrapper::ParseResponse(*buf, &resp);
 
@@ -247,7 +251,7 @@ ParseState ParseResponse(std::string_view* buf, Message* result, State* state) {
     result->resp_message = std::string(resp.msg, resp.msg_len);
     result->headers_byte_size = retval;
 
-    return ParseResponseBody(buf, result, state);
+    return ParseResponseBody(buf, result, state, lazy_parsing_enabled);
   }
   if (retval == -2) {
     return ParseState::kNeedsMoreData;
@@ -265,12 +269,13 @@ ParseState ParseResponse(std::string_view* buf, Message* result, State* state) {
  * @param result: A parsed HTTP message, if parse was successful (must consider return value).
  * @return parse state indicating how the parse progressed.
  */
-ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* result, State* state) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* result, State* state,
+                      bool lazy_parsing_enabled) {
   switch (type) {
     case message_type_t::kRequest:
-      return ParseRequest(buf, result);
+      return ParseRequest(buf, result, lazy_parsing_enabled);
     case message_type_t::kResponse:
-      return ParseResponse(buf, result, state);
+      return ParseResponse(buf, result, state, lazy_parsing_enabled);
     default:
       return ParseState::kInvalid;
   }
@@ -357,8 +362,8 @@ size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, http::Message* result,
-                      http::StateWrapper* state) {
-  return http::ParseFrame(type, buf, result, &state->global);
+                      http::StateWrapper* state, bool lazy_parsing_enabled) {
+  return http::ParseFrame(type, buf, result, &state->global, lazy_parsing_enabled);
 }
 
 template <>

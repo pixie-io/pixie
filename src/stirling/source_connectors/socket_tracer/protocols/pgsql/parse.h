@@ -53,7 +53,7 @@ size_t FindFrameBoundary(std::string_view buf, size_t start);
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, pgsql::RegularMessage* frame,
-                      pgsql::StateWrapper* /*state*/);
+                      pgsql::StateWrapper* /*state*/, bool /*lazy_parsing_enabled*/);
 
 template <>
 size_t FindFrameBoundary<pgsql::RegularMessage>(message_type_t type, std::string_view buf,
