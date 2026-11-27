@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/utils/script"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
@@ -132,7 +133,7 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 	outputCh, err := RunSimpleHealthCheckScript(c.br, c.cloudAddr, clusterID)
 	if err != nil {
 		entry := log.WithError(err)
-		if _, ok := err.(*HealthCheckWarning); ok {
+		if _, ok := err.(*components.UIWarning); ok {
 			entry.Warn("healthcheck script detected the following warnings:")
 		} else {
 			entry.Warn("failed to run healthcheck script")
